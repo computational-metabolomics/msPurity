@@ -1,0 +1,223 @@
+---
+title: "Assessing and Predicting Precursor Purity of MS/MS data with msPurity"
+author: "Thomas N. Lawson"
+date: "`r Sys.Date()`"
+output: 
+  BiocStyle::html_document:
+    toc: true
+bibliography: mspurity.bib
+vignette: >
+  %\VignetteIndexEntry{msPurity}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+The function of this R package is to assess and predict precursor purity of tandem mass spectrometry (MS/MS) metabolomics data. 
+
+What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the the time of the MS/MS aquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated, additionally the package has parameters that can be used to account for edge effects and other phenomena that can give misleading scores.
+
+The package can also be used to predict the precursor purity from a prior LC-MS or DI-MS dataset. An example use case of this could be where an analyst has performed an LC-MS run followed by XCMS feature detection, msPurity could then be run to determine what features would have sufficiently high purity scores that would produce desirable MS/MS fragmentation spectra. 
+
+The package has been developed to be used with DI-MS or LC-MS data and has been checked to work with the following vendor files after conversion to mzML: Thermo, Agilent and AB Sciex.
+
+# Purity Assessments of MS/MS data
+
+## purityA 
+
+Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function `purityA` will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropiate slot (`@puritydf`).
+
+The isolation widths will be determined automatically from the mzML file. For some mzML files this is not recorded and in these cases the offsets can be given as a parameter.
+
+In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da (this can be overwritten with the `offsets` argument)
+
+The purity dataframe (`pa@puritydf`) consists of the following columns:
+
+* __pid__: unique id for MS/MS scan
+* __fileid__: unqiue id for file
+* __seqNum__: scan number
+* __precursorIntensity__: precursor intensity value as defined from mzML file
+* __precursorMZ__: precursor m/z value as defined from mzML file
+* __precursorRT__: precursor RT value as defined from mzML file
+* __precursorScanNum__: precursor scan number value as defined from mzML file
+* __id__: unique id (redundant)
+* __filename__: mzML filename
+* __precursorNearest__: MS1 scan nearest to this MS/MS scan
+* __aMz__: The _m/z_ value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file
+* __aPurity__: The purity score for __aMz__ 
+* __apkNm__: The number of peaks in the isolation window for __aMz__ 
+* __iMz__: The _m/z_ value in the precursorNearest scan that is the most intense within the isolation window.
+* __iPurity__: The purity score for __iMz__ 
+* __ipkNm__: The number of peaks in the isolation window for __iMz__ 
+* __inPurity__: The interpolated purity score
+* __inpkNm__: The interpolated number of peaks in the isolation window
+
+
+
+```{r}
+library(msPurity)
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+```
+
+```{r}
+pa <- purityA(msmsPths)
+
+print(head(pa@puritydf))
+```
+
+
+## Mapping XCMS features to fragmentation spectra
+The MS/MS spectra can be assigned to an XCMS grouped feature using the `frag4feature` function. 
+
+First an xcmsSet object of the same files is required
+#```{r results='hide', message=FALSE, warning=FALSE}
+```{r}
+library(xcms)
+
+xset <- xcms::xcmsSet(msmsPths)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+```
+
+```{r}
+pa <- frag4feature(pa, xset)
+```
+
+The slot `grped_df` is a dataframe of the grouped XCMS features linked to a reference to any associated MS/MS scans in the region of the full width of the XCMS feature in each file. The dataframe contains the following columns.
+
+* __grpid__: XCMS grouped feature id
+* __mz__: derived from XCMS peaklist
+* __mzmin__: derived from XCMS peaklist
+* __mzmax__: derived from XCMS peaklist
+* __rt__: derived from XCMS peaklist
+* __rtmin__: derived from XCMS peaklist
+* __rtmax__: derived from XCMS peaklist 
+* __into__: derived from XCMS peaklist
+* __intb__: derived from XCMS peaklist
+* __maxo__: derived from XCMS peaklist
+* __sn__: derived from XCMS peaklist
+* __sample__: derived from XCMS peaklist
+* __id__: unique id of MS/MS scan
+* __precurMtchID__: Associated nearest precursor scan id (file specific)
+* __precurMtchRT__: Associated precursor scan RT
+* __precurMtchMZ__: Associated precursor _m/z_
+* __precurMtchPPM__: Associated precursor _m/z_ parts per million (ppm) tolerance to XCMS feauture _m/z_
+* __inPurity__: The interpolated purity score
+
+```{r}
+print(head(pa@grped_df))
+```
+
+
+The slot `grped_ms2` is a list of the associated fragmentation spectra for the grouped features. 
+
+```{r}
+print(pa@grped_ms2[2:3])
+```
+
+# Predicting precursor purity
+
+## Predicting purity for LC-MS (purityPL)
+
+A processed xcmsSet object is required to predict precursor purity from an LC-MS dataset. The offsets chosen in the parameters should reflect what settings would be used in a hypothetical fragmentation experiment.
+
+The slot `predictions` provides the predicted purity scores for each feature. The dataframe contains the following columns:
+
+* __grpid__: XCMS grouped feature id
+* __mean__: Mean predicted purity of the feature
+* __median__: Median predicted purity of the feature
+* __sd__: Standard deviation of the predicted purity of the feature
+* __stde__: Standard error of the predicted purity of the feature
+* __pknm__: Median peak number in isolation window
+* __RSD__: Relative standard deviation of the predicted purity of the feature
+* __i__: Median intensity of the grouped feature. Uses XCMS "into" intensity value.
+* __mz__: _m/z_ of the XCMS grouped feature
+
+_XCMS run on an LC-MS dataset_
+```{r}
+xset <- xcms::xcmsSet(msPths)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+```
+
+_Perform predictions_
+```{r}
+ppLCMS <- purityPL(xset, offsets=c(0.5, 0.5), xgroups = c(1, 2))
+
+print(head(ppLCMS@predictions))
+```
+
+
+## Predicting purity for DI-MS (purityPD)
+
+The predicted purity for a DI-MS experiment can be performed on any DI-MS dataset consisting of multiple MS1 scans of the same mass range, i.e. it has **not** been developed to be used with any SIM stitching approach.
+
+A number of simple data processing steps are performed on the mzML files to provide a DI-MS peak list (features) to perform the purity predictions on. 
+
+These data processing steps consist of:
+
+* Averaging peaks across multiple scans 
+* Removing peaks below a signal to noise threshold [optional]
+* Removing peaks less than an intensity threshold [optional]
+* Removing peaks above a RSD threshold for intensity [optional]
+* Where there is a blank, subtracting blank peaks [optional]
+
+The averaged peaks before and after filtering are stored in the `avPeaks` slot of purityPD S4 object.
+
+
+__Get file dataframe__:
+The purityPD constructor requires a dataframe consisting of the following columns:
+
+* filepth
+* name
+* sampleType [either sample or blank]
+* class [for grouping samples together]
+* polarity [optional]
+
+```{r}
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE)
+ppDIMS <- purityPD(inDF, mzML=TRUE)
+```
+
+__Average spectra__:
+The default averaging will use a Heirachel clustering approach. Noise filtering is also performed here.
+
+```{r}
+ppDIMS <- averageSpectra(ppDIMS, snMeth = "median", snthr = 5)
+```
+
+__Filter by RSD and Intensity__
+```{r}
+ppDIMS <- filterp(ppDIMS, thr=5000, rsd = 10)
+```
+
+__Subtract blank__
+```{r}
+ppDIMS <- subtract(ppDIMS)
+```
+
+__Predict purity__
+```{r}
+ppDIMS <- dimsPredictPurity(ppDIMS)
+
+print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))
+```
+
+
+## Predicting purity from a known _m/z_ target list for DI-MS
+
+The data processing steps carried out through purityPD can be bypassed if the peaks (_m/z_ values) of interest are already known. The function `dimsPredictPuritySingle()` can be used to predict the purity of a list of _m/z_ values in a chosen mzML file.
+
+```{r}
+mzpth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
+predicted <- dimsPredictPuritySingle(filepth = mzpth, mztargets = c(111.0436, 113.1069))
+print(predicted)
+```
+
+# References
+

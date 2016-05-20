@@ -1,0 +1,47 @@
+setGeneric("getP", function(x) standardGeneric("getP"))
+
+setGeneric("updatePeaks", function(x, newlist) standardGeneric("updatePeaks"))
+
+setGeneric(name="averageSpectra",
+           def=function(Object,rtscn = "all", scanRange=NA, timeRange = NA,
+                        clustType="hc", ppm=1.5, snthr = 3, av="median", missingV="zero", minfrac=0.6667, snMeth="median") {
+             standardGeneric("averageSpectra")
+           }
+)
+
+setGeneric(name="filterp",
+           def=function(Object, thr = 5000, rsd=20, sampleOnly = TRUE) {
+             standardGeneric("filterp")
+           }
+)
+
+setGeneric(name="subtract",
+           def=function(Object, byClass = TRUE, mapping=c("sample", "blank"), ppm =5,  s2bthres=10){
+             standardGeneric("subtract")
+           }
+)
+
+setGeneric(name="dimsPredictPurity",
+           def=function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
+                        fileignore=NULL, cores=1, xgroups=NULL, iwNorm=FALSE, iwNormFun=NULL, ilim=0) {
+             standardGeneric("dimsPredictPurity")
+           }
+)
+
+setGeneric(name="writeOut",
+           def=function(Object, outDir, original) {
+             standardGeneric("writeOut")
+           }
+)
+
+setGeneric(name="frag4feature",
+           def=function(pa, xset, ppm = 5, plim = 0, intense=TRUE){
+             standardGeneric("frag4feature")
+           }
+)
+
+setGeneric(name="validate",
+           def=function(pa, ppLCMS){
+             standardGeneric("validate")
+           }
+)
