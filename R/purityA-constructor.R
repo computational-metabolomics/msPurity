@@ -68,7 +68,7 @@ purityA <- function(fileList,
 
   # if iwNorm is TRUE and iwNormFun is NULL
   if(is.null(iwNormFun)){
-    iwNormFun <- iwNormRcosine()
+    iwNormFun <- iwNormGauss()
   }
 
   # run parallel (or not) using foreach

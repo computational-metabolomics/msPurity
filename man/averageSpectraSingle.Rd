@@ -8,7 +8,7 @@
 averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
   timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3, cores = 1,
   av = "median", missingV = "ignore", minfrac = 0.6667,
-  snMeth = "median", MSFileReader = FALSE)
+  snMeth = "median", MSFileReader = FALSE, normTIC = FALSE)
 }
 \arguments{
 \item{filePth}{character = Path of the file to be processed}

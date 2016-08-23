@@ -1,4 +1,4 @@
-iwNormGauss <- function(sdlim=3){
+iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=0.5){
 
   # get a gaussian curve
   x <- seq(0-sdlim, 0+sdlim, 0.05)
@@ -6,7 +6,9 @@ iwNormGauss <- function(sdlim=3){
 
   # linear scaling to range 0 to 1
   y <- (y-min(y))/(max(y)-min(y))
-  x <- (x-min(x))/(max(x)-min(x))
+
+  # scaling to the min and max of the window
+  x <- seq(minOff, maxOff, length.out = length(y))
 
   # Create function that outputs a 0 to 1 value depending on
   # the position of the x (i.e. mz)
@@ -14,43 +16,26 @@ iwNormGauss <- function(sdlim=3){
 }
 
 
-iwNormRcosine <- function(){
-  s <- sapa::taper(type="raised cosine")
+iwNormQE.5 <- function(){
+    y <- c(0.0000, 0.0000, 0.0000, 0.0550, 0.2336, 0.4437, 0.6509, 0.8210,
+           0.9339, 0.9915, 0.9975, 0.9555, 0.8694, 0.7428, 0.5805, 0.3986,
+           0.2208, 0.0710, 0.0000, 0.0000, 0.0000)
+    x <- seq(-1, 1, 0.1)
+    f <- approxfun(x, y)
+}
 
-  y <- as.vector(s)
-  x <- seq(y)
 
-  # linear scaling to range 0 to 1
-  y <- (y-min(y))/(max(y)-min(y))
-  x <- (x-min(x))/(max(x)-min(x))
-  f <- approxfun(x, y)
+iwNormRcosine <- function(minOff = 0.5, maxOff = 0.5){
+   s <- sapa::taper(type="raised cosine")
+
+   y <- as.vector(s)
+   x <- seq(minOff, maxOff, length.out = length(y))
+
+   # linear scaling to range 0 to 1
+   y <- (y-min(y))/(max(y)-min(y))
+   f <- approxfun(x, y)
 
 }
-#
-#
-#
-# library(sapa)
-# s <- taper(type="raised cosine", n.sample = 101)
-#
-# y <- as.vector(s)
-# x <- seq(-0.5, +0.5,0.01)
-#
-# # linear scaling to range 0 to 1
-# y <- (y-min(y))/(max(y)-min(y))
-# f <- approxfun(x, y)
-# par(mar = c(5,5,2,5))
-# plot(f, xlim=c(-0.5, 0.5), xlab="Isolation window (Da)", ylab="Contribution")
-# par(new = T)
-#
-#
-# y2 <- rep(0, length(y))
-# y2[7] <- 10000
-# plot(x, y2, pch=16, axes=F, xlab=NA, ylab="", type="h", lwd=3)
-# axis(side = 4)
-# mtext(side = 4, line = 3, 'Intensity')
-#
-# lines(x=0, y=2300, type="h", lwd=3, col="red")
-
 
 
 

@@ -26,7 +26,8 @@ NULL
 setMethod(f="averageSpectra", signature="purityPD", definition =
                   function(Object, rtscn = "all", scanRange=NA, timeRange = NA,
                            clustType="hc", ppm=1.5, snthr = 3, av="median",
-                           missingV="zero", minfrac=0.6667, snMeth="median") {
+                           missingV="zero", minfrac=0.6667, normTIC=FALSE,
+                           snMeth="median") {
   nfiles <- nrow(Object@fileList)
 
   if(Object@mzML==TRUE){
@@ -74,7 +75,8 @@ setMethod(f="averageSpectra", signature="purityPD", definition =
                                                       minfrac=minfrac,
                                                       snMeth = snMeth,
                                                       cores = cores4cl,
-                                                      MSFileReader = msfrOpt) )
+                                                      MSFileReader = msfrOpt,
+                                                      normTIC = normTIC) )
 
   if(Object@cores>1){
     parallel::stopCluster(cl)
@@ -149,7 +151,8 @@ averageSpectraSingle <- function(filePth,
                                  missingV="ignore",
                                  minfrac=0.6667,
                                  snMeth = "median",
-                                 MSFileReader=FALSE){
+                                 MSFileReader=FALSE,
+                                 normTIC = FALSE){
 
   # Get the peaks from each scan
   # (filtering out any above the signal to noise thres)
@@ -160,6 +163,12 @@ averageSpectraSingle <- function(filePth,
     # mzML file to be read in by mzR
     peaklist <- mzMLProcess(filePth, rtscn, scanRange, timeRange, snthr, snMeth)
   }
+
+  # get normalised TIC intensity
+  peaklist <- ddply( peaklist, .(scanid), function(x){
+    x$inorm = x$i/sum(x$i)
+    return(x)
+    })
 
   if(nrow(peaklist)<1){
     message("No peaks to process (perhaps SNR filter too high)")
@@ -182,8 +191,6 @@ averageSpectraSingle <- function(filePth,
   # re-index the matrix
   rownames(peaklist) <- seq(1, nrow(peaklist))
 
-  #message("Calculating average")
-
   if (cores>1){
     clust <- parallel::makeCluster(cores, type = "SOCK")
     doSNOW::registerDoSNOW(clust)
@@ -197,13 +204,12 @@ averageSpectraSingle <- function(filePth,
                     av=av,
                     minnum=minnum,
                     missingV=missingV,
-                    totalScans=minnum)
+                    totalScans=minnum,
+                    normTIC = normTIC)
 
   if(cores>1){
     parallel::stopCluster(cl)
   }
-
-
 
   # get rid of the first column (the cluster id)
   if(nrow(averages)>1){
@@ -216,15 +222,13 @@ averageSpectraSingle <- function(filePth,
     return(data.frame())
   }
 
-
-
   return(final)
 
 }
 
 mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth){
   # Read in mzml file from mzR
-  #library('mzR')
+
   #print("reading in mzML")
   mr <- mzR::openMSfile(mzmlPth)
 
@@ -267,6 +271,9 @@ mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth){
   colnames(peaklist)[1] <- "scanid"
   colnames(peaklist)[2] <- "mz"
   colnames(peaklist)[3] <- "i"
+
+  # remove any peaks that are have zero intensity (for waters)
+  peaklist <- peaklist[peaklist$i>0,]
 
   peaklist <- plyr::ddply(peaklist, ~ scanid,
                           snrFilter, # FUNCTION
@@ -343,6 +350,7 @@ group1d <- function(v, thr){
 }
 
 performHc <- function(mzs, ppm){
+
   if(length(mzs)==1){return(1)}
   mdist = dist(mzs)
   averageMzPair = as.dist(outer(mzs, mzs, "+")/2)
@@ -413,14 +421,20 @@ rsde <- function(x) (sd(x)/mean(x))*100
 
 
 averageCluster <- function(x, av="median", minnum=1,
-                           missingV="ignore", totalScans){
-  # Filter out any that do not match the minimum
-  if(nrow(x)<minnum){
+                           missingV="ignore", totalScans, normTIC){
+    # Filter out any that do not match the minimum
+    if(nrow(x)<minnum){
     return(NULL)
   }
 
-  # Get rsd
-  rsdRes <- rsde(x$i)
+
+  # Get rsd (if normalise flagged then use the normalised intensity)
+  if(normTIC){
+      rsdRes <- (sd(x$inorm)/mean(x$inorm))*100
+  }else{
+      rsdRes <- rsde(x$i)
+
+  }
 
   # Calc average first of the mz. We don't want to mess around with
   # missing values for this stage
@@ -446,11 +460,15 @@ averageCluster <- function(x, av="median", minnum=1,
   if(av=="median"){
     i <- median(x$i)
     snr <- median(x$snr)
+    inorm <- median(x$inorm)
   }else{
     i <- mean(x$i)
     snr <- mean(x$snr)
+    inorm <- mean(x$inorm)
   }
 
-  return(c("mz"=mz, "i"=i, "snr"=snr, "rsd"=rsdRes))
+
+
+  return(c("mz" = mz, "i" = i, "snr" = snr, "rsd" = rsdRes, "inorm" = inorm))
 
 }
