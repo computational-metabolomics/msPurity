@@ -1,0 +1,4 @@
+library(testthat)
+library(msPurity)
+
+test_check("msPurity")

@@ -20,7 +20,6 @@ pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
     peaks <- data.matrix(peaks)
   }
 
-
   # Get the isolation window range
   subp <- peaks[(peaks[,1]>mzmin) & (peaks[,1]<mzmax),]
 
@@ -32,12 +31,15 @@ pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
   if(iwNorm){
     # If the isolation window is to be normalised based on the contribution
     # of ions in relation to position in isolation window
-    adjustmz = (subp[,1]-mzmin)/(mzmax-mzmin)
+    middle <- mzmax-(mzmax-mzmin)/2
+
+    # Get the mz position as distances away from the centre position (0 Da)
+    adjustmz = subp[,1]-middle
     subp[,2] = subp[,2]*iwNormFun(adjustmz)
   }
 
   # Check if the mztarget is to be identified based on a ppm tolerance or
-  # pre deterimed range
+  # pre deterimend range
   if(!is.na(ppm)){
     # check if the target mz in the list
     mzLo <- round(mztarget - ((mztarget*0.000001)*ppm),10)

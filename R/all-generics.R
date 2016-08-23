@@ -4,7 +4,9 @@ setGeneric("updatePeaks", function(x, newlist) standardGeneric("updatePeaks"))
 
 setGeneric(name="averageSpectra",
            def=function(Object,rtscn = "all", scanRange=NA, timeRange = NA,
-                        clustType="hc", ppm=1.5, snthr = 3, av="median", missingV="zero", minfrac=0.6667, snMeth="median") {
+                        clustType="hc", ppm=1.5, snthr = 3, av="median",
+                        missingV="zero", minfrac=0.6667,
+                        normTIC=FALSE, snMeth="median") {
              standardGeneric("averageSpectra")
            }
 )
