@@ -6,7 +6,6 @@
 #' @import stringr
 #' @import reshape2
 #' @import fastcluster
-#' @import ggplot2
 
 #' @title Predict the precursor purity from an LC-MS run
 #'
@@ -25,6 +24,8 @@
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
+
 #'
 #' @return a purityPL object containing a dataframe of predicted purity scores
 #' @examples
@@ -38,7 +39,7 @@
 #' @export
 purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                      fileignore=NULL, cores=1, xgroups=NULL,
-                     iwNorm=FALSE, iwNormFun=NULL, ilim=0){
+                     iwNorm=FALSE, iwNormFun=NULL, ilim=0, plotP=FALSE){
 
   # Create a purityPL object
   ppLCMS <- new("purityPL")
@@ -133,8 +134,13 @@ purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
   # isolation window will be used to normalise intensity
   if(is.null(iwNormFun)){
     # Using a gaussian curve 3 SD either side
-    iwNormFun <- iwNormRcosine()
+    iwNormFun <- iwNormGauss(minOff=-offsets[1], maxOff=offsets[2])
   }
+
+  if(plotP){
+    dir.create(file.path(getwd(), "PurityPlots"), showWarnings = FALSE)
+  }
+
 
   # perform predictions
   purityPredictions <- plyr::dlply(grouplist,
@@ -146,7 +152,8 @@ purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                              offsets=offsets,# fun param
                              iwNorm=iwNorm,# fun param
                              iwNormFun=iwNormFun,# fun param
-                             ilim=ilim) # fun param
+                             ilim=ilim,
+                             plotP=plotP) # fun param
 
   if(cores>1){
     parallel::stopCluster(cl)
@@ -174,9 +181,9 @@ purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
   }
 
   if((is.null(xgroups)) || (length(xgroups)>1)){
-    dataout$i <- apply(xcmsgrpi, 1, median)
+    dataout$i <- apply(xcmsgrpi, 1, median, na.rm = TRUE)
   }else{
-    dataout$i <- median(xcmsgrpi)
+    dataout$i <- median(xcmsgrpi, na.rm = TRUE)
   }
 
   dataout$mz <- xcmsgrpmz
@@ -191,7 +198,6 @@ purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
     ppLCMS@fileignore <- fileignore
   }
 
-
   return(ppLCMS)
 
 }
@@ -199,14 +205,14 @@ purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
 
 predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
-                                  offsets, iwNorm, iwNormFun, ilim){
+                                  offsets, iwNorm, iwNormFun, ilim, plotP){
 
   # Need to loop through for each file in each group
   grp <- data.frame(grp)
   rtmed <- median(grp$rt)
 
   sgrp <- plyr::ddply(grp, ~ sample, pp4file, scanpeaks,
-                      rtmed, offsets, iwNorm, iwNormFun, ilim)
+                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP)
 
   puritySummary <- apply(sgrp[,2:ncol(sgrp)], 2, function(x){
     x <- na.omit(x)
@@ -216,7 +222,8 @@ predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
 
 }
 
-pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim){
+pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
+                    plotP){
 
   # Sometimes XCMS groups more than 1 peak from the same file in the XCMS
   # grouping stage.
@@ -267,6 +274,35 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim){
   # Calculate FWHM
   fwhm <- calculateFWHM(dfp)
 
+  if(plotP){
+    plotnm <- paste(paste(grpi$grpid, "sample", grpi$sample, "mz",
+                round(grpi$mz, 3), "rt", round(grpi$rt, 3), sep="_"),
+                    "png", sep=".")
+
+    tic <- plyr::ldply(roi_scns, getTic, target = target, minOff = offsets[1],
+                       maxOff = offsets[2])
+    contamination <- tic$V1-dfp$intensity
+    maxi <- max(c(max(contamination), max(dfp$intensity)))
+
+    fpth <- file.path(getwd(),"PurityPlots", plotnm)
+    png(fpth)
+
+
+    plot(dfp$scan, dfp$intensity, type = "l", col="red", lwd=2.5,
+         xlab="scan number", ylab="intensity", ylim=c(0, maxi))
+
+    lines(dfp$scan, contamination, col="black", lwd=2.5)
+    legend("topright", # places a legend at the appropriate place
+           lwd=c(2.5,2.5),
+           c("EIC of feature", "contamination"),
+           col=c("red", "black"))
+    abline(v=fwhm[1])
+    abline(v=fwhm[2])
+    dev.off()
+  }
+
+
+
   purityFWHMmedian <- median(dfp$purity[dfp$scan>=fwhm[1] & dfp$scan<=fwhm[2]],
                              na.rm = TRUE)
 
@@ -279,6 +315,8 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim){
   pknmFWmedian <- median(dfp$pknm, na.rm = TRUE)
 
   purityMedianRT <- dfp[dfp$time==target$rtmedscan,]$purity
+
+
 
 
 
@@ -300,7 +338,6 @@ calculateFWHM <- function(df){
 
 }
 
-
 getEic <- function(roi_scn, target){
     roi_scn <- data.frame(roi_scn)
 
@@ -316,6 +353,17 @@ getEic <- function(roi_scn, target){
       return(sub[,2])
     }
 }
+
+
+getTic <- function(roi_scn, target, minOff, maxOff ){
+  roi_scn <- data.frame(roi_scn)
+
+  sub <- roi_scn[(roi_scn[,1]>=target$mz-minOff) & (roi_scn[,1]<=target$mzmax+maxOff),]
+
+  sum(sub[,2])
+}
+
+
 
 stde <- function(x) sd(x)/sqrt(length(x))
 CV <- function(x) (sd(x)/mean(x))*100
