@@ -135,7 +135,7 @@ test_that("Check mzML workflow", {
 
   # can only do 1 core for average spectra, as ddply gives warnings that kill the
   # R CMD check call
-  ex <- purityPD(fileList=inDF, cores=1, mzML=TRUE)
+  ex <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 
 
   ################################
@@ -159,15 +159,15 @@ test_that("Check mzML workflow", {
   # check avPeaks
   ##### NOTE: #### The previous rds files were run when normTIC was not a feature.
   ################ For the moment we just do not check the normTIC column
-  
+
   expect_equal(length(exAv@avPeaks), length(exAvTest@avPeaks))
-  
-  expect_equal(exAv@avPeaks$processed$B02_Blank_TEST_pos[,1:5], 
+
+  expect_equal(exAv@avPeaks$processed$B02_Blank_TEST_pos[,1:5],
                exAvTest@avPeaks$processed$B02_Blank_TEST_pos[,1:5])
-  
+
   expect_equal(exAv@avPeaks$processed$B02_Daph_TEST_pos[,1:5],
                exAvTest@avPeaks$processed$B02_Daph_TEST_pos[,1:5])
-  
+
   ################################
   # filtering spectra.
   ################################
@@ -177,9 +177,9 @@ test_that("Check mzML workflow", {
   #saveRDS(exF, file.path(examp, "exF-mzML.rds"))
   exFTest <- readRDS(file.path(examp , "exF-mzML.rds"))
   # check avPeaks
-  expect_equal(exF@avPeaks$processed$B02_Blank_TEST_pos[,1:5], 
+  expect_equal(exF@avPeaks$processed$B02_Blank_TEST_pos[,1:5],
                exFTest@avPeaks$processed$B02_Blank_TEST_pos[,1:5])
-  
+
   expect_equal(exF@avPeaks$processed$B02_Daph_TEST_pos[,1:5],
                exFTest@avPeaks$processed$B02_Daph_TEST_pos[,1:5])
 
@@ -196,9 +196,9 @@ test_that("Check mzML workflow", {
   #saveRDS(exS, file.path(examp, "exS-mzML.rds"))
   exSTest <- readRDS(file.path(examp, "exS-mzML.rds"))
   # check avPeaks
-  expect_equal(exS@avPeaks$processed$B02_Blank_TEST_pos[,1:5], 
+  expect_equal(exS@avPeaks$processed$B02_Blank_TEST_pos[,1:5],
                exSTest@avPeaks$processed$B02_Blank_TEST_pos[,1:5])
-  
+
   expect_equal(exS@avPeaks$processed$B02_Daph_TEST_pos[,1:5],
                exSTest@avPeaks$processed$B02_Daph_TEST_pos[,1:5])
 
