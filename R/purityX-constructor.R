@@ -7,12 +7,12 @@
 #' @import reshape2
 #' @import fastcluster
 
-#' @title Assess precursor purity of anticipated MS2 spectra for XCMS features
+#' @title Assessing anticipated purity of XCMS features from an LC-MS run
 #'
 #' @description
-#' Constructor for the purityPL class.
+#' Constructor for the purityX class.
 #'
-#' Given an XCMS object predict the purity of the grouped peaks
+#' Given an XCMS object get the anticipated precursor purity of the grouped peaks
 #'
 #' @param xset object = xcms object
 #' @param cores numeric = number of cores to use
@@ -26,22 +26,22 @@
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
 #'
-#' @return a purityPL object containing a dataframe of predicted purity scores
+#' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
 #' msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
 #' xset <- xcms::xcmsSet(msPths)
 #' xset <- xcms::group(xset)
 #' xset <- xcms::retcor(xset)
 #' xset <- xcms::group(xset)
-#' ppLCMS <- purityPL(xset, cores = 1, xgroups = c(1, 2))
+#' ppLCMS <- purityX(xset, cores = 1, xgroups = c(1, 2))
 #'
 #' @export
-purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
+purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                      fileignore=NULL, cores=1, xgroups=NULL,
                      iwNorm=FALSE, iwNormFun=NULL, ilim=0, plotP=FALSE){
 
-  # Create a purityPL object
-  ppLCMS <- new("purityPL")
+  # Create a purityX object
+  ppLCMS <- new("purityX")
 
   # get the filepaths from the xcms object
   filepths <- xset@filepaths
@@ -137,7 +137,7 @@ purityPL <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
   }
 
   if(plotP){
-    dir.create(file.path(getwd(), "PurityPlots"), showWarnings = FALSE)
+    dir.create(file.path(getwd(), "purityXots"), showWarnings = FALSE)
   }
 
 
@@ -283,7 +283,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     contamination <- tic$V1-dfp$intensity
     maxi <- max(c(max(contamination), max(dfp$intensity)))
 
-    fpth <- file.path(getwd(),"PurityPlots", plotnm)
+    fpth <- file.path(getwd(),"purityXots", plotnm)
     png(fpth)
 
 

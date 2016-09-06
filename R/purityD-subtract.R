@@ -1,12 +1,12 @@
 #' @title Using Subtract MZ values based on ppm tolerance and noise ratio
 #'
 #' @description
-#' Uses a purityPD object with references to multiple MS files. Subtract blank peaks from the sample peaks
+#' Uses a purityD object with references to multiple MS files. Subtract blank peaks from the sample peaks
 #' see subtractMZ for more information
 #'
 #' @aliases subtract
 #'
-#' @param Object = purityPD object
+#' @param Object = purityD object
 #' @param mapping parameter not functional (TODO)
 #' @param byClass boolean = subtract within each class
 #' @inheritParams subtractMZ
@@ -14,14 +14,14 @@
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 #'
-#' ppDIMS <- purityPD(inDF, cores=1)
+#' ppDIMS <- purityD(inDF, cores=1)
 #' ppDIMS <- averageSpectra(ppDIMS)
 #' ppDIMS <- filterp(ppDIMS, thr = 5000)
 #' ppDIMS <- subtract(ppDIMS)
-#' @return  purityPD object with averaged spectra
+#' @return  purityD object with averaged spectra
 #' @seealso \code{\link{subtractMZ}}
 #' @export
-setMethod(f="subtract", signature = "purityPD",
+setMethod(f="subtract", signature = "purityD",
           definition = function(Object, byClass = TRUE, mapping=c("sample", "blank"), ppm = 5, s2bthres=10){
   fileList <- Object@fileList
 

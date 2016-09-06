@@ -1,17 +1,17 @@
-#' @title Using purityPD object, save peaks as text files
+#' @title Using purityD object, save peaks as text files
 #'
 #' @description
-#' Uses a purityPD object with references to multiple MS files.
+#' Uses a purityD object with references to multiple MS files.
 #' Predicts the purity of the processed sample files
 #'
 #' @aliases writeOut
 #'
-#' @param Object object = purityPD object
+#' @param Object object = purityD object
 #' @param outDir character = Directory to save text files
 #' @param original boolean = if the original (unprocessed) files are to be saved to text files
-#' @return  purityPD object
+#' @return  purityD object
 #' @export
-setMethod(f="writeOut", signature="purityPD",
+setMethod(f="writeOut", signature="purityD",
           definition= function(Object, outDir, original) {
 
   dir.create(outDir)

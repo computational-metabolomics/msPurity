@@ -1,12 +1,11 @@
 ######################################################################
 # Create the base Experiment class
 ######################################################################
-# An S4 class to predict precursor purity for LC-MS data
+# An S4 class to assess the anticipated purity (predicted purity) of XCMS features from an LC-MS run
 #
-# The class used to predict the purity of an LC-MS dataset
 setClass(
   # Set the name for the class
-  "purityPL",
+  "purityX",
 
   # Define the slots
   slots = c(
@@ -21,15 +20,15 @@ setClass(
 ######################################################################
 # Show method
 ######################################################################
-#' @title Show method for purityPL
+#' @title Show method for purityX
 #'
 #' @description
-#' Show method for purityPL object
+#' Show method for purityX object
 #'
 #'
-#' @param object = purityPL object
+#' @param object = purityX object
 #' @return a print statement of regarding object
 #' @export
-setMethod("show", "purityPL", function(object) {
-  print("purityPL object for predicting precursor purity from LC-MS spectra")
+setMethod("show", "purityX", function(object) {
+  print("purityX object for predicting precursor purity from LC-MS spectra")
 })
