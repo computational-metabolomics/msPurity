@@ -37,6 +37,8 @@ averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
 
 \item{MSFileReader}{boolean = For thermo files a the MSFileReader API can extract peaklist. This can consist of an .csv file with
 the following columns c('mz', 'i', 'scanid', 'snr')}
+
+\item{normTIC}{boolean = If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
 }
 \value{
 dataframe of the median mz, intensity, signal-to-noise ratio.
