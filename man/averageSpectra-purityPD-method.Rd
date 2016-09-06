@@ -34,6 +34,8 @@ and signal-to-noise of multiple scans from multiple MS datafiles
 
 \item{minfrac}{numeric = Min fraction of scans with a grouped peak to be an accepted averaged peak}
 
+\item{normTIC}{boolean = If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
+
 \item{snMeth}{character = Type of snMethod to use}
 }
 \value{

@@ -133,9 +133,7 @@ setMethod(f="averageSpectra", signature="purityPD", definition =
 #' @param MSFileReader boolean = For thermo files a the MSFileReader API can extract peaklist. This can consist of an .csv file with
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
 #' @param snMeth character = Type of snMethod to use
-#' @param normTIC boolean = If TRUE then RSD calculation will use the normalised intensity (intensity/TIC) if FALSE will
-#'  use standard intensity
-#
+#' @param normTIC boolean = If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
 #' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")

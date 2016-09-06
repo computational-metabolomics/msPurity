@@ -4,7 +4,7 @@
 \name{dimsPredictPurity,purityPD-method}
 \alias{dimsPredictPurity}
 \alias{dimsPredictPurity,purityPD-method}
-\title{Using purityPD object, predict the precursor purity of processed peaks}
+\title{Using purityPD object, predict the precursor purity of DI-MS processed peaks}
 \usage{
 \S4method{dimsPredictPurity}{purityPD}(Object, ppm = 1.5, minOffset = 0.5,
   maxOffset = 0.5, iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05)
@@ -30,8 +30,8 @@ purityPD object with predicted purity of peaks
 purityPD object
 }
 \description{
-Uses a purityPD object with references to multiple MS files. Predicts the
-purity of the processed sample files
+Assess the precursor purity of anticpated MS/MS spectra. 
+i.e. it 'predicts' the precursor purity of the DI-MS peaks
 }
 \examples{
 
