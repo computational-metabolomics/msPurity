@@ -32,7 +32,7 @@ test_that("checking lcms based functions", {
   xset2 <- xcms::group(xset2)
   xset2 <- xcms::retcor(xset2)
   xset2 <- xcms::group(xset2)
-  ppLCMS <- purityPL(xset2, cores = 1, xgroups = c(1, 2))
+  ppLCMS <- purityX(xset2, cores = 1, xgroups = c(1, 2))
 
   expect_equal(round(median(ppLCMS@predictions$grpid),3), 1.5)
   expect_equal(round(median(ppLCMS@predictions$mean),3), 0.995)

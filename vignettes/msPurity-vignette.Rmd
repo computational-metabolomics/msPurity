@@ -1,5 +1,5 @@
 ---
-title: "Assessing and Predicting Precursor Purity of MS/MS data with msPurity"
+title: "Using msPurity for Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics"
 author: "Thomas N. Lawson"
 date: "`r Sys.Date()`"
 output: 
@@ -14,15 +14,18 @@ vignette: >
 
 # Introduction
 
-The function of this R package is to assess and predict precursor purity of tandem mass spectrometry (MS/MS) metabolomics data. 
+The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. 
 
-What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the the time of the MS/MS aquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated, additionally the package has parameters that can be used to account for edge effects and other phenomena that can give misleading scores.
+What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the the time of the MS/MS aquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer
 
-The package can also be used to predict the precursor purity from a prior LC-MS or DI-MS dataset. An example use case of this could be where an analyst has performed an LC-MS run followed by XCMS feature detection, msPurity could then be run to determine what features would have sufficiently high purity scores that would produce desirable MS/MS fragmentation spectra. 
+There are two main use cases for the package
+
+1.	Assessing precursor purity of previously acquired MS2 spectra: A user has acquired either LC-MS2 or DIMS2 spectra and an assessment is made of the precursor purity for each MS2 scan. `purityA`
+2.	Assessing precursor purity of anticipated isolation windows for MS2 spectra: A user has acquired either LC-MS (`purityX`) or DIMS (`purityD`) full scan (MS1) data and an assessment is to be made of the precursor purity of detected features using anticipated or theoretical isolation windows. This information can then be used to guide further targeted MS2 experiments. 
 
 The package has been developed to be used with DI-MS or LC-MS data and has been checked to work with the following vendor files after conversion to mzML: Thermo, Agilent and AB Sciex.
 
-# Purity Assessments of MS/MS data
+# Assessing precursor purity of previously acquired MS2 spectra
 
 ## purityA 
 
@@ -118,13 +121,15 @@ The slot `grped_ms2` is a list of the associated fragmentation spectra for the g
 print(pa@grped_ms2[2:3])
 ```
 
-# Predicting precursor purity
+# Assessing precursor purity of anticipated isolation windows for MS2 spectra
 
-## Predicting purity for LC-MS (purityPL)
+## purityX: Assessing anticipated purity of XCMS features from an LC-MS run
 
-A processed xcmsSet object is required to predict precursor purity from an LC-MS dataset. The offsets chosen in the parameters should reflect what settings would be used in a hypothetical fragmentation experiment.
+NOTE ON TERMINOLOGY: The term 'anticipated purity' and 'predicted purity' are used interchangeably
 
-The slot `predictions` provides the predicted purity scores for each feature. The dataframe contains the following columns:
+A processed xcmsSet object is required to determine the anticipated (predicted) precursor purity score from an LC-MS dataset. The offsets chosen in the parameters should reflect what settings would be used in a hypothetical fragmentation experiment.
+
+The slot `predictions` provides the anticipated (predicted) purity scores for each feature. The dataframe contains the following columns:
 
 * __grpid__: XCMS grouped feature id
 * __mean__: Mean predicted purity of the feature
@@ -144,17 +149,17 @@ xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 ```
 
-_Perform predictions_
+_Perform purity calculations_
 ```{r}
-ppLCMS <- purityPL(xset, offsets=c(0.5, 0.5), xgroups = c(1, 2))
+ppLCMS <- purityX(xset, offsets=c(0.5, 0.5), xgroups = c(1, 2))
 
 print(head(ppLCMS@predictions))
 ```
 
 
-## Predicting purity for DI-MS (purityPD)
+## purityD: Assessing anticipated purity from a DI-MS run
 
-The predicted purity for a DI-MS experiment can be performed on any DI-MS dataset consisting of multiple MS1 scans of the same mass range, i.e. it has **not** been developed to be used with any SIM stitching approach.
+The anticipated/predicted purity for a DI-MS experiment can be performed on any DI-MS dataset consisting of multiple MS1 scans of the same mass range, i.e. it has **not** been developed to be used with any SIM stitching approach.
 
 A number of simple data processing steps are performed on the mzML files to provide a DI-MS peak list (features) to perform the purity predictions on. 
 
@@ -170,7 +175,7 @@ The averaged peaks before and after filtering are stored in the `avPeaks` slot o
 
 
 __Get file dataframe__:
-The purityPD constructor requires a dataframe consisting of the following columns:
+The purityD constructor requires a dataframe consisting of the following columns:
 
 * filepth
 * name
@@ -181,7 +186,7 @@ The purityPD constructor requires a dataframe consisting of the following column
 ```{r}
 datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE)
-ppDIMS <- purityPD(inDF, mzML=TRUE)
+ppDIMS <- purityD(inDF, mzML=TRUE)
 ```
 
 __Average spectra__:
@@ -209,7 +214,7 @@ print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))
 ```
 
 
-## Predicting purity from a known _m/z_ target list for DI-MS
+## Calculating the ancipitated/predict purity from a known _m/z_ target list for DI-MS
 
 The data processing steps carried out through purityPD can be bypassed if the peaks (_m/z_ values) of interest are already known. The function `dimsPredictPuritySingle()` can be used to predict the purity of a list of _m/z_ values in a chosen mzML file.
 

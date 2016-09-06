@@ -1,7 +1,7 @@
 #' @title Get files for DI-MS processing
 #'
 #' @description
-#' Takes in a folder path and outputs the a data frame structure for purityPD.
+#' Takes in a folder path and outputs the a data frame structure for purityD.
 #' Function modified from mzmatch.
 #'
 #' @param projectFolder character: directory path

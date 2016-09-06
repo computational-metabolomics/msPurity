@@ -1,24 +1,24 @@
 ######################################################################
 # Constructor
 ######################################################################
-#' @title An S4 class to represent a DI-MS purityPD
+#' @title An S4 class to represent a DI-MS purityD
 #'
 #' @description
-#' The class used to predict purity from an DI-MS dataset.
+#' The class used to assess anticipated purity from a DI-MS run
 #'
-#' @param .Object object = purityPD object
+#' @param .Object object = purityD object
 #' @param fileList data.frame = created using GetFiles, data.frame with filepaths and sample class information
 #' @param cores numeric = Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
 #' @param mzML boolean = TRUE if mzML to be used FALSE if .csv file to be used
 #' @examples
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityPD(fileList=inDF, cores=1, mzML=TRUE)
-#' @return purityPD object
-#' @export purityPD
-purityPD <- setClass(
+#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+#' @return purityD object
+#' @export purityD
+purityD <- setClass(
   # Set the name for the class
-  "purityPD",
+  "purityD",
 
   # Define the slots
   slots = c(
@@ -37,24 +37,24 @@ purityPD <- setClass(
 ######################################################################
 # A few getters and Setters
 ######################################################################
-#' @title Get peaklist for a purityPD object
+#' @title Get peaklist for a purityD object
 #'
 #' @description
-#' output peak list for a purityPD object
+#' output peak list for a purityD object
 #'
 #' @aliases getP
 #'
-#' @param x object = purityPD object
+#' @param x object = purityD object
 #' @return peaks
 #' @examples
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityPD(fileList=inDF, cores=1, mzML=TRUE)
+#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 #' peaks <- getP(ppDIMS)
 #' @export
-setMethod("getP", "purityPD", function(x) x@avPeaks)
+setMethod("getP", "purityD", function(x) x@avPeaks)
 
-setMethod("updatePeaks", "purityPD", function(x, newlist) {
+setMethod("updatePeaks", "purityD", function(x, newlist) {
   x@avPeaks <- newlist;
   validObject(x);
   return(x)
@@ -64,14 +64,14 @@ setMethod("updatePeaks", "purityPD", function(x, newlist) {
 ######################################################################
 # Show method
 ######################################################################
-#' @title Show method for purityPD
+#' @title Show method for purityD
 #'
 #' @description
-#' Show method for purityPD object
+#' Show method for purityD object
 #'
-#' @param object = purityPD object
+#' @param object = purityD object
 #' @return a print statement of regarding object
 #' @export
-setMethod("show", "purityPD", function(object) {
-  print("purityPD object for processing MS data")
+setMethod("show", "purityD", function(object) {
+  print("purityD object for processing MS data")
 })

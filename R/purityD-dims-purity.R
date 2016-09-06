@@ -1,33 +1,33 @@
-#' @include purityPD-constructor.R
+#' @include purityD-constructor.R
 NULL
 
-#' @title Using purityPD object, predict the precursor purity of DI-MS processed peaks
+#' @title Using purityD object, assess anticipated purity from a DI-MS run
 #'
 #' @description
-#' Assess the precursor purity of anticpated MS/MS spectra. 
-#' i.e. it 'predicts' the precursor purity of the DI-MS peaks
+#' Assess the precursor purity of anticpated MS/MS spectra.
+#' i.e. it 'predicts' the precursor purity of the DI-MS peaks for a future MS/MS run.
 #'
 #' @aliases dimsPredictPurity
 #'
-#' @param Object object = purityPD object
+#' @param Object object = purityD object
 #' @inheritParams dimsPredictPuritySingle
 #
-#' @return  purityPD object with predicted purity of peaks
+#' @return  purityD object with predicted purity of peaks
 #' @examples
 #'
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityPD(fileList=inDF, cores=1, mzML=TRUE)
+#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 #' ppDIMS <- averageSpectra(ppDIMS)
 #' ppDIMS <- filterp(ppDIMS)
 #' ppDIMS <- subtract(ppDIMS)
 #' ppDIMS <- dimsPredictPurity(ppDIMS)
-#' @return purityPD object
+#' @return purityD object
 #' @seealso \code{\link{dimsPredictPuritySingle}}
 #'
 #'
 #' @export
-setMethod(f="dimsPredictPurity", signature="purityPD",
+setMethod(f="dimsPredictPurity", signature="purityD",
           definition= function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
                                iwNorm=FALSE, iwNormFun=NULL, ilim=0.05) {
             requireNamespace('foreach')

@@ -1,29 +1,29 @@
-#' @include purityPD-class.R purityPD-constructor.R
+#' @include purityD-class.R purityD-constructor.R
 NULL
 
-#' @title Using purityPD object, calculates to average mz, intensity
+#' @title Using purityD object, calculates to average mz, intensity
 #' and signal-to-noise of multiple scans from multiple MS datafiles
 #' (mzML or .csv)
 #'
 #' @description
-#' Uses a purityPD object with references to multiple MS files. For each file:
+#' Uses a purityD object with references to multiple MS files. For each file:
 #' Averages multiple scans together,
 #' see averageSpectraSingle for more information
 #'
-#' @param Object object = purityPD object
+#' @param Object object = purityD object
 #' @inheritParams averageSpectraSingle
 #
 #' @aliases averageSpectra
-#' @return  purityPD object with averaged spectra
+#' @return  purityD object with averaged spectra
 #' @examples
 #'
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityPD(fileList=inDF, cores=1, mzML=TRUE)
+#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 #' ppDIMS <- averageSpectra(ppDIMS)
 #' @seealso \code{\link{averageSpectraSingle}}
 #' @export
-setMethod(f="averageSpectra", signature="purityPD", definition =
+setMethod(f="averageSpectra", signature="purityD", definition =
                   function(Object, rtscn = "all", scanRange=NA, timeRange = NA,
                            clustType="hc", ppm=1.5, snthr = 3, av="median",
                            missingV="zero", minfrac=0.6667, normTIC=FALSE,
