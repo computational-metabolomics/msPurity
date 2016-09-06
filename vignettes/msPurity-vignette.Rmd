@@ -16,7 +16,7 @@ vignette: >
 
 The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. 
 
-What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the the time of the MS/MS aquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer
+What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer
 
 There are two main use cases for the package
 
@@ -29,7 +29,7 @@ The package has been developed to be used with DI-MS or LC-MS data and has been 
 
 ## purityA 
 
-Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function `purityA` will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropiate slot (`@puritydf`).
+Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function `purityA` will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (`@puritydf`).
 
 The isolation widths will be determined automatically from the mzML file. For some mzML files this is not recorded and in these cases the offsets can be given as a parameter.
 
@@ -190,7 +190,7 @@ ppDIMS <- purityD(inDF, mzML=TRUE)
 ```
 
 __Average spectra__:
-The default averaging will use a Heirachel clustering approach. Noise filtering is also performed here.
+The default averaging will use a Hierarchal clustering approach. Noise filtering is also performed here.
 
 ```{r}
 ppDIMS <- averageSpectra(ppDIMS, snMeth = "median", snthr = 5)
@@ -214,7 +214,7 @@ print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))
 ```
 
 
-## Calculating the ancipitated/predict purity from a known _m/z_ target list for DI-MS
+## Calculating the anticipated (predicted) purity from a known _m/z_ target list for DI-MS
 
 The data processing steps carried out through purityPD can be bypassed if the peaks (_m/z_ values) of interest are already known. The function `dimsPredictPuritySingle()` can be used to predict the purity of a list of _m/z_ values in a chosen mzML file.
 
