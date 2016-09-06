@@ -17,8 +17,7 @@ The R package can also be used to predict the precursor purity of subsequent MS/
 library(devtools)
 library(testthat)
 
-token <- '74d3aa11143449965fd7cc66b57585bc6fc03758'
-t <- try(install_github('Viant-Metabolomics/msPurity', auth_token=token))
+t <- try(install_github('Viant-Metabolomics/msPurity'))
 
 if("try-error" %in% class(t)){
   print("INSTALLATION FAILED!")
