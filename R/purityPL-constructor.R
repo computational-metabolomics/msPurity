@@ -7,10 +7,10 @@
 #' @import reshape2
 #' @import fastcluster
 
-#' @title Predict the precursor purity from an LC-MS run
+#' @title Assess precursor purity of anticipated MS2 spectra for XCMS features
 #'
 #' @description
-#' Constructor for the purityLC class.
+#' Constructor for the purityPL class.
 #'
 #' Given an XCMS object predict the purity of the grouped peaks
 #'

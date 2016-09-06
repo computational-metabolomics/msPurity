@@ -1,11 +1,11 @@
 #' @include purityPD-constructor.R
 NULL
 
-#' @title Using purityPD object, predict the precursor purity of processed peaks
+#' @title Using purityPD object, predict the precursor purity of DI-MS processed peaks
 #'
 #' @description
-#' Uses a purityPD object with references to multiple MS files. Predicts the
-#' purity of the processed sample files
+#' Assess the precursor purity of anticpated MS/MS spectra. 
+#' i.e. it 'predicts' the precursor purity of the DI-MS peaks
 #'
 #' @aliases dimsPredictPurity
 #'
