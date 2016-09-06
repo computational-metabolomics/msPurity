@@ -1,4 +1,4 @@
-iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=0.5){
+iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=+0.5){
 
   # get a gaussian curve
   x <- seq(0-sdlim, 0+sdlim, 0.05)
@@ -25,7 +25,7 @@ iwNormQE.5 <- function(){
 }
 
 
-iwNormRcosine <- function(minOff = 0.5, maxOff = 0.5){
+iwNormRcosine <- function(minOff = -0.5, maxOff = +0.5){
    s <- sapa::taper(type="raised cosine")
 
    y <- as.vector(s)

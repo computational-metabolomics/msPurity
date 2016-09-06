@@ -1,3 +1,5 @@
 language: r
 cache: packages
 r: bioc-devel
+before_install:
+  - sudo apt-get install libnetcdf-dev texlive-latex-base
