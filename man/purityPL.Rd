@@ -2,7 +2,7 @@
 % Please edit documentation in R/purityPL-constructor.R
 \name{purityPL}
 \alias{purityPL}
-\title{Predict the precursor purity from an LC-MS run}
+\title{Assess precursor purity of anticipated MS2 spectra for XCMS features}
 \usage{
 purityPL(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
   fileignore = NULL, cores = 1, xgroups = NULL, iwNorm = FALSE,
@@ -34,7 +34,7 @@ purityPL(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
 a purityPL object containing a dataframe of predicted purity scores
 }
 \description{
-Constructor for the purityLC class.
+Constructor for the purityPL class.
 
 Given an XCMS object predict the purity of the grouped peaks
 }

@@ -25,7 +25,6 @@
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
-
 #'
 #' @return a purityPL object containing a dataframe of predicted purity scores
 #' @examples
