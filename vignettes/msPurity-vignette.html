@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <li><a href="#assessing-precursor-purity-of-anticipated-isolation-windows-for-ms2-spectra"><span class="toc-section-number">3</span> Assessing precursor purity of anticipated isolation windows for MS2 spectra</a><ul>
 <li><a href="#purityx-assessing-anticipated-purity-of-xcms-features-from-an-lc-ms-run"><span class="toc-section-number">3.1</span> purityX: Assessing anticipated purity of XCMS features from an LC-MS run</a></li>
 <li><a href="#purityd-assessing-anticipated-purity-from-a-di-ms-run"><span class="toc-section-number">3.2</span> purityD: Assessing anticipated purity from a DI-MS run</a></li>
-<li><a href="#calculating-the-ancipitatedpredict-purity-from-a-known-mz-target-list-for-di-ms"><span class="toc-section-number">3.3</span> Calculating the ancipitated/predict purity from a known <em>m/z</em> target list for DI-MS</a></li>
+<li><a href="#calculating-the-anticipated-predicted-purity-from-a-known-mz-target-list-for-di-ms"><span class="toc-section-number">3.3</span> Calculating the anticipated (predicted) purity from a known <em>m/z</em> target list for DI-MS</a></li>
 </ul></li>
 <li><a href="#references">References</a></li>
 </ul>
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <div id="introduction" class="section level1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
 <p>The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”.</p>
-<p>What we call “Precursor purity” is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the the time of the MS/MS aquisition. The calculation is very similar to the “Precursor Ion Fraction” (PIF) metric described by <span class="citation">(Michalski, Cox, and Mann 2011)</span> for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer</p>
+<p>What we call “Precursor purity” is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is very similar to the “Precursor Ion Fraction” (PIF) metric described by <span class="citation">(Michalski, Cox, and Mann 2011)</span> for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer</p>
 <p>There are two main use cases for the package</p>
 <ol style="list-style-type: decimal">
 <li>Assessing precursor purity of previously acquired MS2 spectra: A user has acquired either LC-MS2 or DIMS2 spectra and an assessment is made of the precursor purity for each MS2 scan. <code>purityA</code></li>
@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <h1><span class="header-section-number">2</span> Assessing precursor purity of previously acquired MS2 spectra</h1>
 <div id="puritya" class="section level2">
 <h2><span class="header-section-number">2.1</span> purityA</h2>
-<p>Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function <code>purityA</code> will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropiate slot (<code>@puritydf</code>).</p>
+<p>Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function <code>purityA</code> will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (<code>@puritydf</code>).</p>
 <p>The isolation widths will be determined automatically from the mzML file. For some mzML files this is not recorded and in these cases the offsets can be given as a parameter.</p>
 <p>In the case of Agilent only the “narrow” isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da (this can be overwritten with the <code>offsets</code> argument)</p>
 <p>The purity dataframe (<code>pa@puritydf</code>) consists of the following columns:</p>
@@ -359,7 +359,7 @@ print(head(ppLCMS@predictions))</code></pre>
 <pre class="r"><code>datapth &lt;- system.file(&quot;extdata&quot;, &quot;dims&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;)
 inDF &lt;- Getfiles(datapth, pattern=&quot;.mzML&quot;, check = FALSE)
 ppDIMS &lt;- purityD(inDF, mzML=TRUE)</code></pre>
-<p><strong>Average spectra</strong>: The default averaging will use a Heirachel clustering approach. Noise filtering is also performed here.</p>
+<p><strong>Average spectra</strong>: The default averaging will use a Hierarchal clustering approach. Noise filtering is also performed here.</p>
 <pre class="r"><code>ppDIMS &lt;- averageSpectra(ppDIMS, snMeth = &quot;median&quot;, snthr = 5)</code></pre>
 <p><strong>Filter by RSD and Intensity</strong></p>
 <pre class="r"><code>ppDIMS &lt;- filterp(ppDIMS, thr=5000, rsd = 10)</code></pre>
@@ -384,8 +384,8 @@ print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))</code></pre>
 ## 16    0.8818313  0.8755873 0.01056807 1.206969 0.004726184             2
 ## 17    0.8123950  0.8229505 0.04384595 5.327896 0.019608505             2</code></pre>
 </div>
-<div id="calculating-the-ancipitatedpredict-purity-from-a-known-mz-target-list-for-di-ms" class="section level2">
-<h2><span class="header-section-number">3.3</span> Calculating the ancipitated/predict purity from a known <em>m/z</em> target list for DI-MS</h2>
+<div id="calculating-the-anticipated-predicted-purity-from-a-known-mz-target-list-for-di-ms" class="section level2">
+<h2><span class="header-section-number">3.3</span> Calculating the anticipated (predicted) purity from a known <em>m/z</em> target list for DI-MS</h2>
 <p>The data processing steps carried out through purityPD can be bypassed if the peaks (<em>m/z</em> values) of interest are already known. The function <code>dimsPredictPuritySingle()</code> can be used to predict the purity of a list of <em>m/z</em> values in a chosen mzML file.</p>
 <pre class="r"><code>mzpth &lt;- system.file(&quot;extdata&quot;, &quot;dims&quot;, &quot;mzML&quot;, &quot;B02_Daph_TEST_pos.mzML&quot;, package=&quot;msPurityData&quot;)
 predicted &lt;- dimsPredictPuritySingle(filepth = mzpth, mztargets = c(111.0436, 113.1069))
