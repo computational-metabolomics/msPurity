@@ -51,11 +51,6 @@ artifacts:
   - path: '\*_*.zip'
     name: Bits
 
-environment:
-  _R_CHECK_FORCE_SUGGESTS_: false
-  R_VERSION: devel
-
-
 on_failure:
   - 7z a failure.zip *.Rcheck\*
   - appveyor PushArtifact failure.zip
