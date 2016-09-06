@@ -32,7 +32,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 553.278)
   expect_equal(round(median(avP$i), 0), 4639006)
   expect_equal(round(median(avP$snr), 3), 90.165)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006, 0.015))
 
   #print("=== check multi-core ===")
   #Multi-core seems to fail on unit tests but fine outside of unit test enviroment, not sure why
@@ -45,7 +45,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 553.278)
   expect_equal(round(median(avP$i), 0), 4639006)
   expect_equal(round(median(avP$snr), 3), 90.165)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006, 0.015))
 
 
   print("=== check using MsFileReader output (median SNR thres) ===")
@@ -55,7 +55,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 164.075)
   expect_equal(round(median(avP$i), 0), 5855576)
   expect_equal(round(median(avP$snr), 3), 292.333)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 155.070, 1491491.750, 74.527, 1.756))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 155.070, 1491491.750, 74.527, 1.756, 0.127))
 
 
 
@@ -66,7 +66,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 173.081)
   expect_equal(round(median(avP$i), 0), 691679)
   expect_equal(round(median(avP$snr), 3), 51.868)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c( 1.000, 155.070, 1491491.750, 113.299, 1.756))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c( 1.000, 155.070, 1491491.750, 113.299, 1.756, 0.110))
 
 })
 
@@ -157,8 +157,17 @@ test_that("Check mzML workflow", {
   exAvTest <- readRDS(file.path(examp, "exAv-mzML.rds"))
 
   # check avPeaks
-  expect_equal(exAv@avPeaks, exAvTest@avPeaks)
-
+  ##### NOTE: #### The previous rds files were run when normTIC was not a feature.
+  ################ For the moment we just do not check the normTIC column
+  
+  expect_equal(length(exAv@avPeaks), length(exAvTest@avPeaks))
+  
+  expect_equal(exAv@avPeaks$processed$B02_Blank_TEST_pos[,1:5], 
+               exAvTest@avPeaks$processed$B02_Blank_TEST_pos[,1:5])
+  
+  expect_equal(exAv@avPeaks$processed$B02_Daph_TEST_pos[,1:5],
+               exAvTest@avPeaks$processed$B02_Daph_TEST_pos[,1:5])
+  
   ################################
   # filtering spectra.
   ################################
@@ -168,7 +177,11 @@ test_that("Check mzML workflow", {
   #saveRDS(exF, file.path(examp, "exF-mzML.rds"))
   exFTest <- readRDS(file.path(examp , "exF-mzML.rds"))
   # check avPeaks
-  expect_equal(exF@avPeaks, exFTest@avPeaks)
+  expect_equal(exF@avPeaks$processed$B02_Blank_TEST_pos[,1:5], 
+               exFTest@avPeaks$processed$B02_Blank_TEST_pos[,1:5])
+  
+  expect_equal(exF@avPeaks$processed$B02_Daph_TEST_pos[,1:5],
+               exFTest@avPeaks$processed$B02_Daph_TEST_pos[,1:5])
 
   # check peaks have been removed
   expect_gt(nrow(exAv@avPeaks$processed[[2]]), nrow(exF@avPeaks$processed[[2]]))
@@ -183,7 +196,11 @@ test_that("Check mzML workflow", {
   #saveRDS(exS, file.path(examp, "exS-mzML.rds"))
   exSTest <- readRDS(file.path(examp, "exS-mzML.rds"))
   # check avPeaks
-  expect_equal(exS@avPeaks, exSTest@avPeaks)
+  expect_equal(exS@avPeaks$processed$B02_Blank_TEST_pos[,1:5], 
+               exSTest@avPeaks$processed$B02_Blank_TEST_pos[,1:5])
+  
+  expect_equal(exS@avPeaks$processed$B02_Daph_TEST_pos[,1:5],
+               exSTest@avPeaks$processed$B02_Daph_TEST_pos[,1:5])
 
   # check peaks have been removed
   expect_gt(nrow(exF@avPeaks$processed[[2]]), nrow(exS@avPeaks$processed[[2]]))
