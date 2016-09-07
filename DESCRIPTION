@@ -1,8 +1,13 @@
 Package: msPurity
 Type: Package
 Title: Performs assessments and predictions of MSMS precursor purity
+<<<<<<< caa871493699c84fd94cd2071ad7c69df0b8146c
 Version: 0.99.2
 Date: 2016-09-06
+=======
+Version: 0.99.0
+Date: 2016-04-10
+>>>>>>> Updating to most recent git repo (from private repo)
 Author: Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn
 Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
 Description: Performs assessments and predictions of MS/MS precursor purity.
@@ -41,6 +46,7 @@ Collate:
     'purityA-constructor.R'
     'purityA-frag4feature.R'
     'purityA-validate.R'
+<<<<<<< caa871493699c84fd94cd2071ad7c69df0b8146c
     'purityD-class.R'
     'purityD-constructor.R'
     'purityD-av-spectra.R'
@@ -51,5 +57,17 @@ Collate:
     'purityD-writeOut.R'
     'purityX-class.R'
     'purityX-constructor.R'
+=======
+    'purityPD-class.R'
+    'purityPD-constructor.R'
+    'purityPD-av-spectra.R'
+    'purityPD-dims-purity.R'
+    'purityPD-fileList.R'
+    'purityPD-filterp.R'
+    'purityPD-subtract.R'
+    'purityPD-writeOut.R'
+    'purityPL-class.R'
+    'purityPL-constructor.R'
+>>>>>>> Updating to most recent git repo (from private repo)
     'spectral-complexity.R'
     'splinepurity.R'
