@@ -25,10 +25,6 @@
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
-<<<<<<< caa871493699c84fd94cd2071ad7c69df0b8146c:R/purityX-constructor.R
-=======
-
->>>>>>> Updating to most recent git repo (from private repo):R/purityPL-constructor.R
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -138,21 +134,12 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
   if(is.null(iwNormFun)){
     # Using a gaussian curve 3 SD either side
     iwNormFun <- iwNormGauss(minOff=-offsets[1], maxOff=offsets[2])
-<<<<<<< caa871493699c84fd94cd2071ad7c69df0b8146c:R/purityX-constructor.R
   }
 
   if(plotP){
     dir.create(file.path(getwd(), "purityXots"), showWarnings = FALSE)
   }
 
-=======
-  }
-
-  if(plotP){
-    dir.create(file.path(getwd(), "PurityPlots"), showWarnings = FALSE)
-  }
-
->>>>>>> Updating to most recent git repo (from private repo):R/purityPL-constructor.R
 
   # perform predictions
   purityPredictions <- plyr::dlply(grouplist,
@@ -296,11 +283,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     contamination <- tic$V1-dfp$intensity
     maxi <- max(c(max(contamination), max(dfp$intensity)))
 
-<<<<<<< caa871493699c84fd94cd2071ad7c69df0b8146c:R/purityX-constructor.R
     fpth <- file.path(getwd(),"purityXots", plotnm)
-=======
-    fpth <- file.path(getwd(),"PurityPlots", plotnm)
->>>>>>> Updating to most recent git repo (from private repo):R/purityPL-constructor.R
     png(fpth)
 
 
@@ -383,3 +366,4 @@ getTic <- function(roi_scn, target, minOff, maxOff ){
 
 stde <- function(x) sd(x)/sqrt(length(x))
 CV <- function(x) (sd(x)/mean(x))*100
+
