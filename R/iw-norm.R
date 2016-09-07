@@ -1,8 +1,4 @@
-<<<<<<< caa871493699c84fd94cd2071ad7c69df0b8146c
 iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=+0.5){
-=======
-iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=0.5){
->>>>>>> Updating to most recent git repo (from private repo)
 
   # get a gaussian curve
   x <- seq(0-sdlim, 0+sdlim, 0.05)
@@ -29,11 +25,7 @@ iwNormQE.5 <- function(){
 }
 
 
-<<<<<<< caa871493699c84fd94cd2071ad7c69df0b8146c
 iwNormRcosine <- function(minOff = -0.5, maxOff = +0.5){
-=======
-iwNormRcosine <- function(minOff = 0.5, maxOff = 0.5){
->>>>>>> Updating to most recent git repo (from private repo)
    s <- sapa::taper(type="raised cosine")
 
    y <- as.vector(s)
@@ -44,6 +36,7 @@ iwNormRcosine <- function(minOff = 0.5, maxOff = 0.5){
    f <- approxfun(x, y)
 
 }
+
 
 
 
