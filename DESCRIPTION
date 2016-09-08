@@ -1,13 +1,14 @@
 Package: msPurity
 Type: Package
-Title: Performs assessments and predictions of MSMS precursor purity
+Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics
 Version: 0.99.3
 Date: 2016-09-08
 Author: Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn
 Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
-Description: Performs assessments and predictions of MS/MS precursor purity.
-    Works for both LC-MS(/MS) and DI-MS(/MS) data. Also provides simple
-    processing steps for DI-MS data
+Description: Assess the contribution of the targeted precursor
+    in fragmentation acquired or anticipated isolation windows using a metric called “precursor purity”. 
+    Also provides simple processing steps (averaging, filtering, blank subtraction)for DI-MS data.
+    Works for both LC-MS(/MS) and DI-MS(/MS) data. 
 License: GPL (>= 2)
 LazyData: TRUE
 Depends:
