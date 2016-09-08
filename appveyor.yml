@@ -29,7 +29,6 @@ init:
         Import-Module '..\appveyor-tool.ps1'
 install:
   - curl -L "https://bioconductor.org/packages/devel/data/experiment/src/contrib/msPurityData_0.99.0.tar.gz" -o msPurityData_0.99.0.tar.gz
-  - R CMD install msPurityData_0.99.0.tar.gz
   - ps: Bootstrap 
 
 
@@ -41,6 +40,7 @@ build_script:
 
  
  - travis-tool.sh install_bioc_deps
+ - R CMD install msPurityData_0.99.0.tar.gz
 
 
 
