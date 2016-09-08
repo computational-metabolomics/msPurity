@@ -11,6 +11,10 @@
 environment:
   _R_CHECK_FORCE_SUGGESTS_: false
 
+  
+  - R_VERSION: release
+    R_ARCH: x64
+    BIOC_USE_DEVEL: false
    
 
 
@@ -31,7 +35,9 @@ build_script:
 
  - echo Current directory=%CD%
  - travis-tool.sh install_bioc_deps
- - travis-tool.sh install_bioc msPurityData mzR xcms BiocStyle
+ - curl -O https://bioconductor.org/packages/devel/data/experiment/src/contrib/msPurityData_0.99.0.tar.gz
+ - R CMD install msPurityData_0.99.0.tar.gz
+
 
 test_script:
   - travis-tool.sh run_tests
