@@ -578,7 +578,16 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
     }
   }
 
+
+
+
+  mzall <- total[ , which(names(total) %in% grep(".*mz.*", colnames(total), value=TRUE))]
+
+  mzmedian <- apply(mzall, 1, median, na.rm=TRUE)
+  total <- total[-1]
+
   total <- total[,order(colnames(total))]
+  total <- cbind(mzmedian, total)
 
   return(total)
 
