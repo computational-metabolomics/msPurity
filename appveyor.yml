@@ -41,7 +41,7 @@ build_script:
 
  
  - travis-tool.sh install_bioc_deps
- - R CMD install C:\Users\appveyor\datap\msPurityData_0.99.0.tar.gz
+ - R CMD INSTALL C:\Users\appveyor\datap\msPurityData_0.99.0.tar.gz .
 
 
 
