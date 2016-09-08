@@ -7,7 +7,8 @@
 \title{Using purityD object, assess anticipated purity from a DI-MS run}
 \usage{
 \S4method{dimsPredictPurity}{purityD}(Object, ppm = 1.5, minOffset = 0.5,
-  maxOffset = 0.5, iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05)
+  maxOffset = 0.5, iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05,
+  sampleOnly = FALSE)
 }
 \arguments{
 \item{Object}{object = purityD object}
@@ -23,6 +24,8 @@
 \item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+
+\item{sampleOnly}{boolean = if TRUE will only calculate purity for sample peaklists}
 }
 \value{
 purityD object with predicted purity of peaks

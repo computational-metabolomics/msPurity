@@ -472,3 +472,119 @@ averageCluster <- function(x, av="median", minnum=1,
   return(c("mz" = mz, "i" = i, "snr" = snr, "rsd" = rsdRes, "inorm" = inorm))
 
 }
+
+
+
+
+
+#' @title Using purityD object, group multiple peaklists by similar mz values
+#' (mzML or .csv)
+#'
+#' @description
+#' Uses a purityD object to group all the peaklists in the 'avPeaks$processing' slot
+#'
+#' @param Object object = purityD object
+#' @param ppm numeric = The ppm tolerance to group peaklists
+#' @param clustType = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
+#' @param sampleOnly = if TRUE the sample peaks will only be grouped
+#'
+#' @aliases groupPeaks
+#' @return data.frame of peaklists grouped together by mz
+#' @examples
+#'
+#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+#' ppDIMS <- averageSpectra(ppDIMS)
+#' grpedP <- groupPeaks(ppDIMS)
+#' @export
+setMethod(f="groupPeaks", signature="purityD", definition =
+            function(Object, ppm=3, sampleOnly=FALSE, clustType='hc') {
+              if (sampleOnly){
+                idx = Object@sampleIdx
+              }else{
+                idx = seq(1, nrow(Object@fileList))
+              }
+              # only show a limited number of columns otherwise the data frame gets too big
+              shrt <- sapply(Object@avPeaks$processed[idx], simplify = FALSE,USE.NAMES = TRUE, function(x){
+                x <- x[ , which(names(x) %in% c("peakID","mz",'i', 'snr', 'inorm', 'medianPurity'))]
+              })
+
+              Object@groupedPeaks <- groupPeaksEx(shrt, cores = Object@cores, clustType = clustType, ppm = ppm)
+
+              return(Object)
+
+
+})
+
+#' @title Group peaklists from a list of dataframes
+#'
+#' @description
+#' Group a list of dataframes by their m/z values
+#'
+#' @param peak_list list = A list (named) of dataframes consiting of a least the following columns ['peakID', 'mz']
+#' @param ppm numeric = The ppm tolerance to group peaklists
+#' @param clustType = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
+#' @param cores = number of cores used for calculation
+#'
+#' @aliases groupPeaksEx
+#' @return data.frame of peaklists grouped together by mz
+#' @examples
+#'
+#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+#' ppDIMS <- averageSpectra(ppDIMS)
+#' grpedP <- groupPeaks(ppDIMS)
+#' @export
+groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
+  comb <- ldply(peak_list)
+
+  if (cores>1) {
+    clust<-parallel::makeCluster(cores)
+    doSNOW::registerDoSNOW(clust)
+    parallelBool = TRUE
+  } else {
+    parallelBool = FALSE
+  }
+
+  mz <- comb$mz
+
+  # Cluster the peaks togther
+  comb$cl <- clustering(mz, clustType = clustType, cores = cores)
+
+  # Create a dataframe with each file is a column
+  sampnms <- unique(comb$.id)
+
+  total <-data.frame()
+
+  for(i in 1:length(sampnms)){
+    snmi = sampnms[i]
+
+    sub <- comb[comb$.id == snmi, ]
+
+    addnew <- sub[ , -which(names(sub) %in% c("cl",".id"))]
+
+    for(j in 1:ncol(addnew)){
+      colnames(addnew)[j] <- paste(colnames(addnew)[j], snmi, sep="_")
+
+    }
+    addnew$cl <- sub$cl
+
+    if (nrow(total)==0){
+      total <- addnew
+    }else{
+      total <- merge(x = total, y =addnew, by = "cl", all=TRUE)
+    }
+  }
+
+  total <- total[,order(colnames(total))]
+
+  return(total)
+
+
+
+}
+
+
+

@@ -30,7 +30,8 @@ purityD <- setClass(
     cores = "numeric",
     purityParam = "list",
     outFiles = "vector",
-    mzML = "logical"
+    mzML = "logical",
+    groupedPeaks = "data.frame"
   )
 )
 
