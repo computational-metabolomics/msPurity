@@ -35,6 +35,21 @@ test_script:
 after_test:
   - 7z a all-Rout.zip *.Rcheck\**\*.Rout *.Rcheck\**\*.fail
 
+
+environment:
+
+  matrix:
+
+  - R_VERSION: release
+    R_ARCH: x64
+    BIOC_USE_DEVEL: false
+
+  - R_VERSION: devel
+    R_ARCH: x64
+    BIOC_USE_DEVEL: true
+
+
+
 artifacts:
   - path: '*.Rcheck\**\*.log'
     name: Logs
