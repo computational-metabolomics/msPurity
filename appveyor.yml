@@ -35,7 +35,8 @@ build_script:
 
  - echo Current directory=%CD%
  - travis-tool.sh install_bioc_deps
- - travis-tool.sh install_bioc msPurityData msPurity
+ - travis-tool.sh install_bioc msPurityData
+ - travis-tool.sh install_bioc msPurity
 
 test_script:
   - travis-tool.sh run_tests
