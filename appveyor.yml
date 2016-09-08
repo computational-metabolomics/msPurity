@@ -35,7 +35,7 @@ build_script:
 
  - echo Current directory=%CD%
  - travis-tool.sh install_bioc_deps
- - curl https://bioconductor.org/packages/devel/data/experiment/src/contrib/msPurityData_0.99.0.tar.gz -o msPurityData_0.99.0.tar.gz
+ - cmd: curl -L https://bioconductor.org/packages/devel/data/experiment/src/contrib/msPurityData_0.99.0.tar.gz -o msPurityData_0.99.0.tar.gz
  - R CMD install msPurityData_0.99.0.tar.gz
 
 
