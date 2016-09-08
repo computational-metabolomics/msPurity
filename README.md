@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.png)](https://travis-ci.org/Viant-Metabolomics/) [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/viant-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/) (Build Tests for travis and AppVeyor) 
+[![Build Status](https://travis-ci.org/Viant-Metabolomics/mspurity.svg?branch=master) [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/viant-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/) (Build Tests for travis and AppVeyor) 
 
 
 
