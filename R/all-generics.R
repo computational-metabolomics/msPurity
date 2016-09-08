@@ -11,6 +11,14 @@ setGeneric(name="averageSpectra",
            }
 )
 
+
+setGeneric(name="groupPeaks",
+           def=function(Object,ppm=3, sampleOnly=FALSE, clustType='hc') {
+             standardGeneric("groupPeaks")
+           }
+)
+
+
 setGeneric(name="filterp",
            def=function(Object, thr = 5000, rsd=20, sampleOnly = TRUE) {
              standardGeneric("filterp")
@@ -25,7 +33,7 @@ setGeneric(name="subtract",
 
 setGeneric(name="dimsPredictPurity",
            def=function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
-                        fileignore=NULL, cores=1, xgroups=NULL, iwNorm=FALSE, iwNormFun=NULL, ilim=0) {
+                        iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=TRUE) {
              standardGeneric("dimsPredictPurity")
            }
 )
@@ -47,3 +55,5 @@ setGeneric(name="validate",
              standardGeneric("validate")
            }
 )
+
+

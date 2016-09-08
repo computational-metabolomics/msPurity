@@ -121,6 +121,28 @@ test_that("Check predict purity (function only)", {
 
 })
 
+
+
+test_that("Check groupPeaks (function only)", {
+  print("########################################################")
+  print("## Check groupPeaks (function only)               ##")
+  print("########################################################")
+  mzmlPth1 <- system.file("extdata", "dims", "mzML", "B02_Blank_TEST_pos.mzML", package="msPurityData")
+  mzmlPth2 <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
+
+  print("=== check single core ===")
+  avP1 <- averageSpectraSingle(mzmlPth1, cores=1, snthr = 40)
+  avP2 <- averageSpectraSingle(mzmlPth2, cores=1, snthr = 40)
+
+  peak_list <- list('p1'=avP1, 'p2'=avP2)
+  gpeaks <- groupPeaksEx(peak_list)
+
+  expect_equal(nrow(gpeaks), 111)
+  expect_equal(ncol(gpeaks), 13)
+})
+
+
+
 test_that("Check mzML workflow", {
   print("########################################################")
   print("## Check mzML Workflow                                ##")
@@ -210,13 +232,26 @@ test_that("Check mzML workflow", {
   ################################
   print("purity prediction")
   # with normalisation and ilim
-  exP <- dimsPredictPurity(exS, ppm=1.5, iwNorm = TRUE, ilim = 0.05)
+  exP <- dimsPredictPurity(exS, ppm=1.5, iwNorm = TRUE, ilim = 0.05, sampleOnly = TRUE)
   expect_equal(round(median(exP@avPeaks$processed$B02_Daph_TEST_pos$medianPurity), 3), 1)
   expect_equal(round(exP@avPeaks$processed$B02_Daph_TEST_pos$medianPurity[3], 3), 0.894)
 
   # Without normalisation or ilim
-  exPN <- dimsPredictPurity(exS, ppm=1.5, iwNorm = FALSE, ilim=0)
+  exPN <- dimsPredictPurity(exS, ppm=1.5, iwNorm = FALSE, ilim=0, sampleOnly=TRUE)
   expect_equal(round(median(exPN@avPeaks$processed$B02_Daph_TEST_pos$medianPurity), 3), 0.951)
+
+
+  ################################
+  # Group peaks
+  ################################
+  exPN@cores = 1
+  exG <- groupPeaks(exPN)
+  expect_equal(nrow(exG@groupedPeaks), 78)
+  expect_equal(ncol(exG@groupedPeaks), 13)
+  # check a few columns
+  expect_equal(round(median(exG@groupedPeaks$i_B02_Blank_TEST_pos, na.rm = T),1), 805515.5)
+  expect_equal(round(median(exG@groupedPeaks$inorm_B02_Blank_TEST_pos, na.rm = T),5), 0.01144)
+
 
 })
 
