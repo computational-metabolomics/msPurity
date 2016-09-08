@@ -10,8 +10,8 @@
 #----------------------------------------------------------------
 environment:
   _R_CHECK_FORCE_SUGGESTS_: false
+  USE_RTOOLS: true
 
-  
   - R_VERSION: release
     R_ARCH: x64
     BIOC_USE_DEVEL: false
@@ -24,7 +24,7 @@ environment:
 init:
   ps: |
         $ErrorActionPreference = "Stop"
-        Invoke-WebRequest http://raw.github.com/HenrikBengtsson/r-appveyor/master/scripts/appveyor-tool.ps1 -OutFile "..\appveyor-tool.ps1"
+        Invoke-WebRequest http://raw.github.com/krlmlr/r-appveyor/master/scripts/appveyor-tool.ps1 -OutFile "..\appveyor-tool.ps1"
         Import-Module '..\appveyor-tool.ps1'
 install:
   ps: Bootstrap
@@ -35,7 +35,7 @@ build_script:
 
  - echo Current directory=%CD%
  - travis-tool.sh install_bioc_deps
- - curl -O https://bioconductor.org/packages/devel/data/experiment/src/contrib/msPurityData_0.99.0.tar.gz
+ - curl https://bioconductor.org/packages/devel/data/experiment/src/contrib/msPurityData_0.99.0.tar.gz -o msPurityData_0.99.0.tar.gz
  - R CMD install msPurityData_0.99.0.tar.gz
 
 
