@@ -10,6 +10,7 @@ NULL
 #' @aliases dimsPredictPurity
 #'
 #' @param Object object = purityD object
+#' @param sampleOnly boolean = if TRUE will only calculate purity for sample peaklists
 #' @inheritParams dimsPredictPuritySingle
 #
 #' @return  purityD object with predicted purity of peaks
@@ -29,11 +30,8 @@ NULL
 #' @export
 setMethod(f="dimsPredictPurity", signature="purityD",
           definition= function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
-                               iwNorm=FALSE, iwNormFun=NULL, ilim=0.05) {
+                               iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=FALSE) {
             requireNamespace('foreach')
-
-            # Get the sample peaks to get the purity of
-            sidx <- Object@sampleIdx
 
             Object@purityParam$minOffset = minOffset
             Object@purityParam$maxOffset = minOffset
@@ -52,11 +50,17 @@ setMethod(f="dimsPredictPurity", signature="purityD",
               operator <- foreach::'%do%'
             }
 
-            samplePeaksAll <- operator(foreach::foreach(i=1:length(sidx), .packages = "mzR"),
-                                       predictPurityExp(Object, sidx[[i]]))
+            # Check if only sample peaks required
+            if (sampleOnly){
+              pidx <- Object@sampleIdx
+            }else{
+              pidx <- seq(1, nrow(Object@fileList))
+            }
+            purityPeaksAll <- operator(foreach::foreach(i=1:length(pidx), .packages = "mzR"),
+                                       predictPurityExp(Object, pidx[[i]]))
 
-            for (i in 1:length(sidx)){
-              Object@avPeaks$processed[[sidx[i]]] <- samplePeaksAll[[i]]
+            for (i in 1:length(pidx)){
+              Object@avPeaks$processed[[pidx[i]]] <- purityPeaksAll[[i]]
             }
 
             return(Object)
@@ -65,10 +69,10 @@ setMethod(f="dimsPredictPurity", signature="purityD",
 
 
 predictPurityExp <- function(Object, fidx){
-  samplePeaks <- Object@avPeaks$processed[[fidx]]
+  origPeaks <- Object@avPeaks$processed[[fidx]]
 
-  if(nrow(samplePeaks)==0){
-    return(samplePeaks)
+  if(nrow(origPeaks)==0){
+    return(origPeaks)
   }
 
   filepth <- as.character(Object@fileList$filepth[fidx])
@@ -78,7 +82,7 @@ predictPurityExp <- function(Object, fidx){
     Object@purityParam$iwNormFun <- iwNormRcosine()
   }
 
-  purity <- dimsPredictPuritySingle(mztargets = samplePeaks$mz,
+  purity <- dimsPredictPuritySingle(mztargets = origPeaks$mz,
                                     filepth = filepth,
                                     minOffset = Object@purityParam$minOffset,
                                     maxOffset = Object@purityParam$maxOffset,
@@ -88,9 +92,9 @@ predictPurityExp <- function(Object, fidx){
                                     iwNormFun=Object@purityParam$iwNormFun,
                                     ilim=Object@purityParam$ilim)
 
-  samplePeaks <- cbind(samplePeaks, purity)
+  pPeaks <- cbind(origPeaks, purity)
 
-  return(samplePeaks)
+  return(pPeaks)
 }
 
 

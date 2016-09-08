@@ -1,3 +1,10 @@
+CHANGES IN VERSION 0.99.3
+=========================
+
+* Grouping multiple peaklist into one wide dataframe
+** Peaklists can now be averaged across each class using the function groupPeaks() for the class purityD
+** A list of dataframes can also be grouped togther using the function groupPeakEx()
+
 CHANGES IN VERSION 0.99.2
 =========================
 
