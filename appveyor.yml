@@ -11,6 +11,8 @@
 environment:
   _R_CHECK_FORCE_SUGGESTS_: false
 
+  matrix:
+
   - R_VERSION: release
     R_ARCH: x64
     BIOC_USE_DEVEL: false
@@ -26,7 +28,11 @@ init:
         Invoke-WebRequest http://raw.github.com/HenrikBengtsson/r-appveyor/master/scripts/appveyor-tool.ps1 -OutFile "..\appveyor-tool.ps1"
         Import-Module '..\appveyor-tool.ps1'
 install:
+  - curl -L "https://bioconductor.org/packages/devel/data/experiment/src/contrib/msPurityData_0.99.0.tar.gz" -o msPurityData_0.99.0.tar.gz
+  - R CMD install msPurityData_0.99.0.tar.gz
   ps: Bootstrap 
+
+
 
   
 # Adapt as necessary starting from here
