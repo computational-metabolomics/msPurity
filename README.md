@@ -1,4 +1,6 @@
-(Travis)[![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.png)](https://travis-ci.org/Viant-Metabolomics/)
+|[![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.png)](https://travis-ci.org/Viant-Metabolomics/)| [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/viant-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/)|
+
+Build tests for travis and AppVeyor 
 
 
 # msPurity
@@ -47,5 +49,6 @@ if("try-error" %in% class(t)){
 
 ## Ref
 [1] Michalski, A., Cox, J., & Mann, M. (2011). More than 100,000 detectable peptide species elute in single shotgun proteomics runs but the majority is inaccessible to data-dependent LC-MS/MS. Journal of Proteome Research, 10(4), pp. 1785-1793.
+
 
 
