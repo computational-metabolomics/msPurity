@@ -6,5 +6,5 @@ os:
   - osx
 before_install:
     - if [ `uname` = "Linux" ]; then
-	sudo apt-get install libnetcdf-dev texlive-latex-base
+	sudo apt-get install libnetcdf-dev texlive-latex-base;
 
