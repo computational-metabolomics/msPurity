@@ -13,19 +13,12 @@ Use the following link for more details:
 * Bioconductor: http://bioconductor.org/packages/msPurity/
 * Vignette: https://bioconductor.org/packages/devel/bioc/vignettes/msPurity/inst/doc/msPurity-vignette.html
 * Manual: http://bioconductor.org/packages/devel/bioc/manuals/msPurity/man/msPurity.pdf
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
 
 ## Install
-
-### Bioconductor
-
-```
-## try http:// if https:// URLs are not supported
-source("https://bioconductor.org/biocLite.R")
-useDevel() # currently only available in development branch
-biocLite("msPurity")
-
-```
 
 ### Github
 
