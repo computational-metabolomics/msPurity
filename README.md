@@ -3,7 +3,6 @@
 Continuous integration tests above are for travis (OSX & Linux) and AppVeyor(Windows) 
 
 
-
 # msPurity
 
 ## About
