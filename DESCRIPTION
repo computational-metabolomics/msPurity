@@ -23,15 +23,14 @@ Imports:
     reshape2,
     fastcluster,
     ggplot2,
-    sapa,
-    msPurityData,
-    xcms
+    sapa
 Suggests:
     testthat,
     xcms,
     BiocStyle,
     knitr,
-    rmarkdown
+    rmarkdown,
+    msPurityData
 VignetteBuilder: knitr
 RoxygenNote: 5.0.1
 biocViews: MassSpectrometry, Metabolomics, Software
