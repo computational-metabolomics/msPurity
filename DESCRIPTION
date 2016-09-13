@@ -22,14 +22,14 @@ Imports:
     mzR,
     reshape2,
     fastcluster,
-    ggplot2
+    ggplot2,
+    sapa
 Suggests:
     testthat,
     xcms,
     BiocStyle,
     knitr,
     rmarkdown,
-    sapa,
     msPurityData
 VignetteBuilder: knitr
 RoxygenNote: 5.0.1
