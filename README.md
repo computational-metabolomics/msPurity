@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.svg?branch=master)](https://travis-ci.org/Viant-Metabolomics/msPurity) [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/viant-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/) (Build Tests for travis and AppVeyor) 
+[![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.svg?branch=master)](https://travis-ci.org/Viant-Metabolomics/msPurity) [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/viant-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/)
 
+Continuous integration tests above are for travis (OSX & Linux) and AppVeyor(Windows) 
 
 
 
@@ -10,20 +11,12 @@ The importance of assessing the contribution of the precursor peak within an iso
 
 Use the following link for more details:
 
-http://bioconductor.org/packages/msPurity/
-https://bioconductor.org/packages/devel/bioc/vignettes/msPurity/inst/doc/msPurity-vignette.html
+* Bioconductor: http://bioconductor.org/packages/msPurity/
+* Vignette: https://bioconductor.org/packages/devel/bioc/vignettes/msPurity/inst/doc/msPurity-vignette.html
+* Manual: http://bioconductor.org/packages/devel/bioc/manuals/msPurity/man/msPurity.pdf
+
 
 ## Install
-
-### Bioconductor
-
-```
-## try http:// if https:// URLs are not supported
-source("https://bioconductor.org/biocLite.R")
-useDevel() # currently only available in development branch
-biocLite("msPurity")
-
-```
 
 ### Github
 
@@ -43,6 +36,18 @@ if("try-error" %in% class(t)){
   tp <- test_package('msPurity')
   print(tp)
 }
+```
+
+### Bioconductor
+
+```
+## try http:// if https:// URLs are not supported
+source("https://bioconductor.org/biocLite.R")
+# NOTE: Currently only available in development branch (it is advised to have seperate install of
+#       R when using the development branch, see https://www.bioconductor.org/developers/how-to/useDevel/)
+useDevel() 
+biocLite("msPurity")
+
 ```
 
 
