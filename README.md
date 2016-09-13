@@ -1,8 +1,6 @@
 [![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.svg?branch=master)](https://travis-ci.org/Viant-Metabolomics/msPurity) [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/viant-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/)
 
-Build Tests for travis (OSX & Linux) and AppVeyor(Windows) 
-
-
+Continuous integration tests above are for travis (OSX & Linux) and AppVeyor(Windows) 
 
 
 # msPurity
