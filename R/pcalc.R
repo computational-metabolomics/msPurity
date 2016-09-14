@@ -59,7 +59,9 @@ pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
   }
 
   # if nothing was matched then the purity will be zero
-  if(is.na(mtchi)){
+  if(identical(mtchi, numeric(0))){
+    return(c(NA, NA))
+  }else if(is.na(mtchi)){
     return(c(NA, NA))
   }else if (mtchi == 0){
     return(c(0, NA))
