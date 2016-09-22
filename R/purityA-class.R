@@ -16,7 +16,8 @@ setClass(
     cores = "numeric",
     puritydf = "data.frame",
     grped_df = "data.frame",
-    grped_ms2 = "list"
+    grped_ms2 = "list",
+    mzRback = "character"
   )
 )
 

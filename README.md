@@ -17,15 +17,6 @@ Use the following link for more details:
 
 ## Install
 
-### Bioconductor
-
-```
-## try http:// if https:// URLs are not supported
-source("https://bioconductor.org/biocLite.R")
-useDevel() # currently only available in development branch
-biocLite("msPurity")
-
-```
 
 ### Github
 

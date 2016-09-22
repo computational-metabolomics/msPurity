@@ -25,6 +25,7 @@
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
+#' @param mzRback character = backend to use for mzR parsing
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -38,7 +39,7 @@
 #' @export
 purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                      fileignore=NULL, cores=1, xgroups=NULL,
-                     iwNorm=FALSE, iwNormFun=NULL, ilim=0, plotP=FALSE){
+                     iwNorm=FALSE, iwNormFun=NULL, ilim=0, plotP=FALSE, mzRback='pwiz'){
 
   # Create a purityX object
   ppLCMS <- new("purityX")
@@ -118,7 +119,7 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
   grouplist <- grouplist[order(grouplist$grpid),]
 
   # get all the peaks from scans
-  scanpeaks <- getscans(filepths)
+  scanpeaks <- getscans(filepths, mzRback)
 
   # Check if it is going to be multi-core
   if(cores<=1){

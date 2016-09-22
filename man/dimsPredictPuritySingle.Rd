@@ -6,7 +6,7 @@
 \usage{
 dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
   maxOffset = 0.5, ppm = 2.5, mzML = TRUE, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0.05)
+  iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz")
 }
 \arguments{
 \item{mztargets}{vector = mz targets to get predicted purity for}
@@ -26,6 +26,8 @@ dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
 \item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+
+\item{mzRback}{character = backend to use for mzR parsing}
 }
 \value{
 a dataframe of the target mz values and the predicted purity score

@@ -29,6 +29,7 @@ NULL
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param mzRback character = backend to use for mzR parsing
 #'
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
@@ -47,7 +48,8 @@ purityA <- function(fileList,
                     interpol="linear",
                     iwNorm=FALSE,
                     iwNormFun=NULL,
-                    ilim=0.05){
+                    ilim=0.05,
+                    mzRback='pwiz'){
 
   if((length(fileList)>=1) && (fileList == "" )){
     message("no file list")
@@ -55,8 +57,8 @@ purityA <- function(fileList,
   }
 
   requireNamespace('foreach')
-  pa <- new("purityA", fileList = fileList , cores = cores)
-
+  pa <- new("purityA", fileList = fileList , cores = cores, mzRback=mzRback)
+  
   # Check cores and choose if parallel or not (do or dopar)
   if(pa@cores<=1){
     operator <- foreach::'%do%'
@@ -83,7 +85,8 @@ purityA <- function(fileList,
                                   interpol = interpol,
                                   iwNorm = iwNorm,
                                   iwNormFun = iwNormFun,
-                                  ilim = ilim
+                                  ilim = ilim,
+                                  mzRback = mzRback
                                   ))
 
   if(pa@cores>1){
@@ -126,6 +129,7 @@ purityA <- function(fileList,
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param mzRback character = backend to use for mzR parsing
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
 #' @examples
@@ -145,12 +149,13 @@ assessPuritySingle <- function(filepth,
                                interpol="linear",
                                iwNorm=FALSE,
                                iwNormFun=NULL,
-                               ilim=0){
+                               ilim=0,
+                               mzRback='pwiz'){
   #=================================
   # Load in files and initial setup
   #=================================
   # Get the mzR dataframes
-  mrdf <- getmrdf(filepth)
+  mrdf <- getmrdf(filepth, mzRback)
   if(is.null(mrdf)){
     message(paste("No MS/MS spectra for file: ", filepth))
     return(NULL)
@@ -168,7 +173,7 @@ assessPuritySingle <- function(filepth,
   mrdf$filename <- basename(filepth)
 
   # get scans (list of mz and i) from mzR
-  scans <- getscans(filepth)
+  scans <- getscans(filepth, mzRback)
 
   # Get offsets from mzML unless defined by user
   if(is.na(offsets)){
@@ -551,14 +556,14 @@ get_isolation_offsets <- function(inputfile){
 
 
 # Get the Data
-getmrdf <- function(files){
+getmrdf <- function(files, backend='pwiz'){
   #requireNamespace('mzR') # problem with cpp libraries
   # need to be loaded here for parallel
   mrdf <- NULL
 
   for(i in 1:length(files)){
     #message(paste("processing file:" ,i))
-    mr <- mzR::openMSfile(files[i])
+    mr <- mzR::openMSfile(files[i], backend=backend)
     mrdfn <- mzR::header(mr)
     if(length(unique(mrdfn$msLevel))<2){
       #message("only MS1 data")
@@ -605,15 +610,15 @@ missing_prec_scan <- function(mrdfn){
   return(mrdfn)
 }
 
-getscans <- function(files){
+getscans <- function(files, backend='pwiz'){
   if(length(files)==1){
-    mr <- mzR::openMSfile(files)
+    mr <- mzR::openMSfile(files, backend=backend)
     scan_peaks <- mzR::peaks(mr)
     return(scan_peaks)
   }else{
 
     scan_peaks <- plyr::alply(files, 1 ,function(x){
-      mr <- mzR::openMSfile(x)
+      mr <- mzR::openMSfile(x, backend=backend)
       scan_peaks <- mzR::peaks(mr)
       return(scan_peaks)
     })

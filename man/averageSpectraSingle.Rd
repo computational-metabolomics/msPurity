@@ -8,7 +8,8 @@
 averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
   timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3, cores = 1,
   av = "median", missingV = "ignore", minfrac = 0.6667,
-  snMeth = "median", MSFileReader = FALSE, normTIC = FALSE)
+  snMeth = "median", MSFileReader = FALSE, normTIC = FALSE,
+  mzRback = "pwiz")
 }
 \arguments{
 \item{filePth}{character = Path of the file to be processed}
@@ -39,6 +40,8 @@ averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
 the following columns c('mz', 'i', 'scanid', 'snr')}
 
 \item{normTIC}{boolean = If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
+
+\item{mzRback}{character = backend to use for mzR parsing}
 }
 \value{
 dataframe of the median mz, intensity, signal-to-noise ratio.
