@@ -558,7 +558,7 @@ getmrdf <- function(files){
 
   for(i in 1:length(files)){
     #message(paste("processing file:" ,i))
-    mr <- mzR::openMSfile(files[i])
+    mr <- mzR::openMSfile(files[i], backend="pwiz")
     mrdfn <- mzR::header(mr)
     if(length(unique(mrdfn$msLevel))<2){
       #message("only MS1 data")
@@ -607,13 +607,13 @@ missing_prec_scan <- function(mrdfn){
 
 getscans <- function(files){
   if(length(files)==1){
-    mr <- mzR::openMSfile(files)
+    mr <- mzR::openMSfile(files, backend="pwiz")
     scan_peaks <- mzR::peaks(mr)
     return(scan_peaks)
   }else{
 
     scan_peaks <- plyr::alply(files, 1 ,function(x){
-      mr <- mzR::openMSfile(x)
+      mr <- mzR::openMSfile(x, backend="pwiz")
       scan_peaks <- mzR::peaks(mr)
       return(scan_peaks)
     })

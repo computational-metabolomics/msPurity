@@ -230,7 +230,7 @@ mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth){
   # Read in mzml file from mzR
 
   #print("reading in mzML")
-  mr <- mzR::openMSfile(mzmlPth)
+  mr <- mzR::openMSfile(mzmlPth, backend="pwiz")
 
   # Get the peaks
   scanPeaks <- mzR::peaks(mr)

@@ -138,7 +138,7 @@ dimsPredictPuritySingle <- function(mztargets,
   if(mzML==TRUE){
     # mzML files opened with mzR
     loadNamespace('mzR')
-    mr <- mzR::openMSfile(filepth)
+    mr <- mzR::openMSfile(filepth, backend="pwiz")
     scanPeaks <- mzR::peaks(mr)
     h <- mzR::header(mr)
 
