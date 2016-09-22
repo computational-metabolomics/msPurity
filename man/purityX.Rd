@@ -6,7 +6,7 @@
 \usage{
 purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
   fileignore = NULL, cores = 1, xgroups = NULL, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0, plotP = FALSE)
+  iwNormFun = NULL, ilim = 0, plotP = FALSE, mzRback = "pwiz")
 }
 \arguments{
 \item{xset}{object = xcms object}
@@ -29,6 +29,8 @@ purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
 \item{plotP}{boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory}
+
+\item{mzRback}{character = backend to use for mzR parsing}
 }
 \value{
 a purityX object containing a dataframe of predicted purity scores

@@ -91,7 +91,7 @@ setMethod(f="frag4feature", signature="purityA",
 
   # add to the slots
   pa@grped_df <- grpm
-  pa@grped_ms2 <- getMS2scans(grpm, pa@fileList)
+  pa@grped_ms2 <- getMS2scans(grpm, pa@fileList, mzRback = pa@mzRback)
 
   return(pa)
 
@@ -139,10 +139,10 @@ fsub2  <- function(pro, allpeaks, intense, ppm){
 
 check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
 
-getMS2scans  <- function(grpm, filepths){
+getMS2scans  <- function(grpm, filepths, mzRback){
   # Get all MS2 scans
 
-  scans <- getscans(filepths)
+  scans <- getscans(filepths, mzRback)
 
   grpm$fid <- seq(1, nrow(grpm))
 

@@ -76,7 +76,8 @@ setMethod(f="averageSpectra", signature="purityD", definition =
                                                       snMeth = snMeth,
                                                       cores = cores4cl,
                                                       MSFileReader = msfrOpt,
-                                                      normTIC = normTIC) )
+                                                      normTIC = normTIC,
+                                                      mzRback=Object@mzRback) )
 
   if(Object@cores>1){
     parallel::stopCluster(cl)
@@ -134,6 +135,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
 #' @param snMeth character = Type of snMethod to use
 #' @param normTIC boolean = If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
+#' @param mzRback character = backend to use for mzR parsing
 #' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
@@ -152,7 +154,8 @@ averageSpectraSingle <- function(filePth,
                                  minfrac=0.6667,
                                  snMeth = "median",
                                  MSFileReader=FALSE,
-                                 normTIC = FALSE){
+                                 normTIC = FALSE,
+                                 mzRback='pwiz'){
 
   # Get the peaks from each scan
   # (filtering out any above the signal to noise thres)
@@ -161,7 +164,8 @@ averageSpectraSingle <- function(filePth,
     peaklist <- msfrProcess(filePth, scanRange, snthr, snMeth)
   }else{
     # mzML file to be read in by mzR
-    peaklist <- mzMLProcess(filePth, rtscn, scanRange, timeRange, snthr, snMeth)
+    peaklist <- mzMLProcess(filePth, rtscn, scanRange,
+                            timeRange, snthr, snMeth, mzRback)
   }
 
   # get normalised TIC intensity
@@ -226,11 +230,11 @@ averageSpectraSingle <- function(filePth,
 
 }
 
-mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth){
+mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth, backend){
   # Read in mzml file from mzR
 
   #print("reading in mzML")
-  mr <- mzR::openMSfile(mzmlPth, backend="pwiz")
+  mr <- mzR::openMSfile(mzmlPth, backend=backend)
 
   # Get the peaks
   scanPeaks <- mzR::peaks(mr)

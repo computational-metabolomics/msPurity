@@ -6,7 +6,7 @@
 \usage{
 purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
   offsets = NA, plotP = FALSE, plotdir = NULL, interpol = "linear",
-  iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05)
+  iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz")
 }
 \arguments{
 \item{fileList}{vector = mzML file paths for MS/MS spectra}
@@ -30,6 +30,8 @@ purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
 \item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+
+\item{mzRback}{character = backend to use for mzR parsing}
 }
 \value{
 a dataframe of the purity score of the ms/ms spectra

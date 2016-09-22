@@ -13,13 +13,14 @@ NULL
 #' @param fileList data.frame = created using GetFiles, data.frame with filepaths and sample class information
 #' @param cores numeric = Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
 #' @param mzML boolean = TRUE if mzML to be used FALSE if .csv file to be used
+#' @param mzRback character = backend to use for mzR parsing
 #' @return purityD object
 #' @examples
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 #' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 #' @export purityD
-setMethod("initialize", "purityD", function(.Object, fileList, cores=1, mzML=TRUE){
+setMethod("initialize", "purityD", function(.Object, fileList, cores=1, mzML=TRUE, mzRback='pwiz'){
 
   .Object@fileList <- fileList
 
@@ -31,6 +32,7 @@ setMethod("initialize", "purityD", function(.Object, fileList, cores=1, mzML=TRU
   .Object@sampleIdx <- as.numeric(rownames(fileList[fileList$sampleType=="sample",]))
   .Object@cores <- cores
   .Object@mzML <- mzML
+  .Object@mzRback <- 'pwiz'
 
   return(.Object)
 })

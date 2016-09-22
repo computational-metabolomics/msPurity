@@ -90,7 +90,8 @@ predictPurityExp <- function(Object, fidx){
                                     mzML = Object@mzML,
                                     iwNorm=Object@purityParam$iwNorm,
                                     iwNormFun=Object@purityParam$iwNormFun,
-                                    ilim=Object@purityParam$ilim)
+                                    ilim=Object@purityParam$ilim,
+                                    mzRback=Object@purityParam$mzRback)
 
   pPeaks <- cbind(origPeaks, purity)
 
@@ -119,6 +120,7 @@ predictPurityExp <- function(Object, fidx){
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param mzRback character = backend to use for mzR parsing
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
 #' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
@@ -132,13 +134,14 @@ dimsPredictPuritySingle <- function(mztargets,
                                     mzML=TRUE,
                                     iwNorm=FALSE,
                                     iwNormFun=NULL,
-                                    ilim=0.05){
+                                    ilim=0.05,
+                                    mzRback='pwiz'){
 
   # open the file and get the scans
   if(mzML==TRUE){
     # mzML files opened with mzR
     loadNamespace('mzR')
-    mr <- mzR::openMSfile(filepth, backend="pwiz")
+    mr <- mzR::openMSfile(filepth, backend=mzRback)
     scanPeaks <- mzR::peaks(mr)
     h <- mzR::header(mr)
 

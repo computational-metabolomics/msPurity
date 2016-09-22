@@ -5,7 +5,8 @@
 \alias{initialize,purityD-method}
 \title{Constructor for S4 class to represent a DI-MS purityD}
 \usage{
-\S4method{initialize}{purityD}(.Object, fileList, cores = 1, mzML = TRUE)
+\S4method{initialize}{purityD}(.Object, fileList, cores = 1, mzML = TRUE,
+  mzRback = "pwiz")
 }
 \arguments{
 \item{.Object}{object = purityD object}
@@ -15,6 +16,8 @@
 \item{cores}{numeric = Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1}
 
 \item{mzML}{boolean = TRUE if mzML to be used FALSE if .csv file to be used}
+
+\item{mzRback}{character = backend to use for mzR parsing}
 }
 \value{
 purityD object

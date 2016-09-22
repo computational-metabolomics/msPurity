@@ -6,7 +6,7 @@ setGeneric(name="averageSpectra",
            def=function(Object,rtscn = "all", scanRange=NA, timeRange = NA,
                         clustType="hc", ppm=1.5, snthr = 3, av="median",
                         missingV="zero", minfrac=0.6667,
-                        normTIC=FALSE, snMeth="median") {
+                        normTIC=FALSE, snMeth="median", mzRback="pwiz") {
              standardGeneric("averageSpectra")
            }
 )

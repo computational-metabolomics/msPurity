@@ -7,7 +7,7 @@
 assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
   nearest = TRUE, offsets = NA, cores = 1, plotP = FALSE,
   plotdir = NULL, interpol = "linear", iwNorm = FALSE, iwNormFun = NULL,
-  ilim = 0)
+  ilim = 0, mzRback = "pwiz")
 }
 \arguments{
 \item{filepth}{character = mzML file path for MS/MS spectra}
@@ -33,6 +33,8 @@ assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
 \item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+
+\item{mzRback}{character = backend to use for mzR parsing}
 }
 \value{
 a dataframe of the purity score of the ms/ms spectra
