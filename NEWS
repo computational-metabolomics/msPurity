@@ -1,4 +1,9 @@
-CHANGES IN VERSION 0.99.4/5/6
+CHANGES IN VERSION 0.99.8
+=========================
+* User option to change the mzR backend library
+
+
+CHANGES IN VERSION 0.99.4/5/6/7
 =========================
 
 * Troubleshooting mac build failure
