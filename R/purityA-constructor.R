@@ -176,14 +176,11 @@ assessPuritySingle <- function(filepth,
   scans <- getscans(filepth, mzRback)
 
   # Get offsets from mzML unless defined by user
-  if(is.na(offsets)){
+  if(anyNA(offsets)){
     offsets <- get_isolation_offsets(filepth)
-  }else{
-    offsets <- offsets
   }
-
-  minoff = offsets[1]
-  maxoff = offsets[2]
+  minoff <- offsets[1]
+  maxoff <- offsets[2]
 
   # Get a shortened mzR dataframe
   mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","precursorIntensity",
@@ -534,7 +531,7 @@ get_isolation_offsets <- function(inputfile){
   while (TRUE) {
     oneLine <- readLines(con, n = 1)
     low <- as.numeric(stringr::str_match(oneLine, '^.*name=\"isolation window lower offset\" value=\"([0-9]+\\.[0-9]+).*$')[,2])
-    high <- as.numeric(stringr::str_match(oneLine, '^.*name=\"isolation window lower offset\" value=\"([0-9]+\\.[0-9]+).*$')[,2])
+    high <- as.numeric(stringr::str_match(oneLine, '^.*name=\"isolation window upper offset\" value=\"([0-9]+\\.[0-9]+).*$')[,2])
 
     if (grepl('<cvParam cvRef="MS" accession="MS:1000490" name="Agilent instrument model" value=""/>', oneLine)){
       message("Agilent do not have isolation offset in mzML")
