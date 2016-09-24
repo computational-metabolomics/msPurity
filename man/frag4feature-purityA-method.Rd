@@ -7,7 +7,7 @@
 \title{Assign precursor purity scored fragmentation spectra to XCMS features}
 \usage{
 \S4method{frag4feature}{purityA}(pa, xset, ppm = 5, plim = 0,
-  intense = TRUE)
+  intense = TRUE, convert2RawRT = TRUE)
 }
 \arguments{
 \item{pa}{= purityA object}
@@ -18,7 +18,9 @@
 
 \item{plim}{numeric = min purity of precursor to be included}
 
-\item{intense}{boolean = If the most intense precursor or the centered precursor is ued}
+\item{intense}{boolean = If the most intense precursor or the centered precursor is used}
+
+\item{convert2RawRT}{boolean = If retention time correction has been used in XCMS set this to TRUE}
 }
 \value{
 a dataframe of the purity score of the ms/ms spectra

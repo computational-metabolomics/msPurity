@@ -7,7 +7,7 @@
 #' @aliases validate
 #'
 #' @param pa = purityA object
-#' @param ppLCMS = purityPL object
+#' @param ppLCMS = purityX object
 #' @return purityA object
 #' @export
 setMethod(f="validate", signature="purityA",  definition= function(pa, ppLCMS){
