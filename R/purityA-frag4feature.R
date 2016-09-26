@@ -13,7 +13,8 @@
 #' @param xset xcms object = XCMS object derived from the same files as the puritydf
 #' @param ppm numeric = ppm tolerance between precursor mz and feature mz
 #' @param plim numeric = min purity of precursor to be included
-#' @param intense boolean = If the most intense precursor or the centered precursor is ued
+#' @param intense boolean = If the most intense precursor or the centered precursor is used
+#' @param convert2RawRT boolean = If retention time correction has been used in XCMS set this to TRUE
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
 #' @examples
@@ -29,7 +30,7 @@
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, ppm = 5, plim = 0, intense=TRUE){
+          definition = function(pa, xset, ppm = 5, plim = 0, intense=TRUE, convert2RawRT=TRUE){
 
   # Makes sure the same files are being used
   for(i in 1:length(pa@fileList)){
@@ -45,6 +46,14 @@ setMethod(f="frag4feature", signature="purityA",
   allpeaks <- data.frame(xset@peaks)
   allpeaks$id <- seq(1, nrow(allpeaks))
   allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=xset)
+
+  if(convert2RawRT){
+    allpeaks$rtminCorrected <- allpeaks$rtmin
+    allpeaks$rtmaxCorrected <- allpeaks$rtmax
+    allpeaks <- ddply(allpeaks, ~ sample, convert2Raw, xset=xset)
+
+  }
+
 
   # Check if is going to be multi-core
   if(pa@cores>1){
@@ -184,5 +193,14 @@ getname <- function(x, xset){
 
 grpByXCMS <- function(x, matched){
   matched[matched$id %in% x,]
+}
+
+convert2Raw <- function(x, xset){
+  sid <- unique(x$sample)
+  # for each file get list of peaks
+  x$rtmin <- xset@rt$raw[[sid]][match(x$rtmin, xset@rt$corrected[[sid]])]
+  x$rtmax <- xset@rt$raw[[sid]][match(x$rtmax, xset@rt$corrected[[sid]])]
+  return(x)
+
 }
 

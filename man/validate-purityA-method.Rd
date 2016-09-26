@@ -11,7 +11,7 @@
 \arguments{
 \item{pa}{= purityA object}
 
-\item{ppLCMS}{= purityPL object}
+\item{ppLCMS}{= purityX object}
 }
 \value{
 purityA object
