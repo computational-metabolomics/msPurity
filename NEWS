@@ -2,6 +2,7 @@ CHANGES IN VERSION 0.99.9
 =========================
 * Offset bug fixed (previous only using extracting lower offset from mzML file)
 * Updated handling of RT corrected xcmsSet objects for frag4feature function
+* Additional column added for tracking ms/ms spectra
 
 
 CHANGES IN VERSION 0.99.8
