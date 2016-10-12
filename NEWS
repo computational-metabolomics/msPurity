@@ -1,3 +1,7 @@
+CHANGES IN VERSION 0.99.10
+=========================
+* Troubleshooting windows build failure 
+
 CHANGES IN VERSION 0.99.9
 =========================
 * Offset bug fixed (previous only using extracting lower offset from mzML file)
