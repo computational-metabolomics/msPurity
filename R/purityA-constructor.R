@@ -58,12 +58,12 @@ purityA <- function(fileList,
 
   requireNamespace('foreach')
   pa <- new("purityA", fileList = fileList , cores = cores, mzRback=mzRback)
-  
+
   # Check cores and choose if parallel or not (do or dopar)
   if(pa@cores<=1){
     operator <- foreach::'%do%'
   } else{
-    cl1 <- parallel::makeCluster(pa@cores)
+    cl1 <- parallel::makeCluster(pa@cores, type="SOCK")
     doSNOW::registerDoSNOW(cl1)
     operator <- foreach::'%dopar%'
   }
@@ -99,9 +99,9 @@ purityA <- function(fileList,
 
   if(nrow(puritydf)>0){
     colnames(puritydf)[1] <- "fileid"
+    pid <- seq(1, nrow(puritydf))
+    puritydf <- cbind(pid, puritydf)
   }
-  pid <- seq(1, nrow(puritydf))
-  puritydf <- cbind(pid, puritydf)
 
   pa@puritydf <- puritydf
   pa@cores = cores
@@ -529,30 +529,30 @@ get_isolation_offsets <- function(inputfile){
   con  <- file(inputfile, open = "r")
   lowFound = FALSE
   highFound = FALSE
-  
+
   while (TRUE) {
     oneLine <- readLines(con, n = 1)
-    
+
     if (!lowFound){
       low <- as.numeric(stringr::str_match(oneLine, '^.*name=\"isolation window lower offset\" value=\"([0-9]+\\.[0-9]+).*$')[,2])
-      if(!is.na(low)){lowFound=TRUE}  
+      if(!is.na(low)){lowFound=TRUE}
     }
-    
+
     if (!highFound){
       high <- as.numeric(stringr::str_match(oneLine, '^.*name=\"isolation window upper offset\" value=\"([0-9]+\\.[0-9]+).*$')[,2])
-      if(!is.na(high)){highFound=TRUE}  
+      if(!is.na(high)){highFound=TRUE}
     }
-    
+
     if (grepl('<cvParam cvRef="MS" accession="MS:1000490" name="Agilent instrument model" value=""/>', oneLine)){
       message("Agilent do not have isolation offset in mzML, default given as +- 0.65 (this is an approximate for the 'narrow' window type)")
       return(c(0.65, 0.65))
     }
-    
+
     if(lowFound & highFound){
       break
     }
   }
-  
+
   close(con)
   return(c(low, high))
 

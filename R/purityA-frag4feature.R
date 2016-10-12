@@ -86,7 +86,7 @@ setMethod(f="frag4feature", signature="purityA",
   colnames(grpedp)[1] <- "grpid"
 
   # Add some extra info for filtering purposes
-  shrt <- puritydf[,c('fileid', 'seqNum', 'inPurity')]
+  shrt <- puritydf[,c('fileid', 'seqNum', 'inPurity','pid')]
   grpm <- merge(grpedp, shrt, by = c("seqNum", "fileid"))
 
   # remove the first two (columns duplicates)
