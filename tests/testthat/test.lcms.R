@@ -4,10 +4,10 @@ test_that("checking lcms based functions", {
   print("########################################################")
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  xset <- xcms::xcmsSet(msmsPths)
-  xset <- xcms::group(xset)
-  xset <- xcms::retcor(xset)
-  xset <- xcms::group(xset)
+  library(xcms)
+
+  xset <- xcmsSet(msmsPths)
+  xset <- group(xset)
 
   pa  <- purityA(msmsPths, interpol = "linear")
   pa <- frag4feature(pa, xset)
@@ -28,10 +28,8 @@ test_that("checking lcms based functions", {
 
 
   msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
-  xset2 <- xcms::xcmsSet(msPths)
-  xset2 <- xcms::group(xset2)
-  xset2 <- xcms::retcor(xset2)
-  xset2 <- xcms::group(xset2)
+  xset2 <- xcmsSet(msPths)
+  xset2 <- group(xset2)
   ppLCMS <- purityX(xset2, cores = 1, xgroups = c(1, 2))
 
   expect_equal(round(median(ppLCMS@predictions$grpid),3), 1.5)
