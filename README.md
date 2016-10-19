@@ -17,6 +17,14 @@ Use the following link for more details:
 
 ## Install
 
+### Bioconductor
+
+```
+## try http:// if https:// URLs are not supported
+source("https://bioconductor.org/biocLite.R")
+biocLite("msPurity")
+
+```
 
 ### Github
 
@@ -38,17 +46,6 @@ if("try-error" %in% class(t)){
 }
 ```
 
-### Bioconductor
-
-```
-## try http:// if https:// URLs are not supported
-source("https://bioconductor.org/biocLite.R")
-# NOTE: Currently only available in development branch (it is advised to have seperate install of
-#       R when using the development branch, see https://www.bioconductor.org/developers/how-to/useDevel/)
-useDevel() 
-biocLite("msPurity")
-
-```
 
 
 
