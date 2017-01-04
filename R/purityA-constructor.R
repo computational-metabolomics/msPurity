@@ -30,7 +30,7 @@ NULL
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param isotopes boolean = TRUE if isotopes are to be removed
-#' @param im matrix = Isotope matrix, default removes C12, C13 isotopes (single, double and triple bonds)
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param mzRback character = backend to use for mzR parsing
 #'
 #' @return a dataframe of the purity score of the ms/ms spectra
@@ -52,7 +52,7 @@ purityA <- function(fileList,
                     iwNormFun=NULL,
                     ilim=0.05,
                     mzRback='pwiz',
-                    isotopes=FALSE,
+                    isotopes=TRUE,
                     im=NULL){
 
   if((length(fileList)>=1) && (fileList == "" )){
@@ -133,6 +133,8 @@ purityA <- function(fileList,
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param mzRback character = backend to use for mzR parsing
+#' @param isotopes boolean = TRUE if isotopes are to be removed
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
 #' @examples
@@ -154,7 +156,7 @@ assessPuritySingle <- function(filepth,
                                iwNormFun=NULL,
                                ilim=0,
                                mzRback='pwiz',
-                               isotopes=FALSE,
+                               isotopes=TRUE,
                                im=NULL){
   #=================================
   # Load in files and initial setup

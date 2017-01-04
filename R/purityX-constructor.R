@@ -26,6 +26,8 @@
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
 #' @param mzRback character = backend to use for mzR parsing
+#' @param isotopes boolean = TRUE if isotopes are to be removed
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples

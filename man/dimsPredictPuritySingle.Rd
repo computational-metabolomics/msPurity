@@ -6,7 +6,8 @@
 \usage{
 dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
   maxOffset = 0.5, ppm = 2.5, mzML = TRUE, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz")
+  iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz", isotopes = TRUE,
+  im = NULL)
 }
 \arguments{
 \item{mztargets}{vector = mz targets to get predicted purity for}
@@ -28,6 +29,10 @@ dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
 \item{mzRback}{character = backend to use for mzR parsing}
+
+\item{isotopes}{boolean = TRUE if isotopes are to be removed}
+
+\item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 }
 \value{
 a dataframe of the target mz values and the predicted purity score

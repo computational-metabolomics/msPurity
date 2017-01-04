@@ -1,15 +1,40 @@
-################################
-# pcalc: The purity calculation
-################################
-# This is the main purity calculation that is performed in purityPL,
-# purityPD and purityA.
-#  - Takes in a matrix of peaks
-#  - gets isolation window based on mzmin mzmax
-#  - normalises (if required)
-#  - locates the mz target in the peak matrix
-#  - removes any peaks below limit (percentage of target peak intensity)
-#  - Divides the target peak intensity by the total peak intensity for
-#      the isolation window
+#' @title Perform purity calculation on a peak matrix
+#'
+#' @description
+#' This is the main purity calculation that is performed in purityX,
+#' purityD and purityA.
+#' \itemize{
+#'  \item{Takes in a matrix of peaks}
+#'  \item{gets isolation window based on mzmin mzmax}
+#'  \item{locates the mz target in the peak matrix}
+#'  \item{removes isotopic peaks}
+#'  \item{removes any peaks below limit (percentage of target peak intensity)}
+#'  \item{normalises}
+#'  \item{Calculates purity: Divides the target peak intensity by the total peak intensity for
+#'     the isolation window}
+#' }
+#'
+#' @param peaks matrix = matrix of peaks consisting of 2 columns: mz and i
+#' @param mzmin numeric = isolation window (min)
+#' @param mzmax numeric = isolation window (max)
+#' @param mztarget numeric = the mz window to target in the isolation window
+#' @param ppm numeric = ppm tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used
+#' @param targetMinMZ numeric = range to look for the mztarget (min)
+#' @param targetMaxMZ numeric = range to look for the mztarget (max)
+#' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param isotopes boolean = TRUE if isotopes are to be removed
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#'
+#' @return a vector of the purity score and the number of peaks in the window e.g c(purity, pknm)
+#'
+#' @examples
+#' pm <- rbind(c(100, 1000),c(101.003, 10))
+#' pcalc(pm, mzmin = 98, mzmax = 102, mztarget=100, ppm=5)
+#' pcalc(pm, mzmin = 98, mzmax = 102, mztarget=100, ppm=5, isotopes = TRUE)
+#'
+#' @export
 pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
                   iwNormFun=NULL, ilim=0, targetMinMZ=NA, targetMaxMZ=NA,
                   isotopes=FALSE, im=NULL){
@@ -154,7 +179,7 @@ cleanUp <- function(mtch, mztarget){
 }
 
 
-removeIsotopes <- function(peaks, im, target_mz, target_i, writeout=TRUE){
+removeIsotopes <- function(peaks, im, target_mz, target_i, writeout=FALSE){
   # loop through all the isotopes in the im list  tomn
 
   if (!is.data.frame(peaks)){
@@ -229,15 +254,15 @@ im_tag <- function(x, peaks, target_mz, target_i){
 
   # Get intensity ratio tolerances
   if(xflag==1){
-    i_range_r <- get_iso_intensity_range(rp=FALSE, target_mz, target_i, adiff, ram)
+    i_range_r <- get_iso_intensity_range(rp=FALSE, target_mz, target_i, adiff, ram, atol)
   }else{
-    i_range_r <- get_iso_intensity_range(rp=TRUE, target_mz, target_i, adiff, ram)
+    i_range_r <- get_iso_intensity_range(rp=TRUE, target_mz, target_i, adiff, ram, atol)
   }
 
   inten_min_r <- i_range_r[1]
   inten_max_r <- i_range_r[2]
 
-  peakr <- peakr[peakr$i<=inten_max_r+atol & peakr$i>=inten_min_r-atol,]
+  peakr <- peakr[peakr$i<=inten_max_r & peakr$i>=inten_min_r,]
 
   peakr <- peakr[order(peakr$ppmR, decreasing = FALSE),]
 
@@ -250,15 +275,15 @@ im_tag <- function(x, peaks, target_mz, target_i){
   peakl <- peaks[which(peaks$ppmL<mtol),]
 
   if(xflag==1){
-    i_range_l <- get_iso_intensity_range(rp=TRUE, target_mz, target_i, adiff, ram)
+    i_range_l <- get_iso_intensity_range(rp=TRUE, target_mz, target_i, adiff, ram, atol)
   }else{
-    i_range_l <- get_iso_intensity_range(rp=FALSE, target_mz, target_i, adiff, ram)
+    i_range_l <- get_iso_intensity_range(rp=FALSE, target_mz, target_i, adiff, ram, atol)
   }
 
   inten_min_l <- i_range_l[1]
   inten_max_l <- i_range_l[2]
 
-  peakl <- peakl[peakl$i<=inten_max_l+atol & peakl$i>=inten_min_l-atol,]
+  peakl <- peakl[peakl$i<=inten_max_l & peakl$i>=inten_min_l,]
   peakl <- peakl[order(peakl$ppmL, decreasing = FALSE),]
 
   bmatchl <- peakl[1,]
@@ -272,8 +297,8 @@ im_tag <- function(x, peaks, target_mz, target_i){
 get_iso_intensity_range <- function(rp=FALSE, target_mz, target_i, adiff, ram, atol){
   numE  <- abs(round(target_mz / ram)) # max. number of element  (e.g. C) in molecule
   if(rp){
-    inten_min <- (target_i / (numE * adiff - atol)) * 100 # highest possible intensity (for most abundant isotope e.g C12)
-    inten_max <- (target_i / (1 * adiff + atol)) * 100 # lowest possible intensity (for most abundant isotope e.g C12)
+    inten_max <- (target_i / (1 * adiff - atol)) * 100 # lowest possible intensity (for most abundant isotope e.g C12)
+    inten_min <- (target_i / (numE * adiff + atol)) * 100 # highest possible intensity (for most abundant isotope e.g C12)
   }else{
     inten_max <- ((numE * adiff + atol) / 100) * target_i # highest possible intensity (for M+1(or more)  isotope)
     inten_min <- ((1 * adiff - atol) / 100) * target_i # lowest possible intensity (for M+1(or more) isotope)

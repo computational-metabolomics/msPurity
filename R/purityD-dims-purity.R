@@ -31,7 +31,7 @@ NULL
 setMethod(f="dimsPredictPurity", signature="purityD",
           definition= function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
                                iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=FALSE,
-                               isotopes=FALSE, im=NULL) {
+                               isotopes=TRUE, im=NULL) {
             requireNamespace('foreach')
 
             Object@purityParam$minOffset = minOffset
@@ -39,7 +39,9 @@ setMethod(f="dimsPredictPurity", signature="purityD",
             Object@purityParam$ppm = ppm
             Object@purityParam$iwNorm = iwNorm
             Object@purityParam$iwNormFun = iwNormFun
-            Object@purityParam$ilim= ilim
+            Object@purityParam$ilim = ilim
+            Object@purityParam$isotopes =isotopes
+            Object@purityParam$im = im
 
             # Check if multicore
             if (Object@cores>1){
@@ -93,8 +95,8 @@ predictPurityExp <- function(Object, fidx){
                                     iwNormFun=Object@purityParam$iwNormFun,
                                     ilim=Object@purityParam$ilim,
                                     mzRback=Object@purityParam$mzRback,
-                                    isotopes=isotopes,
-                                    im=im)
+                                    isotopes=Object@purityParam$isotopes,
+                                    im=Object@purityParam$im)
 
   pPeaks <- cbind(origPeaks, purity)
 
@@ -124,6 +126,8 @@ predictPurityExp <- function(Object, fidx){
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param mzRback character = backend to use for mzR parsing
+#' @param isotopes boolean = TRUE if isotopes are to be removed
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
 #' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
@@ -139,7 +143,7 @@ dimsPredictPuritySingle <- function(mztargets,
                                     iwNormFun=NULL,
                                     ilim=0.05,
                                     mzRback='pwiz',
-                                    isotopes=FALSE,
+                                    isotopes=TRUE,
                                     im=NULL){
 
   # open the file and get the scans
@@ -193,7 +197,7 @@ dimsPredictPuritySingle <- function(mztargets,
 
 dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
                                       plot=FALSE, plotdirpth, iwNorm=FALSE, iwNormFun=NULL,
-                                      ilim=0.05, isotopes=FALSE, im=NULL){
+                                      ilim=0.05, isotopes=TRUE, im=NULL){
 
   # Get isolation window
   minmz <- mz-minOffset
