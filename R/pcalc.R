@@ -71,16 +71,25 @@ pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
     if(is.null(im)){
       # matrix of isotopes to look at. by default this is just C12/C13 (only single, double and triple charge)
       # row composed of:
-      # 'isotope_id','mass diff', 'abundance of isotope', 'ppm tol for mz', 'abunance buffer',
+      # 'isotope_id','mass diff', 'abundance of isotope', 'ppm tol for mz', 'abundance buffer',
       # 'charge', 'relative atomic mass (int)', 'xflag'
       # Notes: The estimated max and min number of atoms in is calculated from the relative atomic mass. This
       #        a very broad estimate as such the number should really just be a int
       #        The xflag indicates if the larger (mass) isotope is the most abundant or less abundant. e.g.
       #        for c12 to c13, the c13 is less abundant so we flag as 1
       #        for Li6 to Li7, the Li7 is more abundant so we would flag as 0
-      im = rbind(c(1, 1.003355, 1.07, 4, 0.5, 1, 12, 1), # C13
-                 c(2, 1.003355/2, 1.07, 4, 0.5, 2, 12, 1), # C13 double charge
-                 c(3, 1.003355/3, 1.07, 4, 0.5, 3, 12, 1)) # C13 triple charge
+      im = rbind(c(1, 1.003355, 1.07, 4, 0.1, 1, 12, 1), # C13
+                 c(2, 1.003355/2, 1.07, 4, 0.1, 2, 12, 1), # C13 double charge
+                 c(3, 1.003355/3, 1.07, 4, 0.1, 3, 12, 1))  # C13 triple charge
+
+      # example below is if the C14 isotope is to be looked for as well. Not relevant in most cases though
+#       im = rbind(c(1, 1.003355, 1.07, 4, 0.1, 1, 12, 1), # C13
+#                  c(2, 1.003355/2, 1.07, 4, 0.1, 2, 12, 1), # C13 double charge
+#                  c(3, 1.003355/3, 1.07, 4, 0.1, 3, 12, 1),  # C13 triple charge
+#                  c(4, 2.003242, 0.1, 4, 0.1, 1, 12, 1), # C14
+#                  c(5, 2.003242/2, 0.1, 4, 0.1, 2, 12, 1), # C14 double charge
+#                  c(6, 2.003242/3, 0.1, 4, 0.1, 3, 12, 1)) # C14 triple charge
+
     }
 
     subp <- removeIsotopes(subp, im, mtchmz, mtchi)
@@ -157,8 +166,6 @@ removeIsotopes <- function(peaks, im, target_mz, target_i, writeout=TRUE){
 
   l = apply(im, 1, im_tag, peaks=peaks, target_mz=target_mz, target_i=target_i)
   idf <- data.frame(matrix(unlist(l), nrow=length(l)*2, byrow=T))
-
-
 
   to_remove <- idf[,2][!is.na(idf[,2])]
 
@@ -262,15 +269,14 @@ im_tag <- function(x, peaks, target_mz, target_i){
 
 }
 
-get_iso_intensity_range <- function(rp=FALSE, target_mz, target_i, adiff, ram){
+get_iso_intensity_range <- function(rp=FALSE, target_mz, target_i, adiff, ram, atol){
   numE  <- abs(round(target_mz / ram)) # max. number of element  (e.g. C) in molecule
   if(rp){
-    inten_min <- (target_i / (numE * adiff)) * 100 # highest possible intensity (for most abundant isotope e.g C12)
-    inten_max <- (target_i / (1 * adiff)) * 100 # lowest possible intensity (for most abundant isotope e.g C12)
+    inten_min <- (target_i / (numE * adiff - atol)) * 100 # highest possible intensity (for most abundant isotope e.g C12)
+    inten_max <- (target_i / (1 * adiff + atol)) * 100 # lowest possible intensity (for most abundant isotope e.g C12)
   }else{
-    inten_max <- ((numE * adiff) / 100) * target_i # highest possible intensity (for M+1(or more)  isotope)
-    inten_min <- ((1 * adiff) / 100) * target_i # lowest possible intensity (for M+1(or more) isotope)
-
+    inten_max <- ((numE * adiff + atol) / 100) * target_i # highest possible intensity (for M+1(or more)  isotope)
+    inten_min <- ((1 * adiff - atol) / 100) * target_i # lowest possible intensity (for M+1(or more) isotope)
   }
 
   return(c(inten_min, inten_max))
