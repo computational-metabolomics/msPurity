@@ -42,7 +42,7 @@ NULL
 #' @export
 purityA <- function(fileList,
                     cores=1,
-                    mostIntense=FALSE,
+                    mostIntense=TRUE,
                     nearest=TRUE,
                     offsets=NA,
                     plotP=FALSE,
@@ -145,7 +145,7 @@ purityA <- function(fileList,
 #' @export
 assessPuritySingle <- function(filepth,
                                fileid=NA,
-                               mostIntense=FALSE,
+                               mostIntense=TRUE,
                                nearest=TRUE,
                                offsets=NA,
                                cores=1,
@@ -396,7 +396,7 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
 }
 
 get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
-                              minoff, maxoff, mostIntense=FALSE, plotP=FALSE,
+                              minoff, maxoff, mostIntense=TRUE, plotP=FALSE,
                               plotdir=NULL, interpol, nearest=TRUE,
                               iwNorm, iwNormFun, ilim, isotopes, im){
 
