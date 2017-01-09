@@ -217,14 +217,6 @@ assessPuritySingle <- function(filepth,
   mrdfshrt$precursorNearest <- plyr::laply(prec_scans, function(x){ return(x$nearest)})
 
 
-  # if iwNorm is TRUE and iwNormFun is NULL
-  # then a gaussian model of the isolation window will be used to normalise
-  # intensity
-  if(is.null(iwNormFun)){
-    # Using a gaussian curve 3 SD either side
-    iwNormFun <- iwNormGauss(3)
-  }
-
   #=====================================
   # Initial purity calculation
   #=====================================
@@ -380,13 +372,13 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
     pouta <- pcalc(peaks=subp, mzmin=mzmin, mzmax=mzmax, mztarget=aMz, ppm=NA,
                    iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim, isotopes=isotopes,
                    im=im)
-    aPurity <- pouta[1]
-    apkNm <- pouta[2]
+    aPurity <- unname(pouta[1])
+    apkNm <- unname(pouta[2])
     pouti <- pcalc(peaks=subp, mzmin=mzmin, mzmax=mzmax, mztarget=iMz, ppm=NA,
                    iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim, isotopes=isotopes,
                    im=im)
-    iPurity <- pouti[1]
-    ipkNm <- pouti[2]
+    iPurity <- unname(pouti[1])
+    ipkNm <- unname(pouti[2])
 
   }
   fileinfo <- c("aMz"=aMz, "aPurity" = aPurity, "apkNm" = apkNm,
@@ -514,8 +506,6 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
   return(c("inPkNm"=inPkNm, "inPurity"=inPurity))
 }
 
-
-# Get closest precursor MZ value (or most intense)
 get_prec_scans <- function(mrdf, num){
 
   ms1 <- mrdf[mrdf$msLevel==1,]$seqNum
