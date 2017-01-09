@@ -13,7 +13,7 @@ environment:
 
   matrix:
 
-  - R_VERSION: development
+  - R_VERSION: release
     R_ARCH: x64
     BIOC_USE_DEVEL: true
 
