@@ -26,6 +26,8 @@
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
 #' @param mzRback character = backend to use for mzR parsing
+#' @param isotopes boolean = TRUE if isotopes are to be removed
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -39,7 +41,7 @@
 #' @export
 purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                      fileignore=NULL, cores=1, xgroups=NULL,
-                     iwNorm=FALSE, iwNormFun=NULL, ilim=0, plotP=FALSE, mzRback='pwiz'){
+                     iwNorm=FALSE, iwNormFun=NULL, ilim=0, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL){
 
   # Create a purityX object
   ppLCMS <- new("purityX")
@@ -146,14 +148,16 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
   purityPredictions <- plyr::dlply(grouplist,
                              ~ grpid,
                              .parallel = para,
-                             predictPurityLCMSloop, # fun
-                             average="median", # fun param
-                             scanpeaks=scanpeaks, # fun param
-                             offsets=offsets,# fun param
-                             iwNorm=iwNorm,# fun param
-                             iwNormFun=iwNormFun,# fun param
+                             predictPurityLCMSloop,
+                             average="median",
+                             scanpeaks=scanpeaks,
+                             offsets=offsets,
+                             iwNorm=iwNorm,
+                             iwNormFun=iwNormFun,
                              ilim=ilim,
-                             plotP=plotP) # fun param
+                             plotP=plotP,
+                             isotopes=isotopes,
+                             im=im)
 
   if(cores>1){
     parallel::stopCluster(cl)
@@ -205,14 +209,14 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
 
 predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
-                                  offsets, iwNorm, iwNormFun, ilim, plotP){
+                                  offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im){
 
   # Need to loop through for each file in each group
   grp <- data.frame(grp)
   rtmed <- median(grp$rt)
 
   sgrp <- plyr::ddply(grp, ~ sample, pp4file, scanpeaks,
-                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP)
+                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im)
 
   puritySummary <- apply(sgrp[,2:ncol(sgrp)], 2, function(x){
     x <- na.omit(x)
@@ -223,7 +227,7 @@ predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
 }
 
 pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
-                    plotP){
+                    plotP, isotopes, im){
 
   # Sometimes XCMS groups more than 1 peak from the same file in the XCMS
   # grouping stage.
@@ -260,7 +264,9 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
                          iwNormFun=iwNormFun,
                          ilim=ilim,
                          targetMinMZ=target$mzmin,
-                         targetMaxMZ=target$mzmax)
+                         targetMaxMZ=target$mzmax,
+                         isotopes=isotopes,
+                         im=im)
 
   colnames(dfp) <- c("purity", "pknm")
 

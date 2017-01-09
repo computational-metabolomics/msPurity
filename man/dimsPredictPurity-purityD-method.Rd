@@ -8,7 +8,7 @@
 \usage{
 \S4method{dimsPredictPurity}{purityD}(Object, ppm = 1.5, minOffset = 0.5,
   maxOffset = 0.5, iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05,
-  sampleOnly = FALSE)
+  sampleOnly = FALSE, isotopes = TRUE, im = NULL)
 }
 \arguments{
 \item{Object}{object = purityD object}
@@ -26,6 +26,10 @@
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
 \item{sampleOnly}{boolean = if TRUE will only calculate purity for sample peaklists}
+
+\item{isotopes}{boolean = TRUE if isotopes are to be removed}
+
+\item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 }
 \value{
 purityD object with predicted purity of peaks

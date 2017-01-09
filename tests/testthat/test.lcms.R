@@ -25,8 +25,6 @@ test_that("checking lcms based functions", {
   expect_equal(round(pa@grped_ms2[[1]][[1]][1],4), 112.0509)
 
 
-
-
   msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
   xset2 <- xcmsSet(msPths)
   xset2 <- group(xset2)

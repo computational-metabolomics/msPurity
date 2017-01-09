@@ -33,7 +33,8 @@ setGeneric(name="subtract",
 
 setGeneric(name="dimsPredictPurity",
            def=function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
-                        iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=TRUE) {
+                        iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=TRUE,
+                        isotopes=TRUE, im=NULL) {
              standardGeneric("dimsPredictPurity")
            }
 )

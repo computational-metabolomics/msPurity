@@ -29,6 +29,8 @@ NULL
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param isotopes boolean = TRUE if isotopes are to be removed
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param mzRback character = backend to use for mzR parsing
 #'
 #' @return a dataframe of the purity score of the ms/ms spectra
@@ -49,7 +51,9 @@ purityA <- function(fileList,
                     iwNorm=FALSE,
                     iwNormFun=NULL,
                     ilim=0.05,
-                    mzRback='pwiz'){
+                    mzRback='pwiz',
+                    isotopes=TRUE,
+                    im=NULL){
 
   if((length(fileList)>=1) && (fileList == "" )){
     message("no file list")
@@ -57,7 +61,7 @@ purityA <- function(fileList,
   }
 
   requireNamespace('foreach')
-  pa <- new("purityA", fileList = fileList , cores = cores, mzRback=mzRback)
+  pa <- new("purityA", fileList = fileList, cores = cores, mzRback=mzRback)
 
   # Check cores and choose if parallel or not (do or dopar)
   if(pa@cores<=1){
@@ -68,10 +72,7 @@ purityA <- function(fileList,
     operator <- foreach::'%dopar%'
   }
 
-  # if iwNorm is TRUE and iwNormFun is NULL
-  if(is.null(iwNormFun)){
-    iwNormFun <- iwNormGauss()
-  }
+
 
   # run parallel (or not) using foreach
   purityL <- operator(foreach::foreach(i = 1:length(pa@fileList),
@@ -86,7 +87,9 @@ purityA <- function(fileList,
                                   iwNorm = iwNorm,
                                   iwNormFun = iwNormFun,
                                   ilim = ilim,
-                                  mzRback = mzRback
+                                  mzRback = mzRback,
+                                  isotopes = isotopes,
+                                  im = im
                                   ))
 
   if(pa@cores>1){
@@ -130,6 +133,8 @@ purityA <- function(fileList,
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
 #' @param mzRback character = backend to use for mzR parsing
+#' @param isotopes boolean = TRUE if isotopes are to be removed
+#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
 #' @examples
@@ -150,7 +155,9 @@ assessPuritySingle <- function(filepth,
                                iwNorm=FALSE,
                                iwNormFun=NULL,
                                ilim=0,
-                               mzRback='pwiz'){
+                               mzRback='pwiz',
+                               isotopes=TRUE,
+                               im=NULL){
   #=================================
   # Load in files and initial setup
   #=================================
@@ -182,6 +189,10 @@ assessPuritySingle <- function(filepth,
   minoff <- offsets[1]
   maxoff <- offsets[2]
 
+  if(is.null(iwNormFun)){
+    iwNormFun <- iwNormGauss(minOff = -minoff, maxOff = maxoff)
+  }
+
   # Get a shortened mzR dataframe
   mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","precursorIntensity",
                                         "precursorMZ", "precursorRT",
@@ -206,14 +217,6 @@ assessPuritySingle <- function(filepth,
   mrdfshrt$precursorNearest <- plyr::laply(prec_scans, function(x){ return(x$nearest)})
 
 
-  # if iwNorm is TRUE and iwNormFun is NULL
-  # then a gaussian model of the isolation window will be used to normalise
-  # intensity
-  if(is.null(iwNormFun)){
-    # Using a gaussian curve 3 SD either side
-    iwNormFun <- iwNormGauss(3)
-  }
-
   #=====================================
   # Initial purity calculation
   #=====================================
@@ -228,7 +231,9 @@ assessPuritySingle <- function(filepth,
                            mostIntense=mostIntense,
                            iwNorm=iwNorm,
                            iwNormFun=iwNormFun,
-                           ilim=ilim)
+                           ilim=ilim,
+                           isotopes=isotopes,
+                           im=im)
 
   # Add results to mzR dataframe
   mrdfshrt <- cbind(mrdfshrt, initial)
@@ -267,7 +272,9 @@ assessPuritySingle <- function(filepth,
                                    nearest=nearest,
                                    iwNorm=iwNorm,
                                    iwNormFun=iwNormFun,
-                                   ilim=ilim)
+                                   ilim=ilim,
+                                   isotopes=isotopes,
+                                   im=im)
 
   if(cores>1){
     requireNamespace(parallel)
@@ -288,7 +295,7 @@ assessPuritySingle <- function(filepth,
 
 
 get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
-                            mostIntense, iwNorm, iwNormFun, ilim){
+                            mostIntense, iwNorm, iwNormFun, ilim, isotopes, im){
 
   #========================================
   # Get the scan to perform calculations on
@@ -363,13 +370,15 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
 
   } else {
     pouta <- pcalc(peaks=subp, mzmin=mzmin, mzmax=mzmax, mztarget=aMz, ppm=NA,
-                   iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim)
-    aPurity <- pouta[1]
-    apkNm <- pouta[2]
+                   iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim, isotopes=isotopes,
+                   im=im)
+    aPurity <- unname(pouta[1])
+    apkNm <- unname(pouta[2])
     pouti <- pcalc(peaks=subp, mzmin=mzmin, mzmax=mzmax, mztarget=iMz, ppm=NA,
-                   iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim)
-    iPurity <- pouti[1]
-    ipkNm <- pouti[2]
+                   iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim, isotopes=isotopes,
+                   im=im)
+    iPurity <- unname(pouti[1])
+    ipkNm <- unname(pouti[2])
 
   }
   fileinfo <- c("aMz"=aMz, "aPurity" = aPurity, "apkNm" = apkNm,
@@ -381,7 +390,7 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
 get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
                               minoff, maxoff, mostIntense=FALSE, plotP=FALSE,
                               plotdir=NULL, interpol, nearest=TRUE,
-                              iwNorm, iwNormFun, ilim){
+                              iwNorm, iwNormFun, ilim, isotopes, im){
 
   # get the region of interest for scans
   scanids <- prec_scans[which(ms2==rowi$seqNum)][[1]]
@@ -390,10 +399,10 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
   if(interpol=="linear"){
     purity <- linearPurity(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
                            nearest, mostIntense, iwNorm, iwNormFun,
-                           ilim, plotP, plotdir)
+                           ilim, plotP, plotdir, isotopes, im)
   }else if (interpol=="spline"){
     purity <- splinePurity(rowi, roi_scns, minoff, maxoff, ppm,
-                           mostIntense, scanids, plotP, plotdir)
+                           mostIntense, scanids, plotP, plotdir, isotopes, im)
   }
 
 
@@ -403,7 +412,7 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
 
 linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
                          nearest, mostIntense, iwNorm, iwNormFun, ilim,
-                         plotP, plotdir){
+                         plotP, plotdir, isotopes, im){
   if(nearest){
     scn1 <- rowi$precursorNearest
   }else{
@@ -448,7 +457,8 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
 
   pout <- pcalc(peaks=allp, mzmin=mzmin, mzmax=mzmax, mztarget=mztarget1,
                 iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim,
-                targetMinMZ = targetMinMZ, targetMaxMZ = targetMaxMZ)
+                targetMinMZ = targetMinMZ, targetMaxMZ = targetMaxMZ,
+                isotopes = isotopes, im = im)
 
   purity2 <- pout[1]
   pknm2 <- pout[2]
@@ -496,8 +506,6 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
   return(c("inPkNm"=inPkNm, "inPurity"=inPurity))
 }
 
-
-# Get closest precursor MZ value (or most intense)
 get_prec_scans <- function(mrdf, num){
 
   ms1 <- mrdf[mrdf$msLevel==1,]$seqNum
