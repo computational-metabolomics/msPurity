@@ -1,6 +1,6 @@
 language: r
 cache: packages
-r: bioc-devel
+r: bioc-release
 os:
   - linux
 before_install:

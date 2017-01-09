@@ -7,7 +7,7 @@
 assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
   nearest = TRUE, offsets = NA, cores = 1, plotP = FALSE,
   plotdir = NULL, interpol = "linear", iwNorm = FALSE, iwNormFun = NULL,
-  ilim = 0, mzRback = "pwiz")
+  ilim = 0, mzRback = "pwiz", isotopes = TRUE, im = NULL)
 }
 \arguments{
 \item{filepth}{character = mzML file path for MS/MS spectra}
@@ -35,6 +35,10 @@ assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
 \item{mzRback}{character = backend to use for mzR parsing}
+
+\item{isotopes}{boolean = TRUE if isotopes are to be removed}
+
+\item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 }
 \value{
 a dataframe of the purity score of the ms/ms spectra
