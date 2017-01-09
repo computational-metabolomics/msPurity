@@ -13,6 +13,7 @@ Use the following link for more details:
 * Bioconductor: http://bioconductor.org/packages/msPurity/
 * Vignette: https://bioconductor.org/packages/devel/bioc/vignettes/msPurity/inst/doc/msPurity-vignette.html
 * Manual: http://bioconductor.org/packages/devel/bioc/manuals/msPurity/man/msPurity.pdf
+* Bioconductor mirror code: https://github.com/Bioconductor-mirror/msPurity 
 
 
 ## Install
