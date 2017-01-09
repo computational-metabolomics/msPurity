@@ -36,8 +36,8 @@ install:
 # Adapt as necessary starting from here
 
 build_script:
- - Rscript -e 'source("https://bioconductor.org/biocLite.R");biocLite("msPurityData");'
-
+ - echo source("https://bioconductor.org/biocLite.R");biocLite("msPurityData"); > dinstall.R
+ - Rscript dinstall.R
  - travis-tool.sh install_bioc_deps
  - R CMD INSTALL .
 
