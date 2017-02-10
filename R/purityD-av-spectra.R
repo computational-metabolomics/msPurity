@@ -543,7 +543,7 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #' @export
 groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   comb <- ldply(peak_list)
-
+  
   if (cores>1) {
     clust<-parallel::makeCluster(cores)
     doSNOW::registerDoSNOW(clust)
@@ -551,53 +551,68 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   } else {
     parallelBool = FALSE
   }
-
+  
   mz <- comb$mz
-
+  
   # Cluster the peaks togther
   comb$cl <- clustering(mz, clustType = clustType, cores = cores)
-
+  
+  
+  comb[order(comb$mz),]
+  
   # Create a dataframe with each file is a column
   sampnms <- unique(comb$.id)
-
+  
   total <-data.frame()
-
+  
   for(i in 1:length(sampnms)){
     snmi = sampnms[i]
-
+    
     sub <- comb[comb$.id == snmi, ]
-
-    addnew <- sub[ , -which(names(sub) %in% c("cl",".id"))]
-
+    
+    # if multiple mz values in the group then average
+    sub <- ddply(sub, ~ cl, medGroup)
+    
+    addnew <- sub[ , -which(names(sub) %in% c("cl", ".id"))]
+    
     for(j in 1:ncol(addnew)){
       colnames(addnew)[j] <- paste(colnames(addnew)[j], snmi, sep="_")
-
+      
     }
     addnew$cl <- sub$cl
-
+    
     if (nrow(total)==0){
       total <- addnew
     }else{
-      total <- merge(x = total, y =addnew, by = "cl", all=TRUE)
+      total <- merge(x = total, y =addnew, by = "cl", all = TRUE)
     }
   }
-
-
-
-
+  
+  
   mzall <- total[ , which(names(total) %in% grep(".*mz.*", colnames(total), value=TRUE))]
-
+  
   mzmedian <- apply(mzall, 1, median, na.rm=TRUE)
   total <- total[-1]
-
+  
   total <- total[,order(colnames(total))]
   total <- cbind(mzmedian, total)
-
+  
   return(total)
-
-
-
+  
+  
+  
 }
+
+medGroup <- function(x){
+  if(nrow(x)>1){
+    medx <- apply(x[,-which(names(x) %in% c(".id"))], 2, median, na.rm=T)
+    x <- data.frame(.id=unique(x$.id), t(medx))
+  }
+  
+  return(x)
+}
+
+
 
 
 
