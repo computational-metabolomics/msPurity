@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-av-spectra.R
 \docType{methods}
 \name{averageSpectra,purityD-method}
-\alias{averageSpectra}
 \alias{averageSpectra,purityD-method}
+\alias{averageSpectra}
 \title{Using purityD object, calculates to average mz, intensity
 and signal-to-noise of multiple scans from multiple MS datafiles
 (mzML or .csv)}
@@ -56,4 +56,3 @@ ppDIMS <- averageSpectra(ppDIMS)
 \seealso{
 \code{\link{averageSpectraSingle}}
 }
-

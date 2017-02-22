@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityA-validate.R
 \docType{methods}
 \name{validate,purityA-method}
-\alias{validate}
 \alias{validate,purityA-method}
+\alias{validate}
 \title{Validate precursor purity predictions using LC-MS and LC-MS/MS dataset}
 \usage{
 \S4method{validate}{purityA}(pa, ppLCMS)
@@ -20,4 +20,3 @@ purityA object
 The method is used to validate the precursor purity predictions made
 from an LC-MS dataset
 }
-

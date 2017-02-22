@@ -56,4 +56,3 @@ pcalc(pm, mzmin = 98, mzmax = 102, mztarget=100, ppm=5)
 pcalc(pm, mzmin = 98, mzmax = 102, mztarget=100, ppm=5, isotopes = TRUE)
 
 }
-

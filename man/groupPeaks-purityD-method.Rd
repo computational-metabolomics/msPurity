@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-av-spectra.R
 \docType{methods}
 \name{groupPeaks,purityD-method}
-\alias{groupPeaks}
 \alias{groupPeaks,purityD-method}
+\alias{groupPeaks}
 \title{Using purityD object, group multiple peaklists by similar mz values
 (mzML or .csv)}
 \usage{
@@ -33,4 +33,3 @@ ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 ppDIMS <- averageSpectra(ppDIMS)
 grpedP <- groupPeaks(ppDIMS)
 }
-

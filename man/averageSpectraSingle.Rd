@@ -66,4 +66,3 @@ The function works for LC-MS or DI-MS datasets.
 mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
 avP <- averageSpectraSingle(mzmlPth)
 }
-

@@ -32,7 +32,7 @@ Suggests:
     rmarkdown,
     msPurityData
 VignetteBuilder: knitr
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 biocViews: MassSpectrometry, Metabolomics, Software
 Collate:
     'all-generics.R'

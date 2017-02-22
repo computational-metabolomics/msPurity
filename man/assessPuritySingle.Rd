@@ -55,4 +55,3 @@ puritydf <- assessPuritySingle(filepth)
 \seealso{
 \code{\link{purityA}}
 }
-

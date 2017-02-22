@@ -45,23 +45,15 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
                     singleFile=0){
 
-  # get the filepaths from the xcms object
-  filepths <- xset@filepaths
 
-  # get xcms peaklist
-  peaklist <- xset@peaks
 
   if (singleFile>0){
-    peaklist <- peaklist[peaklist[,'sample'] == singleFile,]
 
-    scanpeaks <- list()
-    scanpeaks[[singleFile]] <- getscans(filepth, mzRback)
-
-    ppLCMS <- xcmsSinglePurity(peaklist, scanpeaks=scanpeaks, filepth=filepths[singleFile], offsets=offsets, iwNorm=iwNorm,
+    ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
                                iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
                                isotopes=isotopes, im=im)
   }else{
-    ppLCMS <- xcmsGroupPurity(peaklist, filepths,offsets=offsets, fileignore=fileignore, purityType=purityType,
+    ppLCMS <- xcmsGroupPurity(xset, offsets=offsets, fileignore=fileignore, purityType=purityType,
                               cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
                               ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im)
   }
@@ -71,7 +63,19 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
 }
 
-xcmsSinglePurity <- function(peaklist, scanpeaks, filepth, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
+xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
+
+  # get the filepaths from the xcms object
+  filepth <- xset@filepaths[fileidx]
+
+  # get xcms peaklist
+  peaklist <- xset@peaks
+
+  peaklist <- peaklist[peaklist[,'sample'] == fileidx,]
+
+  scanpeaks <- list()
+  scanpeaks[[fileidx]] <- getscans(filepth, mzRback)
+
 
   # Create a purityX object
   ppLCMS <- new("purityX")
@@ -117,9 +121,14 @@ xcmsSinglePurity <- function(peaklist, scanpeaks, filepth, offsets, iwNorm, iwNo
 
 
 
-xcmsGroupPurity <- function(peaklist, filepths, purityType, offsets,
+xcmsGroupPurity <- function(xset, purityType, offsets,
                             fileignore, cores, xgroups,
                             iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
+  # get the filepaths from the xcms object
+  filepths <- xset@filepaths
+
+  # get xcms peaklist
+  peaklist <- xset@peaks
 
   # Create a purityX object
   ppLCMS <- new("purityX")

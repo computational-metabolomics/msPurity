@@ -38,4 +38,3 @@ i2 <- c(100, 10000, 100)
 
 subtractMZ(mz1, mz2, i1, i2, ppm=5, s2bthres =10)
 }
-
