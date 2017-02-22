@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-class.R
 \docType{class}
 \name{purityD-class}
-\alias{purityD}
 \alias{purityD-class}
+\alias{purityD}
 \title{An S4 class to represent a DI-MS purityD}
 \arguments{
 \item{.Object}{object = purityD object}
@@ -25,4 +25,3 @@ datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 }
-

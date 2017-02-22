@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityA-frag4feature.R
 \docType{methods}
 \name{frag4feature,purityA-method}
-\alias{frag4feature}
 \alias{frag4feature,purityA-method}
+\alias{frag4feature}
 \title{Assign precursor purity scored fragmentation spectra to XCMS features}
 \usage{
 \S4method{frag4feature}{purityA}(pa, xset, ppm = 5, plim = 0,
@@ -42,4 +42,3 @@ xset <- xcms::group(xset)
 pa  <- purityA(msmsPths, interpol = "linear")
 
 }
-

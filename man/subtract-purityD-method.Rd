@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-subtract.R
 \docType{methods}
 \name{subtract,purityD-method}
-\alias{subtract}
 \alias{subtract,purityD-method}
+\alias{subtract}
 \title{Using Subtract MZ values based on ppm tolerance and noise ratio}
 \usage{
 \S4method{subtract}{purityD}(Object, byClass = TRUE, mapping = c("sample",
@@ -39,4 +39,3 @@ ppDIMS <- subtract(ppDIMS)
 \seealso{
 \code{\link{subtractMZ}}
 }
-

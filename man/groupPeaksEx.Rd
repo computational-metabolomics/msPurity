@@ -29,4 +29,3 @@ ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 ppDIMS <- averageSpectra(ppDIMS)
 grpedP <- groupPeaks(ppDIMS)
 }
-

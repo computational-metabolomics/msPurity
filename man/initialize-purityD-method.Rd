@@ -30,4 +30,3 @@ datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 }
-

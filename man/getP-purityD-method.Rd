@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-class.R
 \docType{methods}
 \name{getP,purityD-method}
-\alias{getP}
 \alias{getP,purityD-method}
+\alias{getP}
 \title{Get peaklist for a purityD object}
 \usage{
 \S4method{getP}{purityD}(x)
@@ -23,4 +23,3 @@ inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 peaks <- getP(ppDIMS)
 }
-

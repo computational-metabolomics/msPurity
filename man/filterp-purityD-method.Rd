@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-filterp.R
 \docType{methods}
 \name{filterp,purityD-method}
-\alias{filterp}
 \alias{filterp,purityD-method}
+\alias{filterp}
 \title{Filter out peaks based on intensity and RSD criteria}
 \usage{
 \S4method{filterp}{purityD}(Object, thr = 5000, rsd = 20,
@@ -35,4 +35,3 @@ ppDIMS <- purityD(inDF, cores=1)
 ppDIMS <- averageSpectra(ppDIMS)
 ppDIMS <- filterp(ppDIMS, thr = 5000)
 }
-

@@ -63,4 +63,3 @@ pa <- purityA(filepths)
 \seealso{
 \code{\link{assessPuritySingle}}
 }
-
