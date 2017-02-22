@@ -100,6 +100,10 @@ xcmsSinglePurity <- function(peaklist, scanpeaks, filepth, offsets, iwNorm, iwNo
   dfp <- data.frame(peaklist)
   dfp$id <- seq(1, nrow(peaklist))
 
+  if(plotP){
+    dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
+  }
+
   sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
                       rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
                       ilim=ilim, plotP=plotP, isotopes=isotopes, im=im, singleCheck=FALSE)
@@ -191,8 +195,6 @@ xcmsGroupPurity <- function(peaklist, filepths, purityType, offsets,
   # get all the peaks from scans
   scanpeaks <- getscans(filepths, mzRback)
 
-  print(scanpeaks[[1]])
-
   # Check if it is going to be multi-core
   if(cores<=1){
     para = FALSE
@@ -210,7 +212,7 @@ xcmsGroupPurity <- function(peaklist, filepths, purityType, offsets,
   }
 
   if(plotP){
-    dir.create(file.path(getwd(), "purityXots"), showWarnings = FALSE)
+    dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
 
 
@@ -354,8 +356,13 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
   fwhm <- calculateFWHM(dfp)
 
   if(plotP){
-    plotnm <- paste(paste(grpi$grpid, "sample", grpi$sample, "mz",
-                          round(grpi$mz, 3), "rt", round(grpi$rt, 3), sep="_"),
+    if (singleCheck){
+      tid = target$grpid
+    }else{
+      tid = target$id
+    }
+    plotnm <- paste(paste(tid, "sample", target$sample, "mz",
+                          round(target$mz, 3), "rt", round(target$rt, 3), sep="_"),
                     "png", sep=".")
 
     tic <- plyr::ldply(roi_scns, getTic, target = target, minOff = offsets[1],
@@ -363,7 +370,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     contamination <- tic$V1-dfp$intensity
     maxi <- max(c(max(contamination), max(dfp$intensity)))
 
-    fpth <- file.path(getwd(),"purityXots", plotnm)
+    fpth <- file.path(getwd(),"purityXplots", plotnm)
     png(fpth)
 
 
