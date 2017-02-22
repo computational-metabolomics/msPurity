@@ -61,7 +61,7 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                                iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
                                isotopes=isotopes, im=im)
   }else{
-    ppLCMS <- xcmsGroupPurity(peaklist, filepths,offsets=offsets, fileignore=fileignore,
+    ppLCMS <- xcmsGroupPurity(peaklist, filepths,offsets=offsets, fileignore=fileignore, purityType=purityType,
                               cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
                               ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im)
   }
