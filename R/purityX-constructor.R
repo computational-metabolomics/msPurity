@@ -28,6 +28,7 @@
 #' @param mzRback character = backend to use for mzR parsing
 #' @param isotopes boolean = TRUE if isotopes are to be removed
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param singleFile numeric = If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -40,17 +41,84 @@
 #'
 #' @export
 purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
-                     fileignore=NULL, cores=1, xgroups=NULL,
-                     iwNorm=FALSE, iwNormFun=NULL, ilim=0, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL){
-
-  # Create a purityX object
-  ppLCMS <- new("purityX")
+                    fileignore=NULL, cores=1, xgroups=NULL,
+                    iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
+                    singleFile=0){
 
   # get the filepaths from the xcms object
   filepths <- xset@filepaths
 
   # get xcms peaklist
   peaklist <- xset@peaks
+
+  if (singleFile>0){
+    peaklist <- peaklist[peaklist[,'sample'] == singleFile,]
+
+    scanpeaks <- list()
+    scanpeaks[[singleFile]] <- getscans(filepth, mzRback)
+
+    ppLCMS <- xcmsSinglePurity(peaklist, scanpeaks=scanpeaks, filepth=filepths[singleFile], offsets=offsets, iwNorm=iwNorm,
+                               iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
+                               isotopes=isotopes, im=im)
+  }else{
+    ppLCMS <- xcmsGroupPurity(peaklist, filepths,offsets=offsets, fileignore=fileignore,
+                              cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
+                              ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im)
+  }
+
+
+  return(ppLCMS)
+
+}
+
+xcmsSinglePurity <- function(peaklist, scanpeaks, filepth, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
+
+  # Create a purityX object
+  ppLCMS <- new("purityX")
+
+
+  maxscan <- minscan <- rep(NA, nrow(peaklist))
+  peaklist <- cbind(peaklist, minscan, maxscan)
+
+  for(i in 1:nrow(peaklist)){
+    peak <- peaklist[i,]
+    sid <- as.numeric(peak['sample'])
+    raw <- xset@rt$raw[[sid]]
+    corrected <- xset@rt$corrected[[sid]]
+
+    rtmed <- as.numeric(peak['rt'])
+    rtmin <- as.numeric(peak['rtmin'])
+    rtmax <- as.numeric(peak['rtmax'])
+    rtmedidx <- which(corrected==rtmed)
+    rtminidx <- which(corrected==rtmin)
+    rtmaxidx <- which(corrected==rtmax)
+
+    peaklist[i,]['minscan'] <- rtminidx
+    peaklist[i,]['maxscan'] <- rtmaxidx
+
+  }
+  dfp <- data.frame(peaklist)
+  dfp$id <- seq(1, nrow(peaklist))
+
+  sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
+                      rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
+                      ilim=ilim, plotP=plotP, isotopes=isotopes, im=im, singleCheck=FALSE)
+
+  ppLCMS@predictions <- sgrp
+
+
+  return(ppLCMS)
+
+}
+
+
+
+xcmsGroupPurity <- function(peaklist, filepths, purityType, offsets,
+                            fileignore, cores, xgroups,
+                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
+
+  # Create a purityX object
+  ppLCMS <- new("purityX")
 
   # assign a blank grpid column
   grpid <- rep(0, nrow(peaklist))
@@ -70,7 +138,7 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
   # Remove files that we do not want to look at
   if(!is.null(fileignore)){
-      grouplist <- grouplist[!grouplist[,'sample'] %in% fileignore, ]
+    grouplist <- grouplist[!grouplist[,'sample'] %in% fileignore, ]
   }
 
 
@@ -123,6 +191,8 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
   # get all the peaks from scans
   scanpeaks <- getscans(filepths, mzRback)
 
+  print(scanpeaks[[1]])
+
   # Check if it is going to be multi-core
   if(cores<=1){
     para = FALSE
@@ -146,18 +216,18 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
   # perform predictions
   purityPredictions <- plyr::dlply(grouplist,
-                             ~ grpid,
-                             .parallel = para,
-                             predictPurityLCMSloop,
-                             average="median",
-                             scanpeaks=scanpeaks,
-                             offsets=offsets,
-                             iwNorm=iwNorm,
-                             iwNormFun=iwNormFun,
-                             ilim=ilim,
-                             plotP=plotP,
-                             isotopes=isotopes,
-                             im=im)
+                                   ~ grpid,
+                                   .parallel = para,
+                                   predictPurityLCMSloop,
+                                   average="median",
+                                   scanpeaks=scanpeaks,
+                                   offsets=offsets,
+                                   iwNorm=iwNorm,
+                                   iwNormFun=iwNormFun,
+                                   ilim=ilim,
+                                   plotP=plotP,
+                                   isotopes=isotopes,
+                                   im=im)
 
   if(cores>1){
     parallel::stopCluster(cl)
@@ -204,7 +274,9 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
   return(ppLCMS)
 
+
 }
+
 
 
 
@@ -227,12 +299,12 @@ predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
 }
 
 pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
-                    plotP, isotopes, im){
+                    plotP, isotopes, im, singleCheck=TRUE){
 
   # Sometimes XCMS groups more than 1 peak from the same file in the XCMS
   # grouping stage.
   #we get the peak closet to the median retention time if this happens
-  if(nrow(grpi)>1){
+  if(nrow(grpi)>1 | singleCheck==TRUE){
     mtchidx <- which(abs(grpi$rt-rtmed)==min(abs(grpi$rt-rtmed)))
     # if two rt the same then pick the one with the highest intensity
     if(length(mtchidx)>1){
@@ -247,6 +319,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     target <- grpi[mtchidx, ]
   }else{
     target <- grpi
+
   }
 
   # Get the peaks from each scan of the region of interest (ROI)
@@ -257,16 +330,16 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
 
   #get purity for that region
   dfp <- plyr::ldply(roi_scns, pcalc,
-                         mzmin=mzmin,
-                         mzmax=mzmax,
-                         mztarget=target$mz,
-                         iwNorm=iwNorm,
-                         iwNormFun=iwNormFun,
-                         ilim=ilim,
-                         targetMinMZ=target$mzmin,
-                         targetMaxMZ=target$mzmax,
-                         isotopes=isotopes,
-                         im=im)
+                     mzmin=mzmin,
+                     mzmax=mzmax,
+                     mztarget=target$mz,
+                     iwNorm=iwNorm,
+                     iwNormFun=iwNormFun,
+                     ilim=ilim,
+                     targetMinMZ=target$mzmin,
+                     targetMaxMZ=target$mzmax,
+                     isotopes=isotopes,
+                     im=im)
 
   colnames(dfp) <- c("purity", "pknm")
 
@@ -282,7 +355,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
 
   if(plotP){
     plotnm <- paste(paste(grpi$grpid, "sample", grpi$sample, "mz",
-                round(grpi$mz, 3), "rt", round(grpi$rt, 3), sep="_"),
+                          round(grpi$mz, 3), "rt", round(grpi$rt, 3), sep="_"),
                     "png", sep=".")
 
     tic <- plyr::ldply(roi_scns, getTic, target = target, minOff = offsets[1],
@@ -316,7 +389,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
 
 
   pknmFWHMmedian <- median(dfp$pknm[dfp$scan>=fwhm[1] & dfp$scan<=fwhm[2]],
-                             na.rm = TRUE)
+                           na.rm = TRUE)
 
   pknmFWmedian <- median(dfp$pknm, na.rm = TRUE)
 
@@ -345,19 +418,19 @@ calculateFWHM <- function(df){
 }
 
 getEic <- function(roi_scn, target){
-    roi_scn <- data.frame(roi_scn)
+  roi_scn <- data.frame(roi_scn)
 
-    sub <- roi_scn[(roi_scn[,1]>=target$mzmin) & (roi_scn[,1]<=target$mzmax),]
+  sub <- roi_scn[(roi_scn[,1]>=target$mzmin) & (roi_scn[,1]<=target$mzmax),]
 
-    if(nrow(sub)>1){
-      # Use the mz value nearest to the
-      closeMtch <- sub[which.min(abs(sub[,1] - target$mz)),]
-      return(unlist(closeMtch[2]))
-    }else if(nrow(sub)==0){
-      return(0)
-    }else{
-      return(sub[,2])
-    }
+  if(nrow(sub)>1){
+    # Use the mz value nearest to the
+    closeMtch <- sub[which.min(abs(sub[,1] - target$mz)),]
+    return(unlist(closeMtch[2]))
+  }else if(nrow(sub)==0){
+    return(0)
+  }else{
+    return(sub[,2])
+  }
 }
 
 
@@ -373,4 +446,3 @@ getTic <- function(roi_scn, target, minOff, maxOff ){
 
 stde <- function(x) sd(x)/sqrt(length(x))
 CV <- function(x) (sd(x)/mean(x))*100
-
