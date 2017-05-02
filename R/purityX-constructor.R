@@ -45,8 +45,6 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
                     singleFile=0){
 
-
-
   if (singleFile>0){
 
     ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
@@ -148,6 +146,10 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 
   # remove peaks that have not been grouped together (i.e. only found in 1 file)
   grouplist <- peaklist[peaklist[,'grpid']>0,]
+  
+  # remove peaks that do not have SN value (means that they will be created from 
+  #  the 'fillpeaks' function
+  grouplist <- grouplist[!is.na(grouplist[,'grpid']),]
 
   # Remove files that we do not want to look at
   if(!is.null(fileignore)){
