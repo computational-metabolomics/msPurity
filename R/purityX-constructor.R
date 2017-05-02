@@ -85,7 +85,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   
   # remove peaks that do not have SN value (means that they will be created from 
   #  the 'fillpeaks' function)
-  peaklist <- peaklist[!is.na(grouplist[,'sn']),]
+  peaklist <- peaklist[!is.na( peaklist[,'sn']),]
 
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
