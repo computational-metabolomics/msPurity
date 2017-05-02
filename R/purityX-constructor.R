@@ -80,8 +80,8 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   
 
   maxscan <- minscan <- rep(NA, nrow(peaklist))
-  pid <- seq(1, nrow(peaklist))
-  peaklist <- cbind(peaklist, minscan, maxscan, pid)
+  id <- seq(1, nrow(peaklist))
+  peaklist <- cbind(peaklist, minscan, maxscan, id)
   
   # remove peaks that do not have SN value (means that they will be created from 
   #  the 'fillpeaks' function)
