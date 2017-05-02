@@ -40,7 +40,10 @@ test_that("checking lcms based functions", {
 
   ppLCMS_sf <- purityX(xset2, singleFile = 1)
 
-  expect_equal(round(median(ppLCMS_sf@predictions$id),3), 514)
+  #expect_equal(round(median(ppLCMS_sf@predictions$id),3), 514) Note that the new version of xcms
+  #                                                             now gives a different number of peaks using
+  #                                                             standard settings.. so we can't do this check anymore
+  #                                                             as it will fail with newer builds
   expect_equal(round(median(ppLCMS_sf@predictions$purityFWHMmedian, na.rm = T),3), 0.935)
   expect_equal(round(median(ppLCMS_sf@predictions$purityFWmedian),3), 0.505)
   expect_equal(round(median(ppLCMS_sf@predictions$pknmFWHMmedian, na.rm=T ),3), 2)

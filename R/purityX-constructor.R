@@ -45,8 +45,6 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
                     singleFile=0){
 
-
-
   if (singleFile>0){
 
     ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
@@ -79,10 +77,15 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   # Create a purityX object
   ppLCMS <- new("purityX")
-
+  
 
   maxscan <- minscan <- rep(NA, nrow(peaklist))
-  peaklist <- cbind(peaklist, minscan, maxscan)
+  id <- seq(1, nrow(peaklist))
+  peaklist <- cbind(peaklist, minscan, maxscan, id)
+  
+  # remove peaks that do not have SN value (means that they will be created from 
+  #  the 'fillpeaks' function)
+  peaklist <- peaklist[!is.na( peaklist[,'sn']),]
 
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
@@ -102,7 +105,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   }
   dfp <- data.frame(peaklist)
-  dfp$id <- seq(1, nrow(peaklist))
+  
 
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
@@ -148,6 +151,10 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 
   # remove peaks that have not been grouped together (i.e. only found in 1 file)
   grouplist <- peaklist[peaklist[,'grpid']>0,]
+  
+  # remove peaks that do not have SN value (means that they will be created from 
+  #  the 'fillpeaks' function)
+  grouplist <- grouplist[!is.na(grouplist[,'sn']),]
 
   # Remove files that we do not want to look at
   if(!is.null(fileignore)){
