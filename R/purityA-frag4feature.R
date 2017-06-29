@@ -44,14 +44,13 @@ setMethod(f="frag4feature", signature="purityA",
   puritydf <- pa@puritydf
   puritydf$fileid <- as.numeric(puritydf$fileid)
   allpeaks <- data.frame(xset@peaks)
-  allpeaks$id <- seq(1, nrow(allpeaks))
+  allpeaks$cid <- seq(1, nrow(allpeaks))
   allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=xset)
 
   if(convert2RawRT){
     allpeaks$rtminCorrected <- allpeaks$rtmin
     allpeaks$rtmaxCorrected <- allpeaks$rtmax
     allpeaks <- ddply(allpeaks, ~ sample, convert2Raw, xset=xset)
-
   }
 
 
@@ -138,7 +137,7 @@ fsub2  <- function(pro, allpeaks, intense, ppm){
     return(NULL)
   }
 
-  mtchMZ <- plyr::ddply(mtchRT, ~ id, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
+  mtchMZ <- plyr::ddply(mtchRT, ~ cid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
 
   return(mtchMZ)
 
@@ -192,7 +191,7 @@ getname <- function(x, xset){
 }
 
 grpByXCMS <- function(x, matched){
-  matched[matched$id %in% x,]
+  matched[matched$cid %in% x,]
 }
 
 convert2Raw <- function(x, xset){

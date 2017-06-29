@@ -8,7 +8,7 @@ Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
 Description: Assess the contribution of the targeted precursor in fragmentation acquired or anticipated isolation
     windows using a metric called "precursor purity". Also provides simple processing steps (averaging, filtering,
     blank subtraction, etc) for DI-MS data.
-    Works for both LC-MS(/MS) and DI-MS(/MS) data. 
+    Works for both LC-MS(/MS) and DI-MS(/MS) data.
 License: GPL (>= 2)
 LazyData: TRUE
 Depends:
@@ -54,3 +54,4 @@ Collate:
     'purityX-constructor.R'
     'spectral-complexity.R'
     'splinepurity.R'
+    'spectral_matching.R'
