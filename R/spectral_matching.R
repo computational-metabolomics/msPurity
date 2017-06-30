@@ -15,18 +15,19 @@
 #' spectral_matching(pa, grp_peaklist, xset, out_dir='.',db_name)
 #' @export
 spectral_matching_lcmsms <- function(pa, xset, ra_thres=2, cores=1, pol='positive', ppm_tol_MSMS=10, ppm_tol_prec=5,
-                                     topn=50, score_thres=0.6, out_dir='.', db_name='', grp_peaklist='', library_db_pth='',
-                                     instrument_types=''){
-  if (db_name == ""){
+                                     topn=50, score_thres=0.6, out_dir='.', db_name=NA, grp_peaklist=NA, library_db_pth=NA,
+                                     instrument_types=NA){
+  if (is.na(db_name)){
     db_name <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
   }
 
-  if (grp_peaklist == ""){
+  if (!is.data.frame(grp_peaklist)){
     grp_peaklist <- xcms::peakTable(xset)
-    grp_peaklist$grpid <- 1:nrow(grp_peaklist)
+
+    grp_peaklist <- data.frame(cbind('grpid'=1:nrow(grp_peaklist), grp_peaklist))
   }
 
-  if (library_db_pth == ""){
+  if (is.na(library_db_pth)){
     library_db_pth <- system.file("extdata", "library_spectra", "library_spectra.db", package="msPurityData")
   }
 
@@ -47,27 +48,85 @@ spectral_matching_lcmsms <- function(pa, xset, ra_thres=2, cores=1, pol='positiv
   return('db_name'=db_name)
 }
 
+real_or_rest <- function(x){
+  if(is.numeric(x)){
+    return('REAL')
+  }else{
+    return('TEXT')
+  }
+}
 
-export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
+get_column_info <- function(x, data_type){return(paste(x, data_type[x], sep = ' '))}
+
+get_create_query <- function(pk, fks=NA, table_name, df){
+
+  cns <- colnames(df)
+
+  if (anyNA(fks)){
+    cns_sml <- cns[which(!cns %in% pk)]
+  }else{
+    cns_sml <- cns[which(!cns %in% c(pk, names(fks)))]
+  }
+
+
+  data_type <- lapply(df[1, cns_sml], real_or_rest)
+
+  colmninfo <- sapply(cns_sml, get_column_info, data_type=data_type)
+
+  columninfo <- paste(colmninfo, collapse = ', ')
+
+  pkinfo <- paste(pk, ' INTEGER NOT NULL PRIMARY KEY', sep='')
+  if (anyNA(fks)){
+
+    if (columninfo==''){
+      allcolinfo <- pkinfo
+    }else{
+      allcolinfo <- paste(c( pkinfo, columninfo), collapse=', ')
+    }
+
+  }else{
+    fks_info1 <- sapply(fks, function(x){
+      paste(x$ref_name, 'INTEGER')
+    })
+
+    fks_info2 <- sapply(fks, function(x){
+      paste('FOREIGN KEY (', x$new_name, ') REFERENCES', x$ref_table, '(', x$ref_name, ')', sep=' ')
+    })
+
+    fksinfo <- paste(c(fks_info1, fks_info2), collapse = ', ')
+
+    if (columninfo==''){
+      allcolinfo <- paste(c(pkinfo, fksinfo), collapse=', ')
+    }else{
+      allcolinfo <- paste(c(pkinfo, columninfo,  fksinfo), collapse=', ')
+
+    }
+
+
+  }
+
+  return(paste('CREATE TABLE', table_name, '(', allcolinfo, ')', sep=' '))
+
+}
+
+update_cn_order <- function(pk_name, fk_names, df){
+  # primary key needs to be at the start
+  # foreign keys at the end
+  cn <- colnames(df)
+
+  if (anyNA(fk_names)){
+    columnorder <- c(pk_name, cn[!cn %in% pk_name])
+  }else{
+    columnorder <- c(pk_name, cn[!cn %in% c(pk_name, fk_names)], fk_names)
+  }
+  return(df[,columnorder])
+}
+
+export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name, explicit=TRUE){
 
   db_pth <- file.path(out_dir, db_name)
 
   con <- DBI::dbConnect(RSQLite::SQLite(),db_pth)
-
-  ###############################################
-  # Add c_peaks (i.e. XCMS individual peaks)
-  ###############################################
-  c_peaks <- data.frame(xset@peaks)
-  c_peaks$cid <- seq(1, nrow(c_peaks))
-  DBI::dbWriteTable(con, name='c_peaks', value=c_peaks, row.names=F, append=T)
-
-  ###############################################
-  # Add c_peak_groups (i.e. XCMS grouped peaks)
-  ###############################################
-  if (is.matrix(grp_peaklist)){
-    grp_peaklist <- data.frame(grp_peaklist)
-  }
-  DBI::dbWriteTable(con, name='c_peak_groups', value=grp_peaklist, row.names=F, append=T)
 
   ###############################################
   # Add File info
@@ -76,44 +135,129 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
   filepth_df <- data.frame(cbind('filename'=basename(pa@fileList), 'filepth'=pa@fileList))
   filedf <- unique(scan_info[ ,c('fileid', 'filename')])
   filedf <- merge(filedf, filepth_df)
+
+  filedf <- filedf[,c('fileid', 'filename', 'filepth')]
+
+  file_query <- get_create_query(pk='fileid', fks=NA, table_name='fileinfo', df=filedf)
+
+  sqr <- DBI::dbSendQuery(con, file_query)
+  DBI::dbClearResult(sqr)
+
   DBI::dbWriteTable(con, name='fileinfo', value=filedf, row.names=F, append=T)
+
+  ###############################################
+  # Add c_peaks (i.e. XCMS individual peaks)
+  ###############################################
+
+  c_peaks <- xset@peaks
+
+  c_peaks <- data.frame(cbind('cid'=1:nrow(c_peaks), c_peaks))
+  ccn <- colnames(c_peaks)
+  colnames(c_peaks)[which(ccn=='sample')] <- 'fileid'
+  colnames(c_peaks)[which(ccn=='into')] <- '_into'
+  if ('i' %in% colnames(c_peaks)){
+    c_peaks <- c_peaks[,-which(ccn=='i')]
+  }
+
+  fks <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
+  c_peak_query <- get_create_query(pk='cid', fks=fks, table_name='c_peaks', df=c_peaks)
+
+  sqr <- DBI::dbSendQuery(con, c_peak_query)
+  DBI::dbClearResult(sqr)
+  DBI::dbWriteTable(con, name='c_peaks', value=c_peaks, row.names=F, append=T)
+
+
+
+  ###############################################
+  # Add c_peak_groups (i.e. XCMS grouped peaks)
+  ###############################################
+  if (is.matrix(grp_peaklist)){
+    grp_peaklist <- data.frame(grp_peaklist)
+  }
+  grp_peaklist <- update_cn_order(pk_name = 'grpid',fk_names= NA, df = grp_peaklist)
+
+  grp_query <- get_create_query(pk='grpid', fks=NA, table_name='c_peak_groups', df=grp_peaklist)
+
+  sqr <- DBI::dbSendQuery(con, grp_query)
+  DBI::dbClearResult(sqr)
+  DBI::dbWriteTable(con, name='c_peak_groups', value=grp_peaklist, row.names=F, append=T)
 
   ###############################################
   # Add s_peak_meta (i.e. scan information)
   ###############################################
   dropc <- c('filename')
   scan_info <- scan_info[,!colnames(scan_info) %in% dropc]
+  scan_info <- update_cn_order(pk_name = 'pid',fk_names= 'fileid', df = scan_info)
+
+  fks <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
+  s_peak_meta_query <- get_create_query(pk='pid', fks=fks, table_name='s_peak_meta', df=scan_info )
+
+  sqr <- DBI::dbSendQuery(con, s_peak_meta_query)
+  DBI::dbClearResult(sqr)
+
   DBI::dbWriteTable(con, name='s_peak_meta', value=scan_info, row.names=F, append=T)
 
   ###############################################
   # Add s_peaks (i.e. the mz, i from each scan)
   ###############################################
-  scanpeaks_ms2 <- plyr::ddply(filedf, ~ fileid, function(x){
+  # ensure the filedf is in the same order as the scan_info file
+  # other wise the s_peak_meta ids might not match up
+  filedf <- filedf[as.numeric(unique(scan_info$fileid)),]
+
+  scanpeaks_frag <- plyr::ddply(filedf, ~ fileid, function(x){
     mr <- mzR::openMSfile(as.character(x$filepth))
     scanpeaks <- mzR::peaks(mr)
     scans <- mzR::header(mr)
     names(scanpeaks) <- seq(1, length(scanpeaks))
-    scanpeaks_df <- ldply(scanpeaks[scans$seqNum[scans$msLevel==2]], .id=T)
+    scanpeaks_df <- ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=T)
   })
 
-  comb <- paste(scanpeaks_ms2[,1], scanpeaks_ms2[,2], sep=' ')
-  scanpeaks_ms2 <- cbind(cumsum(!duplicated(comb)), scanpeaks_ms2)
-  colnames(scanpeaks_ms2) <- c('pid', 'fileid', 'scan_num', 'mz', 'i')
-  DBI::dbWriteTable(con, name='s_peaks', value=scanpeaks_ms2, row.names=F, append=T)
+  comb <- paste(scanpeaks_frag[,1], scanpeaks_frag[,2], sep=' ')
+  scanpeaks_frag <- cbind(1:nrow(scanpeaks_frag), cumsum(!duplicated(comb)), scanpeaks_frag)
+
+  colnames(scanpeaks_frag) <- c('sid','pid', 'fileid', 'scan', 'mz', 'i')
+
+  scanpeaks_frag <- update_cn_order(pk_name = 'sid',fk_names= c('fileid','pid'), df = scanpeaks_frag)
+
+  fks <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
+              'pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
+
+  s_peak_query <- get_create_query(pk='sid', fks=fks, table_name='s_peaks', df=scanpeaks_frag)
+
+  sqr <- DBI::dbSendQuery(con, s_peak_query)
+  DBI::dbClearResult(sqr)
+
+  DBI::dbWriteTable(con, name='s_peaks', value=scanpeaks_frag, row.names=F, append=T)
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to c_peak_group
   ###############################################
   grpdf <- pa@grped_df
   c_peak_X_c_peak_group <- unique(grpdf[ ,c('grpid', 'cid')])
+  c_peak_X_c_peak_group <- cbind('cXg_id'=1:nrow(c_peak_X_c_peak_group), c_peak_X_c_peak_group)
+
+  fks <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
+              'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
+  c_peak_X_c_peak_query <- get_create_query(pk='cXg_id', fks=fks, table_name='c_peak_X_c_peak_group', df=c_peak_X_c_peak_group)
+  sqr <- DBI::dbSendQuery(con, c_peak_X_c_peak_query)
+  DBI::dbClearResult(sqr)
+
   DBI::dbWriteTable(con, name='c_peak_X_c_peak_group', value=c_peak_X_c_peak_group, row.names=F, append=T)
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to s_peak_meta
   ###############################################
   c_peak_X_s_peak_meta <- unique(grpdf[ ,c('pid', 'cid')])
-  DBI::dbWriteTable(con, name='c_peak_X_s_peak_meta', value=c_peak_X_s_peak_meta, row.names=F, append=T)
+  c_peak_X_s_peak_meta <- cbind('cXp_id'=1:nrow(c_peak_X_s_peak_meta), c_peak_X_s_peak_meta)
 
+  fks <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
+              'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
+
+  c_peak_X_s_peak_meta_query <- get_create_query(pk='cXp_id', fks=fks, table_name='c_peak_X_s_peak_meta', df=c_peak_X_s_peak_meta)
+  sqr <- DBI::dbSendQuery(con, c_peak_X_s_peak_meta_query)
+  DBI::dbClearResult(sqr)
+
+  DBI::dbWriteTable(con, name='c_peak_X_s_peak_meta', value=c_peak_X_s_peak_meta, row.names=F, append=T)
   DBI::dbDisconnect(con)
 
   return(db_pth)
@@ -122,43 +266,39 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
 
 }
 
-match_2_library <- function(target_db_pth, library_db_pth, instrument_types="",
+match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, mslevel=NA, mslevel_match=TRUE,
                             ra_thres=2, cores=1, pol, ppm_tol_MSMS=100, ppm_tol_prec=50, topn=5){
 
-  if (instrument_types == ""){
+  if (is.na(instrument_types)){
     instrument_types <- c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
                           'LC-ESI-ITFT', 'LC-ESI-ITTOF','LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF')
   }
 
   #library_db <- 'W:\\users\\tnl495\\massbank\\massbank.db'
   # Get all of the target MS2 data
-  conT <- dbConnect(RSQLite::SQLite(), target_db_pth)
+  conT <- DBI::dbConnect(RSQLite::SQLite(), target_db_pth)
 
   # Get all of the library peaks based on parameters given
-  conL <- dbConnect(RSQLite::SQLite(), library_db_pth)
+  conL <- DBI::dbConnect(RSQLite::SQLite(), library_db_pth)
 
-  target_spectra <- dbGetQuery(conT,'select * from msms_peaks' )
+  target_spectra <- DBI::dbGetQuery(conT, 'SELECT * FROM s_peaks' )
 
   # get relative abundance
-  target_spectra <- ddply(target_spectra, .(file_id), function(x){
-    ddply(x, .(scan_id), function(y){
-      y$ra <- (y$i/max(y$i))*100
-      return(y)
-    })
-
+  target_spectra <- ddply(target_spectra, .(pid), function(x){
+    x$ra <- (x$i/max(x$i))*100
+    return(x)
   })
 
   # Match each target spectra to the library spectra
   # Only keep matches above certain criteria
-  meta <- dbGetQuery(conL, 'select * from meta_info' )
 
+  ints_string <- paste("'",paste(instrument_types, collapse = "', '"), "'", sep='')
+  meta_query <- sprintf("SELECT * FROM meta_info WHERE polarity = '%s' AND instrument_type IN (%s)", pol, ints_string)
+  meta <- DBI::dbGetQuery(conL, meta_query)
 
-
-
-
-  meta_f <- meta[meta$ms_level=='MS2' & (meta$instrument_type %in% instrument_types) & meta$polarity==pol,]
-
-  scan_info <- dbGetQuery(conT,'select * from scan_info' )
+  if (!is.na(mslevel)){
+    meta <- meta[meta$ms_level==mslevel,]
+  }
 
   #prec_ppm <- abs(1e6*outer(scan_info$precursorMZ, meta_f$precursor_mz, '-')/scan_info$precursorMZ)
 
@@ -167,12 +307,17 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types="",
   #prec_ppm <- cbind(prec_ppm, )
   #prec_ppm[]
 
-  meta_ids <- paste(meta_f$UID,collapse=", ")
+  meta_ids <- paste(meta$UID,collapse=", ")
 
-  library_spectra <- dbGetQuery(conL, sprintf('SELECT * FROM spectra WHERE meta_info_uid IN (%s)', meta_ids) )
+  library_spectra <- DBI::dbGetQuery(conL, sprintf('SELECT * FROM spectra WHERE meta_info_uid IN (%s)', meta_ids) )
 
   # Will update this
-  library_spectra$ra <- library_spectra$intensity
+
+  library_spectra <- ddply(library_spectra, .(meta_info_uid), function(x){
+    x$ra <- (x$i/max(x$i))*100
+    return(x)
+  })
+
 
   # Relative abundnace threshold
   target_spectra <- target_spectra[target_spectra$ra>=ra_thres,]
@@ -188,6 +333,8 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types="",
 
   # Order by relative abundance for target spectra
   target_spectra <- target_spectra[order(target_spectra[,'pid'], -target_spectra[,'ra']), ]
+
+  scan_info <- DBI::dbGetQuery(conT,'SELECT * FROM s_peak_meta' )
 
   # we loop through the target spectra as list
   target_spectra_list <- dlply(target_spectra, .(pid), function(x){
@@ -206,9 +353,11 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types="",
 
     cl<-parallel::makeCluster(cores, type = "SOCK")
     doSNOW::registerDoSNOW(cl)
+    parallel = TRUE
 
   }else{
     operator <- foreach::'%do%'
+    parallel = FALSE
   }
 
   #tnm <- length(target_spectra_list)
@@ -216,9 +365,9 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types="",
   #progress <- function(n) setTxtProgressBar(pb, n)
   #opts <- list(progress=progress)
 
-  allmatches_l <- llply(target_spectra_list,.parallel = TRUE, match_targets,
+  allmatches_l <- llply(target_spectra_list,.parallel = parallel, match_targets,
                         library_spectra=library_spectra,
-                        library_precs=meta_f$precursor_mz,
+                        library_precs=meta$precursor_mz,
                         ppm_tol_MSMS=ppm_tol_MSMS,
                         ppm_tol_prec=ppm_tol_prec)
 
@@ -233,17 +382,7 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types="",
   })
 
 
-  #allmatches <- saveRDS(allmatches, 'C:\\DATA\\matching_test.rds')
-
-  # Filter down based on match score
-  #allmatches <- allmatches[allmatches[,'score']>0.5,]
-
-  #allmatches <- allmatches[allmatches[,'match']>=1,]
-
-  #allmatches <- allmatches[allmatches[,'perc_mtch']>0.1,]
-
-  # Add some additional information f
-  allmdf2 <- merge(allmatches, meta_f, by.x = 'lid', by.y='UID')
+  allmdf2 <- merge(allmatches, meta, by.x = 'lid', by.y='UID')
 
   allmdf2 <- merge(allmdf2, scan_info , by.x = 'pid', by.y='pid')
 
@@ -267,9 +406,11 @@ get_topn_xcms_table <- function(target_db_pth, topn, score_f=0.3, frag_nm_f=1){
 
   pids <- paste(MA$pid, collapse=", ")
 
-  XLI <- dbGetQuery(conT, 'SELECT matches.*, xcms_msms_link.grpid, xcms_msms_link.filename, xcms_msms_link.precurMtchID  FROM xcms_msms_link
-                    INNER JOIN matches
-                    ON matches.pid=xcms_msms_link.pid')
+  XLI <- dbGetQuery(conT, 'SELECT matches.*, xcms_msms_link.grpid, xcms_msms_link.filename, xcms_msms_link.precurMtchID
+                           FROM xcms_msms_link
+                           LEFT JOIN matches ON matches.pid=s_peak_meta.pid
+                           LEFT JOIN c_peak_X_s_peak_meta ON matches.pid=s_peak_meta.pid
+                           ')
 
   XLI <- XLI[XLI$score>=score_f & XLI$match>=frag_nm_f,]
 
@@ -376,19 +517,16 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_MSMS=100, 
   target_peaks <- target_peaks_list[[1]]
   target_prec <- target_peaks_list[[2]]
 
+  tcnm = c('mz','ra','type','w')
+
   # Convert target peaks to matrix for speed
   if(is.vector(target_peaks) | nrow(target_peaks)==1){
-    pid <- target_peaks['pid']
-
-    nms <- names(target_peaks)
-    target_peaks <- target_peaks[c('mz','ra','type','w')]
-
-    target_peaks <- matrix(as.numeric(target_peaks), nrow=1, ncol=length(nms))
-    colnames(target_peaks) <- nms
-
+    target_peaks <- target_peaks[tcnm]
+    target_peaks <- matrix(as.numeric(target_peaks), nrow=1, ncol=4)
+    colnames(target_peaks) <- tcnm
   }else{
     pid <- unique(target_peaks[,'pid'])
-    target_peaks <- as.matrix(target_peaks[,c('mz','ra','type','w')])
+    target_peaks <- as.matrix(target_peaks[,tcnm])
   }
 
   # get unique ids of library_spectra precursor 'meta' info
