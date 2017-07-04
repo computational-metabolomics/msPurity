@@ -23,7 +23,6 @@ spectral_matching_lcmsms <- function(pa, xset, ra_thres=2, cores=1, pol='positiv
 
   if (!is.data.frame(grp_peaklist)){
     grp_peaklist <- xcms::peakTable(xset)
-
     grp_peaklist <- data.frame(cbind('grpid'=1:nrow(grp_peaklist), grp_peaklist))
   }
 
@@ -209,7 +208,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name, explicit=T
     scanpeaks <- mzR::peaks(mr)
     scans <- mzR::header(mr)
     names(scanpeaks) <- seq(1, length(scanpeaks))
-    scanpeaks_df <- ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=T)
+    scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=T)
   })
 
   comb <- paste(scanpeaks_frag[,1], scanpeaks_frag[,2], sep=' ')
@@ -266,10 +265,29 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name, explicit=T
 
 }
 
+ra_calc <- function(x){
+  x$ra <- (x$i/max(x$i))*100
+  return(x)
+}
+
+custom_dbWriteTable <- function(pk_name, fks, df, table_name){
+
+  df <- update_cn_order(pk_name=pk_name, fk_names=names(fks), df = df)
+  query <- get_create_query(pk=pk_name, fks=fks, table_name=table_name, df=df)
+  sqr <- DBI::dbSendQuery(con, df)
+  DBI::dbWriteTable(con, name=table_name, value=library_meta_f, row.names=T, append=T)
+
+
+}
+
+get_target_spectra_list <- function(x){
+  list(x, scan_info[scan_info$pid==unique(x$pid),]$precursorMZ)
+}
+
 match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, mslevel=NA, mslevel_match=TRUE,
                             ra_thres=2, cores=1, pol, ppm_tol_MSMS=100, ppm_tol_prec=50, topn=5){
 
-  if (is.na(instrument_types)){
+  if (anyNA(instrument_types)){
     instrument_types <- c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
                           'LC-ESI-ITFT', 'LC-ESI-ITTOF','LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF')
   }
@@ -284,20 +302,17 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   target_spectra <- DBI::dbGetQuery(conT, 'SELECT * FROM s_peaks' )
 
   # get relative abundance
-  target_spectra <- ddply(target_spectra, .(pid), function(x){
-    x$ra <- (x$i/max(x$i))*100
-    return(x)
-  })
+  target_spectra <- plyr::ddply(target_spectra, ~ pid, ra_calc)
 
   # Match each target spectra to the library spectra
   # Only keep matches above certain criteria
 
   ints_string <- paste("'",paste(instrument_types, collapse = "', '"), "'", sep='')
-  meta_query <- sprintf("SELECT * FROM meta_info WHERE polarity = '%s' AND instrument_type IN (%s)", pol, ints_string)
-  meta <- DBI::dbGetQuery(conL, meta_query)
+  library_meta_query <- sprintf("SELECT * FROM meta_info WHERE polarity = '%s' AND instrument_type IN (%s)", pol, ints_string)
+  library_meta <- DBI::dbGetQuery(conL, library_meta_query)
 
   if (!is.na(mslevel)){
-    meta <- meta[meta$ms_level==mslevel,]
+    library_meta <- library_meta[library_meta$ms_level==mslevel,]
   }
 
   #prec_ppm <- abs(1e6*outer(scan_info$precursorMZ, meta_f$precursor_mz, '-')/scan_info$precursorMZ)
@@ -307,16 +322,13 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   #prec_ppm <- cbind(prec_ppm, )
   #prec_ppm[]
 
-  meta_ids <- paste(meta$UID,collapse=", ")
+  library_meta_ids <- paste(library_meta$UID,collapse=", ")
 
-  library_spectra <- DBI::dbGetQuery(conL, sprintf('SELECT * FROM spectra WHERE meta_info_uid IN (%s)', meta_ids) )
+  library_spectra <- DBI::dbGetQuery(conL, sprintf('SELECT * FROM spectra WHERE meta_info_uid IN (%s)', library_meta_ids) )
 
   # Will update this
 
-  library_spectra <- ddply(library_spectra, .(meta_info_uid), function(x){
-    x$ra <- (x$i/max(x$i))*100
-    return(x)
-  })
+  library_spectra <- plyr::ddply(library_spectra, ~ meta_info_uid, ra_calc)
 
 
   # Relative abundnace threshold
@@ -337,10 +349,7 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   scan_info <- DBI::dbGetQuery(conT,'SELECT * FROM s_peak_meta' )
 
   # we loop through the target spectra as list
-  target_spectra_list <- dlply(target_spectra, .(pid), function(x){
-    list(x, scan_info[scan_info$pid==unique(x$pid),]$precursorMZ)
-  })
-
+  target_spectra_list <- plyr::dlply(target_spectra, ~ pid, get_target_spectra_list)
 
   # Convert library spectra to matrix for speed
   library_spectra <- as.matrix(library_spectra[,c('mz','ra','type','w','meta_info_uid')])
@@ -365,22 +374,26 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   #progress <- function(n) setTxtProgressBar(pb, n)
   #opts <- list(progress=progress)
 
-  allmatches_l <- llply(target_spectra_list,.parallel = parallel, match_targets,
+  allmatches_l <- plyr::llply(target_spectra_list,.parallel = parallel, match_targets,
                         library_spectra=library_spectra,
-                        library_precs=meta$precursor_mz,
+                        library_precs=library_meta$precursor_mz,
                         ppm_tol_MSMS=ppm_tol_MSMS,
                         ppm_tol_prec=ppm_tol_prec)
 
-  allmatches <- ldply(allmatches_l, .id = 'pid')
+  allmatches <- plyr::ldply(allmatches_l, .id = 'pid')
 
-  allmatches <- ddply(allmatches, .(pid), function(x){
-    if(nrow(x)>topn){
-      return(x[topn,])
-    }else{
-      return(x)
-    }
-  })
+  if (!is.na(topn)){
+    allmatches <- plyr::ddply(allmatches, ~ pid, get_topn)
+  }
 
+  library_meta_f <- library_meta[library_meta$UID %in% allmatches$lid, ]
+
+  library_meta_f <- update_cn_order(pk_name='UID',fk_names= NA, df = library_meta_f)
+
+  library_meta_f_query <- get_create_query(pk='UID', fks=NA, table_name='library_meta', df=library_meta_f)
+  sqr <- DBI::dbSendQuery(conT, library_meta_f_query)
+
+  DBI::dbWriteTable(conT, name='library_meta', value=library_meta_f, row.names=T, append=T)
 
   allmdf2 <- merge(allmatches, meta, by.x = 'lid', by.y='UID')
 
@@ -392,6 +405,15 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
 
   dbDisconnect(conT)
   dbDisconnect(conL)
+
+}
+
+get_topn <- function(x){
+  if(nrow(x)>topn){
+    return(x[topn,])
+  }else{
+    return(x)
+  }
 
 }
 
@@ -530,13 +552,13 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_MSMS=100, 
   }
 
   # get unique ids of library_spectra precursor 'meta' info
-  meta_info_ids <- unique(library_spectra[,'meta_info_uid'])
+  library_meta_ids <- unique(library_spectra[,'meta_info_uid'])
 
   # Get ppm difference between precursor from library and target
   ppmdiff_prec <- as.vector(abs(1e6*outer(target_prec, library_precs, '-')/target_prec))
 
   # Filter the library spectra that does not meet the precursor tolerance check
-  library_spectra_red <- library_spectra[library_spectra[,'meta_info_uid'] %in% meta_info_ids[ppmdiff_prec<=ppm_tol_prec],]
+  library_spectra_red <- library_spectra[library_spectra[,'meta_info_uid'] %in% library_meta_ids[ppmdiff_prec<=ppm_tol_prec],]
 
   # Exit if no peaks left (if vector it means it is just 1 row)
   if(is.vector(library_spectra_red)){
@@ -561,11 +583,11 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_MSMS=100, 
 
   l = list()
 
-  meta_info_ids <- unique(library_spectra_red[,'meta_info_uid'])
+  library_meta_info_ids <- unique(library_spectra_red[,'meta_info_uid'])
 
   for(j in 1:lnm){
 
-    uid <- meta_info_ids[j]
+    uid <- library_meta_info_ids[j]
 
     mtch<- matchi(ppmdiff = ppmdiff_all[,(gidx[j]+1):gidx[j+1]],
                   idiff = idiff_all[,(gidx[j]+1):gidx[j+1]],
@@ -577,7 +599,7 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_MSMS=100, 
     l[[j]] <- c(mtch, uid)
   }
 
-  d <-ldply(l)
+  d <-plyr::ldply(l)
 
 
   if(nrow(d)==0){
