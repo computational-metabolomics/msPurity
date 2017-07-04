@@ -65,7 +65,6 @@ get_create_query <- function(pk, fks=NA, table_name, df){
     cns_sml <- cns[which(!cns %in% c(pk, names(fks)))]
   }
 
-
   data_type <- lapply(df[1, cns_sml], real_or_rest)
 
   colmninfo <- sapply(cns_sml, get_column_info, data_type=data_type)
@@ -393,19 +392,15 @@ get_xcms_sm_summary <- function(target_db_pth, topn=NA, score_f=0.3, frag_nm_f=1
   }
   
   # Summaries the annotation hits
-  xcms_mtch <- ddply(XLI ~ grpid, get_ann_summary)
+  xcms_mtch <- plyr::ddply(XLI, ~ grpid, get_ann_summary)
 
   if(nrow(xcms_mtch)==0){
     print('NO MATCHES FOR XCMS')
-    dbDisconnect(conT)
+    DBI::dbDisconnect(conT)
     return(0)
   }
 
-  colnames(xcms_mtch) <- c('grpid', 'overlap_match_name', 'median_score',
-                           'median_matches', 'median_perc', 'all_matches','number_of_scans','all_pids','all_lids')
-
-
-  dbWriteTable(conT, name='xcms_match', value=xcms_mtch, row.names=F, append=T)
+  DBI::dbWriteTable(conT, name='xcms_match', value=xcms_mtch, row.names=F, append=T)
 
   return(xcms_mtch)
 
@@ -420,40 +415,33 @@ check_topn <- function(x){
    }
 }
 
-unique_name <- function(y){unique(y$name)}
 
 
+median_match_results <- function(y){
+  c('best_median_score'=median(y$score), 'best_median_perc_mtch'=median(y$perc_mtch), 'best_median_match'=median(y$match))
+}
 
 get_ann_summary <- function(x){
-  # Get all the unique names matched from each scan
-  pidl <- plyr::dlply(x, ~ pid, unique_name)
+  # get the 'best' match based on the best scored compounds with
+  # the same name
+  med_results <- plyr::ddply(x, ~ name, median_match_results)
   
-  # Get the number of scans for this feature
-  pids <- unique(x$pid)
+  med_results <- med_results[order(med_results$best_median_score, decreasing = TRUE),]
+  colnames(med_results)[1] <- 'best_name'
+  best_match <- med_results[1,]
+  
+  unique_names <- med_results$name
+  
+  # Get all the matches
+  allnames <- paste(unlist(x$name),collapse=", ")
+  allpids <- paste(unlist(x$pid),collapse=", ")
+  alllids <- paste(unlist(x$lid),collapse=", ")
+  allscores <- paste(unlist(round(x$score,3)),collapse=", ")
   
   snm <- length(pids)
   
-  # get the 'best' match based on the best scored compounds with
-  # the same name
-  best_match <- ''
-  
-  # If joint match just use the first match
-  if(length(overlap_mtch>1)){
-    overlap_mtch <- overlap_mtch[1]
-  }
-  
-  # Get the average match scores
-  mx <- x[x$name==overlap_mtch,]
-  
-  mperc <- median(mx$perc_mtch)
-  mscore <- median(mx$score)
-  mmatch <- median(mx$match)
-  
-  # Get all the matches
-  allmtch <- paste(unlist(pidl),collapse=", ")
-  allpids <- paste(unlist(pids),collapse=", ")
-  alllids <- paste(unlist(unique(mx$lid)),collapse=", ")
-  out_v <- c(overlap_mtch, mscore, mmatch, mperc, allmtch, snm, allpids, alllids)
+  out_v <- c(unlist(best_match), 'all_names'=allnames, 'all_pids'=allpids,
+             'all_lids'=alllids, 'all_scores'=allscores, 'numb_scans'=snm)
   
 }
 

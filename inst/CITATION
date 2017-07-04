@@ -1,0 +1,10 @@
+citHeader("To cite the msPurity package in publications use:")
+
+citEntry(entry="article",
+   author="Lawson, Thomas Nigel and Weber, Ralf J. M. and Jones, Martin R. and Chetwynd, Andrew J. and Rodriguez Blanco, Giovanny Alejandro and Di Guida, Riccardo and Viant, Mark R. and Dunn, Warwick B",
+   title="msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry-Based Fragmentation in Metabolomics.",
+   journal="Analytical Chemistry",
+   year="2017",
+   volume="89",
+   pages="2432-2439",
+   doi = "10.1021/acs.analchem.6b04358")
