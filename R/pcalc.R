@@ -229,6 +229,8 @@ MHmakeRandomString <- function(n=1, lenght=12){
   return(randomString)
 }
 
+
+
 im_tag <- function(x, peaks, target_mz, target_i){
 
   iid <- x[1]
@@ -244,8 +246,8 @@ im_tag <- function(x, peaks, target_mz, target_i){
   mr = target_mz+mdiff
   ml = target_mz-mdiff
 
-  peaks$ppmR <- sapply(peaks$mz, function(x){ppm_diff(x, mr)})
-  peaks$ppmL <- sapply(peaks$mz, function(x){ppm_diff(x, ml)})
+  peaks$ppmR <- sapply(peaks$mz, ppm_error, MZiso=mr)
+  peaks$ppmL <- sapply(peaks$mz, ppm_error, MZiso=ml)
 
   # Check if contaminating peaks are the M+1.. isotopes
   # filter the peaks so we are only looking at those with less than the
@@ -303,11 +305,11 @@ get_iso_intensity_range <- function(rp=FALSE, target_mz, target_i, adiff, ram, a
     inten_max <- ((numE * adiff + atol) / 100) * target_i # highest possible intensity (for M+1(or more)  isotope)
     inten_min <- ((1 * adiff - atol) / 100) * target_i # lowest possible intensity (for M+1(or more) isotope)
   }
-
   return(c(inten_min, inten_max))
-
 }
 
-ppm_diff <- function(x, y){
-  abs(1e6*(y-abs(x))/y)
+ppm_error <- function(MZcont, MZiso){
+  # MZcont = Observered MZcontaminating peak
+  # MZiso = Theoritical MZisotopic peak
+  abs(1e6*(MZcont-abs(MZiso))/MZiso)
 }

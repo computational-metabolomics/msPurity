@@ -40,5 +40,6 @@ xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths, interpol = "linear")
+pa <- frag4feature(pa, xset)
 
 }

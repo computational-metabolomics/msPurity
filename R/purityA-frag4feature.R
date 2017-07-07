@@ -26,7 +26,7 @@
 #' xset <- xcms::group(xset)
 #'
 #' pa  <- purityA(msmsPths, interpol = "linear")
-#  pa <- frag4feature(pa, xset)
+#' pa <- frag4feature(pa, xset)
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
