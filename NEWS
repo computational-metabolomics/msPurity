@@ -1,3 +1,8 @@
+CHANGES IN VERSION 1.3.1
+=========================
+* Add spectral matching functionality for LC-MS/MS
+
+
 CHANGES IN VERSION 1.1.1
 =========================
 * Added pcalc functions to be used by user
@@ -6,7 +11,7 @@ CHANGES IN VERSION 1.1.1
 
 CHANGES IN VERSION 0.99.10/11/12
 =========================
-* Troubleshooting windows build failure 
+* Troubleshooting windows build failure
 
 
 CHANGES IN VERSION 0.99.9

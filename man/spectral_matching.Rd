@@ -2,12 +2,13 @@
 % Please edit documentation in R/spectral_matching.R
 \name{spectral_matching}
 \alias{spectral_matching}
-\title{Spectral matching for LC-MSMS}
+\title{Spectral matching}
 \usage{
 spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
   pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
   score_thres = 0.6, out_dir = ".", topn = NA, db_name = NA,
-  grp_peaklist = NA, library_db_pth = NA, instrument_types = NA)
+  grp_peaklist = NA, library_db_pth = NA, instrument_types = NA,
+  library_sources = c("massbank"))
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}
@@ -42,6 +43,8 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
 
 \item{instrument_types}{vector = [optional] vector of instrument types, defaults to c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
 LC-ESI-ITFT', 'LC-ESI-ITTOF','LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF')}
+
+\item{library_sources}{vector = [optional] vector of library sources. Default option is for massbank.}
 }
 \value{
 path to SQLite database

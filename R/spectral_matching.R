@@ -1,4 +1,4 @@
-#' @title Spectral matching for LC-MSMS
+#' @title Spectral matching
 #'
 #' @description
 #' Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
@@ -38,6 +38,8 @@
 spectral_matching <- function(pa, xset, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, out_dir='.', topn=NA, db_name=NA, grp_peaklist=NA, library_db_pth=NA,
                                      instrument_types=NA, library_sources=c('massbank')){
+  message("Running msPurity spectral matching function for LC-MS(/MS) data")
+
   if (is.na(db_name)){
     db_name <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
   }
@@ -55,12 +57,14 @@ spectral_matching <- function(pa, xset, ra_thres_l=0, ra_thres_t=2, cores=1, pol
   ########################################################
   # Export the target data into sqlite database
   ########################################################
+  message("Creating a database of fragmentation spectra and LC features")
   target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, out_dir, db_name)
 
   ########################################################
   # Perform the spectral matching
   ########################################################
-  match_2_library(target_db_pth,
+  message("Performing spectral matching")
+  matched <- match_2_library(target_db_pth,
                   library_db_pth,
                   ra_thres_t=ra_thres_t,
                   ra_thres_l=ra_thres_l,
@@ -75,7 +79,13 @@ spectral_matching <- function(pa, xset, ra_thres_l=0, ra_thres_t=2, cores=1, pol
   ########################################################
   # Create a summary table for xcms grouped objects
   ########################################################
-  xcms_summary_df <- get_xcms_sm_summary(target_db_pth, topn=topn, score_f=score_thres)
+  if (matched){
+    message("Summarising LC features annotations")
+    xcms_summary_df <- get_xcms_sm_summary(target_db_pth, topn=topn, score_f=score_thres)
+  }else{
+    xcms_summary_df <- NA
+  }
+
 
   return(list('db_name' = db_name, 'out_dir' = out_dir, 'xcms_summary_df' = xcms_summary_df))
 }
@@ -290,10 +300,7 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
                             ra_thres_t=2, ra_thres_l=0, cores=1, pol, ppm_tol_prod=100, ppm_tol_prec=50, topn=5,
                             library_sources=NA){
 
-  if (anyNA(instrument_types)){
-    instrument_types <- c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
-                          'LC-ESI-ITFT', 'LC-ESI-ITTOF','LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF')
-  }
+
 
 
   ########################################################
@@ -323,30 +330,31 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
 
   # Match each target spectra to the library spectra
   # Only keep matches with certain criteria certain criteria
-  ints_string <- paste("'",paste(instrument_types, collapse = "', '"), "'", sep='')
+
   if (anyNA(library_sources)){
-    library_meta_query <- sprintf("SELECT * FROM library_spectra_meta
-                                WHERE polarity = '%s' AND instrument_type IN (%s)", pol, ints_string)
+    library_meta_query <- sprintf("SELECT * FROM library_spectra_meta WHERE polarity = '%s'", pol)
   }else{
     l_source_str <- paste("'",paste(library_sources, collapse = "', '"), "'", sep='')
     library_meta_query <- sprintf("SELECT m.*, s.name AS source_name FROM library_spectra_meta as m
                                     LEFT JOIN library_spectra_source AS s ON s.id=m.library_spectra_source_id
-                                    WHERE m.polarity = '%s' AND m.instrument_type IN (%s)
-                                      AND s.name IN (%s)", pol, ints_string, l_source_str)
+                                    WHERE m.polarity = '%s' AND s.name IN (%s)", pol, l_source_str)
   }
 
-  print(library_meta_query)
+
+  if (!anyNA(instrument_types)){
+    # instrument_types <- c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
+    #                       'LC-ESI-ITFT', 'LC-ESI-ITTOF','LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF')
+    ints_string <- paste("'",paste(instrument_types, collapse = "', '"), "'", sep='')
+    library_meta_query <- paste(library_meta_query, sprintf(" AND instrument_type IN (%s)", ints_string))
+
+  }
 
 
   library_meta <- DBI::dbGetQuery(conL, library_meta_query)
 
-  print(head(library_meta))
   if (!is.na(mslevel)){
     library_meta <- library_meta[library_meta$ms_level==mslevel,]
   }
-
-
-
 
   library_meta_ids <- paste(library_meta$id, collapse=", ")
 
@@ -357,6 +365,7 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   library_spectra <- library_spectra[library_spectra$ra>ra_thres_l,] # mass bank default does not do this filter
 
   library_spectra$type <- 2
+
 
   ########################################################
   # Weight spectra
@@ -405,27 +414,34 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   ########################################################
   # Submit to database
   ########################################################
-  if (!is.na(topn)){
-    allmatches <- plyr::ddply(allmatches, ~ pid, get_topn)
+  if (nrow(allmatches)>0){
+    if (!is.na(topn)){
+      allmatches <- plyr::ddply(allmatches, ~ pid, get_topn)
+    }
+
+    library_meta_f <- library_meta[library_meta$id %in% allmatches$lid, ]
+
+    colnames(library_meta_f)[which(colnames(library_meta_f)=='id')] = 'lid'
+
+    custom_dbWriteTable(name_pk = 'lid', fks = NA,
+                        df=library_meta_f, table_name = 'library_meta', con = conT)
+
+    allmatches$mid <- 1:nrow(allmatches)
+
+    fks_lid <- list('lid'=list('new_name'='lid', 'ref_name'='lid', 'ref_table'='library_spectra_meta'))
+    fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
+
+    custom_dbWriteTable(name_pk = 'mid', fks = append(fks_lid, fks_pid),
+                        df=allmatches, table_name = 'matches', con = conT)
+    matched = TRUE
+  }else{
+    matched = FALSE
   }
-
-  library_meta_f <- library_meta[library_meta$UID %in% allmatches$lid, ]
-
-  colnames(library_meta_f)[which(colnames(library_meta_f)=='id')] = 'lid'
-
-  custom_dbWriteTable(name_pk = 'lid', fks = NA,
-                      df=library_meta_f, table_name = 'library_meta', con = conT)
-
-  allmatches$mid <- 1:nrow(allmatches)
-
-  fks_lid <- list('lid'=list('new_name'='lid', 'ref_name'='lid', 'ref_table'='library_spectra_meta'))
-  fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
-
-  custom_dbWriteTable(name_pk = 'mid', fks = append(fks_lid, fks_pid),
-                      df=allmatches, table_name = 'matches', con = conT)
 
   DBI::dbDisconnect(conT)
   DBI::dbDisconnect(conL)
+
+  return(matched)
 
 }
 
