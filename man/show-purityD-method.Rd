@@ -16,4 +16,3 @@ a print statement of regarding object
 \description{
 Show method for purityD object
 }
-

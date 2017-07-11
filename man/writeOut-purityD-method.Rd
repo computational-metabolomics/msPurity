@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-writeOut.R
 \docType{methods}
 \name{writeOut,purityD-method}
-\alias{writeOut}
 \alias{writeOut,purityD-method}
+\alias{writeOut}
 \title{Using purityD object, save peaks as text files}
 \usage{
 \S4method{writeOut}{purityD}(Object, outDir, original)
@@ -22,4 +22,3 @@ purityD object
 Uses a purityD object with references to multiple MS files.
 Predicts the purity of the processed sample files
 }
-

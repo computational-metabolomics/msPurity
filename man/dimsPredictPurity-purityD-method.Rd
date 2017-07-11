@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityD-dims-purity.R
 \docType{methods}
 \name{dimsPredictPurity,purityD-method}
-\alias{dimsPredictPurity}
 \alias{dimsPredictPurity,purityD-method}
+\alias{dimsPredictPurity}
 \title{Using purityD object, assess anticipated purity from a DI-MS run}
 \usage{
 \S4method{dimsPredictPurity}{purityD}(Object, ppm = 1.5, minOffset = 0.5,
@@ -53,4 +53,3 @@ ppDIMS <- dimsPredictPurity(ppDIMS)
 \seealso{
 \code{\link{dimsPredictPuritySingle}}
 }
-

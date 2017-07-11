@@ -28,7 +28,7 @@ test_that("checking lcms based functions", {
   msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
   xset2 <- xcmsSet(msPths)
   xset2 <- group(xset2)
-  ppLCMS <- purityX(xset2, cores = 1, xgroups = c(1, 2))
+  ppLCMS <- purityX(xset2, cores = 1, xgroups = c(1, 2), ilim=0)
 
   expect_equal(round(median(ppLCMS@predictions$grpid),3), 1.5)
   expect_equal(round(median(ppLCMS@predictions$mean),3), 0.995)
@@ -36,6 +36,20 @@ test_that("checking lcms based functions", {
   expect_equal(round(median(ppLCMS@predictions$sd, na.rm=TRUE),3), 0.001)
   expect_equal(round(median(ppLCMS@predictions$i),3), 43822022)
   expect_equal(round(median(ppLCMS@predictions$mz),3), 102.573)
+
+
+  ppLCMS_sf <- purityX(xset2, singleFile = 1)
+
+  #expect_equal(round(median(ppLCMS_sf@predictions$id),3), 514) Note that the new version of xcms
+  #                                                             now gives a different number of peaks using
+  #                                                             standard settings.. so we can't do this check anymore
+  #                                                             as it will fail with newer builds
+  expect_equal(round(median(ppLCMS_sf@predictions$purityFWHMmedian, na.rm = T),3), 0.935)
+  expect_equal(round(median(ppLCMS_sf@predictions$purityFWmedian),3), 0.505)
+  expect_equal(round(median(ppLCMS_sf@predictions$pknmFWHMmedian, na.rm=T ),3), 2)
+  expect_equal(round(median(ppLCMS_sf@predictions$pknmFWmedian),3), 3)
+
+
 
 })
 

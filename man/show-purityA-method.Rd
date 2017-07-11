@@ -16,4 +16,3 @@ a print statement of regarding object
 \description{
 print statement for purityA class
 }
-

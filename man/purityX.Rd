@@ -6,8 +6,8 @@
 \usage{
 purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
   fileignore = NULL, cores = 1, xgroups = NULL, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0, plotP = FALSE, mzRback = "pwiz",
-  isotopes = FALSE, im = NULL)
+  iwNormFun = NULL, ilim = 0.05, plotP = FALSE, mzRback = "pwiz",
+  isotopes = FALSE, im = NULL, singleFile = 0)
 }
 \arguments{
 \item{xset}{object = xcms object}
@@ -36,6 +36,8 @@ purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
 \item{isotopes}{boolean = TRUE if isotopes are to be removed}
 
 \item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+
+\item{singleFile}{numeric = If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.}
 }
 \value{
 a purityX object containing a dataframe of predicted purity scores
@@ -54,4 +56,3 @@ xset <- xcms::group(xset)
 ppLCMS <- purityX(xset, cores = 1, xgroups = c(1, 2))
 
 }
-

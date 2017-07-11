@@ -2,8 +2,8 @@
 % Please edit documentation in R/purityA-frag4feature.R
 \docType{methods}
 \name{frag4feature,purityA-method}
-\alias{frag4feature}
 \alias{frag4feature,purityA-method}
+\alias{frag4feature}
 \title{Assign precursor purity scored fragmentation spectra to XCMS features}
 \usage{
 \S4method{frag4feature}{purityA}(pa, xset, ppm = 5, plim = 0,
@@ -23,7 +23,7 @@
 \item{convert2RawRT}{boolean = If retention time correction has been used in XCMS set this to TRUE}
 }
 \value{
-a dataframe of the purity score of the ms/ms spectra
+purityA object with slots for fragmentation-XCMS links
 }
 \description{
 Assign fragmentation spectra (MS/MS) scored via msPurity package to features
@@ -40,6 +40,6 @@ xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths, interpol = "linear")
+pa <- frag4feature(pa, xset)
 
 }
-

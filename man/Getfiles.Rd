@@ -37,4 +37,3 @@ Function modified from mzmatch.
 datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 }
-
