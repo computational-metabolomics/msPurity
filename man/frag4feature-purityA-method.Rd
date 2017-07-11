@@ -23,7 +23,7 @@
 \item{convert2RawRT}{boolean = If retention time correction has been used in XCMS set this to TRUE}
 }
 \value{
-a dataframe of the purity score of the ms/ms spectra
+purityA object with slots for fragmentation-XCMS links
 }
 \description{
 Assign fragmentation spectra (MS/MS) scored via msPurity package to features

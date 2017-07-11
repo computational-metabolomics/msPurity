@@ -1,4 +1,4 @@
-citHeader("To cite the msPurity package in publications use:")
+citHeader("To cite the msPurity and msPurityData package in publications use:")
 
 citEntry(entry="article",
    author="Lawson, Thomas Nigel and Weber, Ralf J. M. and Jones, Martin R. and Chetwynd, Andrew J. and Rodriguez Blanco, Giovanny Alejandro and Di Guida, Riccardo and Viant, Mark R. and Dunn, Warwick B",

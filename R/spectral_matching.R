@@ -6,7 +6,7 @@
 #' @param pa purityA object; Needs to be the same used for frag4feature function
 #' @param xset xcms object; Needs to be the same used for frag4feature function
 #' @param ra_thres_t numeric; Relative abundance threshold for target spectra
-#'              (Peaks below this RA threshold for each scan for both library and target will be excluded)
+#'              (Peaks below this RA threshold will be excluded)
 #' @param ra_thres_l numeric; Relative abundance threshold for library spectra
 #' @param cores numeric; Number of cores to use
 #' @param pol character = Polarity ['positive' or 'negative']
@@ -19,11 +19,11 @@
 #' @param grp_peaklist dataframe =  [optional] can use any peak dataframe. Still needs to be derived from the xset object though
 #'                                   (e.g. can use CAMERA peaklist)
 #' @param library_db_pth character = [optional] path to library spectral SQLite database. Defaults to msPurityData package data.
-#' @param instrument_types vector = [optional] vector of instrument types, defaults to c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
-#'  LC-ESI-ITFT', 'LC-ESI-ITTOF','LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF')
-#' @param library_sources vector = [optional] vector of library sources. Default option is for massbank.
+#' @param instrument_types vector = [optional] vector of instrument types, defaults to all
+#' @param library_sources vector = [optional] vector of library sources. Default option is for massbank only but the 'lipidblast'
+#'                                    library is also available
 #'
-#' @return path to SQLite database
+#' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
@@ -33,11 +33,11 @@
 #'
 #' pa  <- purityA(msmsPths, interpol = "linear")
 #' pa <- frag4feature(pa, xset)
-#' result_pth <- spectral_matching(pa, xset)
+#' result <- spectral_matching(pa, xset)
 #' @export
 spectral_matching <- function(pa, xset, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, out_dir='.', topn=NA, db_name=NA, grp_peaklist=NA, library_db_pth=NA,
-                                     instrument_types=NA, library_sources=c('massbank')){
+                                     instrument_types=NA, library_sources='massbank'){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
 
   if (is.na(db_name)){

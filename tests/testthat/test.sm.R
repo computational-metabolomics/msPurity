@@ -12,7 +12,7 @@ test_that("checking spectral matching functions (massbank)", {
   pa  <- purityA(msmsPths, interpol = "linear")
   pa <- frag4feature(pa, xset)
   td = tempdir()
-  result <- spectral_matching(pa, xset, out_dir = td, library_sources = c('lipidblast'), ppm_tol_prod = 1000, ppm_tol_prec = 100000)
+  result <- spectral_matching(pa, xset, out_dir = td)
 
   expect_equal(unname(unlist(result$xcms_summary_df)),
                c("46", "Methionine", "0.603443951203275", "0.120192307692308", "3",

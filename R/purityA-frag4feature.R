@@ -15,7 +15,7 @@
 #' @param plim numeric = min purity of precursor to be included
 #' @param intense boolean = If the most intense precursor or the centered precursor is used
 #' @param convert2RawRT boolean = If retention time correction has been used in XCMS set this to TRUE
-#' @return a dataframe of the purity score of the ms/ms spectra
+#' @return purityA object with slots for fragmentation-XCMS links
 #'
 #' @examples
 #'

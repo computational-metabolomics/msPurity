@@ -8,7 +8,7 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
   pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
   score_thres = 0.6, out_dir = ".", topn = NA, db_name = NA,
   grp_peaklist = NA, library_db_pth = NA, instrument_types = NA,
-  library_sources = c("massbank"))
+  library_sources = "massbank")
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}
@@ -41,13 +41,13 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
 
 \item{library_db_pth}{character = [optional] path to library spectral SQLite database. Defaults to msPurityData package data.}
 
-\item{instrument_types}{vector = [optional] vector of instrument types, defaults to c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
-LC-ESI-ITFT', 'LC-ESI-ITTOF','LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF')}
+\item{instrument_types}{vector = [optional] vector of instrument types, defaults to all}
 
-\item{library_sources}{vector = [optional] vector of library sources. Default option is for massbank.}
+\item{library_sources}{vector = [optional] vector of library sources. Default option is for massbank only but the 'lipidblast'
+library is also available}
 }
 \value{
-path to SQLite database
+list of database details and dataframe summarising the results for the xcms features
 }
 \description{
 Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
@@ -61,5 +61,5 @@ xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths, interpol = "linear")
 pa <- frag4feature(pa, xset)
-result_pth <- spectral_matching(pa, xset)
+result <- spectral_matching(pa, xset)
 }
