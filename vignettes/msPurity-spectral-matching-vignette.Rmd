@@ -7,7 +7,7 @@ output:
     toc: true
 bibliography: mspurity.bib
 vignette: >
-  %\VignetteIndexEntry{msPurity}
+  %\VignetteIndexEntry{msPurity spectral matching}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

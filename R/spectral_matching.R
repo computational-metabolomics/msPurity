@@ -22,6 +22,9 @@
 #' @param instrument_types vector = [optional] vector of instrument types, defaults to all
 #' @param library_sources vector = [optional] vector of library sources. Default option is for massbank only but the 'lipidblast'
 #'                                    library is also available
+#' @param scan_ids vector = [optional] vector of unique scan ids calculated from msPurity (pid). These scans will on
+#'                        used for the spectral matching. All scans will be used if set to NA
+#'
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
@@ -31,13 +34,15 @@
 #' xset <- xcms::retcor(xset)
 #' xset <- xcms::group(xset)
 #'
-#' pa  <- purityA(msmsPths, interpol = "linear")
+#' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#' result <- spectral_matching(pa, xset)
+#' NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
+#' Only required if you want to limit the spectral matching to certain scans
+#' result <- spectral_matching(pa, xset, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 #' @export
 spectral_matching <- function(pa, xset, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, out_dir='.', topn=NA, db_name=NA, grp_peaklist=NA, library_db_pth=NA,
-                                     instrument_types=NA, library_sources='massbank'){
+                                     instrument_types=NA, library_sources='massbank', scan_ids=NA){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
 
   if (is.na(db_name)){
@@ -74,7 +79,8 @@ spectral_matching <- function(pa, xset, ra_thres_l=0, ra_thres_t=2, cores=1, pol
                   ppm_tol_prec=ppm_tol_prec,
                   topn=topn,
                   instrument_types = instrument_types,
-                  library_sources = library_sources)
+                  library_sources = library_sources,
+                  scan_ids = scan_ids)
 
   ########################################################
   # Create a summary table for xcms grouped objects
@@ -298,7 +304,7 @@ get_target_spectra_list <- function(x, scan_info){
 
 match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, mslevel=NA, mslevel_match=TRUE,
                             ra_thres_t=2, ra_thres_l=0, cores=1, pol, ppm_tol_prod=100, ppm_tol_prec=50, topn=5,
-                            library_sources=NA){
+                            library_sources=NA, scan_ids=NA){
 
 
 
@@ -311,6 +317,10 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
 
   # Get scan peaks for target spectra
   target_spectra <- DBI::dbGetQuery(conT, 'SELECT * FROM s_peaks ' )
+
+  if (!anyNA(scan_ids)){
+    target_spectra <- target_spectra[target_spectra[,'pid'] %in% scan_ids,]
+  }
 
   # Calculate relative abundance
   target_spectra <- plyr::ddply(target_spectra, ~ pid, ra_calc)

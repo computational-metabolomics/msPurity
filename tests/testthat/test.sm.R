@@ -4,15 +4,18 @@ test_that("checking spectral matching functions (massbank)", {
   print("########################################################")
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+  xset <- xcms::xcmsSet(msmsPths)
   xset <- xcms::group(xset)
   xset <- xcms::retcor(xset)
   xset <- xcms::group(xset)
 
-  pa  <- purityA(msmsPths, interpol = "linear")
+  pa  <- purityA(msmsPths)
   pa <- frag4feature(pa, xset)
-  td = tempdir()
-  result <- spectral_matching(pa, xset, out_dir = td)
+  td <- tempdir()
+  scan_ids <- c(1120,  366, 1190, 601,  404,1281, 1323, 1289)
+
+
+  result <- spectral_matching(pa, xset, out_dir = td, scan_ids =scan_ids)
 
   expect_equal(unname(unlist(result$xcms_summary_df)),
                c("46", "Methionine", "0.603443951203275", "0.120192307692308", "3",
@@ -22,13 +25,13 @@ test_that("checking spectral matching functions (massbank)", {
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(result$out_dir, result$db_name))
 
   XLI <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups
-   LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.grpid=c_peak_groups.grpid
-   LEFT JOIN c_peaks on c_peaks.cid=cXg.cid
-   LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
-   LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
-   LEFT JOIN matches ON matches.pid=s_peak_meta.pid
-   LEFT JOIN library_meta ON matches.lid=library_meta.lid
-   WHERE matches.score IS NOT NULL')
+                         LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.grpid=c_peak_groups.grpid
+                         LEFT JOIN c_peaks on c_peaks.cid=cXg.cid
+                         LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
+                         LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
+                         LEFT JOIN matches ON matches.pid=s_peak_meta.pid
+                         LEFT JOIN library_meta ON matches.lid=library_meta.lid
+                         WHERE matches.score IS NOT NULL')
 
   expect_equal(ncol(XLI), 76)
   expect_equal(nrow(XLI), 45)
@@ -52,23 +55,4 @@ test_that("checking spectral matching functions (massbank)", {
                             0.03225806, 0.03571429, 0.03448276))
 
 })
-
-
-# test_that("checking spectral matching functions (lipidblast)", {
-#   print("########################################################")
-#   print("## Spectral matching functions                        ##")
-#   print("########################################################")
-#
-#   pth <- '/mnt/hgfs/DATA/lipidtest/'
-#   xset <- xcms::xcmsSet(pth)
-#   xset <- xcms::group(xset)
-#   xset <- xcms::retcor(xset)
-#   xset <- xcms::group(xset)
-#
-#   pa  <- purityA(xset@filepaths, interpol = "linear")
-#   pa <- frag4feature(pa, xset)
-#   td = tempdir()
-#   result <- spectral_matching(pa, xset, out_dir = td, library_sources = c('lipidblast'), ppm_tol_prod = 5, ppm_tol_prec = 5)
-#
-# })
 

@@ -8,7 +8,7 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
   pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
   score_thres = 0.6, out_dir = ".", topn = NA, db_name = NA,
   grp_peaklist = NA, library_db_pth = NA, instrument_types = NA,
-  library_sources = "massbank")
+  library_sources = "massbank", scan_ids = NA)
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}
@@ -18,7 +18,7 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
 \item{ra_thres_l}{numeric; Relative abundance threshold for library spectra}
 
 \item{ra_thres_t}{numeric; Relative abundance threshold for target spectra
-(Peaks below this RA threshold for each scan for both library and target will be excluded)}
+(Peaks below this RA threshold will be excluded)}
 
 \item{cores}{numeric; Number of cores to use}
 
@@ -45,6 +45,9 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
 
 \item{library_sources}{vector = [optional] vector of library sources. Default option is for massbank only but the 'lipidblast'
 library is also available}
+
+\item{scan_ids}{vector = [optional] vector of unique scan ids calculated from msPurity (pid). These scans will on
+used for the spectral matching. All scans will be used if set to NA}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features
@@ -59,7 +62,9 @@ xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths, interpol = "linear")
+pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset)
-result <- spectral_matching(pa, xset)
+NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
+Only required if you want to limit the spectral matching to certain scans
+result <- spectral_matching(pa, xset, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 }
