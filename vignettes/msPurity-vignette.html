@@ -10,7 +10,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2017-07-05" />
+<meta name="date" content="2017-07-17" />
 
 <title>Using msPurity for Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics</title>
 
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <div id="header">
 <h1 class="title">Using msPurity for Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics</h1>
 <h4 class="author"><em>Thomas N. Lawson</em></h4>
-<h4 class="date"><em>2017-07-05</em></h4>
+<h4 class="date"><em>2017-07-17</em></h4>
 </div>
 
 <h1>Contents</h1>
@@ -141,57 +141,9 @@ print(head(pa@puritydf))</code></pre>
 <h2><span class="header-section-number">2.2</span> Mapping XCMS features to fragmentation spectra</h2>
 <p>The MS/MS spectra can be assigned to an XCMS grouped feature using the <code>frag4feature</code> function.</p>
 <p>First an xcmsSet object of the same files is required #```{r results=‘hide’, message=FALSE, warning=FALSE}</p>
-<pre class="r"><code>library(xcms)</code></pre>
-<pre><code>## Loading required package: Biobase</code></pre>
-<pre><code>## Loading required package: BiocGenerics</code></pre>
-<pre><code>## Loading required package: parallel</code></pre>
-<pre><code>## 
-## Attaching package: 'BiocGenerics'</code></pre>
-<pre><code>## The following objects are masked from 'package:parallel':
-## 
-##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
-##     clusterExport, clusterMap, parApply, parCapply, parLapply,
-##     parLapplyLB, parRapply, parSapply, parSapplyLB</code></pre>
-<pre><code>## The following objects are masked from 'package:stats':
-## 
-##     IQR, mad, sd, var, xtabs</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     Filter, Find, Map, Position, Reduce, anyDuplicated, append,
-##     as.data.frame, cbind, colMeans, colSums, colnames, do.call,
-##     duplicated, eval, evalq, get, grep, grepl, intersect,
-##     is.unsorted, lapply, lengths, mapply, match, mget, order,
-##     paste, pmax, pmax.int, pmin, pmin.int, rank, rbind, rowMeans,
-##     rowSums, rownames, sapply, setdiff, sort, table, tapply,
-##     union, unique, unsplit, which, which.max, which.min</code></pre>
-<pre><code>## Welcome to Bioconductor
-## 
-##     Vignettes contain introductory material; view with
-##     'browseVignettes()'. To cite Bioconductor, see
-##     'citation(&quot;Biobase&quot;)', and for packages 'citation(&quot;pkgname&quot;)'.</code></pre>
-<pre><code>## Loading required package: BiocParallel</code></pre>
-<pre><code>## Loading required package: MSnbase</code></pre>
-<pre><code>## Loading required package: ProtGenerics</code></pre>
-<pre><code>## 
-## This is MSnbase version 2.2.0 
-##   Read '?MSnbase' and references therein for information
-##   about the package and how to get started.</code></pre>
-<pre><code>## 
-## Attaching package: 'MSnbase'</code></pre>
-<pre><code>## The following object is masked from 'package:stats':
-## 
-##     smooth</code></pre>
-<pre><code>## The following object is masked from 'package:base':
-## 
-##     trimws</code></pre>
-<pre><code>## 
-## This is xcms version 1.52.0</code></pre>
-<pre><code>## 
-## Attaching package: 'xcms'</code></pre>
-<pre><code>## The following object is masked from 'package:stats':
-## 
-##     sigma</code></pre>
-<pre class="r"><code>xset &lt;- xcms::xcmsSet(msmsPths)
+<pre class="r"><code>library(xcms)
+
+xset &lt;- xcms::xcmsSet(msmsPths)
 xset &lt;- xcms::group(xset)</code></pre>
 <pre><code>## Processing 3163 mz slices ...</code></pre>
 <pre><code>## OK</code></pre>

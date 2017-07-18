@@ -1,0 +1,62 @@
+Package: msPurity
+Type: Package
+Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
+    Fragmentation in Metabolomics
+Version: 1.3.1
+Date: 2017-07-11
+Author: Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn
+Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
+Description: Assess the contribution of the targeted precursor in fragmentation
+    acquired or anticipated isolation windows using a metric called "precursor
+    purity". Also provides simple processing steps (averaging, filtering, blank
+    subtraction, etc) for DI-MS data. Works for both LC-MS(/MS) and DI-MS(/MS) data.
+    Spectral matching of fragmentation spectra can also be run against a SQLite database
+    of library spectra.
+License: GPL (>= 2)
+LazyData: TRUE
+Depends:
+    Rcpp
+Imports:
+    plyr,
+    foreach,
+    parallel,
+    doSNOW,
+    stringr,
+    mzR,
+    reshape2,
+    fastcluster,
+    ggplot2,
+    sapa,
+    DBI,
+    RSQLite
+Suggests:
+    testthat,
+    xcms,
+    BiocStyle,
+    knitr,
+    rmarkdown,
+    msPurityData
+VignetteBuilder: knitr
+RoxygenNote: 6.0.1
+biocViews: MassSpectrometry, Metabolomics, Software
+Collate:
+    'all-generics.R'
+    'iw-norm.R'
+    'pcalc.R'
+    'purityA-class.R'
+    'purityA-constructor.R'
+    'purityA-frag4feature.R'
+    'purityA-validate.R'
+    'purityD-class.R'
+    'purityD-constructor.R'
+    'purityD-av-spectra.R'
+    'purityD-dims-purity.R'
+    'purityD-fileList.R'
+    'purityD-filterp.R'
+    'purityD-subtract.R'
+    'purityD-writeOut.R'
+    'purityX-class.R'
+    'purityX-constructor.R'
+    'spectral-complexity.R'
+    'spectral_matching.R'
+    'splinepurity.R'

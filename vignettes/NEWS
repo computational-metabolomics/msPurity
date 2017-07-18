@@ -1,0 +1,51 @@
+CHANGES IN VERSION 1.3.1
+=========================
+* Add spectral matching functionality for LC-MS/MS
+
+
+CHANGES IN VERSION 1.1.1
+=========================
+* Added pcalc functions to be used by user
+* Added option to remove isotopes from calculation
+
+
+CHANGES IN VERSION 0.99.10/11/12
+=========================
+* Troubleshooting windows build failure
+
+
+CHANGES IN VERSION 0.99.9
+=========================
+* Offset bug fixed (previous only using extracting lower offset from mzML file)
+* Updated handling of RT corrected xcmsSet objects for frag4feature function
+* Additional column added for tracking ms/ms spectra
+
+
+CHANGES IN VERSION 0.99.8
+=========================
+* User option to change the mzR backend library
+
+
+CHANGES IN VERSION 0.99.4/5/6/7
+=========================
+* Troubleshooting mac build failure
+
+
+CHANGES IN VERSION 0.99.3
+=========================
+* Grouping multiple peaklist into one wide dataframe
+** Peaklists can now be averaged across each class using the function groupPeaks() for the class purityD
+** A list of dataframes can also be grouped togther using the function groupPeakEx()
+
+
+CHANGES IN VERSION 0.99.2
+=========================
+* Updated class names purityPD to purityD
+* Updated class names purityLC to purityX
+* Updated vignette to reflect slightly different terminology
+* Added normalised TIC option for purityD
+
+
+msPurity v0.99.0 (Release date: 2016-04-08)
+=========================
+Initial release!
