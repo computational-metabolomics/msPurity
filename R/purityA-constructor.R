@@ -18,20 +18,20 @@ NULL
 #' file is detected as originating from an Agilent instrument the isolation
 #' widths will automatically be set as +/- 0.65 Da.
 #'
-#' @param fileList vector = mzML file paths for MS/MS spectra
-#' @param cores numeric = number of cores to use
-#' @param mostIntense boolean = True if the most intense peak is used for calculation. False if the centered peak is used
-#' @param nearest boolean = True if the peak selected is from either the preceding scan or the nearest.
-#' @param offsets vector = overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
-#' @param plotP boolean = if TRUE a plot of the purity is to be saved
-#' @param plotdir vector = if plotP is TRUE plots will be saved to this directory
-#' @param interpol character = type of interolation to be performed "linear" or "spline"
-#' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
-#' @param isotopes boolean = TRUE if isotopes are to be removed
-#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
-#' @param mzRback character = backend to use for mzR parsing
+#' @param fileList vector; mzML file paths for MS/MS spectra
+#' @param cores numeric; Number of cores to use
+#' @param mostIntense boolean; True if the most intense peak is used for calculation. False if the centered peak is used
+#' @param nearest boolean; True if the peak selected is from either the preceding scan or the nearest.
+#' @param offsets vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
+#' @param plotP boolean; If TRUE a plot of the purity is to be saved
+#' @param plotdir vector; If plotP is TRUE plots will be saved to this directory
+#' @param interpol character; type of interolation to be performed "linear" or "spline"
+#' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param isotopes boolean; TRUE if isotopes are to be removed
+#' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param mzRback character; backend to use for mzR parsing
 #'
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
@@ -120,21 +120,21 @@ purityA <- function(fileList,
 #' Given a filepath to an mzML file the precursor purity for any MS/MS scans
 #' will be outputed into a dataframe
 #'
-#' @param filepth character = mzML file path for MS/MS spectra
-#' @param fileid numeric = adds a fileid column (primarily for internal use for msPurity)
-#' @param mostIntense boolean = True if the most intense peak is used for calculation. False if the centered peak is used
-#' @param nearest boolean = True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used
-#' @param offsets vector = overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
-#' @param cores numeric = number of cores to use
-#' @param plotP boolean = if TRUE a plot of the purity is to be saved
-#' @param plotdir vector = if plotP is TRUE plots will be saved to this directory
-#' @param interpol character = type of interolation to be performed "linear", "spline" or "none"
-#' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
-#' @param mzRback character = backend to use for mzR parsing
-#' @param isotopes boolean = TRUE if isotopes are to be removed
-#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param filepth character; mzML file path for MS/MS spectra
+#' @param fileid numeric; adds a fileid column (primarily for internal use for msPurity)
+#' @param mostIntense boolean; True if the most intense peak is used for calculation. False if the centered peak is used
+#' @param nearest boolean; True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used
+#' @param offsets vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
+#' @param cores numeric; Number of cores to use
+#' @param plotP boolean; If TRUE a plot of the purity is to be saved
+#' @param plotdir vector; If plotP is TRUE plots will be saved to this directory
+#' @param interpol character; Type of interolation to be performed "linear", "spline" or "none"
+#' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param mzRback character; Backend to use for mzR parsing
+#' @param isotopes boolean; TRUE if isotopes are to be removed
+#' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
 #' @examples

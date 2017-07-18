@@ -8,7 +8,7 @@
 \S4method{show}{purityA}(object)
 }
 \arguments{
-\item{object}{object = purityA object}
+\item{object}{object; purityA object}
 }
 \value{
 a print statement of regarding object

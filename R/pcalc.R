@@ -14,18 +14,18 @@
 #'     the isolation window}
 #' }
 #'
-#' @param peaks matrix = matrix of peaks consisting of 2 columns: mz and i
-#' @param mzmin numeric = isolation window (min)
-#' @param mzmax numeric = isolation window (max)
-#' @param mztarget numeric = the mz window to target in the isolation window
-#' @param ppm numeric = ppm tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used
-#' @param targetMinMZ numeric = range to look for the mztarget (min)
-#' @param targetMaxMZ numeric = range to look for the mztarget (max)
-#' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
-#' @param isotopes boolean = TRUE if isotopes are to be removed
-#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param peaks matrix; Matrix of peaks consisting of 2 columns: mz and i
+#' @param mzmin numeric; Isolation window (min)
+#' @param mzmax numeric; Isolation window (max)
+#' @param mztarget numeric; The mz window to target in the isolation window
+#' @param ppm numeric; PPM tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used
+#' @param targetMinMZ numeric; Range to look for the mztarget (min)
+#' @param targetMaxMZ numeric; Range to look for the mztarget (max)
+#' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param isotopes boolean; TRUE if isotopes are to be removed
+#' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #'
 #' @return a vector of the purity score and the number of peaks in the window e.g c(purity, pknm)
 #'

@@ -10,7 +10,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2017-07-05" />
+<meta name="date" content="2017-07-17" />
 
 <title>Using msPurity for spectral matching</title>
 
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <div id="header">
 <h1 class="title">Using msPurity for spectral matching</h1>
 <h4 class="author"><em>Thomas N. Lawson</em></h4>
-<h4 class="date"><em>2017-07-05</em></h4>
+<h4 class="date"><em>2017-07-17</em></h4>
 </div>
 
 <h1>Contents</h1>
@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
 <li><a href="#spectral-matching"><span class="toc-section-number">2</span> Spectral matching</a><ul>
 <li><a href="#lc-msms"><span class="toc-section-number">2.1</span> LC-MS/MS</a></li>
-<li><a href="#di-msms-or-di-msn">DI-MS/MS or DI-MSn</a></li>
+<li><a href="#di-msms-or-di-msn"><span class="toc-section-number">2.2</span> DI-MS/MS or DI-MSn</a></li>
 </ul></li>
 </ul>
 </div>
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <h1><span class="header-section-number">2</span> Spectral matching</h1>
 <div id="lc-msms" class="section level2">
 <h2><span class="header-section-number">2.1</span> LC-MS/MS</h2>
-<p>As we link the spectral matching result back to XCMS feature we need to run XCMS first.</p>
+<p>We link the spectral matching result back to XCMS feature, therefore we need to run XCMS first.</p>
 <p>(Please use the appropiate settings for your data)</p>
 <pre class="r"><code>library(msPurity)
 msmsPths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE, pattern = &quot;MSMS&quot;)
@@ -139,25 +139,27 @@ xset &lt;- xcms::xcmsSet(msmsPths, nSlaves = 1)</code></pre>
 <pre><code>## Performing retention time correction using 351 peak groups.</code></pre>
 <pre class="r"><code>xset &lt;- xcms::group(xset)</code></pre>
 <pre><code>## Processing 3163 mz slices ... OK</code></pre>
-<p>The purityA function is then called to calculate the precursor purity of the fragmentation results and the frag4feature functions links the fragmentation data back to the XCMS feature.</p>
+<p>The <code>purityA</code> function is then called to calculate the precursor purity of the fragmentation results and the <code>frag4feature</code> function will links the fragmentation data back to the XCMS feature.</p>
 <pre class="r"><code>pa  &lt;- purityA(msmsPths, interpol = &quot;linear&quot;)
 pa &lt;- frag4feature(pa, xset)</code></pre>
-<p>The spectral matching is then run on all fragmentation scans collected in all files using the spectral_matching_lcmsms function.</p>
+<p>The spectral matching is then run on all fragmentation scans collected in all files using the <code>spectral_matching</code> function.</p>
 <p>A SQLite database is also generated with the all the results included.</p>
 <p>As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the annotations for the XCMS grouped peaks is provided in the output</p>
-<pre class="r"><code>result &lt;- spectral_matching_lcmsms(pa, xset, out_dir = tempdir())</code></pre>
+<pre class="r"><code>result &lt;- spectral_matching(pa, xset, out_dir = tempdir())</code></pre>
+<pre><code>## Running msPurity spectral matching function for LC-MS(/MS) data</code></pre>
+<pre><code>## Creating a database of fragmentation spectra and LC features</code></pre>
+<pre><code>## Performing spectral matching</code></pre>
 <pre><code>## Warning in rsqlite_fetch(res@ptr, n = n): Column `precursor_mz`: mixed
 ## type, first seen values of type real, coercing other values of type string</code></pre>
+<pre><code>## Warning in rsqlite_fetch(res@ptr, n = n): Column `mass_accuracy`: mixed
+## type, first seen values of type real, coercing other values of type string</code></pre>
 <pre><code>## Warning: call dbDisconnect() when finished working with a connection</code></pre>
-<p>It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can be quite small. There are ways of improving this at the data collection stage, see the nearline method <span class="citation">(Neumann, Thum, and Böttcher 2013)</span>.</p>
+<pre><code>## Summarising LC features annotations</code></pre>
+<p>It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.</p>
 </div>
-<div id="di-msms-or-di-msn" class="section level2 unnumbered">
-<h2>DI-MS/MS or DI-MSn</h2>
-<div id="refs" class="references">
-<div id="ref-Neumann2013">
-<p>Neumann, Steffen, Andrea Thum, and Christoph Böttcher. 2013. “Nearline acquisition and processing of liquid chromatography-tandem mass spectrometry data.” <em>Metabolomics</em>, 84–91. doi:<a href="https://doi.org/10.1007/s11306-012-0401-0">10.1007/s11306-012-0401-0</a>.</p>
-</div>
-</div>
+<div id="di-msms-or-di-msn" class="section level2">
+<h2><span class="header-section-number">2.2</span> DI-MS/MS or DI-MSn</h2>
+<p>TODO</p>
 </div>
 </div>
 

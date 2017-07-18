@@ -9,15 +9,15 @@
   mzRback = "pwiz")
 }
 \arguments{
-\item{.Object}{object = purityD object}
+\item{.Object}{object; purityD object}
 
-\item{fileList}{data.frame = created using GetFiles, data.frame with filepaths and sample class information}
+\item{fileList}{data.frame; created using GetFiles, data.frame with filepaths and sample class information}
 
-\item{cores}{numeric = Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1}
+\item{cores}{numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1}
 
-\item{mzML}{boolean = TRUE if mzML to be used FALSE if .csv file to be used}
+\item{mzML}{boolean; TRUE if mzML to be used FALSE if .csv file to be used}
 
-\item{mzRback}{character = backend to use for mzR parsing}
+\item{mzRback}{character; backend to use for mzR parsing}
 }
 \value{
 purityD object

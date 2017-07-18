@@ -9,11 +9,11 @@
 \S4method{writeOut}{purityD}(Object, outDir, original)
 }
 \arguments{
-\item{Object}{object = purityD object}
+\item{Object}{object; purityD object}
 
-\item{outDir}{character = Directory to save text files}
+\item{outDir}{character; Directory to save text files}
 
-\item{original}{boolean = if the original (unprocessed) files are to be saved to text files}
+\item{original}{boolean; If the original (unprocessed) files are to be saved to text files}
 }
 \value{
 purityD object

@@ -22,31 +22,31 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
 
 \item{cores}{numeric; Number of cores to use}
 
-\item{pol}{character = Polarity ['positive' or 'negative']}
+\item{pol}{character; Polarity ['positive' or 'negative']}
 
-\item{ppm_tol_prod}{numeric = ppm tolerance to match to product}
+\item{ppm_tol_prod}{numeric; PPM tolerance to match to product}
 
-\item{ppm_tol_prec}{numeric = ppm tolerance to match to precursor}
+\item{ppm_tol_prec}{numeric; PPM tolerance to match to precursor}
 
-\item{score_thres}{numeric = dot product cosine score threshold}
+\item{score_thres}{numeric; Dot product cosine score threshold}
 
-\item{out_dir}{character = Out directory for the SQLite result database}
+\item{out_dir}{character; Out directory for the SQLite result database}
 
-\item{topn}{numeric = [optional] only use top n matches}
+\item{topn}{numeric [optional]; Only use top n matches}
 
-\item{db_name}{character = [optional] Name of the result database}
+\item{db_name}{character [optional]; Name of the result database}
 
-\item{grp_peaklist}{dataframe =  [optional] can use any peak dataframe. Still needs to be derived from the xset object though
+\item{grp_peaklist}{dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
 (e.g. can use CAMERA peaklist)}
 
-\item{library_db_pth}{character = [optional] path to library spectral SQLite database. Defaults to msPurityData package data.}
+\item{library_db_pth}{character [optional]; path to library spectral SQLite database. Defaults to msPurityData package data.}
 
-\item{instrument_types}{vector = [optional] vector of instrument types, defaults to all}
+\item{instrument_types}{vector [optional]; Vector of instrument types, defaults to all}
 
-\item{library_sources}{vector = [optional] vector of library sources. Default option is for massbank only but the 'lipidblast'
+\item{library_sources}{vector [optional]; Vector of library sources. Default option is for massbank only but the 'lipidblast'
 library is also available}
 
-\item{scan_ids}{vector = [optional] vector of unique scan ids calculated from msPurity (pid). These scans will on
+\item{scan_ids}{vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 used for the spectral matching. All scans will be used if set to NA}
 }
 \value{
@@ -64,7 +64,7 @@ xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset)
-NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
-Only required if you want to limit the spectral matching to certain scans
+#NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
+#Only required if you want to limit the spectral matching to certain scans
 result <- spectral_matching(pa, xset, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 }

@@ -11,5 +11,5 @@ pa  <- purityA(msmsPths, interpol = "linear")
 pa <- frag4feature(pa, xset)
 
 ## ------------------------------------------------------------------------
-result <- spectral_matching_lcmsms(pa, xset, out_dir = tempdir())
+result <- spectral_matching(pa, xset, out_dir = tempdir())
 

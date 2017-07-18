@@ -9,12 +9,12 @@
 #'
 #' @aliases frag4feature
 #'
-#' @param pa = purityA object
-#' @param xset xcms object = XCMS object derived from the same files as the puritydf
-#' @param ppm numeric = ppm tolerance between precursor mz and feature mz
-#' @param plim numeric = min purity of precursor to be included
-#' @param intense boolean = If the most intense precursor or the centered precursor is used
-#' @param convert2RawRT boolean = If retention time correction has been used in XCMS set this to TRUE
+#' @param pa object; purityA object
+#' @param xset object; XCMS object derived from the same files as the puritydf
+#' @param ppm numeric; ppm tolerance between precursor mz and feature mz
+#' @param plim numeric; min purity of precursor to be included
+#' @param intense boolean; If the most intense precursor or the centered precursor is used
+#' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
 #' @return purityA object with slots for fragmentation-XCMS links
 #'
 #' @examples

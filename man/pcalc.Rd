@@ -9,29 +9,29 @@ pcalc(peaks, mzmin, mzmax, mztarget, ppm = NA, iwNorm = FALSE,
   isotopes = FALSE, im = NULL)
 }
 \arguments{
-\item{peaks}{matrix = matrix of peaks consisting of 2 columns: mz and i}
+\item{peaks}{matrix; Matrix of peaks consisting of 2 columns: mz and i}
 
-\item{mzmin}{numeric = isolation window (min)}
+\item{mzmin}{numeric; Isolation window (min)}
 
-\item{mzmax}{numeric = isolation window (max)}
+\item{mzmax}{numeric; Isolation window (max)}
 
-\item{mztarget}{numeric = the mz window to target in the isolation window}
+\item{mztarget}{numeric; The mz window to target in the isolation window}
 
-\item{ppm}{numeric = ppm tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used}
+\item{ppm}{numeric; PPM tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used}
 
-\item{iwNorm}{boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
+\item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 
-\item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
-\item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
-\item{targetMinMZ}{numeric = range to look for the mztarget (min)}
+\item{targetMinMZ}{numeric; Range to look for the mztarget (min)}
 
-\item{targetMaxMZ}{numeric = range to look for the mztarget (max)}
+\item{targetMaxMZ}{numeric; Range to look for the mztarget (max)}
 
-\item{isotopes}{boolean = TRUE if isotopes are to be removed}
+\item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
-\item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+\item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 }
 \value{
 a vector of the purity score and the number of peaks in the window e.g c(purity, pknm)

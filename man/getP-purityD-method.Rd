@@ -9,7 +9,7 @@
 \S4method{getP}{purityD}(x)
 }
 \arguments{
-\item{x}{object = purityD object}
+\item{x}{object; purityD object}
 }
 \value{
 peaks

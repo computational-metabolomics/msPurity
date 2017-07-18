@@ -10,7 +10,7 @@ NULL
 #' Averages multiple scans together,
 #' see averageSpectraSingle for more information
 #'
-#' @param Object object = purityD object
+#' @param Object object; purityD object
 #' @inheritParams averageSpectraSingle
 #
 #' @aliases averageSpectra
@@ -120,22 +120,22 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #'
 #' The function works for LC-MS or DI-MS datasets.
 #'
-#' @param filePth character = Path of the file to be processed
-#' @param rtscn character = Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']
-#' @param scanRange vector = Scan range (if rtscn='scns') e.g. c(40, 69)
-#' @param timeRange vector = Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)
-#' @param clustType character = Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'
-#' @param ppm numeric = the ppm error to cluster mz together default 1.5
-#' @param snthr numeric = Signal to noise ratio threshold, default 0
-#' @param av character = What type of averaging to do between peaks
-#' @param missingV character = What to do with missing values (zero or ignore)
-#' @param minfrac numeric = Min fraction of scans with a grouped peak to be an accepted averaged peak
-#' @param cores numeric = Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2
-#' @param MSFileReader boolean = For thermo files a the MSFileReader API can extract peaklist. This can consist of an .csv file with
+#' @param filePth character; Path of the file to be processed
+#' @param rtscn character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']
+#' @param scanRange vector; Scan range (if rtscn='scns') e.g. c(40, 69)
+#' @param timeRange vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)
+#' @param clustType character; Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'
+#' @param ppm numeric; The ppm error to cluster mz together default 1.5
+#' @param snthr numeric; Signal to noise ratio threshold, default 0
+#' @param av character; What type of averaging to do between peaks
+#' @param missingV character; What to do with missing values (zero or ignore)
+#' @param minfrac numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak
+#' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2
+#' @param MSFileReader boolean; For thermo files a the MSFileReader API can extract peaklist. This can consist of an .csv file with
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
-#' @param snMeth character = Type of snMethod to use
-#' @param normTIC boolean = If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
-#' @param mzRback character = backend to use for mzR parsing
+#' @param snMeth character; Type of snMethod to use
+#' @param normTIC boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
+#' @param mzRback character; Backend to use for mzR parsing
 #' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
@@ -543,7 +543,7 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #' @export
 groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   comb <- ldply(peak_list)
-  
+
   if (cores>1) {
     clust<-parallel::makeCluster(cores)
     doSNOW::registerDoSNOW(clust)
@@ -551,56 +551,56 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   } else {
     parallelBool = FALSE
   }
-  
+
   mz <- comb$mz
-  
+
   # Cluster the peaks togther
   comb$cl <- clustering(mz, clustType = clustType, cores = cores)
-  
-  
+
+
   comb[order(comb$mz),]
-  
+
   # Create a dataframe with each file is a column
   sampnms <- unique(comb$.id)
-  
+
   total <-data.frame()
-  
+
   for(i in 1:length(sampnms)){
     snmi = sampnms[i]
-    
+
     sub <- comb[comb$.id == snmi, ]
-    
+
     # if multiple mz values in the group then average
     sub <- ddply(sub, ~ cl, medGroup)
-    
+
     addnew <- sub[ , -which(names(sub) %in% c("cl", ".id"))]
-    
+
     for(j in 1:ncol(addnew)){
       colnames(addnew)[j] <- paste(colnames(addnew)[j], snmi, sep="_")
-      
+
     }
     addnew$cl <- sub$cl
-    
+
     if (nrow(total)==0){
       total <- addnew
     }else{
       total <- merge(x = total, y =addnew, by = "cl", all = TRUE)
     }
   }
-  
-  
+
+
   mzall <- total[ , which(names(total) %in% grep(".*mz.*", colnames(total), value=TRUE))]
-  
+
   mzmedian <- apply(mzall, 1, median, na.rm=TRUE)
   total <- total[-1]
-  
+
   total <- total[,order(colnames(total))]
   total <- cbind(mzmedian, total)
-  
+
   return(total)
-  
-  
-  
+
+
+
 }
 
 medGroup <- function(x){
@@ -608,7 +608,7 @@ medGroup <- function(x){
     medx <- apply(x[,-which(names(x) %in% c(".id"))], 2, median, na.rm=T)
     x <- data.frame(.id=unique(x$.id), t(medx))
   }
-  
+
   return(x)
 }
 

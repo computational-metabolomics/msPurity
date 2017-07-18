@@ -10,33 +10,33 @@ purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
   isotopes = TRUE, im = NULL)
 }
 \arguments{
-\item{fileList}{vector = mzML file paths for MS/MS spectra}
+\item{fileList}{vector; mzML file paths for MS/MS spectra}
 
-\item{cores}{numeric = number of cores to use}
+\item{cores}{numeric; Number of cores to use}
 
-\item{mostIntense}{boolean = True if the most intense peak is used for calculation. False if the centered peak is used}
+\item{mostIntense}{boolean; True if the most intense peak is used for calculation. False if the centered peak is used}
 
-\item{nearest}{boolean = True if the peak selected is from either the preceding scan or the nearest.}
+\item{nearest}{boolean; True if the peak selected is from either the preceding scan or the nearest.}
 
-\item{offsets}{vector = overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)}
+\item{offsets}{vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)}
 
-\item{plotP}{boolean = if TRUE a plot of the purity is to be saved}
+\item{plotP}{boolean; If TRUE a plot of the purity is to be saved}
 
-\item{plotdir}{vector = if plotP is TRUE plots will be saved to this directory}
+\item{plotdir}{vector; If plotP is TRUE plots will be saved to this directory}
 
-\item{interpol}{character = type of interolation to be performed "linear" or "spline"}
+\item{interpol}{character; type of interolation to be performed "linear" or "spline"}
 
-\item{iwNorm}{boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
+\item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 
-\item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
-\item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
-\item{mzRback}{character = backend to use for mzR parsing}
+\item{mzRback}{character; backend to use for mzR parsing}
 
-\item{isotopes}{boolean = TRUE if isotopes are to be removed}
+\item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
-\item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+\item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 }
 \value{
 a dataframe of the purity score of the ms/ms spectra

@@ -14,29 +14,29 @@ and signal-to-noise of multiple scans from multiple MS datafiles
   snMeth = "median")
 }
 \arguments{
-\item{Object}{object = purityD object}
+\item{Object}{object; purityD object}
 
-\item{rtscn}{character = Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']}
+\item{rtscn}{character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']}
 
-\item{scanRange}{vector = Scan range (if rtscn='scns') e.g. c(40, 69)}
+\item{scanRange}{vector; Scan range (if rtscn='scns') e.g. c(40, 69)}
 
-\item{timeRange}{vector = Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)}
+\item{timeRange}{vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)}
 
-\item{clustType}{character = Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'}
+\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'}
 
-\item{ppm}{numeric = the ppm error to cluster mz together default 1.5}
+\item{ppm}{numeric; The ppm error to cluster mz together default 1.5}
 
-\item{snthr}{numeric = Signal to noise ratio threshold, default 0}
+\item{snthr}{numeric; Signal to noise ratio threshold, default 0}
 
-\item{av}{character = What type of averaging to do between peaks}
+\item{av}{character; What type of averaging to do between peaks}
 
-\item{missingV}{character = What to do with missing values (zero or ignore)}
+\item{missingV}{character; What to do with missing values (zero or ignore)}
 
-\item{minfrac}{numeric = Min fraction of scans with a grouped peak to be an accepted averaged peak}
+\item{minfrac}{numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak}
 
-\item{normTIC}{boolean = If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
+\item{normTIC}{boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
 
-\item{snMeth}{character = Type of snMethod to use}
+\item{snMeth}{character; Type of snMethod to use}
 }
 \value{
 purityD object with averaged spectra

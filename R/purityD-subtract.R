@@ -6,9 +6,9 @@
 #'
 #' @aliases subtract
 #'
-#' @param Object = purityD object
+#' @param Object object; purityD object
 #' @param mapping parameter not functional (TODO)
-#' @param byClass boolean = subtract within each class
+#' @param byClass boolean; subtract within each class
 #' @inheritParams subtractMZ
 #' @examples
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")

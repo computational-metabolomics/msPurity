@@ -6,10 +6,10 @@
 #' @description
 #' The class used to assess anticipated purity from a DI-MS run
 #'
-#' @param .Object object = purityD object
-#' @param fileList data.frame = created using GetFiles, data.frame with filepaths and sample class information
-#' @param cores numeric = Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
-#' @param mzML boolean = TRUE if mzML to be used FALSE if .csv file to be used
+#' @param .Object object; purityD object
+#' @param fileList data.frame; Created using GetFiles, data.frame with filepaths and sample class information
+#' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
+#' @param mzML boolean; TRUE if mzML to be used FALSE if .csv file to be used
 #' @examples
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
@@ -46,7 +46,7 @@ purityD <- setClass(
 #'
 #' @aliases getP
 #'
-#' @param x object = purityD object
+#' @param x object; purityD object
 #' @return peaks
 #' @examples
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
