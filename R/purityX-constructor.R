@@ -14,21 +14,21 @@
 #'
 #' Given an XCMS object get the anticipated precursor purity of the grouped peaks
 #'
-#' @param xset object = xcms object
-#' @param cores numeric = number of cores to use
-#' @param purityType character = Area and average used for the purity predictions. Options are
+#' @param xset object; xcms object
+#' @param cores numeric; number of cores to use
+#' @param purityType character; Area and average used for the purity predictions. Options are
 #'                               "purityFWHMmedian", "purityFWmedian", "purityFWHMmean", "purityFWmean"
-#' @param offsets vector = vector of the isolation window upper and lower offsets
-#' @param fileignore vector = vector of files to ignore for the prediction calculation
-#' @param xgroups vector = vector of xcms groups to perform prediction on
-#' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
-#' @param plotP boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
-#' @param mzRback character = backend to use for mzR parsing
-#' @param isotopes boolean = TRUE if isotopes are to be removed
-#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
-#' @param singleFile numeric = If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
+#' @param offsets vector; vector of the isolation window upper and lower offsets
+#' @param fileignore vector; vector of files to ignore for the prediction calculation
+#' @param xgroups vector; vector of xcms groups to perform prediction on
+#' @param iwNorm boolean; if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param plotP boolean; TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
+#' @param mzRback character; backend to use for mzR parsing
+#' @param isotopes boolean; TRUE if isotopes are to be removed
+#' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -77,13 +77,13 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   # Create a purityX object
   ppLCMS <- new("purityX")
-  
+
 
   maxscan <- minscan <- rep(NA, nrow(peaklist))
   id <- seq(1, nrow(peaklist))
   peaklist <- cbind(peaklist, minscan, maxscan, id)
-  
-  # remove peaks that do not have SN value (means that they will be created from 
+
+  # remove peaks that do not have SN value (means that they will be created from
   #  the 'fillpeaks' function)
   peaklist <- peaklist[!is.na( peaklist[,'sn']),]
 
@@ -105,7 +105,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   }
   dfp <- data.frame(peaklist)
-  
+
 
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
@@ -151,8 +151,8 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 
   # remove peaks that have not been grouped together (i.e. only found in 1 file)
   grouplist <- peaklist[peaklist[,'grpid']>0,]
-  
-  # remove peaks that do not have SN value (means that they will be created from 
+
+  # remove peaks that do not have SN value (means that they will be created from
   #  the 'fillpeaks' function)
   grouplist <- grouplist[!is.na(grouplist[,'sn']),]
 

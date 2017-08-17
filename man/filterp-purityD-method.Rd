@@ -10,13 +10,13 @@
   sampleOnly = TRUE)
 }
 \arguments{
-\item{Object}{object = purityD object}
+\item{Object}{object; purityD object}
 
-\item{thr}{numeric = intensity threshold}
+\item{thr}{numeric; intensity threshold}
 
-\item{rsd}{numeric = rsd threshold}
+\item{rsd}{numeric; rsd threshold}
 
-\item{sampleOnly}{boolean = if only the sample (not blanks) should be filtered}
+\item{sampleOnly}{boolean; if only the sample (not blanks) should be filtered}
 }
 \value{
 purityD object

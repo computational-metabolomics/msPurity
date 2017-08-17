@@ -6,9 +6,9 @@
 #'
 #' @aliases writeOut
 #'
-#' @param Object object = purityD object
-#' @param outDir character = Directory to save text files
-#' @param original boolean = if the original (unprocessed) files are to be saved to text files
+#' @param Object object; purityD object
+#' @param outDir character; Directory to save text files
+#' @param original boolean; If the original (unprocessed) files are to be saved to text files
 #' @return  purityD object
 #' @export
 setMethod(f="writeOut", signature="purityD",

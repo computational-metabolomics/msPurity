@@ -10,20 +10,20 @@
   intense = TRUE, convert2RawRT = TRUE)
 }
 \arguments{
-\item{pa}{= purityA object}
+\item{pa}{object; purityA object}
 
-\item{xset}{xcms object = XCMS object derived from the same files as the puritydf}
+\item{xset}{object; XCMS object derived from the same files as the puritydf}
 
-\item{ppm}{numeric = ppm tolerance between precursor mz and feature mz}
+\item{ppm}{numeric; ppm tolerance between precursor mz and feature mz}
 
-\item{plim}{numeric = min purity of precursor to be included}
+\item{plim}{numeric; min purity of precursor to be included}
 
-\item{intense}{boolean = If the most intense precursor or the centered precursor is used}
+\item{intense}{boolean; If the most intense precursor or the centered precursor is used}
 
-\item{convert2RawRT}{boolean = If retention time correction has been used in XCMS set this to TRUE}
+\item{convert2RawRT}{boolean; If retention time correction has been used in XCMS set this to TRUE}
 }
 \value{
-a dataframe of the purity score of the ms/ms spectra
+purityA object with slots for fragmentation-XCMS links
 }
 \description{
 Assign fragmentation spectra (MS/MS) scored via msPurity package to features
@@ -40,5 +40,6 @@ xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths, interpol = "linear")
+pa <- frag4feature(pa, xset)
 
 }

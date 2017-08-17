@@ -9,19 +9,19 @@ Getfiles(projectFolder = NULL, recursive = FALSE, pattern = ".csv",
   mzml_out = FALSE)
 }
 \arguments{
-\item{projectFolder}{character: directory path}
+\item{projectFolder}{character; Directory path}
 
-\item{recursive}{boolean: recursively check for files}
+\item{recursive}{boolean; Recursively check for files}
 
-\item{pattern}{character file suffix to check for}
+\item{pattern}{character; File suffix to check for}
 
-\item{check}{boolean check with a GUI the files}
+\item{check}{boolean; Check with a GUI the files}
 
 \item{raw}{(REDUNDANT)}
 
 \item{peakout}{(REDUNDANT)}
 
-\item{cStrt}{boolean use the first word as the class name for files}
+\item{cStrt}{boolean; Use the first word as the class name for files}
 
 \item{mzml_out}{(REDUNDANT)}
 }

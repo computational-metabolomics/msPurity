@@ -213,8 +213,8 @@ get_mz_sim_scanid <- function(meta_info, mz){
 
 
   as.numeric(meta_info[meta_info$sim ==TRUE &
-              mz > meta_info$scan_window_lower_limit &
-              mz < meta_info$scan_window_upper_limit, ]$scanid)
+                         mz > meta_info$scan_window_lower_limit &
+                         mz < meta_info$scan_window_upper_limit, ]$scanid)
 
 
 }

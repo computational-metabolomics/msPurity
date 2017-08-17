@@ -10,9 +10,9 @@
   "blank"), ppm = 5, s2bthres = 10)
 }
 \arguments{
-\item{Object}{= purityD object}
+\item{Object}{object; purityD object}
 
-\item{byClass}{boolean = subtract within each class}
+\item{byClass}{boolean; subtract within each class}
 
 \item{mapping}{parameter not functional (TODO)}
 

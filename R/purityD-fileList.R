@@ -4,11 +4,11 @@
 #' Takes in a folder path and outputs the a data frame structure for purityD.
 #' Function modified from mzmatch.
 #'
-#' @param projectFolder character: directory path
-#' @param recursive boolean: recursively check for files
-#' @param pattern character file suffix to check for
-#' @param check boolean check with a GUI the files
-#' @param cStrt boolean use the first word as the class name for files
+#' @param projectFolder character; Directory path
+#' @param recursive boolean; Recursively check for files
+#' @param pattern character; File suffix to check for
+#' @param check boolean; Check with a GUI the files
+#' @param cStrt boolean; Use the first word as the class name for files
 #' @param raw (REDUNDANT)
 #' @param peakout (REDUNDANT)
 #' @param mzml_out (REDUNDANT)

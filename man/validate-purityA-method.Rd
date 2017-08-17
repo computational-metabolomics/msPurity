@@ -9,9 +9,9 @@
 \S4method{validate}{purityA}(pa, ppLCMS)
 }
 \arguments{
-\item{pa}{= purityA object}
+\item{pa}{object; purityA object}
 
-\item{ppLCMS}{= purityX object}
+\item{ppLCMS}{object; purityX object}
 }
 \value{
 purityA object

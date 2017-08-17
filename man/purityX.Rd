@@ -10,34 +10,34 @@ purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
   isotopes = FALSE, im = NULL, singleFile = 0)
 }
 \arguments{
-\item{xset}{object = xcms object}
+\item{xset}{object; xcms object}
 
-\item{purityType}{character = Area and average used for the purity predictions. Options are
+\item{purityType}{character; Area and average used for the purity predictions. Options are
 "purityFWHMmedian", "purityFWmedian", "purityFWHMmean", "purityFWmean"}
 
-\item{offsets}{vector = vector of the isolation window upper and lower offsets}
+\item{offsets}{vector; vector of the isolation window upper and lower offsets}
 
-\item{fileignore}{vector = vector of files to ignore for the prediction calculation}
+\item{fileignore}{vector; vector of files to ignore for the prediction calculation}
 
-\item{cores}{numeric = number of cores to use}
+\item{cores}{numeric; number of cores to use}
 
-\item{xgroups}{vector = vector of xcms groups to perform prediction on}
+\item{xgroups}{vector; vector of xcms groups to perform prediction on}
 
-\item{iwNorm}{boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
+\item{iwNorm}{boolean; if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 
-\item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
-\item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
-\item{plotP}{boolean = TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory}
+\item{plotP}{boolean; TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory}
 
-\item{mzRback}{character = backend to use for mzR parsing}
+\item{mzRback}{character; backend to use for mzR parsing}
 
-\item{isotopes}{boolean = TRUE if isotopes are to be removed}
+\item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
-\item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+\item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 
-\item{singleFile}{numeric = If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.}
+\item{singleFile}{numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.}
 }
 \value{
 a purityX object containing a dataframe of predicted purity scores

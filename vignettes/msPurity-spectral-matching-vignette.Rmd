@@ -1,0 +1,64 @@
+---
+title: "Using msPurity for spectral matching"
+author: "Thomas N. Lawson"
+date: "`r Sys.Date()`"
+output: 
+  BiocStyle::html_document:
+    toc: true
+bibliography: mspurity.bib
+vignette: >
+  %\VignetteIndexEntry{msPurity spectral matching}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+The msPurity package can perform spectral matching to the MassBank and LipidBlast libraries that are stored in a SQLite database. 
+
+The user is free to add any other data to the SQLite database as well.
+
+TODO:
+  More detailed description to be added.
+
+# Spectral matching 
+
+## LC-MS/MS
+
+We link the spectral matching result back to XCMS feature, therefore we need to run XCMS first. 
+
+(Please use the appropiate settings for your data)
+
+```{r}
+library(msPurity)
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+```
+
+The `purityA` function is then called to calculate the precursor purity of the fragmentation results and the `frag4feature` function will links the 
+fragmentation data back to the XCMS feature.
+
+```{r}
+pa  <- purityA(msmsPths, interpol = "linear")
+pa <- frag4feature(pa, xset)
+```
+
+The spectral matching is then run on all fragmentation scans collected in all files using the `spectral_matching` function.
+
+A SQLite database is also generated with the all the results included.
+
+As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the 
+annotations for the XCMS grouped peaks is provided in the output
+
+```{r}
+result <- spectral_matching(pa, xset, out_dir = tempdir())
+```
+
+It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.
+
+## DI-MS/MS or DI-MSn
+
+TODO
