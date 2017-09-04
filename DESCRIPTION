@@ -38,9 +38,10 @@ Suggests:
 VignetteBuilder: knitr
 RoxygenNote: 6.0.1
 biocViews: MassSpectrometry, Metabolomics, Software
-Collate:
+Collate: 
     'all-generics.R'
     'iw-norm.R'
+    'meta_extract.R'
     'pcalc.R'
     'purityA-class.R'
     'purityA-constructor.R'
@@ -59,4 +60,3 @@ Collate:
     'spectral-complexity.R'
     'spectral_matching.R'
     'splinepurity.R'
-    'meta_extract.R'

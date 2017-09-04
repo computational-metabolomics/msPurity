@@ -3,11 +3,12 @@
 #' @description
 #' Extract the filter strings 'accession MS:1000512' from an mzML file. Called header in thermo software.
 #' Enables quick access to various information regarding each scan
-#' @param mzml_pth
+#' @param mzml_pth character; mzML path
 #' @examples
 #' mzml_pth <- system.file("extdata", "dims", "mzML", 'B02_Daph_TEST_pos.mzML', package="msPurityData")
 #' meta_df <- get_additional_mzml_meta(mzml_pth)
 #' @return dataframe of meta info
+#' @export
 get_additional_mzml_meta <- function(mzml_pth){
 
   filters <- parse_file('.*accession=\"MS:1000512\".*name=\"filter string\".*value=\"(.*)\"', mzml_pth)
