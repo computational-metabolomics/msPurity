@@ -116,18 +116,18 @@ predictPurityExp <- function(Object, fidx){
 #'
 #' A ppm tolerance is used to find the target mz value in each scan.
 #'
-#' @param mztargets vector = mz targets to get predicted purity for
-#' @param filepth character = mzML file path or .csv file path
-#' @param minOffset numeric = isolation window minimum offset
-#' @param maxOffset numeric = isolation window maximum offset
-#' @param ppm numeric = tolerance for target mz value in each scan
-#' @param mzML boolean = Whether an mzML file is to be used or .csv file (TRUE == mzML)
-#' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
-#' @param mzRback character = backend to use for mzR parsing
-#' @param isotopes boolean = TRUE if isotopes are to be removed
-#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param mztargets vector; mz targets to get predicted purity for
+#' @param filepth character; mzML file path or .csv file path
+#' @param minOffset numeric; Isolation window minimum offset
+#' @param maxOffset numeric; Isolation window maximum offset
+#' @param ppm numeric; Tolerance for target mz value in each scan
+#' @param mzML boolean; Whether an mzML file is to be used or .csv file (TRUE == mzML)
+#' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param mzRback character; Backend to use for mzR parsing
+#' @param isotopes boolean; TRUE if isotopes are to be removed
+#' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
 #' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)

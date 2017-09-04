@@ -14,18 +14,18 @@
 #'     the isolation window}
 #' }
 #'
-#' @param peaks matrix = matrix of peaks consisting of 2 columns: mz and i
-#' @param mzmin numeric = isolation window (min)
-#' @param mzmax numeric = isolation window (max)
-#' @param mztarget numeric = the mz window to target in the isolation window
-#' @param ppm numeric = ppm tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used
-#' @param targetMinMZ numeric = range to look for the mztarget (min)
-#' @param targetMaxMZ numeric = range to look for the mztarget (max)
-#' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
-#' @param isotopes boolean = TRUE if isotopes are to be removed
-#' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param peaks matrix; Matrix of peaks consisting of 2 columns: mz and i
+#' @param mzmin numeric; Isolation window (min)
+#' @param mzmax numeric; Isolation window (max)
+#' @param mztarget numeric; The mz window to target in the isolation window
+#' @param ppm numeric; PPM tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used
+#' @param targetMinMZ numeric; Range to look for the mztarget (min)
+#' @param targetMaxMZ numeric; Range to look for the mztarget (max)
+#' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param isotopes boolean; TRUE if isotopes are to be removed
+#' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #'
 #' @return a vector of the purity score and the number of peaks in the window e.g c(purity, pknm)
 #'
@@ -229,6 +229,8 @@ MHmakeRandomString <- function(n=1, lenght=12){
   return(randomString)
 }
 
+
+
 im_tag <- function(x, peaks, target_mz, target_i){
 
   iid <- x[1]
@@ -244,8 +246,8 @@ im_tag <- function(x, peaks, target_mz, target_i){
   mr = target_mz+mdiff
   ml = target_mz-mdiff
 
-  peaks$ppmR <- sapply(peaks$mz, function(x){ppm_diff(x, mr)})
-  peaks$ppmL <- sapply(peaks$mz, function(x){ppm_diff(x, ml)})
+  peaks$ppmR <- sapply(peaks$mz, ppm_error, MZiso=mr)
+  peaks$ppmL <- sapply(peaks$mz, ppm_error, MZiso=ml)
 
   # Check if contaminating peaks are the M+1.. isotopes
   # filter the peaks so we are only looking at those with less than the
@@ -303,11 +305,11 @@ get_iso_intensity_range <- function(rp=FALSE, target_mz, target_i, adiff, ram, a
     inten_max <- ((numE * adiff + atol) / 100) * target_i # highest possible intensity (for M+1(or more)  isotope)
     inten_min <- ((1 * adiff - atol) / 100) * target_i # lowest possible intensity (for M+1(or more) isotope)
   }
-
   return(c(inten_min, inten_max))
-
 }
 
-ppm_diff <- function(x, y){
-  abs(1e6*(y-abs(x))/y)
+ppm_error <- function(MZcont, MZiso){
+  # MZcont = Observered MZcontaminating peak
+  # MZiso = Theoritical MZisotopic peak
+  abs(1e6*(MZcont-abs(MZiso))/MZiso)
 }

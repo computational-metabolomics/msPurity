@@ -7,10 +7,10 @@
 #'
 #' @aliases filterp
 #'
-#' @param Object object = purityD object
-#' @param thr numeric = intensity threshold
-#' @param rsd numeric = rsd threshold
-#' @param sampleOnly boolean = if only the sample (not blanks) should be filtered
+#' @param Object object; purityD object
+#' @param thr numeric; intensity threshold
+#' @param rsd numeric; rsd threshold
+#' @param sampleOnly boolean; if only the sample (not blanks) should be filtered
 #' @examples
 #'
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")

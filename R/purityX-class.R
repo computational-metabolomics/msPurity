@@ -26,7 +26,7 @@ setClass(
 #' Show method for purityX object
 #'
 #'
-#' @param object = purityX object
+#' @param object object; purityX object
 #' @return a print statement of regarding object
 #' @export
 setMethod("show", "purityX", function(object) {

@@ -10,29 +10,29 @@ dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
   im = NULL)
 }
 \arguments{
-\item{mztargets}{vector = mz targets to get predicted purity for}
+\item{mztargets}{vector; mz targets to get predicted purity for}
 
-\item{filepth}{character = mzML file path or .csv file path}
+\item{filepth}{character; mzML file path or .csv file path}
 
-\item{minOffset}{numeric = isolation window minimum offset}
+\item{minOffset}{numeric; Isolation window minimum offset}
 
-\item{maxOffset}{numeric = isolation window maximum offset}
+\item{maxOffset}{numeric; Isolation window maximum offset}
 
-\item{ppm}{numeric = tolerance for target mz value in each scan}
+\item{ppm}{numeric; Tolerance for target mz value in each scan}
 
-\item{mzML}{boolean = Whether an mzML file is to be used or .csv file (TRUE == mzML)}
+\item{mzML}{boolean; Whether an mzML file is to be used or .csv file (TRUE == mzML)}
 
-\item{iwNorm}{boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
+\item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 
-\item{iwNormFun}{function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
-\item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
-\item{mzRback}{character = backend to use for mzR parsing}
+\item{mzRback}{character; Backend to use for mzR parsing}
 
-\item{isotopes}{boolean = TRUE if isotopes are to be removed}
+\item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
-\item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+\item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 }
 \value{
 a dataframe of the target mz values and the predicted purity score

@@ -66,7 +66,6 @@ msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityDat
 
 ```{r}
 pa <- purityA(msmsPths)
-
 print(head(pa@puritydf))
 ```
 
