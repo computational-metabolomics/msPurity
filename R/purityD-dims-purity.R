@@ -296,4 +296,7 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
 }
 
 covar <- function(x){ ( 100*sd(x, na.rm=TRUE)/mean(x, na.rm=TRUE) )} # CV (otherwise known as RSD)
-stderror <- function(x){ sd(x, na.rm=TRUE)/sqrt(length(x, na.rm=TRUE))}
+stderror <- function(x){
+  x <- x[!is.na(x)]
+  return(sd(x)/sqrt(length(x)))
+}
