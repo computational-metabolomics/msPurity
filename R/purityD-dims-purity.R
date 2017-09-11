@@ -244,6 +244,7 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
   if(sim){
     in_range_scanids <- get_mz_sim_scanid(meta_info, mz)
     if (anyNA(in_range_scanids)){
+      print('CHECK')
       return(rep(NA, 6))
     }
     scanPeaks <- scanPeaks[scanids %in% in_range_scanids]
@@ -286,13 +287,13 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
   purityall <- as.numeric(purityall[-1])
   pknmmpall <- as.numeric(pknmall[-1])
 
-  puritySum <- c(median(purityall), mean(purityall), sd(purityall),
-                 covar(purityall), stderror(purityall),
+  puritySum <- c(median(purityall, na.rm = TRUE), mean(purityall, na.rm=TRUE),
+                 sd(purityall, na.rm=TRUE),  covar(purityall), stderror(purityall),
                  median(pknm, na.rm = TRUE))
 
   return(puritySum)
 
 }
 
-covar <- function(x){ ( 100*sd(x)/mean(x) )} # CV (otherwise known as RSD)
-stderror <- function(x){ sd(x)/sqrt(length(x))}
+covar <- function(x){ ( 100*sd(x, na.rm=TRUE)/mean(x, na.rm=TRUE) )} # CV (otherwise known as RSD)
+stderror <- function(x){ sd(x, na.rm=TRUE)/sqrt(length(x, na.rm=TRUE))}
