@@ -212,9 +212,16 @@ dimsPredictPuritySingle <- function(mztargets,
 get_mz_sim_scanid <- function(meta_info, mz){
 
 
-  as.numeric(meta_info[meta_info$sim ==TRUE &
+  filt <- meta_info[meta_info$sim ==TRUE &
                          mz > meta_info$scan_window_lower_limit &
-                         mz < meta_info$scan_window_upper_limit, ]$scanid)
+                         mz < meta_info$scan_window_upper_limit, ]
+  if(nrow(filt)<1){
+    return(NA)
+  }else{
+    scnids <- as.numeric(filt$scanid)
+  }
+
+  return(scnids)
 
 
 }
@@ -222,6 +229,11 @@ get_mz_sim_scanid <- function(meta_info, mz){
 dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
                                       plot=FALSE, plotdirpth, iwNorm=FALSE, iwNormFun=NULL,
                                       ilim=0.05, isotopes=TRUE, im=NULL, meta_info=NA, sim=FALSE, scanids=NA){
+
+  if (is.na(mz)){
+    return(rep(NA, 6))
+  }
+
   # Get isolation window
   minmz <- mz-minOffset
   maxmz <- mz+maxOffset
@@ -231,6 +243,9 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
 
   if(sim){
     in_range_scanids <- get_mz_sim_scanid(meta_info, mz)
+    if (anyNA(in_range_scanids)){
+      return(rep(NA, 6))
+    }
     scanPeaks <- scanPeaks[scanids %in% in_range_scanids]
   }
 

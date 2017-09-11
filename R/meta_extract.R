@@ -23,7 +23,6 @@ get_additional_mzml_meta <- function(mzml_pth){
   mass_ranges <- apply(mass_ranges, 2, as.numeric)
   colnames(mass_ranges) <- c('scan_window_lower_limit', 'scan_window_upper_limit')
 
-
   meta_df <- data.frame('scanid'=scanids, 'header'=filters, 'sim'=sims, mass_ranges, stringsAsFactors = FALSE)
   return(meta_df)
 }
