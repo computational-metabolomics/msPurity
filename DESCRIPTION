@@ -2,13 +2,8 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-<<<<<<< HEAD
-Version: 1.3.7
+Version: 1.3.8
 Date: 2017-09-11
-=======
-Version: 1.3.2
-Date: 2017-07-11
->>>>>>> upstream/master
 Author: Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn
 Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
 Description: Assess the contribution of the targeted precursor in fragmentation
@@ -31,10 +26,6 @@ Imports:
     reshape2,
     fastcluster,
     ggplot2,
-<<<<<<< HEAD
-=======
-    sapa,
->>>>>>> upstream/master
     DBI,
     RSQLite
 Suggests:
@@ -47,16 +38,10 @@ Suggests:
 VignetteBuilder: knitr
 RoxygenNote: 6.0.1
 biocViews: MassSpectrometry, Metabolomics, Software
-<<<<<<< HEAD
 Collate: 
     'all-generics.R'
     'iw-norm.R'
     'meta_extract.R'
-=======
-Collate:
-    'all-generics.R'
-    'iw-norm.R'
->>>>>>> upstream/master
     'pcalc.R'
     'purityA-class.R'
     'purityA-constructor.R'

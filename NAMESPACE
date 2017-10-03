@@ -4,15 +4,11 @@ export(Getfiles)
 export(assessPuritySingle)
 export(averageSpectraSingle)
 export(dimsPredictPuritySingle)
-<<<<<<< HEAD
 export(get_additional_mzml_meta)
 export(groupPeaksEx)
 export(iwNormGauss)
 export(iwNormQE.5)
 export(iwNormRcosine)
-=======
-export(groupPeaksEx)
->>>>>>> upstream/master
 export(pcalc)
 export(purityA)
 export(purityD)

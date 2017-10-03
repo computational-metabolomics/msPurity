@@ -28,10 +28,7 @@
 #' @param mzRback character; backend to use for mzR parsing
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
-<<<<<<< HEAD
 #' @param rtraw_columns boolean; TRUE if if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
-=======
->>>>>>> upstream/master
 #' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
@@ -47,30 +44,18 @@
 purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     fileignore=NULL, cores=1, xgroups=NULL,
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
-<<<<<<< HEAD
                     singleFile=0, rtraw_columns=FALSE){
-=======
-                    singleFile=0){
->>>>>>> upstream/master
 
   if (singleFile>0){
 
     ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
                                iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
-<<<<<<< HEAD
                                isotopes=isotopes, im=im, rtraw_columns=rtraw_columns)
   }else{
     ppLCMS <- xcmsGroupPurity(xset, offsets=offsets, fileignore=fileignore, purityType=purityType,
                               cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
                               ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im,
                               rtraw_columns=rtraw_columns)
-=======
-                               isotopes=isotopes, im=im)
-  }else{
-    ppLCMS <- xcmsGroupPurity(xset, offsets=offsets, fileignore=fileignore, purityType=purityType,
-                              cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
-                              ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im)
->>>>>>> upstream/master
   }
 
 
@@ -78,12 +63,8 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
 }
 
-<<<<<<< HEAD
 xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im,
                              rtraw_columns){
-=======
-xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
->>>>>>> upstream/master
 
   # get the filepaths from the xcms object
   filepth <- xset@filepaths[fileidx]
@@ -111,26 +92,10 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
-<<<<<<< HEAD
     lidx <- get_rt_idx(peak, xset, rtraw_columns)
 
     peaklist[i,]['minscan'] <- lidx$rtminidx
     peaklist[i,]['maxscan'] <- lidx$rtmaxidx
-=======
-    sid <- as.numeric(peak['sample'])
-    raw <- xset@rt$raw[[sid]]
-    corrected <- xset@rt$corrected[[sid]]
-
-    rtmed <- as.numeric(peak['rt'])
-    rtmin <- as.numeric(peak['rtmin'])
-    rtmax <- as.numeric(peak['rtmax'])
-    rtmedidx <- which(corrected==rtmed)
-    rtminidx <- which(corrected==rtmin)
-    rtmaxidx <- which(corrected==rtmax)
-
-    peaklist[i,]['minscan'] <- rtminidx
-    peaklist[i,]['maxscan'] <- rtmaxidx
->>>>>>> upstream/master
 
   }
   dfp <- data.frame(peaklist)
@@ -155,11 +120,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
 xcmsGroupPurity <- function(xset, purityType, offsets,
                             fileignore, cores, xgroups,
-<<<<<<< HEAD
                             iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im, rtraw_columns){
-=======
-                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
->>>>>>> upstream/master
   # get the filepaths from the xcms object
   filepths <- xset@filepaths
 
@@ -211,15 +172,11 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
   rtmedscan <- maxscan <- minscan <- rtmaxraw <- rtminraw <- rtraw <- rep(NA, nrow(grouplist))
   grouplist <- cbind(grouplist, rtraw, rtminraw, rtmaxraw, minscan, maxscan, rtmedscan)
 
-<<<<<<< HEAD
 
-=======
->>>>>>> upstream/master
   # Need to get the raw retention time and scans
   # (i.e. the times prior to retention time correction)
   for(i in 1:nrow(grouplist)){
     peak <- grouplist[i,]
-<<<<<<< HEAD
     lidx <- get_rt_idx(peak, xset, rtraw_columns)
 
     grouplist[i,]['rtraw'] <- lidx$rtraw
@@ -234,28 +191,6 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 
   print(nrow(grouplist))
 
-=======
-    sid <- as.numeric(peak['sample'])
-    raw <- xset@rt$raw[[sid]]
-    corrected <- xset@rt$corrected[[sid]]
-
-    rtmed <- as.numeric(peak['rt'])
-    rtmin <- as.numeric(peak['rtmin'])
-    rtmax <- as.numeric(peak['rtmax'])
-    rtmedidx <- which(corrected==rtmed)
-    rtminidx <- which(corrected==rtmin)
-    rtmaxidx <- which(corrected==rtmax)
-
-    grouplist[i,]['rtraw'] <- raw[rtmedidx]
-    grouplist[i,]['rtminraw'] <- raw[rtminidx]
-    grouplist[i,]['rtmaxraw'] <- raw[rtmaxidx]
-    grouplist[i,]['rtmedscan'] <- rtmedidx
-    grouplist[i,]['minscan'] <- rtminidx
-    grouplist[i,]['maxscan'] <- rtmaxidx
-
-  }
-
->>>>>>> upstream/master
   # Trn into dataframe for ease of use with plyr
   grouplist <- data.frame(grouplist)
 
@@ -350,7 +285,6 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 }
 
 
-<<<<<<< HEAD
 get_rt_idx <- function(peak, xset, rtraw_columns){
 
   sid <- as.numeric(peak['sample'])
@@ -380,9 +314,6 @@ get_rt_idx <- function(peak, xset, rtraw_columns){
               'rtmaxraw'=raw[rtmaxidx]))
 
 }
-=======
-
->>>>>>> upstream/master
 
 predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
                                   offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im){

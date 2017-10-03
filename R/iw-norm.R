@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #' @title Gaussian normalisation for isolation window efficiency
 #'
 #' @description
@@ -26,8 +25,6 @@
 #'
 #' @return normalisation function for selected range.
 #' @export
-=======
->>>>>>> upstream/master
 iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=+0.5){
 
   # get a gaussian curve
@@ -46,7 +43,6 @@ iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=+0.5){
 }
 
 
-<<<<<<< HEAD
 
 #' @title Q-Exactive +/- 0.5 range, normalisation for isolation window efficiency
 #'
@@ -77,8 +73,6 @@ iwNormGauss <- function(sdlim=3, minOff=-0.5, maxOff=+0.5){
 #'
 #' @return normalisation function for +/- 0.5 range for Q-Exactive
 #' @export
-=======
->>>>>>> upstream/master
 iwNormQE.5 <- function(){
     y <- c(0.0000, 0.0000, 0.0000, 0.0550, 0.2336, 0.4437, 0.6509, 0.8210,
            0.9339, 0.9915, 0.9975, 0.9555, 0.8694, 0.7428, 0.5805, 0.3986,
@@ -87,7 +81,6 @@ iwNormQE.5 <- function(){
     f <- approxfun(x, y)
 }
 
-<<<<<<< HEAD
 #' @title Raised cosine normalisation for isolation window efficiency
 #'
 #' @description
@@ -126,13 +119,6 @@ iwNormRcosine <- function(minOff = -0.5, maxOff = +0.5){
           0.0679, 0.062, 0.0562, 0.0504, 0.0448, 0.0393, 0.0341, 0.0291, 0.0244, 0.02, 0.016, 0.0123, 0.0091,
           0.0064, 0.0041, 0.0023, 0.001, 3e-04)
 
-=======
-
-iwNormRcosine <- function(minOff = -0.5, maxOff = +0.5){
-   s <- sapa::taper(type="raised cosine")
-
-   y <- as.vector(s)
->>>>>>> upstream/master
    x <- seq(minOff, maxOff, length.out = length(y))
 
    # linear scaling to range 0 to 1

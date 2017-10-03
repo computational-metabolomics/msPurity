@@ -7,7 +7,6 @@
 dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
   maxOffset = 0.5, ppm = 2.5, mzML = TRUE, iwNorm = FALSE,
   iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz", isotopes = TRUE,
-<<<<<<< HEAD
   im = NULL, sim = FALSE)
 }
 \arguments{
@@ -36,34 +35,6 @@ dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
 \item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 
 \item{sim}{boolean = TRUE if file is from sim stitch experiment. Default FALSE}
-=======
-  im = NULL)
-}
-\arguments{
-\item{mztargets}{vector; mz targets to get predicted purity for}
-
-\item{filepth}{character; mzML file path or .csv file path}
-
-\item{minOffset}{numeric; Isolation window minimum offset}
-
-\item{maxOffset}{numeric; Isolation window maximum offset}
-
-\item{ppm}{numeric; Tolerance for target mz value in each scan}
-
-\item{mzML}{boolean; Whether an mzML file is to be used or .csv file (TRUE == mzML)}
-
-\item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
-
-\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
-
-\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
-
-\item{mzRback}{character; Backend to use for mzR parsing}
-
-\item{isotopes}{boolean; TRUE if isotopes are to be removed}
-
-\item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
->>>>>>> upstream/master
 }
 \value{
 a dataframe of the target mz values and the predicted purity score
