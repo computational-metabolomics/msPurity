@@ -28,6 +28,7 @@
 #' @param mzRback character; backend to use for mzR parsing
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param rtraw_columns boolean; TRUE if if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
 #' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
@@ -43,17 +44,18 @@
 purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     fileignore=NULL, cores=1, xgroups=NULL,
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
-                    singleFile=0){
+                    singleFile=0, rtraw_columns=FALSE){
 
   if (singleFile>0){
 
     ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
                                iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
-                               isotopes=isotopes, im=im)
+                               isotopes=isotopes, im=im, rtraw_columns=rtraw_columns)
   }else{
     ppLCMS <- xcmsGroupPurity(xset, offsets=offsets, fileignore=fileignore, purityType=purityType,
                               cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
-                              ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im)
+                              ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im,
+                              rtraw_columns=rtraw_columns)
   }
 
 
@@ -61,7 +63,8 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 
 }
 
-xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
+xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im,
+                             rtraw_columns){
 
   # get the filepaths from the xcms object
   filepth <- xset@filepaths[fileidx]
@@ -89,19 +92,10 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
-    sid <- as.numeric(peak['sample'])
-    raw <- xset@rt$raw[[sid]]
-    corrected <- xset@rt$corrected[[sid]]
+    lidx <- get_rt_idx(peak, xset, rtraw_columns)
 
-    rtmed <- as.numeric(peak['rt'])
-    rtmin <- as.numeric(peak['rtmin'])
-    rtmax <- as.numeric(peak['rtmax'])
-    rtmedidx <- which(corrected==rtmed)
-    rtminidx <- which(corrected==rtmin)
-    rtmaxidx <- which(corrected==rtmax)
-
-    peaklist[i,]['minscan'] <- rtminidx
-    peaklist[i,]['maxscan'] <- rtmaxidx
+    peaklist[i,]['minscan'] <- lidx$rtminidx
+    peaklist[i,]['maxscan'] <- lidx$rtmaxidx
 
   }
   dfp <- data.frame(peaklist)
@@ -126,7 +120,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
 xcmsGroupPurity <- function(xset, purityType, offsets,
                             fileignore, cores, xgroups,
-                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im){
+                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im, rtraw_columns){
   # get the filepaths from the xcms object
   filepths <- xset@filepaths
 
@@ -178,29 +172,24 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
   rtmedscan <- maxscan <- minscan <- rtmaxraw <- rtminraw <- rtraw <- rep(NA, nrow(grouplist))
   grouplist <- cbind(grouplist, rtraw, rtminraw, rtmaxraw, minscan, maxscan, rtmedscan)
 
+
   # Need to get the raw retention time and scans
   # (i.e. the times prior to retention time correction)
   for(i in 1:nrow(grouplist)){
     peak <- grouplist[i,]
-    sid <- as.numeric(peak['sample'])
-    raw <- xset@rt$raw[[sid]]
-    corrected <- xset@rt$corrected[[sid]]
+    lidx <- get_rt_idx(peak, xset, rtraw_columns)
 
-    rtmed <- as.numeric(peak['rt'])
-    rtmin <- as.numeric(peak['rtmin'])
-    rtmax <- as.numeric(peak['rtmax'])
-    rtmedidx <- which(corrected==rtmed)
-    rtminidx <- which(corrected==rtmin)
-    rtmaxidx <- which(corrected==rtmax)
+    grouplist[i,]['rtraw'] <- lidx$rtraw
+    grouplist[i,]['rtminraw'] <- lidx$rtminraw
+    grouplist[i,]['rtmaxraw'] <- lidx$rtmaxraw
+    grouplist[i,]['rtmedscan'] <- lidx$rtmedidx
+    grouplist[i,]['minscan'] <- lidx$rtminidx
+    grouplist[i,]['maxscan'] <- lidx$rtmaxidx
 
-    grouplist[i,]['rtraw'] <- raw[rtmedidx]
-    grouplist[i,]['rtminraw'] <- raw[rtminidx]
-    grouplist[i,]['rtmaxraw'] <- raw[rtmaxidx]
-    grouplist[i,]['rtmedscan'] <- rtmedidx
-    grouplist[i,]['minscan'] <- rtminidx
-    grouplist[i,]['maxscan'] <- rtmaxidx
 
   }
+
+  print(nrow(grouplist))
 
   # Trn into dataframe for ease of use with plyr
   grouplist <- data.frame(grouplist)
@@ -296,7 +285,35 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 }
 
 
+get_rt_idx <- function(peak, xset, rtraw_columns){
 
+  sid <- as.numeric(peak['sample'])
+  raw <- xset@rt$raw[[sid]]
+  corrected <- xset@rt$corrected[[sid]]
+
+  if (rtraw_columns){
+    rtmed <- as.numeric(peak['rt_raw'])
+    rtmin <- as.numeric(peak['rtmin_raw'])
+    rtmax <- as.numeric(peak['rtmax_raw'])
+    rtmedidx <- which(raw==rtmed)
+    rtminidx <- which(raw==rtmin)
+    rtmaxidx <- which(raw==rtmax)
+
+  }else{
+    rtmed <- as.numeric(peak['rt'])
+    rtmin <- as.numeric(peak['rtmin'])
+    rtmax <- as.numeric(peak['rtmax'])
+    rtmedidx <- which(corrected==rtmed)
+    rtminidx <- which(corrected==rtmin)
+    rtmaxidx <- which(corrected==rtmax)
+
+  }
+
+  return(list('rtmedidx'=rtmedidx, 'rtminidx'=rtminidx, 'rtmaxidx'=rtmaxidx,
+              'rtraw'=raw[rtmedidx], 'rtminraw'=raw[rtminidx],
+              'rtmaxraw'=raw[rtmaxidx]))
+
+}
 
 predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
                                   offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im){

@@ -28,7 +28,31 @@ test_that("checking lcms based functions", {
   msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
   xset2 <- xcmsSet(msPths)
   xset2 <- group(xset2)
+
   ppLCMS <- purityX(xset2, cores = 1, xgroups = c(1, 2), ilim=0)
+
+
+  # msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+  # xset2 <- xcmsSet(msPths,method = "centWave")
+  # xset2 <- group(xset2)
+  # ppLCMS <- purityX(xset2)
+
+  # rtraw <- xset2@peaks[,c('rt', 'rtmin', 'rtmax')]
+  # colnames(rtraw) <- c('rt_raw','rtmin_raw','rtmax_raw')
+  # xset2@peaks <- cbind(xset2@peaks, rtraw)
+  #
+  # xset2 <- group(xset2)
+  #
+  # xset2 <- retcor(xset2, 'obiwarp')
+  # xset2 <- group(xset2)
+  #
+  #
+  #
+  # raw1 <- getXcmsRaw(xset2, sampleidx=1, rt='corrected')
+  # raw2 <- getXcmsRaw(xset2, sampleidx=2, rt='corrected')
+  # pl1 <- pl[pl[,'sample']==1,]
+  # pl2 <- pl[pl[,'sample']==2,]
+
 
   expect_equal(round(median(ppLCMS@predictions$grpid),3), 1.5)
   expect_equal(round(median(ppLCMS@predictions$mean),3), 0.995)
