@@ -39,10 +39,13 @@ pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
                   iwNormFun=NULL, ilim=0, targetMinMZ=NA, targetMaxMZ=NA,
                   isotopes=FALSE, im=NULL){
 
+<<<<<<< HEAD
   if (is.na(mztarget)){
     return(c(NA, NA))
   }
 
+=======
+>>>>>>> upstream/master
   # Make sure the input is a matrix
   if(is.vector(peaks)){
     peaks <- matrix(peaks, ncol = length(peaks), nrow = 1)

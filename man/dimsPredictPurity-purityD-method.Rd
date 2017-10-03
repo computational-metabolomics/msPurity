@@ -13,6 +13,7 @@
 \arguments{
 \item{Object}{object = purityD object}
 
+<<<<<<< HEAD
 \item{ppm}{numeric = tolerance for target mz value in each scan}
 
 \item{minOffset}{numeric = isolation window minimum offset}
@@ -30,6 +31,25 @@
 \item{isotopes}{boolean = TRUE if isotopes are to be removed}
 
 \item{im}{matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+=======
+\item{ppm}{numeric; Tolerance for target mz value in each scan}
+
+\item{minOffset}{numeric; Isolation window minimum offset}
+
+\item{maxOffset}{numeric; Isolation window maximum offset}
+
+\item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
+
+\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+
+\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+
+\item{sampleOnly}{boolean = if TRUE will only calculate purity for sample peaklists}
+
+\item{isotopes}{boolean; TRUE if isotopes are to be removed}
+
+\item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+>>>>>>> upstream/master
 }
 \value{
 purityD object with predicted purity of peaks

@@ -116,6 +116,7 @@ predictPurityExp <- function(Object, fidx){
 #'
 #' A ppm tolerance is used to find the target mz value in each scan.
 #'
+<<<<<<< HEAD
 #' @param mztargets vector = mz targets to get predicted purity for
 #' @param filepth character = mzML file path or .csv file path
 #' @param minOffset numeric = isolation window minimum offset
@@ -129,6 +130,20 @@ predictPurityExp <- function(Object, fidx){
 #' @param isotopes boolean = TRUE if isotopes are to be removed
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param sim boolean = TRUE if file is from sim stitch experiment. Default FALSE
+=======
+#' @param mztargets vector; mz targets to get predicted purity for
+#' @param filepth character; mzML file path or .csv file path
+#' @param minOffset numeric; Isolation window minimum offset
+#' @param maxOffset numeric; Isolation window maximum offset
+#' @param ppm numeric; Tolerance for target mz value in each scan
+#' @param mzML boolean; Whether an mzML file is to be used or .csv file (TRUE == mzML)
+#' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param mzRback character; Backend to use for mzR parsing
+#' @param isotopes boolean; TRUE if isotopes are to be removed
+#' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+>>>>>>> upstream/master
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
 #' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
@@ -145,8 +160,12 @@ dimsPredictPuritySingle <- function(mztargets,
                                     ilim=0.05,
                                     mzRback='pwiz',
                                     isotopes=TRUE,
+<<<<<<< HEAD
                                     im=NULL,
                                     sim=FALSE){
+=======
+                                    im=NULL){
+>>>>>>> upstream/master
 
   # open the file and get the scans
   if(mzML==TRUE){
@@ -163,6 +182,7 @@ dimsPredictPuritySingle <- function(mztargets,
     # get peaks from each scan
     scanPeaks <- mzR::peaks(mr)
 
+<<<<<<< HEAD
     if (sim){
       # if file contains sim-stitch we only want to look at sim scans
       meta_info <- get_additional_mzml_meta(filepth)
@@ -172,6 +192,9 @@ dimsPredictPuritySingle <- function(mztargets,
     }
 
     # only get scans that are required for analysis
+=======
+    # filter out any that are not ms1
+>>>>>>> upstream/master
     scanPeaks <- scanPeaks[scans]
 
   }else{
@@ -197,18 +220,24 @@ dimsPredictPuritySingle <- function(mztargets,
                      iwNormFun=iwNormFun,
                      ilim=ilim,
                      isotopes=isotopes,
+<<<<<<< HEAD
                      im=im,
                      meta_info=meta_info,
                      sim=sim,
                      scanids=scans)
   puredf <- do.call(rbind.data.frame, pureList)
 
+=======
+                     im=im)
+  puredf <- do.call(rbind.data.frame, pureList)
+>>>>>>> upstream/master
   colnames(puredf) <- c('medianPurity','meanPurity',
                         'sdPurity', 'cvPurity', 'sdePurity', "medianPeakNum")
   return(puredf)
 
 }
 
+<<<<<<< HEAD
 get_mz_sim_scanid <- function(meta_info, mz){
 
 
@@ -233,6 +262,11 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
   if (is.na(mz)){
     return(rep(NA, 6))
   }
+=======
+dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
+                                      plot=FALSE, plotdirpth, iwNorm=FALSE, iwNormFun=NULL,
+                                      ilim=0.05, isotopes=TRUE, im=NULL){
+>>>>>>> upstream/master
 
   # Get isolation window
   minmz <- mz-minOffset
@@ -241,6 +275,7 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
   purityall <- ""
   pknmall <- ""
 
+<<<<<<< HEAD
   if(sim){
     in_range_scanids <- get_mz_sim_scanid(meta_info, mz)
     if (anyNA(in_range_scanids)){
@@ -253,6 +288,9 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
   for (i in 1:length(scanPeaks)){
 
 
+=======
+  for (i in 1:length(scanPeaks)){
+>>>>>>> upstream/master
     x <- scanPeaks[[i]]
 
     pout <- pcalc(x, mzmin=minmz, mzmax=maxmz,
@@ -287,16 +325,26 @@ dimsPredictPuritySingleMz <- function(mz, scanPeaks, minOffset, maxOffset, ppm,
   purityall <- as.numeric(purityall[-1])
   pknmmpall <- as.numeric(pknmall[-1])
 
+<<<<<<< HEAD
   puritySum <- c(median(purityall, na.rm = TRUE), mean(purityall, na.rm=TRUE),
                  sd(purityall, na.rm=TRUE),  covar(purityall), stderror(purityall),
+=======
+  puritySum <- c(median(purityall), mean(purityall), sd(purityall),
+                 covar(purityall), stderror(purityall),
+>>>>>>> upstream/master
                  median(pknm, na.rm = TRUE))
 
   return(puritySum)
 
 }
 
+<<<<<<< HEAD
 covar <- function(x){ ( 100*sd(x, na.rm=TRUE)/mean(x, na.rm=TRUE) )} # CV (otherwise known as RSD)
 stderror <- function(x){
   x <- x[!is.na(x)]
   return(sd(x)/sqrt(length(x)))
 }
+=======
+covar <- function(x){ ( 100*sd(x)/mean(x) )} # CV (otherwise known as RSD)
+stderror <- function(x){ sd(x)/sqrt(length(x))}
+>>>>>>> upstream/master

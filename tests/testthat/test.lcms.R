@@ -28,6 +28,7 @@ test_that("checking lcms based functions", {
   msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
   xset2 <- xcmsSet(msPths)
   xset2 <- group(xset2)
+<<<<<<< HEAD
 
   ppLCMS <- purityX(xset2, cores = 1, xgroups = c(1, 2), ilim=0)
 
@@ -54,6 +55,10 @@ test_that("checking lcms based functions", {
   # pl2 <- pl[pl[,'sample']==2,]
 
 
+=======
+  ppLCMS <- purityX(xset2, cores = 1, xgroups = c(1, 2), ilim=0)
+
+>>>>>>> upstream/master
   expect_equal(round(median(ppLCMS@predictions$grpid),3), 1.5)
   expect_equal(round(median(ppLCMS@predictions$mean),3), 0.995)
   expect_equal(round(median(ppLCMS@predictions$median),3), 0.995)
