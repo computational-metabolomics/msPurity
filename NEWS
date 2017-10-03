@@ -1,7 +1,8 @@
-CHANGES IN VERSION 1.3.6
+CHANGES IN VERSION 1.3.7
 =========================
 * Added very basic SIMS stitch compatibility
 * pcalc can handle NAs
+* Update of purityX to handle obiwarp RT correction (requires recording the RT RAW at an earlier step)
 
 
 CHANGES IN VERSION 1.3.1
