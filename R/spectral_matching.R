@@ -563,10 +563,8 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, 
   library_meta_ids <- unique(library_spectra[,'library_spectra_meta_id'])
 
   # Get ppm difference between precursor from library and target
-
-
   out_prec <- outer(target_prec, library_precs, '-')
-  colprec <- library_precs[col(out_prec)] # so we can divide by column
+  colprec <- library_precs[col(out_prec)] # so we can divide by column if library
   ppmdiff_prec <- as.vector(abs(1e6*(out_prec/colprec)))
 
   # Filter the library spectra that does not meet the precursor tolerance check
