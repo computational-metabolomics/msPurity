@@ -563,9 +563,9 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, 
   library_meta_ids <- unique(library_spectra[,'library_spectra_meta_id'])
 
   # Get ppm difference between precursor from library and target
-  out_prec <- outer(target_prec, library_precs, '-')
+  out_prec <- outer(target_prec, library_precs, '-')*1e6
   colprec <- library_precs[col(out_prec)] # so we can divide by column if library
-  ppmdiff_prec <- as.vector(abs(1e6*(out_prec/colprec)))
+  ppmdiff_prec <- as.vector(abs(out_prec/colprec))
 
   # Filter the library spectra that does not meet the precursor tolerance check
   library_spectra_red <- library_spectra[library_spectra[,'library_spectra_meta_id'] %in% library_meta_ids[ppmdiff_prec<=ppm_tol_prec],]
@@ -580,9 +580,9 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, 
   }
 
   # calculate ppm error of all peaks (I am presuming this is faster than doing it library spectra at a time...)
-  out_peaks_mz <- outer(target_peaks[,'mz'], library_spectra_red[,'mz'], '-')
+  out_peaks_mz <- outer(target_peaks[,'mz'], library_spectra_red[,'mz'], '-')*1e6
   colmz <- library_spectra_red[,'mz'][col(out_peaks_mz)] # so we can calculate column wide
-  ppmdiff_all <- abs(1e6*(out_peaks_mz/colmz))
+  ppmdiff_all <- abs(out_peaks_mz/colmz)
 
   # Calculate the percentage error of RA to library
   out_peaks_ra <- outer(target_peaks[,'ra'], library_spectra_red[,'ra'], '-')
