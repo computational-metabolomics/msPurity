@@ -634,6 +634,11 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
     return(c(NA,NA,NA))
   }
 
+  if(is.vector(target_peaks) || nrow(target_peaks)==1){
+      ppmdiff <- matrix(ppmdiff, nrow=1)
+      idiff <- matrix(idiff, nrow=1)
+  }
+
   if(is.vector(library_peaks)){
     ppmdiff <- matrix(ppmdiff)
     idiff <- matrix(idiff)
@@ -644,6 +649,8 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
   }else{
     library_peaks <- library_peaks[,c('mz','ra','type','w')]
   }
+
+  # need to ensure target_peaks, ppmdiff and idiff are all in mtarix format
 
   # Following the pMatch-hammer method for peak matching but with slight variation that we also check the percentage difference for
   # the relative intensity as well
@@ -704,9 +711,19 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
 
   allpeaksm <- do.call(rbind, allpeaks)
 
-  wt <- as.numeric(allpeaksm[allpeaksm[,'type']==1,][,'w'])
+  wtm <- allpeaksm[allpeaksm[,'type']==1,]
+  if (is.vector(wtm)){
+    wt <- as.numeric(wtm['w'])
+  }else{
+    wt <- as.numeric(wtm[,'w'])
+  }
 
-  wl <- as.numeric(allpeaksm[allpeaksm[,'type']==2,][,'w'])
+  wlm <- allpeaksm[allpeaksm[,'type']==2,]
+  if (is.vector(wlm)){
+    wl <- as.numeric(wlm['w'])
+  }else{
+    wl <- as.numeric(wlm[,'w'])
+  }
 
   cossim_out <- CosSim(wt, wl)
 

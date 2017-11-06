@@ -15,7 +15,7 @@ environment:
 
   - R_VERSION: release
     R_ARCH: x64
-    BIOC_USE_DEVEL: true
+    BIOC_USE_DEVEL: false
 
 
 
