@@ -41,20 +41,21 @@ xset <- xcms::group(xset)
 The `purityA` function is then called to calculate the precursor purity of the fragmentation results and the `frag4feature` function will links the 
 fragmentation data back to the XCMS feature.
 
+A SQLite database is also generated with the all the results included.
+
 ```{r}
 pa  <- purityA(msmsPths, interpol = "linear")
 pa <- frag4feature(pa, xset)
 ```
 
-The spectral matching is then run on all fragmentation scans collected in all files using the `spectral_matching` function.
-
-A SQLite database is also generated with the all the results included.
+The spectral matching is then run on all fragmentation scans collected in all files using the `spectral_matching` function. The function updates the previously generated database with
+the spectral matching annotations.
 
 As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the 
 annotations for the XCMS grouped peaks is provided in the output
 
 ```{r}
-result <- spectral_matching(pa, xset, out_dir = tempdir())
+result <- spectral_matching(pa$db_path, out_dir = tempdir())
 ```
 
 It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.

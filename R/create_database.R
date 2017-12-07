@@ -220,6 +220,10 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con){
     names_fk =names(fks)
   }
   df <- update_cn_order(name_pk=name_pk, names_fk=names_fk, df = df)
+
+  names(df) <- gsub( ".",  "_", names(df), fixed = TRUE)
+  names(df) <- gsub( "-",  "_", names(df), fixed = TRUE)
+
   query <- get_create_query(pk=name_pk, fks=fks, table_name=table_name, df=df)
   sqr <- DBI::dbSendQuery(con, query)
   DBI::dbClearResult(sqr)
