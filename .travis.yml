@@ -3,7 +3,7 @@ cache: packages
 r: bioc-devel
 os:
   - linux
-  - osx
+
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libnetcdf-dev texlive-latex-base; fi

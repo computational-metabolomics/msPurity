@@ -18,7 +18,7 @@ create_database(pa, xset, out_dir, grp_peaklist = NA, db_name = NA)
 \item{db_name}{character [optional]; Name of the result database}
 }
 \value{
-path to SQLite database
+path to SQLite database and database name
 }
 \description{
 Create and SQLite database of an LC-MS(/MS) experiment

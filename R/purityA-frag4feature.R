@@ -15,6 +15,8 @@
 #' @param plim numeric; min purity of precursor to be included
 #' @param intense boolean; If the most intense precursor or the centered precursor is used
 #' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
+#' @param create_db boolean; SQLite database will be created of the results
+#' @param out_dir character; Path where database will be created
 #' @return purityA object with slots for fragmentation-XCMS links
 #'
 #' @examples
@@ -30,7 +32,8 @@
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, ppm = 5, plim = 0, intense=TRUE, convert2RawRT=TRUE){
+          definition = function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE, create_db=TRUE,
+                                out_dir='.'){
 
   # Makes sure the same files are being used
   for(i in 1:length(pa@fileList)){
@@ -101,7 +104,16 @@ setMethod(f="frag4feature", signature="purityA",
   pa@grped_df <- grpm
   pa@grped_ms2 <- getMS2scans(grpm, pa@fileList, mzRback = pa@mzRback)
 
+
+  if (!is.na(create_db)){
+    pa@db_path <- create_database(pa=pa, xset=xset, out_dir=out_dir)
+  }
+
+
   return(pa)
+
+
+
 
 })
 

@@ -7,7 +7,7 @@
 \title{Assign precursor purity scored fragmentation spectra to XCMS features}
 \usage{
 \S4method{frag4feature}{purityA}(pa, xset, ppm = 5, plim = 0,
-  intense = TRUE, convert2RawRT = TRUE)
+  intense = TRUE, convert2RawRT = TRUE, create_db = TRUE, out_dir = ".")
 }
 \arguments{
 \item{pa}{object; purityA object}
@@ -21,6 +21,10 @@
 \item{intense}{boolean; If the most intense precursor or the centered precursor is used}
 
 \item{convert2RawRT}{boolean; If retention time correction has been used in XCMS set this to TRUE}
+
+\item{create_db}{boolean; SQLite database will be created of the results}
+
+\item{out_dir}{character; Path where database will be created}
 }
 \value{
 purityA object with slots for fragmentation-XCMS links

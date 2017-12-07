@@ -26,7 +26,7 @@ create_database <-  function(pa, xset, out_dir, grp_peaklist=NA, db_name=NA){
   message("Creating a database of fragmentation spectra and LC features")
   target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, out_dir, db_name)
 
-  return(c(target_db_pth, db_name))
+  return(target_db_pth)
 
 }
 
@@ -124,6 +124,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
   custom_dbWriteTable(name_pk = 'cXp_id', fk=append(fks_pid, fks_cid),
                       table_name ='c_peak_X_s_peak_meta', df=c_peak_X_s_peak_meta, con=con)
 
+  DBI::dbDisconnect(con)
   return(db_pth)
 
 }

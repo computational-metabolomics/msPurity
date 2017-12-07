@@ -2,20 +2,21 @@ test_that("checking spectral matching functions (massbank)", {
   print("########################################################")
   print("## Spectral matching functions                        ##")
   print("########################################################")
+  library(msPurity)
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  xset <- xcms::xcmsSet(msmsPths)
+  xset <- xcms::xcmsSet(msmsPths, BPPARAM = BiocParallel::SnowParam())
   xset <- xcms::group(xset)
   xset <- xcms::retcor(xset)
   xset <- xcms::group(xset)
 
   pa  <- purityA(msmsPths)
-  pa <- frag4feature(pa, xset)
   td <- tempdir()
+  pa <- frag4feature(pa, xset, out_dir = td)
+
   scan_ids <- c(1120,  366, 1190, 601,  404,1281, 1323, 1289)
 
-
-  result <- spectral_matching(pa, xset, out_dir = td, scan_ids =scan_ids)
+  result <- spectral_matching(pa@db_path, scan_ids =scan_ids)
 
   expect_equal(unname(unlist(result$xcms_summary_df)),
                c("46", "Methionine", "0.603443951203275", "0.120192307692308", "3",

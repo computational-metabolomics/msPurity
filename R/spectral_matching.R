@@ -3,8 +3,11 @@
 #' @description
 #' Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
 #'
-#' @param pa purityA object; Needs to be the same used for frag4feature function
-#' @param xset xcms object; Needs to be the same used for frag4feature function
+#' Use as input the
+#' @param target_db_pth; Path of the database of targets that will be searched against the library spectra. Generated
+#'                       either from frag4feature or from create_database functions.
+#' @param library_db_pth character [optional]; path to library spectral SQLite database.
+#'                                             Defaults to msPurityData package data.
 #' @param ra_thres_t numeric; Relative abundance threshold for target spectra
 #'                      (Peaks below this RA threshold will be excluded)
 #' @param ra_thres_l numeric; Relative abundance threshold for library spectra
@@ -13,17 +16,18 @@
 #' @param ppm_tol_prod numeric; PPM tolerance to match to product
 #' @param ppm_tol_prec numeric; PPM tolerance to match to precursor
 #' @param score_thres numeric; Dot product cosine score threshold
-#' @param out_dir character; Out directory for the SQLite result database
 #' @param topn numeric [optional]; Only use top n matches
 #' @param db_name character [optional]; Name of the result database
-#' @param grp_peaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
 #'                                   (e.g. can use CAMERA peaklist)
-#' @param library_db_pth character [optional]; path to library spectral SQLite database. Defaults to msPurityData package data.
 #' @param instrument_types vector [optional]; Vector of instrument types, defaults to all
 #' @param library_sources vector [optional]; Vector of library sources. Default option is for massbank only but the 'lipidblast'
 #'                                    library is also available
 #' @param scan_ids vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 #'                        used for the spectral matching. All scans will be used if set to NA
+#' @param pa purityA object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param xset xcms object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param grp_peaklist dataframe [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param out_dir character [deprecated]; If target_db_pth set to NA, Out directory for the SQLite result database
 #'
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
@@ -38,17 +42,25 @@
 #' pa <- frag4feature(pa, xset)
 #' #NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
 #' #Only required if you want to limit the spectral matching to certain scans
-#' result <- spectral_matching(pa, xset, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
+#' result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 #' @export
-spectral_matching <- function(pa, xset, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
-                                     score_thres=0.6, out_dir='.', topn=NA, db_name=NA, grp_peaklist=NA, library_db_pth=NA,
-                                     instrument_types=NA, library_sources='massbank', scan_ids=NA){
+spectral_matching <- function(target_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
+                                     score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,
+                                     instrument_types=NA, library_sources='massbank', scan_ids=NA,
+                                     pa=NA, xset=NA, grp_peaklist=NA, out_dir='.'){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
 
   ########################################################
   # Export the target data into sqlite database
   ########################################################
-  target_db_pth <- create_database(pa=pa, xset=xset, out_dir=out_dir, grp_peaklist=grp_peaklist, db_name=db_name)
+  if (is.na(target_db_pth)){
+    target_db_pth <- create_database(pa=pa, xset=xset, out_dir=out_dir, grp_peaklist=grp_peaklist, db_name=db_name)
+  }
+
+  if (is.na(library_db_pth)){
+    library_db_pth <- system.file("extdata", "library_spectra", "library_spectra.db", package="msPurityData")
+  }
+
 
   ########################################################
   # Perform the spectral matching
