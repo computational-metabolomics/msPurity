@@ -3,6 +3,7 @@
 export(Getfiles)
 export(assessPuritySingle)
 export(averageSpectraSingle)
+export(create_database)
 export(dimsPredictPuritySingle)
 export(get_additional_mzml_meta)
 export(groupPeaksEx)

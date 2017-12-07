@@ -17,7 +17,8 @@ setClass(
     puritydf = "data.frame",
     grped_df = "data.frame",
     grped_ms2 = "list",
-    mzRback = "character"
+    mzRback = "character",
+    db_path = "character"
   )
 )
 

@@ -22,7 +22,7 @@ test_that("checking spectral matching functions (massbank)", {
                  "Methionine, Methionine", "1190, 1190", "34329, 34337", "0.606, 0.601", "1"))
 
 
-  con <- DBI::dbConnect(RSQLite::SQLite(), file.path(result$out_dir, result$db_name))
+  con <- DBI::dbConnect(RSQLite::SQLite(), file.path(result$result_db_pth))
 
   XLI <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups
                          LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.grpid=c_peak_groups.grpid
