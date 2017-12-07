@@ -17,6 +17,7 @@
 #' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
 #' @param create_db boolean; SQLite database will be created of the results
 #' @param out_dir character; Path where database will be created
+#' @param grp_peaklist dataframe [optional]; Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @return purityA object with slots for fragmentation-XCMS links
 #'
 #' @examples
@@ -33,7 +34,7 @@
 #' @export
 setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE, create_db=TRUE,
-                                out_dir='.', db_name=NA){
+                                out_dir='.', db_name=NA, grp_peaklist=NA){
 
   # Makes sure the same files are being used
   for(i in 1:length(pa@fileList)){
@@ -106,7 +107,8 @@ setMethod(f="frag4feature", signature="purityA",
 
 
   if (!is.na(create_db)){
-    pa@db_path <- create_database(pa=pa, xset=xset, out_dir=out_dir, db_name=db_name)
+    pa@db_path <- create_database(pa=pa, xset=xset, out_dir=out_dir,
+                                  db_name=db_name, grp_peaklist=grp_peaklist)
   }
 
 
