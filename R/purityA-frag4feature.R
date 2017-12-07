@@ -33,7 +33,7 @@
 #' @export
 setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE, create_db=TRUE,
-                                out_dir='.'){
+                                out_dir='.', db_name=NA){
 
   # Makes sure the same files are being used
   for(i in 1:length(pa@fileList)){
@@ -106,7 +106,7 @@ setMethod(f="frag4feature", signature="purityA",
 
 
   if (!is.na(create_db)){
-    pa@db_path <- create_database(pa=pa, xset=xset, out_dir=out_dir)
+    pa@db_path <- create_database(pa=pa, xset=xset, out_dir=out_dir, db_name=db_name)
   }
 
 
