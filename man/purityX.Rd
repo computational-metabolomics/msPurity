@@ -7,7 +7,8 @@
 purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
   fileignore = NULL, cores = 1, xgroups = NULL, iwNorm = FALSE,
   iwNormFun = NULL, ilim = 0.05, plotP = FALSE, mzRback = "pwiz",
-  isotopes = FALSE, im = NULL, singleFile = 0, rtraw_columns = FALSE)
+  isotopes = FALSE, im = NULL, singleFile = 0, rtrawColumns = FALSE,
+  saveEIC = FALSE, sqlitePth = NULL)
 }
 \arguments{
 \item{xset}{object; xcms object}
@@ -39,7 +40,11 @@ purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
 
 \item{singleFile}{numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.}
 
-\item{rtraw_columns}{boolean; TRUE if if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)}
+\item{rtrawColumns}{boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)}
+
+\item{saveEIC}{boolean; If True extracted ion chromatograms will be saved to SQLite database}
+
+\item{sqlitePth}{character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics}
 }
 \value{
 a purityX object containing a dataframe of predicted purity scores

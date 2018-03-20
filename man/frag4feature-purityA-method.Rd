@@ -7,7 +7,8 @@
 \title{Assign precursor purity scored fragmentation spectra to XCMS features}
 \usage{
 \S4method{frag4feature}{purityA}(pa, xset, ppm = 5, plim = 0,
-  intense = TRUE, convert2RawRT = TRUE, create_db = TRUE, out_dir = ".")
+  intense = TRUE, convert2RawRT = TRUE, create_db = FALSE,
+  out_dir = ".", db_name = NA, grp_peaklist = NA)
 }
 \arguments{
 \item{pa}{object; purityA object}
@@ -25,6 +26,10 @@
 \item{create_db}{boolean; SQLite database will be created of the results}
 
 \item{out_dir}{character; Path where database will be created}
+
+\item{db_name}{character; If create_db is TRUE, a custom database name can be used, default is a time stamp}
+
+\item{grp_peaklist}{dataframe [optional]; Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though}
 }
 \value{
 purityA object with slots for fragmentation-XCMS links

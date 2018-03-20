@@ -1,4 +1,3 @@
-#' @include iw-norm.R pcalc.R
 NULL
 
 #' @title Assess the purity of multiple LC-MS/MS or DI-MS/MS files (constructor)

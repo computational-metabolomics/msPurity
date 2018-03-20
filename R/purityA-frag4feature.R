@@ -16,6 +16,7 @@
 #' @param intense boolean; If the most intense precursor or the centered precursor is used
 #' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
 #' @param create_db boolean; SQLite database will be created of the results
+#' @param db_name character; If create_db is TRUE, a custom database name can be used, default is a time stamp
 #' @param out_dir character; Path where database will be created
 #' @param grp_peaklist dataframe [optional]; Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @return purityA object with slots for fragmentation-XCMS links
@@ -33,7 +34,7 @@
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE, create_db=TRUE,
+          definition = function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA){
 
   # Makes sure the same files are being used
@@ -106,7 +107,7 @@ setMethod(f="frag4feature", signature="purityA",
   pa@grped_ms2 <- getMS2scans(grpm, pa@fileList, mzRback = pa@mzRback)
 
 
-  if (!is.na(create_db)){
+  if (create_db){
     pa@db_path <- create_database(pa=pa, xset=xset, out_dir=out_dir,
                                   db_name=db_name, grp_peaklist=grp_peaklist)
   }

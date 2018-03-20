@@ -28,8 +28,10 @@
 #' @param mzRback character; backend to use for mzR parsing
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
-#' @param rtraw_columns boolean; TRUE if if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
+#' @param rtrawColumns boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
 #' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
+#' @param saveEIC boolean; If True extracted ion chromatograms will be saved to SQLite database
+#' @param sqlitePth character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -44,18 +46,18 @@
 purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     fileignore=NULL, cores=1, xgroups=NULL,
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
-                    singleFile=0, rtraw_columns=FALSE){
+                    singleFile=0, rtrawColumns=FALSE, saveEIC=FALSE, sqlitePth=NULL){
 
   if (singleFile>0){
 
     ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
                                iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
-                               isotopes=isotopes, im=im, rtraw_columns=rtraw_columns)
+                               isotopes=isotopes, im=im, rtrawColumns=rtrawColumns)
   }else{
     ppLCMS <- xcmsGroupPurity(xset, offsets=offsets, fileignore=fileignore, purityType=purityType,
                               cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
                               ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im,
-                              rtraw_columns=rtraw_columns)
+                              rtrawColumns=rtrawColumns, saveEIC=saveEIC, sqlitePth=sqlitePth)
   }
 
 
@@ -64,7 +66,7 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 }
 
 xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im,
-                             rtraw_columns){
+                             rtrawColumns){
 
   # get the filepaths from the xcms object
   filepth <- xset@filepaths[fileidx]
@@ -92,7 +94,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
-    lidx <- get_rt_idx(peak, xset, rtraw_columns)
+    lidx <- get_rt_idx(peak, xset, rtrawColumns)
 
     peaklist[i,]['minscan'] <- lidx$rtminidx
     peaklist[i,]['maxscan'] <- lidx$rtmaxidx
@@ -120,7 +122,8 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
 xcmsGroupPurity <- function(xset, purityType, offsets,
                             fileignore, cores, xgroups,
-                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im, rtraw_columns){
+                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im, rtrawColumns,
+                            saveEIC, sqlitePth){
   # get the filepaths from the xcms object
   filepths <- xset@filepaths
 
@@ -177,7 +180,7 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
   # (i.e. the times prior to retention time correction)
   for(i in 1:nrow(grouplist)){
     peak <- grouplist[i,]
-    lidx <- get_rt_idx(peak, xset, rtraw_columns)
+    lidx <- get_rt_idx(peak, xset, rtrawColumns)
 
     grouplist[i,]['rtraw'] <- lidx$rtraw
     grouplist[i,]['rtminraw'] <- lidx$rtminraw
@@ -234,7 +237,10 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
                                    ilim=ilim,
                                    plotP=plotP,
                                    isotopes=isotopes,
-                                   im=im)
+                                   im=im,
+                                   xset=xset,
+                                   saveEIC=saveEIC,
+                                   sqlitePth=sqlitePth)
 
   if(cores>1){
     parallel::stopCluster(cl)
@@ -285,13 +291,13 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 }
 
 
-get_rt_idx <- function(peak, xset, rtraw_columns){
+get_rt_idx <- function(peak, xset, rtrawColumns){
 
   sid <- as.numeric(peak['sample'])
   raw <- xset@rt$raw[[sid]]
   corrected <- xset@rt$corrected[[sid]]
 
-  if (rtraw_columns){
+  if (rtrawColumns){
     rtmed <- as.numeric(peak['rt_raw'])
     rtmin <- as.numeric(peak['rtmin_raw'])
     rtmax <- as.numeric(peak['rtmax_raw'])
@@ -316,14 +322,15 @@ get_rt_idx <- function(peak, xset, rtraw_columns){
 }
 
 predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
-                                  offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im){
+                                  offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im, xset, saveEIC, sqlitePth){
 
   # Need to loop through for each file in each group
   grp <- data.frame(grp)
   rtmed <- median(grp$rt)
 
   sgrp <- plyr::ddply(grp, ~ sample, pp4file, scanpeaks,
-                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im)
+                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im, xset,
+                      singleCheck=TRUE, saveEIC=saveEIC, sqlitePth=sqlitePth)
 
   puritySummary <- apply(sgrp[,2:ncol(sgrp)], 2, function(x){
     x <- na.omit(x)
@@ -334,7 +341,8 @@ predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
 }
 
 pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
-                    plotP, isotopes, im, singleCheck=TRUE){
+                    plotP, isotopes, im, xset, singleCheck=TRUE, saveEIC=FALSE,
+                    sqlitePth=NULL){
 
   # Sometimes XCMS groups more than 1 peak from the same file in the XCMS
   # grouping stage.
@@ -407,6 +415,8 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     png(fpth)
 
 
+
+
     plot(dfp$scan, dfp$intensity, type = "l", col="red", lwd=2.5,
          xlab="scan number", ylab="intensity", ylim=c(0, maxi))
 
@@ -420,6 +430,22 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     dev.off()
   }
 
+  if (saveEIC){
+    if (sqlitePth){
+      con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
+    }else{
+      con <- DBI::dbConnect(RSQLite::SQLite(),'eics.sqlite')
+    }
+
+
+    dfp$rt_raw <- xset@rt$raw[[target$sample]][dfp$scan]
+    dfp$rt_corrected <- xset@rt$corrected[[target$sample]][dfp$scan]
+    dfp$grpid <- target$grpid
+    dfp$fileid <- target$sample
+    dfp$eicid <- 1:nrow(dfp)
+    DBI::dbWriteTable(con, name='eics', value=dfp, row.names=F, append=T)
+    #custom_dbWriteTable(name_pk = 'eicid', fks=NA, table_name = 'eic', df=dfp, con=con)
+  }
 
 
   purityFWHMmedian <- median(dfp$purity[dfp$scan>=fwhm[1] & dfp$scan<=fwhm[2]],

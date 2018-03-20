@@ -4,12 +4,18 @@
 \alias{create_database}
 \title{Create database}
 \usage{
-create_database(pa, xset, out_dir, grp_peaklist = NA, db_name = NA)
+create_database(pa, xset, xsa = NULL, out_dir, grp_peaklist = NA,
+  db_name = NA)
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}
 
-\item{xset}{xcms object; Needs to be the same used for frag4feature function}
+\item{xset}{xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)}
+
+\item{xsa}{CAMERA object [optional]; if CAMERA object is used, we ignore the xset parameter input and obtain all information
+from the xset object nested with the CAMERA xsa object. Adduct and isotope information
+will be included into the database when using this parameter. The underlying xset object must
+be the one used for the frag4feature function though.}
 
 \item{out_dir}{character; Out directory for the SQLite result database}
 

@@ -4,13 +4,17 @@
 #' Create and SQLite database of an LC-MS(/MS) experiment
 #'
 #' @param pa purityA object; Needs to be the same used for frag4feature function
-#' @param xset xcms object; Needs to be the same used for frag4feature function
+#' @param xset xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)
+#' @param xsa CAMERA object [optional]; if CAMERA object is used, we ignore the xset parameter input and obtain all information
+#'                          from the xset object nested with the CAMERA xsa object. Adduct and isotope information
+#'                          will be included into the database when using this parameter. The underlying xset object must
+#'                          be the one used for the frag4feature function though.
 #' @param db_name character [optional]; Name of the result database
 #' @param grp_peaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
 #' @param out_dir character; Out directory for the SQLite result database
 #' @return path to SQLite database and database name
 #' @export
-create_database <-  function(pa, xset, out_dir, grp_peaklist=NA, db_name=NA){
+create_database <-  function(pa, xset, xsa=NULL, out_dir, grp_peaklist=NA, db_name=NA){
   ########################################################
   # Export the target data into sqlite database
   ########################################################
@@ -19,19 +23,30 @@ create_database <-  function(pa, xset, out_dir, grp_peaklist=NA, db_name=NA){
   }
 
   if (!is.data.frame(grp_peaklist)){
-    grp_peaklist <- xcms::peakTable(xset)
+    if (is.null(xsa)){
+      grp_peaklist <- xcms::peakTable(xset)
+    }else{
+      grp_peaklist <- CAMERA::getPeaklist(xsa)
+    }
+
     grp_peaklist <- data.frame(cbind('grpid'=1:nrow(grp_peaklist), grp_peaklist))
   }
 
   message("Creating a database of fragmentation spectra and LC features")
-  target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, out_dir, db_name)
+  target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, xsa, out_dir, db_name)
 
   return(target_db_pth)
 
 }
 
 
-export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
+export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
+
+  if(!is.null(xsa)){
+    # if user has supplied camera object we use the xset that the camera object
+    # is derived from
+    xset <- xsa@xcmsSet
+  }
 
   db_pth <- file.path(out_dir, db_name)
 
@@ -72,7 +87,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
     grp_peaklist <- data.frame(grp_peaklist)
   }
 
-  custom_dbWriteTable(name_pk = 'grpid', fk=NA, table_name = 'c_peak_groups', df=grp_peaklist, con=con)
+  custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grp_peaklist, con=con)
 
   ###############################################
   # Add s_peak_meta (i.e. scan information)
@@ -80,7 +95,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
   dropc <- c('filename')
   scan_info <- scan_info[,!colnames(scan_info) %in% dropc]
   scan_info <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scan_info)
-  custom_dbWriteTable(name_pk = 'pid', fk=fks_fileid, table_name = 's_peak_meta', df=scan_info, con=con)
+  custom_dbWriteTable(name_pk = 'pid', fks=fks_fileid, table_name = 's_peak_meta', df=scan_info, con=con)
 
   ###############################################
   # Add s_peaks (i.e. the mz, i from each scan)
@@ -96,33 +111,103 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, out_dir, db_name){
   colnames(scanpeaks_frag) <- c('sid','pid', 'fileid', 'scan', 'mz', 'i')
   fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
 
-  custom_dbWriteTable(name_pk = 'sid', fk=append(fks_fileid, fks_pid),
+  custom_dbWriteTable(name_pk = 'sid', fks=append(fks_fileid, fks_pid),
                       table_name = 's_peaks', df=scanpeaks_frag, con=con)
 
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to c_peak_group
   ###############################################
-  grpdf <- pa@grped_df
-  c_peak_X_c_peak_group <- unique(grpdf[ ,c('grpid', 'cid')])
-  c_peak_X_c_peak_group <- cbind('cXg_id'=1:nrow(c_peak_X_c_peak_group), c_peak_X_c_peak_group)
+  c_peak_X_c_peak_group <- get_group_peak_link(xset)
 
-  fks_grpid <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'))
-  fks_cid <- list('cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
+  fks_for_cxg <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
+                      'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks')
+                      )
 
-  custom_dbWriteTable(name_pk = 'cXg_id', fk=append(fks_grpid, fks_cid),
+  custom_dbWriteTable(name_pk = 'cXg_id', fks=fks_for_cxg,
                       table_name ='c_peak_X_c_peak_group', df=c_peak_X_c_peak_group, con=con)
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to s_peak_meta
   ###############################################
+  grpdf <- pa@grped_df
   c_peak_X_s_peak_meta <- unique(grpdf[ ,c('pid', 'cid')])
   c_peak_X_s_peak_meta <- cbind('cXp_id'=1:nrow(c_peak_X_s_peak_meta), c_peak_X_s_peak_meta)
 
-  fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
+  fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
+                      'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
 
-  custom_dbWriteTable(name_pk = 'cXp_id', fk=append(fks_pid, fks_cid),
+  custom_dbWriteTable(name_pk = 'cXp_id', fks=fks_for_cXs,
                       table_name ='c_peak_X_s_peak_meta', df=c_peak_X_s_peak_meta, con=con)
+
+  if (!is.null(xsa)){
+    ###############################################
+    # Add CAMERA ruleset
+    ###############################################
+    if(is.null(xsa@ruleset)){
+      rules_pos <- read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = T)
+      rules_neg <- read.csv(system.file(file.path('rules', 'extended_adducts_neg.csv') , package = "CAMERA"))
+      rules <- rbind(rules_pos, rules_neg)
+
+    }else{
+      rules <- xsa@ruleset
+    }
+    rules$rule_id <- 1:nrow(rules)
+    custom_dbWriteTable(name_pk = 'rule_id', fks=NA,
+                        table_name ='adduct_rules', df=rules, con=con)
+
+    ###############################################
+    # Add neutral mass groups
+    ###############################################
+    annoGrp <- data.frame(xsa@annoGrp)
+    colnames(annoGrp)[1] <- 'nm_id'
+    custom_dbWriteTable(name_pk = 'nm_id', fks=NA,
+                        table_name ='neutral_masses', df=annoGrp, con=con)
+
+    ###############################################
+    # Add adduct annotations
+    ###############################################
+    annoID <- data.frame(xsa@annoID)
+    colnames(annoID) <- c('grpid', 'nm_id', 'rule_id', 'parentID')
+    annoID  <- cbind('add_id'=1:nrow(annoID), annoID)
+
+    fks_adduct <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_group'),
+                       'nm_id'=list('new_name'='nm_id', 'ref_name'='nm_id', 'ref_table'='neutral_masses'),
+                       'rule_id'=list('new_name'='rule_id', 'ref_name'='rule_id', 'ref_table'='adduct_rules')
+                      )
+
+    custom_dbWriteTable(name_pk = 'add_id', fks=fks_adduct,
+                        table_name ='adduct_annotations', df=annoID, con=con)
+
+    ###############################################
+    # Add isotope annotations
+    ###############################################
+    isoID <- data.frame(xsa@isoID)
+    colnames(isoID) <- c('c_peak_group1_id', 'c_peak_group2_id', 'iso', 'charge')
+    isoID <- cbind('iso_id'=1:nrow(isoID), isoID)
+
+    fk_isotope <- list('c_peak_group1_id'=list('new_name'='c_peak_group1_id',
+                                                     'ref_name'='grpid',
+                                                     'ref_table'='c_peak_group'),
+
+                       'c_peak_group2_id'=list('new_name'='c_peak_group2_id',
+                                                     'ref_name'='grpid',
+                                                     'ref_table'='c_peak_group')
+                        )
+
+    custom_dbWriteTable(name_pk = 'iso_id', fks=fk_isotope,
+                        table_name ='isotope_annotations', df=isoID, con=con)
+  }
+
+
+
+
+
+
+
+
+
+
 
   DBI::dbDisconnect(con)
   return(db_pth)
@@ -166,7 +251,7 @@ get_create_query <- function(pk, fks=NA, table_name, df){
 
   }else{
     fks_info1 <- sapply(fks, function(x){
-      paste(x$ref_name, 'INTEGER')
+      paste(x$new_name, 'INTEGER')
     })
 
     fks_info2 <- sapply(fks, function(x){
@@ -229,5 +314,43 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con){
   DBI::dbClearResult(sqr)
   DBI::dbWriteTable(con, name=table_name, value=df, row.names=F, append=T)
 
+
+}
+
+
+
+get_group_peak_link <- function(xset, method='medret'){
+
+  gidx <- xset@groupidx
+  bestpeaks <- groupval(xset, method=method)
+
+  sids = xset@peaks[,'sample']
+  filenames = rownames(xset@phenoData)
+
+  idis <- unlist(plyr::dlply(data.frame(xset@peaks), ~sample, function(x){ 1:nrow(x)}))
+
+  #for(i in 1:1000){
+  for(i in 1:length(gidx)){
+    gidxi <- gidx[[i]]
+    bpi <- bestpeaks[i,]
+
+    grpid <- rep(i, length(gidxi))
+    #sid=sids[gidxi]
+
+    im <- cbind('grpid'=grpid, 'cid'=gidxi, 'idi'=idis[gidxi], 'bestpeak'=((gidxi %in% bpi) * 1))
+    #im <- data.frame(im)
+    # multipling by 1 converts TRUE FALSE to 1 0
+
+    if(i==1){
+      allm <- im
+    }else{
+      allm <- rbind(allm, im)
+    }
+  }
+
+  rownames(allm) <- 1:nrow(allm)
+  allm <- data.frame(allm)
+  allm$cXg_id <- 1:nrow(allm)
+  return(allm)
 
 }

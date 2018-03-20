@@ -47,7 +47,7 @@ setGeneric(name="writeOut",
 
 setGeneric(name="frag4feature",
            def=function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE,
-                        create_db=TRUE, out_dir='.', db_name=NA, grp_peaklist=grp_peaklist){
+                        create_db=FALSE, out_dir='.', db_name=NA, grp_peaklist=NA){
              standardGeneric("frag4feature")
            }
 )

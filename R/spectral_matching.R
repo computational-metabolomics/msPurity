@@ -3,8 +3,7 @@
 #' @description
 #' Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
 #'
-#' Use as input the
-#' @param target_db_pth; Path of the database of targets that will be searched against the library spectra. Generated
+#' @param target_db_pth character; Path of the database of targets that will be searched against the library spectra. Generated
 #'                       either from frag4feature or from create_database functions.
 #' @param library_db_pth character [optional]; path to library spectral SQLite database.
 #'                                             Defaults to msPurityData package data.

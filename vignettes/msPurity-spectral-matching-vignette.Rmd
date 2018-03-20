@@ -45,7 +45,7 @@ A SQLite database is also generated with the all the results included.
 
 ```{r}
 pa  <- purityA(msmsPths, interpol = "linear")
-pa <- frag4feature(pa, xset)
+pa <- frag4feature(pa, xset, create_db=TRUE)
 ```
 
 The spectral matching is then run on all fragmentation scans collected in all files using the `spectral_matching` function. The function updates the previously generated database with
@@ -55,7 +55,7 @@ As we have all the connections between fragmentation scans and XCMS features we 
 annotations for the XCMS grouped peaks is provided in the output
 
 ```{r}
-result <- spectral_matching(pa$db_path, out_dir = tempdir())
+result <- spectral_matching( pa@db_path, out_dir = tempdir())
 ```
 
 It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.

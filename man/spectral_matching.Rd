@@ -11,6 +11,9 @@ spectral_matching(target_db_pth, ra_thres_l = 0, ra_thres_t = 2,
   pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".")
 }
 \arguments{
+\item{target_db_pth}{character; Path of the database of targets that will be searched against the library spectra. Generated
+either from frag4feature or from create_database functions.}
+
 \item{ra_thres_l}{numeric; Relative abundance threshold for library spectra}
 
 \item{ra_thres_t}{numeric; Relative abundance threshold for target spectra
@@ -31,7 +34,8 @@ spectral_matching(target_db_pth, ra_thres_l = 0, ra_thres_t = 2,
 \item{db_name}{character [optional]; Name of the result database
 (e.g. can use CAMERA peaklist)}
 
-\item{library_db_pth}{character [optional]; path to library spectral SQLite database. Defaults to msPurityData package data.}
+\item{library_db_pth}{character [optional]; path to library spectral SQLite database.
+Defaults to msPurityData package data.}
 
 \item{instrument_types}{vector [optional]; Vector of instrument types, defaults to all}
 
@@ -48,17 +52,12 @@ used for the spectral matching. All scans will be used if set to NA}
 \item{grp_peaklist}{dataframe [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
 
 \item{out_dir}{character [deprecated]; If target_db_pth set to NA, Out directory for the SQLite result database}
-
-\item{target_db_pth;}{Path of the database of targets that will be searched against the library spectra. Generated
-either from frag4feature or from create_database functions.}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features
 }
 \description{
 Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
-
-Use as input the
 }
 \examples{
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
