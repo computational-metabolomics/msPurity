@@ -431,7 +431,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
   }
 
   if (saveEIC){
-    if (sqlitePth){
+    if (!is.null(sqlitePth)){
       con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
     }else{
       con <- DBI::dbConnect(RSQLite::SQLite(),'eics.sqlite')
@@ -442,7 +442,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     dfp$rt_corrected <- xset@rt$corrected[[target$sample]][dfp$scan]
     dfp$grpid <- target$grpid
     dfp$fileid <- target$sample
-    dfp$eicid <- 1:nrow(dfp)
+    dfp$eicidi <- 1:nrow(dfp)
     DBI::dbWriteTable(con, name='eics', value=dfp, row.names=FALSE, append=TRUE)
     #custom_dbWriteTable(name_pk = 'eicid', fks=NA, table_name = 'eic', df=dfp, con=con)
   }
