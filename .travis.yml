@@ -8,9 +8,21 @@ r_packages:
   - doParallel
   - foreach
   - iterators
+  - devtools
+  - plyr
+  - foreach
+  - parallel
+  - doSNOW
+  - stringr
+  - reshape2
+  - fastcluster
+  - ggplot2
+  - DBI
+  - RSQLite
 bioc_packages: 
   - xcms 
   - Rgraphviz
+  - msPurityData
 apt_packages:
   - texlive-latex-extra
   - texlive-fonts-extra

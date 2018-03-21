@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.svg?branch=master)](https://travis-ci.org/Viant-Metabolomics/msPurity) [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/viant-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/)
+[![Build Status](https://travis-ci.org/Viant-Metabolomics/msPurity.svg?branch=master)](https://travis-ci.org/computational-metabolomics/msPurity) [![Build Status windows](https://ci.appveyor.com/api/projects/status/github/computational-metabolomics/mspurity?branch=master&svg=true)](https://ci.appveyor.com/project/tomnl/mspurity/)
 
 Continuous integration tests above are for travis and AppVeyor 
 
