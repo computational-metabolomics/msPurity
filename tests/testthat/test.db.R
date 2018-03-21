@@ -32,12 +32,8 @@ test_that("checking database functions", {
   ####################################
   # Check EIC database from purityX
   ####################################
-  msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MS_")
-  xset <- xcmsSet(msPths, method = "centWave")
-  xset <- group(xset)
-
   px  <- purityX(xset, saveEIC = TRUE, sqlitePth = db_pth, plotP = TRUE, xgroups=c(1,2,3))
-
-
+  c_peaks <- DBI::dbGetQuery(con, 'SELECT * FROM eics')
+  expect_equal(nrow(c_peaks), 33)
 
 })
