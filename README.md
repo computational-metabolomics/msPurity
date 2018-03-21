@@ -9,7 +9,7 @@ Continuous integration tests above are for travis and AppVeyor
 
 Recommendation for most uses cases is to install and use the [Bioconductor stable version](http://bioconductor.org/packages/msPurity/) of msPurity. 
 
-The code available from both the [Bioconductor development branch](http://bioconductor.org/packages/devel/bioc/html/msPurity.html) and [here](https://github.com/computational-metabolomics/mspuritygithub) master branch is intended for development use only and
+The code available from both the [Bioconductor development branch](http://bioconductor.org/packages/devel/bioc/html/msPurity.html) and [here](https://github.com/computational-metabolomics/mspurity) master branch is intended for development use only and
 should be used with caution.
 
 ## About
