@@ -106,10 +106,12 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
+  msLevelTracking <- get_mslevel_tracking(filepaths)
 
   sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
                       rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
-                      ilim=ilim, plotP=plotP, isotopes=isotopes, im=im, singleCheck=FALSE)
+                      ilim=ilim, plotP=plotP, isotopes=isotopes, im=im, singleCheck=FALSE,
+                      msLevelTracking=msLevelTracking)
 
   ppLCMS@predictions <- sgrp
 
@@ -222,9 +224,7 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
-  msLevelTracking <- getmrdf_standard_all(filepths)
-  msLevelTracking <- msLevelTracking[,c('seqNum','sample', 'msLevel')]
-  colnames(msLevelTracking)[1] <- 'scan'
+  msLevelTracking <- get_mslevel_tracking(filepaths)
 
   # perform predictions
   purityPredictions <- plyr::dlply(grouplist,
@@ -527,6 +527,12 @@ getTic <- function(roi_scn, target, minOff, maxOff ){
 stde <- function(x) sd(x)/sqrt(length(x))
 CV <- function(x) (sd(x)/mean(x))*100
 
+get_mslevel_tracking <- function(filepths){
+  msLevelTracking <- getmrdf_standard_all(filepths)
+  msLevelTracking <- msLevelTracking[,c('seqNum','sample', 'msLevel')]
+  colnames(msLevelTracking)[1] <- 'scan'
+  return(msLevelTracking)
+}
 
 getmrdf_standard_all <- function(filepths, backend=NULL){
   mrdf <- plyr::adply(filepths, 1, getmrdf_standard, backend=backend)

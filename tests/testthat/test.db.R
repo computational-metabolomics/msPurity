@@ -33,7 +33,7 @@ test_that("checking database functions", {
   # Check EIC database from purityX
   ####################################
   px  <- purityX(xset, saveEIC = TRUE, sqlitePth = db_pth, plotP = TRUE, xgroups=c(1,2,3))
-  c_peaks <- DBI::dbGetQuery(con, 'SELECT * FROM eics')
-  expect_equal(nrow(c_peaks), 33)
+  eics <- DBI::dbGetQuery(con, 'SELECT * FROM eics')
+  expect_equal(nrow(c_peaks), 34)
 
 })

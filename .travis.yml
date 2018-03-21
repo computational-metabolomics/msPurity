@@ -7,9 +7,6 @@ bioc_packages:
   - xcms 
   - msPurityData
 apt_packages:
-  - texlive-latex-extra
-  - texlive-fonts-extra
-  - texlive-latex-recommended
   - libnetcdf-dev
   - netcdf-bin
   - libhdf5-dev
