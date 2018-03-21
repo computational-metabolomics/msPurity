@@ -1,14 +1,10 @@
 language: r
 r: bioc-devel
-sudo: required
+sudo: false
 cache: packages
-r_packages:
-  - knitr
-  - XML
-  - devtools
+
 bioc_packages: 
   - xcms 
-  - Rgraphviz
   - msPurityData
 apt_packages:
   - texlive-latex-extra
