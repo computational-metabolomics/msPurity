@@ -12,13 +12,23 @@ Since the paper has been published the package now supports spectral matching [d
 
 Associated paper ["msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry"](http://pubs.acs.org/doi/abs/10.1021/acs.analchem.6b04358) [2] 
 
-Use the following link for more details:
+Use the following links for more details:
 
 * Bioconductor: http://bioconductor.org/packages/msPurity/
 * Vignette: https://bioconductor.org/packages/devel/bioc/vignettes/msPurity/inst/doc/msPurity-vignette.html
 * Manual: http://bioconductor.org/packages/devel/bioc/manuals/msPurity/man/msPurity.pdf
 * Bioconductor mirror code: https://github.com/Bioconductor-mirror/msPurity 
+* Galaxy implementation: https://github.com/computational-metabolomics/mspurity-galaxy
+* Bioconda (stable): https://anaconda.org/bioconda/bioconductor-mspurity
+* Conda (dev and testing): https://anaconda.org/tomnl/bioconductor-mspurity
 
+
+## Version to use
+
+Please use the Bioconductor stable version of msPurity before you use the github version.
+
+The code available from both the Bioconductor development branch and here for github master branch is for development use only and
+should be used with caution.
 
 ## Install
 
