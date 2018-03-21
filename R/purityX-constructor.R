@@ -106,7 +106,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
-  msLevelTracking <- get_mslevel_tracking(filepaths)
+  msLevelTracking <- get_mslevel_tracking(filepth)
 
   sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
                       rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
