@@ -5,10 +5,17 @@ Continuous integration tests above are for travis and AppVeyor
 
 # msPurity: Package to assess precursor ion purity and perform spectral matching
 
+## Which version to use?
+
+Recommendation for most uses cases is to install and use the [Bioconductor stable version](http://bioconductor.org/packages/msPurity/) of msPurity. 
+
+The code available from both the [Bioconductor development branch](http://bioconductor.org/packages/devel/bioc/html/msPurity.html) and [here](https://github.com/computational-metabolomics/mspuritygithub) master branch is intended for development use only and
+should be used with caution.
+
 ## About
 The importance of assessing the contribution of the precursor peak within an isolation window targeted for fragmentation has been previously detailed in proteomics but to date there has been little attention of this data-processing technique in metabolomics. Here we present msPurity, a vendor independent R package for Liquid Chromatography-Mass spectrometry (LC-MS) and Direct Infusion-Mass Spectrometry (DI-MS) that calculates a simple metric to describe the contribution of the selected precursor peak. What we call "Precursor ion purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the recorded time of the MS/MS acquisition. The calculation is similar to the "Precursor Ion Fraction" (PIF) metric described by  \[1\] for proteomics with the exception that metric here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra, low abundance peaks are removed that are thought to have limited contribution to the resulting MS2 spectra and the isolation efficiency of the mass spectrometer can be considered in the calculation.
 
-Since the paper has been published the package now supports spectral matching [development github only! 29 jun 2017]
+Since the paper has been published the package now supports spectral matching and SQLite interaction.
 
 Associated paper ["msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry"](http://pubs.acs.org/doi/abs/10.1021/acs.analchem.6b04358) [2] 
 
@@ -23,12 +30,7 @@ Use the following links for more details:
 * Conda (dev and testing): https://anaconda.org/tomnl/bioconductor-mspurity
 
 
-## Version to use
 
-Please use the Bioconductor stable version of msPurity before you use the github version.
-
-The code available from both the Bioconductor development branch and here for github master branch is for development use only and
-should be used with caution.
 
 ## Install
 

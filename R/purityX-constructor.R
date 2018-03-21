@@ -224,7 +224,8 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
-  msLevelTracking <- get_mslevel_tracking(filepaths)
+
+  msLevelTracking <- get_mslevel_tracking(filepths)
 
   # perform predictions
   purityPredictions <- plyr::dlply(grouplist,
