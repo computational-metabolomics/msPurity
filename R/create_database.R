@@ -294,7 +294,7 @@ scan_peaks_4_db <- function(x){
   scanpeaks <- mzR::peaks(mr)
   scans <- mzR::header(mr)
   names(scanpeaks) <- seq(1, length(scanpeaks))
-  scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=T)
+  scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)
 }
 
 
@@ -312,7 +312,7 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con){
   query <- get_create_query(pk=name_pk, fks=fks, table_name=table_name, df=df)
   sqr <- DBI::dbSendQuery(con, query)
   DBI::dbClearResult(sqr)
-  DBI::dbWriteTable(con, name=table_name, value=df, row.names=F, append=T)
+  DBI::dbWriteTable(con, name=table_name, value=df, row.names=FALSE, append=TRUE)
 
 
 }

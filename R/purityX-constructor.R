@@ -443,7 +443,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     dfp$grpid <- target$grpid
     dfp$fileid <- target$sample
     dfp$eicid <- 1:nrow(dfp)
-    DBI::dbWriteTable(con, name='eics', value=dfp, row.names=F, append=T)
+    DBI::dbWriteTable(con, name='eics', value=dfp, row.names=FALSE, append=TRUE)
     #custom_dbWriteTable(name_pk = 'eicid', fks=NA, table_name = 'eic', df=dfp, con=con)
   }
 

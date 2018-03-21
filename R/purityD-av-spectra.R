@@ -612,7 +612,7 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
 
 medGroup <- function(x){
   if(nrow(x)>1){
-    medx <- apply(x[,-which(names(x) %in% c(".id"))], 2, median, na.rm=T)
+    medx <- apply(x[,-which(names(x) %in% c(".id"))], 2, median, na.rm=TRUE)
     x <- data.frame(.id=unique(x$.id), t(medx))
   }
 

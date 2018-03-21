@@ -487,9 +487,9 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
     intenc <- iD[ppmD<ppm_tol_prod & iD<ra_diff & !is.na(ppmD) & !is.na(ra_diff)]
 
     if (!identical(unname(intenc), numeric(0))){
-      matchi <- match(min(intenc, na.rm = T), iD)
+      matchi <- match(min(intenc, na.rm = TRUE), iD)
     }else{
-      matchi <- match(min(ppmD[ppmD<ppm_tol_prod], na.rm=T), ppmD)
+      matchi <- match(min(ppmD[ppmD<ppm_tol_prod], na.rm=TRUE), ppmD)
     }
 
     allpeaks[[i]] <- rbind(target_peaks[i,],library_peaks[matchi,])
