@@ -8,8 +8,8 @@
 averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
   timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3, cores = 1,
   av = "median", missingV = "ignore", minfrac = 0.6667,
-  snMeth = "median", MSFileReader = FALSE, normTIC = FALSE,
-  mzRback = "pwiz")
+  snMeth = "median", csvFile = FALSE, normTIC = FALSE, mzRback = "pwiz",
+  MSFileReader = FALSE)
 }
 \arguments{
 \item{filePth}{character; Path of the file to be processed}
@@ -20,11 +20,11 @@ averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
 
 \item{timeRange}{vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)}
 
-\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'}
+\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1D grouping ['hc', 'simple']}
 
-\item{ppm}{numeric; The ppm error to cluster mz together default 1.5}
+\item{ppm}{numeric; The ppm error to cluster mz together}
 
-\item{snthr}{numeric; Signal to noise ratio threshold, default 0}
+\item{snthr}{numeric; Signal to noise ratio threshold}
 
 \item{cores}{numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2}
 
@@ -34,14 +34,16 @@ averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
 
 \item{minfrac}{numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak}
 
-\item{snMeth}{character; Type of snMethod to use}
+\item{snMeth}{character; Type of snMethod to use ['mean', 'median', 'precalc']. Precalc only applicable when using the csvFile parameter as TRUE}
 
-\item{MSFileReader}{boolean; For thermo files a the MSFileReader API can extract peaklist. This can consist of an .csv file with
+\item{csvFile}{boolean; A csv file can be used as input. Useful for thermo files where the MSFileReader API can extract peaklist. This can consist of an .csv file with
 the following columns c('mz', 'i', 'scanid', 'snr')}
 
 \item{normTIC}{boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
 
 \item{mzRback}{character; Backend to use for mzR parsing}
+
+\item{MSFileReader}{boolean; Deprecapted. Use csvFile parameter}
 }
 \value{
 dataframe of the median mz, intensity, signal-to-noise ratio.
@@ -57,10 +59,10 @@ Signal-to-noise (SNR) can be calculated a number of ways. Default is to
 calculate the SN for every scan as the
 "Intensity of peak / the median intensity of the scan".
 
-Alternatively if using a .CSV file a precalculated snr can be on of the
-columns and this can be used.
+Alternatively if using a .csv file as input (and assigning the csvFile parameter to TRUE), a precalculated SNR can be one of the
+columns. The precalculated SNR can then be chosen by using the option 'precalc' for the parameter snMethod
 
-The function works for LC-MS or DI-MS datasets.
+The function will work for both LC-MS or DI-MS datasets.
 }
 \examples{
 mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")

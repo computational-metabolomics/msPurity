@@ -2,7 +2,7 @@
 # Spline interpolation for purity assessment
 ###############################################
 # Only used for testing purposes.
-# The spline interpolation is both time conusming and unreliable. This function should only be used
+# The spline interpolation is both time consuming and unreliable. This function should only be used
 # for comparisons and testing purposes. The default linear interpolation should be used otherwise
 splinePurity <- function(row, roi_scns, minOff, maxOff,  ppm, mostIntense, scanids, plotP, plotdir){
 

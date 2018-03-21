@@ -1,0 +1,1439 @@
+\nonstopmode{}
+\documentclass[letterpaper]{book}
+\usepackage[times,inconsolata,hyper]{Rd}
+\usepackage{makeidx}
+\usepackage[utf8,latin1]{inputenc}
+% \usepackage{graphicx} % @USE GRAPHICX@
+\makeindex{}
+\begin{document}
+\chapter*{}
+\begin{center}
+{\textbf{\huge Package `msPurity'}}
+\par\bigskip{\large \today}
+\end{center}
+\begin{description}
+\raggedright{}
+\item[Type]\AsIs{Package}
+\item[Title]\AsIs{Automated Evaluation of Precursor Ion Purity for Mass
+Spectrometry Based Fragmentation in Metabolomics}
+\item[Version]\AsIs{1.5.1}
+\item[Date]\AsIs{2018-03-20}
+\item[Author]\AsIs{Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn}
+\item[Maintainer]\AsIs{Thomas N. Lawson }\email{thomas.nigel.lawson@gmail.com}\AsIs{}
+\item[Description]\AsIs{Assess the contribution of the targeted precursor in fragmentation
+acquired or anticipated isolation windows using a metric called ``precursor
+purity''. Also provides simple processing steps (averaging, filtering, blank
+subtraction, etc) for DI-MS data. Works for both LC-MS(/MS) and DI-MS(/MS) data.
+Spectral matching of fragmentation spectra can also be run against a SQLite database
+of library spectra.}
+\item[License]\AsIs{GPL (>= 2)}
+\item[LazyData]\AsIs{TRUE}
+\item[Depends]\AsIs{Rcpp}
+\item[Imports]\AsIs{plyr, foreach, parallel, doSNOW, stringr, mzR, reshape2,
+fastcluster, ggplot2, DBI, RSQLite}
+\item[Suggests]\AsIs{testthat, xcms, BiocStyle, knitr, rmarkdown, msPurityData,
+CAMERA}
+\item[VignetteBuilder]\AsIs{knitr}
+\item[RoxygenNote]\AsIs{6.0.1}
+\item[biocViews]\AsIs{MassSpectrometry, Metabolomics, Software}
+\item[Collate]\AsIs{'all-generics.R' 'create\_database.R' 'iw-norm.R'
+'meta\_extract.R' 'pcalc.R' 'purityA-class.R'
+'purityA-constructor.R' 'purityA-frag4feature.R'
+'purityA-validate.R' 'purityD-class.R' 'purityD-constructor.R'
+'purityD-av-spectra.R' 'purityD-dims-purity.R'
+'purityD-fileList.R' 'purityD-filterp.R' 'purityD-subtract.R'
+'purityD-writeOut.R' 'purityX-class.R' 'purityX-constructor.R'
+'spectral-complexity.R' 'spectral\_matching.R' 'splinepurity.R'}
+\end{description}
+\Rdcontents{\R{} topics documented:}
+\inputencoding{utf8}
+\HeaderA{assessPuritySingle}{Assess the purity of a single LC-MS/MS or DI-MS/MS file}{assessPuritySingle}
+%
+\begin{Description}\relax
+Given a filepath to an mzML file the precursor purity for any MS/MS scans
+will be outputed into a dataframe
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
+  nearest = TRUE, offsets = NA, cores = 1, plotP = FALSE,
+  plotdir = NULL, interpol = "linear", iwNorm = FALSE, iwNormFun = NULL,
+  ilim = 0, mzRback = "pwiz", isotopes = TRUE, im = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{filepth}] character; mzML file path for MS/MS spectra
+
+\item[\code{fileid}] numeric; adds a fileid column (primarily for internal use for msPurity)
+
+\item[\code{mostIntense}] boolean; True if the most intense peak is used for calculation. False if the centered peak is used
+
+\item[\code{nearest}] boolean; True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used
+
+\item[\code{offsets}] vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
+
+\item[\code{cores}] numeric; Number of cores to use
+
+\item[\code{plotP}] boolean; If TRUE a plot of the purity is to be saved
+
+\item[\code{plotdir}] vector; If plotP is TRUE plots will be saved to this directory
+
+\item[\code{interpol}] character; Type of interolation to be performed "linear", "spline" or "none"
+
+\item[\code{iwNorm}] boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+
+\item[\code{iwNormFun}] function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+
+\item[\code{ilim}] numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+
+\item[\code{mzRback}] character; Backend to use for mzR parsing
+
+\item[\code{isotopes}] boolean; TRUE if isotopes are to be removed
+
+\item[\code{im}] matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a dataframe of the purity score of the ms/ms spectra
+\end{Value}
+%
+\begin{SeeAlso}\relax
+\code{\LinkA{purityA}{purityA}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+filepth <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")
+
+puritydf <- assessPuritySingle(filepth)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{averageSpectra,purityD-method}{Using purityD object, calculates to average mz, intensity and signal-to-noise of multiple scans from multiple MS datafiles (mzML or .csv)}{averageSpectra,purityD.Rdash.method}
+\aliasA{averageSpectra}{averageSpectra,purityD-method}{averageSpectra}
+%
+\begin{Description}\relax
+Uses a purityD object with references to multiple MS files. For each file:
+Averages multiple scans together,
+see averageSpectraSingle for more information
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+averageSpectra(Object, rtscn = "all", scanRange = NA,
+  timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3,
+  av = "median", missingV = "zero", minfrac = 0.6667, normTIC = FALSE,
+  snMeth = "median")
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{Object}] object; purityD object
+
+\item[\code{rtscn}] character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']
+
+\item[\code{scanRange}] vector; Scan range (if rtscn='scns') e.g. c(40, 69)
+
+\item[\code{timeRange}] vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)
+
+\item[\code{clustType}] character; Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'
+
+\item[\code{ppm}] numeric; The ppm error to cluster mz together default 1.5
+
+\item[\code{snthr}] numeric; Signal to noise ratio threshold, default 0
+
+\item[\code{av}] character; What type of averaging to do between peaks
+
+\item[\code{missingV}] character; What to do with missing values (zero or ignore)
+
+\item[\code{minfrac}] numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak
+
+\item[\code{normTIC}] boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
+
+\item[\code{snMeth}] character; Type of snMethod to use
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityD object with averaged spectra
+\end{Value}
+%
+\begin{SeeAlso}\relax
+\code{\LinkA{averageSpectraSingle}{averageSpectraSingle}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+ppDIMS <- averageSpectra(ppDIMS)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{averageSpectraSingle}{Calculates to average mz, intensity and signal-to-noise of multiple scans from 1 MS datafile (mzML or .csv)}{averageSpectraSingle}
+%
+\begin{Description}\relax
+Averages multiple scans of mass spectrometry data together.
+Each scan consisting of a minimum of intensity and mz values.
+
+Works for either mzML or a .csv file consisting of mz, i, scanid,
+(optional: noise, backgroun, snr)
+
+Signal-to-noise (SNR) can be calculated a number of ways. Default is to
+calculate the SN for every scan as the
+"Intensity of peak / the median intensity of the scan".
+
+Alternatively if using a .CSV file a precalculated snr can be on of the
+columns and this can be used.
+
+The function works for LC-MS or DI-MS datasets.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
+  timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3, cores = 1,
+  av = "median", missingV = "ignore", minfrac = 0.6667,
+  snMeth = "median", MSFileReader = FALSE, normTIC = FALSE,
+  mzRback = "pwiz")
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{filePth}] character; Path of the file to be processed
+
+\item[\code{rtscn}] character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']
+
+\item[\code{scanRange}] vector; Scan range (if rtscn='scns') e.g. c(40, 69)
+
+\item[\code{timeRange}] vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)
+
+\item[\code{clustType}] character; Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'
+
+\item[\code{ppm}] numeric; The ppm error to cluster mz together default 1.5
+
+\item[\code{snthr}] numeric; Signal to noise ratio threshold, default 0
+
+\item[\code{cores}] numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2
+
+\item[\code{av}] character; What type of averaging to do between peaks
+
+\item[\code{missingV}] character; What to do with missing values (zero or ignore)
+
+\item[\code{minfrac}] numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak
+
+\item[\code{snMeth}] character; Type of snMethod to use
+
+\item[\code{MSFileReader}] boolean; For thermo files a the MSFileReader API can extract peaklist. This can consist of an .csv file with
+the following columns c('mz', 'i', 'scanid', 'snr')
+
+\item[\code{normTIC}] boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
+
+\item[\code{mzRback}] character; Backend to use for mzR parsing
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+dataframe of the median mz, intensity, signal-to-noise ratio.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
+avP <- averageSpectraSingle(mzmlPth)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{create\_database}{Create database}{create.Rul.database}
+%
+\begin{Description}\relax
+Create and SQLite database of an LC-MS(/MS) experiment
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+create_database(pa, xset, xsa = NULL, out_dir, grp_peaklist = NA,
+  db_name = NA)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{pa}] purityA object; Needs to be the same used for frag4feature function
+
+\item[\code{xset}] xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)
+
+\item[\code{xsa}] CAMERA object [optional]; if CAMERA object is used, we ignore the xset parameter input and obtain all information
+from the xset object nested with the CAMERA xsa object. Adduct and isotope information
+will be included into the database when using this parameter. The underlying xset object must
+be the one used for the frag4feature function though.
+
+\item[\code{out\_dir}] character; Out directory for the SQLite result database
+
+\item[\code{grp\_peaklist}] dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
+
+\item[\code{db\_name}] character [optional]; Name of the result database
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+path to SQLite database and database name
+\end{Value}
+\inputencoding{utf8}
+\HeaderA{dimsPredictPurity,purityD-method}{Using purityD object, assess anticipated purity from a DI-MS run}{dimsPredictPurity,purityD.Rdash.method}
+\aliasA{dimsPredictPurity}{dimsPredictPurity,purityD-method}{dimsPredictPurity}
+%
+\begin{Description}\relax
+Assess the precursor purity of anticpated MS/MS spectra.
+i.e. it 'predicts' the precursor purity of the DI-MS peaks for a future MS/MS run.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+dimsPredictPurity(Object, ppm = 1.5, minOffset = 0.5,
+  maxOffset = 0.5, iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05,
+  sampleOnly = FALSE, isotopes = TRUE, im = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{Object}] object = purityD object
+
+\item[\code{ppm}] numeric = tolerance for target mz value in each scan
+
+\item[\code{minOffset}] numeric = isolation window minimum offset
+
+\item[\code{maxOffset}] numeric = isolation window maximum offset
+
+\item[\code{iwNorm}] boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+
+\item[\code{iwNormFun}] function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+
+\item[\code{ilim}] numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+
+\item[\code{sampleOnly}] boolean = if TRUE will only calculate purity for sample peaklists
+
+\item[\code{isotopes}] boolean = TRUE if isotopes are to be removed
+
+\item[\code{im}] matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityD object with predicted purity of peaks
+
+purityD object
+\end{Value}
+%
+\begin{SeeAlso}\relax
+\code{\LinkA{dimsPredictPuritySingle}{dimsPredictPuritySingle}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+ppDIMS <- averageSpectra(ppDIMS)
+ppDIMS <- filterp(ppDIMS)
+ppDIMS <- subtract(ppDIMS)
+ppDIMS <- dimsPredictPurity(ppDIMS)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{dimsPredictPuritySingle}{Predict the precursor purity from a DI-MS dataset}{dimsPredictPuritySingle}
+%
+\begin{Description}\relax
+Given a an DI-MS dataset (either mzML or .csv file) calculate the predicted
+purity for a vector of mz values.
+
+Calculated at a given offset e.g. for 0.5 +/- Da the minOffset would be 0.5
+and the maxOffset of 0.5.
+
+A ppm tolerance is used to find the target mz value in each scan.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
+  maxOffset = 0.5, ppm = 2.5, mzML = TRUE, iwNorm = FALSE,
+  iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz", isotopes = TRUE,
+  im = NULL, sim = FALSE)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{mztargets}] vector = mz targets to get predicted purity for
+
+\item[\code{filepth}] character = mzML file path or .csv file path
+
+\item[\code{minOffset}] numeric = isolation window minimum offset
+
+\item[\code{maxOffset}] numeric = isolation window maximum offset
+
+\item[\code{ppm}] numeric = tolerance for target mz value in each scan
+
+\item[\code{mzML}] boolean = Whether an mzML file is to be used or .csv file (TRUE == mzML)
+
+\item[\code{iwNorm}] boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+
+\item[\code{iwNormFun}] function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+
+\item[\code{ilim}] numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+
+\item[\code{mzRback}] character = backend to use for mzR parsing
+
+\item[\code{isotopes}] boolean = TRUE if isotopes are to be removed
+
+\item[\code{im}] matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+
+\item[\code{sim}] boolean = TRUE if file is from sim stitch experiment. Default FALSE
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a dataframe of the target mz values and the predicted purity score
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
+predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{filterp,purityD-method}{Filter out peaks based on intensity and RSD criteria}{filterp,purityD.Rdash.method}
+\aliasA{filterp}{filterp,purityD-method}{filterp}
+%
+\begin{Description}\relax
+Uses a purityD object remove peaks from either (or both) samples and
+blanks that are either below an intensity threshold
+or greater than a Relative Standard Deviation (RSD) threshold
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+filterp(Object, thr = 5000, rsd = 20,
+  sampleOnly = TRUE)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{Object}] object; purityD object
+
+\item[\code{thr}] numeric; intensity threshold
+
+\item[\code{rsd}] numeric; rsd threshold
+
+\item[\code{sampleOnly}] boolean; if only the sample (not blanks) should be filtered
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityD object
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+
+ppDIMS <- purityD(inDF, cores=1)
+ppDIMS <- averageSpectra(ppDIMS)
+ppDIMS <- filterp(ppDIMS, thr = 5000)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{frag4feature,purityA-method}{Assign precursor purity scored fragmentation spectra to XCMS features}{frag4feature,purityA.Rdash.method}
+\aliasA{frag4feature}{frag4feature,purityA-method}{frag4feature}
+%
+\begin{Description}\relax
+Assign fragmentation spectra (MS/MS) scored via msPurity package to features
+from an XCMS set object.
+
+Allows the user to filter out spectra below a certain threshold for purity.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityA'
+frag4feature(pa, xset, ppm = 5, plim = 0,
+  intense = TRUE, convert2RawRT = TRUE, create_db = FALSE,
+  out_dir = ".", db_name = NA, grp_peaklist = NA)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{pa}] object; purityA object
+
+\item[\code{xset}] object; XCMS object derived from the same files as the puritydf
+
+\item[\code{ppm}] numeric; ppm tolerance between precursor mz and feature mz
+
+\item[\code{plim}] numeric; min purity of precursor to be included
+
+\item[\code{intense}] boolean; If the most intense precursor or the centered precursor is used
+
+\item[\code{convert2RawRT}] boolean; If retention time correction has been used in XCMS set this to TRUE
+
+\item[\code{create\_db}] boolean; SQLite database will be created of the results
+
+\item[\code{out\_dir}] character; Path where database will be created
+
+\item[\code{db\_name}] character; If create\_db is TRUE, a custom database name can be used, default is a time stamp
+
+\item[\code{grp\_peaklist}] dataframe [optional]; Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityA object with slots for fragmentation-XCMS links
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+
+pa  <- purityA(msmsPths, interpol = "linear")
+pa <- frag4feature(pa, xset)
+
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{Getfiles}{Get files for DI-MS processing}{Getfiles}
+%
+\begin{Description}\relax
+Takes in a folder path and outputs the a data frame structure for purityD.
+Function modified from mzmatch.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+Getfiles(projectFolder = NULL, recursive = FALSE, pattern = ".csv",
+  check = TRUE, raw = FALSE, peakout = NA, cStrt = TRUE,
+  mzml_out = FALSE)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{projectFolder}] character; Directory path
+
+\item[\code{recursive}] boolean; Recursively check for files
+
+\item[\code{pattern}] character; File suffix to check for
+
+\item[\code{check}] boolean; Check with a GUI the files
+
+\item[\code{raw}] (REDUNDANT)
+
+\item[\code{peakout}] (REDUNDANT)
+
+\item[\code{cStrt}] boolean; Use the first word as the class name for files
+
+\item[\code{mzml\_out}] (REDUNDANT)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+dataframe of files
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{getP,purityD-method}{Get peaklist for a purityD object}{getP,purityD.Rdash.method}
+\aliasA{getP}{getP,purityD-method}{getP}
+%
+\begin{Description}\relax
+output peak list for a purityD object
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+getP(x)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{x}] object; purityD object
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+peaks
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+peaks <- getP(ppDIMS)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{get\_additional\_mzml\_meta}{Get additional mzML meta}{get.Rul.additional.Rul.mzml.Rul.meta}
+%
+\begin{Description}\relax
+Extract the filter strings 'accession MS:1000512' from an mzML file. Called header in thermo software.
+Enables quick access to various information regarding each scan
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+get_additional_mzml_meta(mzml_pth)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{mzml\_pth}] character; mzML path
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+dataframe of meta info
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+mzml_pth <- system.file("extdata", "dims", "mzML", 'B02_Daph_TEST_pos.mzML', package="msPurityData")
+meta_df <- get_additional_mzml_meta(mzml_pth)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{groupPeaks,purityD-method}{Using purityD object, group multiple peaklists by similar mz values (mzML or .csv)}{groupPeaks,purityD.Rdash.method}
+\aliasA{groupPeaks}{groupPeaks,purityD-method}{groupPeaks}
+%
+\begin{Description}\relax
+Uses a purityD object to group all the peaklists in the 'avPeaks\$processing' slot
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+groupPeaks(Object, ppm = 3, sampleOnly = FALSE,
+  clustType = "hc")
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{Object}] object = purityD object
+
+\item[\code{ppm}] numeric = The ppm tolerance to group peaklists
+
+\item[\code{sampleOnly}] = if TRUE the sample peaks will only be grouped
+
+\item[\code{clustType}] = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+data.frame of peaklists grouped together by mz
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+ppDIMS <- averageSpectra(ppDIMS)
+grpedP <- groupPeaks(ppDIMS)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{groupPeaksEx}{Group peaklists from a list of dataframes}{groupPeaksEx}
+%
+\begin{Description}\relax
+Group a list of dataframes by their m/z values
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+groupPeaksEx(peak_list, cores = 1, clustType = "hc", ppm = 2)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{peak\_list}] list = A list (named) of dataframes consiting of a least the following columns ['peakID', 'mz']
+
+\item[\code{cores}] = number of cores used for calculation
+
+\item[\code{clustType}] = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
+
+\item[\code{ppm}] numeric = The ppm tolerance to group peaklists
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+data.frame of peaklists grouped together by mz
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+ppDIMS <- averageSpectra(ppDIMS)
+grpedP <- groupPeaks(ppDIMS)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{initialize,purityD-method}{Constructor for S4 class to represent a DI-MS purityD}{initialize,purityD.Rdash.method}
+%
+\begin{Description}\relax
+The class used to predict purity from an DI-MS dataset.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+initialize(.Object, fileList, cores = 1, mzML = TRUE,
+  mzRback = "pwiz")
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{.Object}] object; purityD object
+
+\item[\code{fileList}] data.frame; created using GetFiles, data.frame with filepaths and sample class information
+
+\item[\code{cores}] numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
+
+\item[\code{mzML}] boolean; TRUE if mzML to be used FALSE if .csv file to be used
+
+\item[\code{mzRback}] character; backend to use for mzR parsing
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityD object
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{iwNormGauss}{Gaussian normalisation for isolation window efficiency}{iwNormGauss}
+%
+\begin{Description}\relax
+Creates a function based on a gaussian curve shape that will normalise any intensity values within
+a defined isolation window.
+
+The function that is created will output a value between 0 to 1 based on the position between
+the minOff and maxOff params. (The value 1.0 being equivalent to 100
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+iwNormGauss(sdlim = 3, minOff = -0.5, maxOff = +0.5)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{sdlim}] numerical; Standard deviation limit for gaussian curve
+
+\item[\code{minOff}] numerical; Offset to the 'left' for the precursor range. (Should be negative)
+
+\item[\code{maxOff}] character; Offset to the 'left' for the precursor range. (Should be positive)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+normalisation function for selected range.
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+
+iwNormFun <- iwNormGauss(minOff=-0.5, maxOff=0.5)
+pm <- data.frame(mz=c(99.5, 99.9, 100, 100.1, 100.5),i=c(1000, 1000, 1000, 1000, 1000))
+mzmax = 100.5
+mzmin = 99.5
+middle <- mzmax-(mzmax-mzmin)/2
+adjustmz = pm$mz-middle
+
+# normalise the intensities
+pm$normi = pm$i*iwNormFun(adjustmz)
+
+
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{iwNormQE.5}{Q-Exactive +/- 0.5 range, normalisation for isolation window efficiency}{iwNormQE.5}
+%
+\begin{Description}\relax
+Creates a function based on a previous experimental analysis of a Q-Exactive at +/- 0.5
+isolation window efficiency. See http://pubs.acs.org/doi/abs/10.1021/acs.analchem.6b04358
+
+The function that is created will output a value between 0 to 1 based on the position between
+the minOff and maxOff params
+
+NOTE: The resulting function will work for values greater that 0.5 and less than -0.5.
+
+This is because (on our instrument tested at least) when using a window of +/- 0.5,
+the isolation is NOT confined to the +/-0.5 Da window. Resulting in ions from outside the window
+being isolated. For this reason the function can normalise values outside of the
+the +/- 1 Da range. Please see above paper figure 3 for more details.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+iwNormQE.5()
+\end{verbatim}
+\end{Usage}
+%
+\begin{Value}
+normalisation function for +/- 0.5 range for Q-Exactive
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+iwNormFun <- iwNormQE.5()
+pm <- data.frame(mz=c(99.5, 99.9, 100, 100.1, 100.5),i=c(1000, 1000, 1000, 1000, 1000))
+mzmax = 100.5
+mzmin = 99.5
+middle <- mzmax-(mzmax-mzmin)/2
+adjustmz = pm$mz-middle
+
+# normalise the intensities
+pm$normi = pm$i*iwNormFun(adjustmz)
+
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{iwNormRcosine}{Raised cosine normalisation for isolation window efficiency}{iwNormRcosine}
+%
+\begin{Description}\relax
+Creates a function based on a rasied cosine curve shape that will normalise any intensity values within
+a defined isolation window
+
+The function that is created will output a value between 0 to 1 based on the position between
+the minOff and maxOff params
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+iwNormRcosine(minOff = -0.5, maxOff = +0.5)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{minOff}] numerical; Offset to the 'left' for the precursor range. (Should be negative)
+
+\item[\code{maxOff}] character; Offset to the 'left' for the precursor range. (Should be positive)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+normalisation function for selected range
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+iwNormFun <- iwNormRcosine()
+pm <- data.frame(mz=c(99.5, 99.9, 100, 100.1, 100.5),i=c(1000, 1000, 1000, 1000, 1000))
+mzmax = 100.5
+mzmin = 99.5
+middle <- mzmax-(mzmax-mzmin)/2
+adjustmz = pm$mz-middle
+
+# normalise the intensities
+pm$normi = pm$i*iwNormFun(adjustmz)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{pcalc}{Perform purity calculation on a peak matrix}{pcalc}
+%
+\begin{Description}\relax
+This is the main purity calculation that is performed in purityX,
+purityD and purityA.
+\begin{itemize}
+
+\item Takes in a matrix of peaks
+\item gets isolation window based on mzmin mzmax
+\item locates the mz target in the peak matrix
+\item removes isotopic peaks
+\item removes any peaks below limit (percentage of target peak intensity)
+\item normalises
+\item Calculates purity: Divides the target peak intensity by the total peak intensity for
+the isolation window
+
+\end{itemize}
+
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+pcalc(peaks, mzmin, mzmax, mztarget, ppm = NA, iwNorm = FALSE,
+  iwNormFun = NULL, ilim = 0, targetMinMZ = NA, targetMaxMZ = NA,
+  isotopes = FALSE, im = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{peaks}] matrix; Matrix of peaks consisting of 2 columns: mz and i
+
+\item[\code{mzmin}] numeric; Isolation window (min)
+
+\item[\code{mzmax}] numeric; Isolation window (max)
+
+\item[\code{mztarget}] numeric; The mz window to target in the isolation window
+
+\item[\code{ppm}] numeric; PPM tolerance for the target mz value. If NA will presume targetMinMZ and targetMaxMZ will be used
+
+\item[\code{iwNorm}] boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+
+\item[\code{iwNormFun}] function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+
+\item[\code{ilim}] numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+
+\item[\code{targetMinMZ}] numeric; Range to look for the mztarget (min)
+
+\item[\code{targetMaxMZ}] numeric; Range to look for the mztarget (max)
+
+\item[\code{isotopes}] boolean; TRUE if isotopes are to be removed
+
+\item[\code{im}] matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a vector of the purity score and the number of peaks in the window e.g c(purity, pknm)
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+pm <- rbind(c(100, 1000),c(101.003, 10))
+pcalc(pm, mzmin = 98, mzmax = 102, mztarget=100, ppm=5)
+pcalc(pm, mzmin = 98, mzmax = 102, mztarget=100, ppm=5, isotopes = TRUE)
+
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{purityA}{Assess the purity of multiple LC-MS/MS or DI-MS/MS files (constructor)}{purityA}
+%
+\begin{Description}\relax
+Constructor for the purityA class.
+
+Given a vector of LC-MS/MS or DI-MS/MS mzML file paths calculate the
+precursor purity of each MS/MS scan
+
+Will automatically determine the isolation widths offsets from the mzML file.
+For some vendors though this is not recorded (Agilent).
+In these cases the offsets should be given as a parameter.
+
+In the case of Agilent only the "narrow" isolation is supported.
+This roughly equates to +/- 0.65 Da (depending on the instrument). If the
+file is detected as originating from an Agilent instrument the isolation
+widths will automatically be set as +/- 0.65 Da.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
+  offsets = NA, plotP = FALSE, plotdir = NULL, interpol = "linear",
+  iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz",
+  isotopes = TRUE, im = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{fileList}] vector; mzML file paths for MS/MS spectra
+
+\item[\code{cores}] numeric; Number of cores to use
+
+\item[\code{mostIntense}] boolean; True if the most intense peak is used for calculation. False if the centered peak is used
+
+\item[\code{nearest}] boolean; True if the peak selected is from either the preceding scan or the nearest.
+
+\item[\code{offsets}] vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
+
+\item[\code{plotP}] boolean; If TRUE a plot of the purity is to be saved
+
+\item[\code{plotdir}] vector; If plotP is TRUE plots will be saved to this directory
+
+\item[\code{interpol}] character; type of interolation to be performed "linear" or "spline"
+
+\item[\code{iwNorm}] boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+
+\item[\code{iwNormFun}] function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+
+\item[\code{ilim}] numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+
+\item[\code{mzRback}] character; backend to use for mzR parsing
+
+\item[\code{isotopes}] boolean; TRUE if isotopes are to be removed
+
+\item[\code{im}] matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a dataframe of the purity score of the ms/ms spectra
+\end{Value}
+%
+\begin{SeeAlso}\relax
+\code{\LinkA{assessPuritySingle}{assessPuritySingle}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+filepths <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")
+pa <- purityA(filepths)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{purityD-class}{An S4 class to represent a DI-MS purityD}{purityD.Rdash.class}
+\aliasA{purityD}{purityD-class}{purityD}
+%
+\begin{Description}\relax
+The class used to assess anticipated purity from a DI-MS run
+\end{Description}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{.Object}] object; purityD object
+
+\item[\code{fileList}] data.frame; Created using GetFiles, data.frame with filepaths and sample class information
+
+\item[\code{cores}] numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
+
+\item[\code{mzML}] boolean; TRUE if mzML to be used FALSE if .csv file to be used
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityD object
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{purityX}{Assessing anticipated purity of XCMS features from an LC-MS run}{purityX}
+%
+\begin{Description}\relax
+Constructor for the purityX class.
+
+Given an XCMS object get the anticipated precursor purity of the grouped peaks
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
+  fileignore = NULL, cores = 1, xgroups = NULL, iwNorm = FALSE,
+  iwNormFun = NULL, ilim = 0.05, plotP = FALSE, mzRback = "pwiz",
+  isotopes = FALSE, im = NULL, singleFile = 0, rtrawColumns = FALSE,
+  saveEIC = FALSE, sqlitePth = NULL)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{xset}] object; xcms object
+
+\item[\code{purityType}] character; Area and average used for the purity predictions. Options are
+"purityFWHMmedian", "purityFWmedian", "purityFWHMmean", "purityFWmean"
+
+\item[\code{offsets}] vector; vector of the isolation window upper and lower offsets
+
+\item[\code{fileignore}] vector; vector of files to ignore for the prediction calculation
+
+\item[\code{cores}] numeric; number of cores to use
+
+\item[\code{xgroups}] vector; vector of xcms groups to perform prediction on
+
+\item[\code{iwNorm}] boolean; if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
+
+\item[\code{iwNormFun}] function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+
+\item[\code{ilim}] numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+
+\item[\code{plotP}] boolean; TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
+
+\item[\code{mzRback}] character; backend to use for mzR parsing
+
+\item[\code{isotopes}] boolean; TRUE if isotopes are to be removed
+
+\item[\code{im}] matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+
+\item[\code{singleFile}] numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
+
+\item[\code{rtrawColumns}] boolean; TRUE if the rt\_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
+
+\item[\code{saveEIC}] boolean; If True extracted ion chromatograms will be saved to SQLite database
+
+\item[\code{sqlitePth}] character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a purityX object containing a dataframe of predicted purity scores
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+xset <- xcms::xcmsSet(msPths)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+ppLCMS <- purityX(xset, cores = 1, xgroups = c(1, 2))
+
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{show,purityA-method}{Show method for purityA class}{show,purityA.Rdash.method}
+%
+\begin{Description}\relax
+print statement for purityA class
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityA'
+show(object)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] object; purityA object
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a print statement of regarding object
+\end{Value}
+\inputencoding{utf8}
+\HeaderA{show,purityD-method}{Show method for purityD}{show,purityD.Rdash.method}
+%
+\begin{Description}\relax
+Show method for purityD object
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+show(object)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] = purityD object
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a print statement of regarding object
+\end{Value}
+\inputencoding{utf8}
+\HeaderA{show,purityX-method}{Show method for purityX}{show,purityX.Rdash.method}
+%
+\begin{Description}\relax
+Show method for purityX object
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityX'
+show(object)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{object}] object; purityX object
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a print statement of regarding object
+\end{Value}
+\inputencoding{utf8}
+\HeaderA{spectral\_matching}{Spectral matching}{spectral.Rul.matching}
+%
+\begin{Description}\relax
+Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+spectral_matching(target_db_pth, ra_thres_l = 0, ra_thres_t = 2,
+  cores = 1, pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
+  score_thres = 0.6, topn = NA, db_name = NA, library_db_pth = NA,
+  instrument_types = NA, library_sources = "massbank", scan_ids = NA,
+  pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".")
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{target\_db\_pth}] character; Path of the database of targets that will be searched against the library spectra. Generated
+either from frag4feature or from create\_database functions.
+
+\item[\code{ra\_thres\_l}] numeric; Relative abundance threshold for library spectra
+
+\item[\code{ra\_thres\_t}] numeric; Relative abundance threshold for target spectra
+(Peaks below this RA threshold will be excluded)
+
+\item[\code{cores}] numeric; Number of cores to use
+
+\item[\code{pol}] character; Polarity ['positive' or 'negative']
+
+\item[\code{ppm\_tol\_prod}] numeric; PPM tolerance to match to product
+
+\item[\code{ppm\_tol\_prec}] numeric; PPM tolerance to match to precursor
+
+\item[\code{score\_thres}] numeric; Dot product cosine score threshold
+
+\item[\code{topn}] numeric [optional]; Only use top n matches
+
+\item[\code{db\_name}] character [optional]; Name of the result database
+(e.g. can use CAMERA peaklist)
+
+\item[\code{library\_db\_pth}] character [optional]; path to library spectral SQLite database.
+Defaults to msPurityData package data.
+
+\item[\code{instrument\_types}] vector [optional]; Vector of instrument types, defaults to all
+
+\item[\code{library\_sources}] vector [optional]; Vector of library sources. Default option is for massbank only but the 'lipidblast'
+library is also available
+
+\item[\code{scan\_ids}] vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
+used for the spectral matching. All scans will be used if set to NA
+
+\item[\code{pa}] purityA object [deprecated]; If target\_db\_pth set to NA, a new database can be created using pa, xset and grp\_peaklist
+
+\item[\code{xset}] xcms object [deprecated]; If target\_db\_pth set to NA, a new database can be created using pa, xset and grp\_peaklist
+
+\item[\code{grp\_peaklist}] dataframe [deprecated]; If target\_db\_pth set to NA, a new database can be created using pa, xset and grp\_peaklist
+
+\item[\code{out\_dir}] character [deprecated]; If target\_db\_pth set to NA, Out directory for the SQLite result database
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+list of database details and dataframe summarising the results for the xcms features
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+
+pa  <- purityA(msmsPths)
+pa <- frag4feature(pa, xset)
+#NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
+#Only required if you want to limit the spectral matching to certain scans
+result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{subtract,purityD-method}{Using Subtract MZ values based on ppm tolerance and noise ratio}{subtract,purityD.Rdash.method}
+\aliasA{subtract}{subtract,purityD-method}{subtract}
+%
+\begin{Description}\relax
+Uses a purityD object with references to multiple MS files. Subtract blank peaks from the sample peaks
+see subtractMZ for more information
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+subtract(Object, byClass = TRUE, mapping = c("sample",
+  "blank"), ppm = 5, s2bthres = 10)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{Object}] object; purityD object
+
+\item[\code{byClass}] boolean; subtract within each class
+
+\item[\code{mapping}] parameter not functional (TODO)
+
+\item[\code{ppm}] numeric = ppm tolerance
+
+\item[\code{s2bthres}] numeric = threshold for the samp2blank (i1/i2)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityD object with averaged spectra
+\end{Value}
+%
+\begin{SeeAlso}\relax
+\code{\LinkA{subtractMZ}{subtractMZ}}
+\end{SeeAlso}
+%
+\begin{Examples}
+\begin{ExampleCode}
+datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
+inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+
+ppDIMS <- purityD(inDF, cores=1)
+ppDIMS <- averageSpectra(ppDIMS)
+ppDIMS <- filterp(ppDIMS, thr = 5000)
+ppDIMS <- subtract(ppDIMS)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{subtractMZ}{Subtract MZ values based on ppm tolerance and noise ratio}{subtractMZ}
+%
+\begin{Description}\relax
+This function is intended for blank subtraction of mz values from two peaklists. It takes in 2 vectors of mz values and 2
+coresponding vectors of Intensity values.
+
+The second mz values are subtracted from the first set within an MZ tolerance.
+
+However, if the mz match but the intensity is above a defined threshold then they are not subtracted
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+subtractMZ(mz1, mz2, i1, i2, ppm = 5, s2bthres = 10)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{mz1}] vector = mz values to start with
+
+\item[\code{mz2}] vector = mz values to subtract
+
+\item[\code{i1}] vector = i values for mz1
+
+\item[\code{i2}] vector = i values for mz2
+
+\item[\code{ppm}] numeric = ppm tolerance
+
+\item[\code{s2bthres}] numeric = threshold for the samp2blank (i1/i2)
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+a vector of the remaining mz values
+\end{Value}
+%
+\begin{Examples}
+\begin{ExampleCode}
+mz1 <- c(100.001, 200.002, 300.302)
+mz2 <- c(100.004, 200.003, 500.101)
+i1 <- c(100, 100, 100)
+i2 <- c(100, 10000, 100)
+
+subtractMZ(mz1, mz2, i1, i2, ppm=5, s2bthres =10)
+\end{ExampleCode}
+\end{Examples}
+\inputencoding{utf8}
+\HeaderA{validate,purityA-method}{Validate precursor purity predictions using LC-MS and LC-MS/MS dataset}{validate,purityA.Rdash.method}
+\aliasA{validate}{validate,purityA-method}{validate}
+%
+\begin{Description}\relax
+The method is used to validate the precursor purity predictions made
+from an LC-MS dataset
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityA'
+validate(pa, ppLCMS)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{pa}] object; purityA object
+
+\item[\code{ppLCMS}] object; purityX object
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityA object
+\end{Value}
+\inputencoding{utf8}
+\HeaderA{writeOut,purityD-method}{Using purityD object, save peaks as text files}{writeOut,purityD.Rdash.method}
+\aliasA{writeOut}{writeOut,purityD-method}{writeOut}
+%
+\begin{Description}\relax
+Uses a purityD object with references to multiple MS files.
+Predicts the purity of the processed sample files
+\end{Description}
+%
+\begin{Usage}
+\begin{verbatim}
+## S4 method for signature 'purityD'
+writeOut(Object, outDir, original)
+\end{verbatim}
+\end{Usage}
+%
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{Object}] object; purityD object
+
+\item[\code{outDir}] character; Directory to save text files
+
+\item[\code{original}] boolean; If the original (unprocessed) files are to be saved to text files
+\end{ldescription}
+\end{Arguments}
+%
+\begin{Value}
+purityD object
+\end{Value}
+\printindex{}
+\end{document}

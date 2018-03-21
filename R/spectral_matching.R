@@ -38,7 +38,7 @@
 #' xset <- xcms::group(xset)
 #'
 #' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa, xset)
+#' pa <- frag4feature(pa, xset, create_db=TRUE)
 #' #NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
 #' #Only required if you want to limit the spectral matching to certain scans
 #' result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))

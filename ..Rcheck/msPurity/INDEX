@@ -1,0 +1,59 @@
+Getfiles                Get files for DI-MS processing
+assessPuritySingle      Assess the purity of a single LC-MS/MS or
+                        DI-MS/MS file
+averageSpectra,purityD-method
+                        Using purityD object, calculates to average mz,
+                        intensity and signal-to-noise of multiple scans
+                        from multiple MS datafiles (mzML or .csv)
+averageSpectraSingle    Calculates to average mz, intensity and
+                        signal-to-noise of multiple scans from 1 MS
+                        datafile (mzML or .csv)
+create_database         Create database
+dimsPredictPurity,purityD-method
+                        Using purityD object, assess anticipated purity
+                        from a DI-MS run
+dimsPredictPuritySingle
+                        Predict the precursor purity from a DI-MS
+                        dataset
+filterp,purityD-method
+                        Filter out peaks based on intensity and RSD
+                        criteria
+frag4feature,purityA-method
+                        Assign precursor purity scored fragmentation
+                        spectra to XCMS features
+getP,purityD-method     Get peaklist for a purityD object
+get_additional_mzml_meta
+                        Get additional mzML meta
+groupPeaks,purityD-method
+                        Using purityD object, group multiple peaklists
+                        by similar mz values (mzML or .csv)
+groupPeaksEx            Group peaklists from a list of dataframes
+initialize,purityD-method
+                        Constructor for S4 class to represent a DI-MS
+                        purityD
+iwNormGauss             Gaussian normalisation for isolation window
+                        efficiency
+iwNormQE.5              Q-Exactive +/- 0.5 range, normalisation for
+                        isolation window efficiency
+iwNormRcosine           Raised cosine normalisation for isolation
+                        window efficiency
+pcalc                   Perform purity calculation on a peak matrix
+purityA                 Assess the purity of multiple LC-MS/MS or
+                        DI-MS/MS files (constructor)
+purityD-class           An S4 class to represent a DI-MS purityD
+purityX                 Assessing anticipated purity of XCMS features
+                        from an LC-MS run
+show,purityA-method     Show method for purityA class
+show,purityD-method     Show method for purityD
+show,purityX-method     Show method for purityX
+spectral_matching       Spectral matching
+subtract,purityD-method
+                        Using Subtract MZ values based on ppm tolerance
+                        and noise ratio
+subtractMZ              Subtract MZ values based on ppm tolerance and
+                        noise ratio
+validate,purityA-method
+                        Validate precursor purity predictions using
+                        LC-MS and LC-MS/MS dataset
+writeOut,purityD-method
+                        Using purityD object, save peaks as text files

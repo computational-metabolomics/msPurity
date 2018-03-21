@@ -15,7 +15,7 @@ create_database(pa, xset, xsa = NULL, out_dir, grp_peaklist = NA,
 \item{xsa}{CAMERA object [optional]; if CAMERA object is used, we ignore the xset parameter input and obtain all information
 from the xset object nested with the CAMERA xsa object. Adduct and isotope information
 will be included into the database when using this parameter. The underlying xset object must
-be the one used for the frag4feature function though.}
+be the one used for the frag4feature function}
 
 \item{out_dir}{character; Out directory for the SQLite result database}
 
