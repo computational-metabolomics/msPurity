@@ -30,5 +30,5 @@ setClass(
 #' @return a print statement of regarding object
 #' @export
 setMethod("show", "purityX", function(object) {
-  print("purityX object for predicting precursor purity from LC-MS spectra")
+  print("purityX object for assessing anticipated precursor ion purity from an XCMS dataset")
 })

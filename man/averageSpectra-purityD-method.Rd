@@ -22,11 +22,11 @@ and signal-to-noise of multiple scans from multiple MS datafiles
 
 \item{timeRange}{vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)}
 
-\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'}
+\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1D grouping ['hc', 'simple']}
 
-\item{ppm}{numeric; The ppm error to cluster mz together default 1.5}
+\item{ppm}{numeric; The ppm error to cluster mz together}
 
-\item{snthr}{numeric; Signal to noise ratio threshold, default 0}
+\item{snthr}{numeric; Signal to noise ratio threshold}
 
 \item{av}{character; What type of averaging to do between peaks}
 
@@ -36,7 +36,7 @@ and signal-to-noise of multiple scans from multiple MS datafiles
 
 \item{normTIC}{boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
 
-\item{snMeth}{character; Type of snMethod to use}
+\item{snMeth}{character; Type of snMethod to use ['mean', 'median', 'precalc']. Precalc only applicable when using the csvFile parameter as TRUE}
 }
 \value{
 purityD object with averaged spectra

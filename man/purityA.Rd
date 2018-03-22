@@ -24,7 +24,8 @@ purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
 
 \item{plotdir}{vector; If plotP is TRUE plots will be saved to this directory}
 
-\item{interpol}{character; type of interolation to be performed "linear" or "spline"}
+\item{interpol}{character; type of interolation to be performed "linear" or "spline" (Spline option is only included for testing purposes,
+linear should be used for all standard cases, isotope removal is also not available for the spline option)}
 
 \item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 

@@ -1,4 +1,3 @@
-#' @include iw-norm.R pcalc.R
 NULL
 
 #' @title Assess the purity of multiple LC-MS/MS or DI-MS/MS files (constructor)
@@ -25,7 +24,8 @@ NULL
 #' @param offsets vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
 #' @param plotP boolean; If TRUE a plot of the purity is to be saved
 #' @param plotdir vector; If plotP is TRUE plots will be saved to this directory
-#' @param interpol character; type of interolation to be performed "linear" or "spline"
+#' @param interpol character; type of interolation to be performed "linear" or "spline" (Spline option is only included for testing purposes,
+#'                            linear should be used for all standard cases, isotope removal is also not available for the spline option)
 #' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
@@ -402,7 +402,7 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
                            ilim, plotP, plotdir, isotopes, im)
   }else if (interpol=="spline"){
     purity <- splinePurity(rowi, roi_scns, minoff, maxoff, ppm,
-                           mostIntense, scanids, plotP, plotdir, isotopes, im)
+                           mostIntense, scanids, plotP, plotdir)
   }
 
 

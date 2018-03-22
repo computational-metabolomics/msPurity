@@ -1,7 +1,15 @@
-CHANGES IN VERSION 1.4.1
+CHANGES IN VERSION 1.5.1
+=========================
+* Updates for database creation (can use CAMERA objects now)
+* averageSpectra parameter 'MSFileReader' deprecated MSFileReader. Should use csvFile instead, MSFileReader option will still work but a warning will be given
+
+
+CHANGES IN VERSION 1.4.1/2/3
 =========================
 * Updates for Galaxy for Spectral Matching
 * Spectral matching ra_thres_t bugfix
+* Separation of sqlite database creation. Now can be called on it's own or with frag4feature
+  (allows the Galaxy tool to be simplified)
 
 
 CHANGES IN VERSION 1.3.9

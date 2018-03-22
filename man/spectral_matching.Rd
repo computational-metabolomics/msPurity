@@ -4,16 +4,15 @@
 \alias{spectral_matching}
 \title{Spectral matching}
 \usage{
-spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
-  pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
-  score_thres = 0.6, out_dir = ".", topn = NA, db_name = NA,
-  grp_peaklist = NA, library_db_pth = NA, instrument_types = NA,
-  library_sources = "massbank", scan_ids = NA)
+spectral_matching(target_db_pth, ra_thres_l = 0, ra_thres_t = 2,
+  cores = 1, pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
+  score_thres = 0.6, topn = NA, db_name = NA, library_db_pth = NA,
+  instrument_types = NA, library_sources = "massbank", scan_ids = NA,
+  pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".")
 }
 \arguments{
-\item{pa}{purityA object; Needs to be the same used for frag4feature function}
-
-\item{xset}{xcms object; Needs to be the same used for frag4feature function}
+\item{target_db_pth}{character; Path of the database of targets that will be searched against the library spectra. Generated
+either from frag4feature or from create_database functions.}
 
 \item{ra_thres_l}{numeric; Relative abundance threshold for library spectra}
 
@@ -30,16 +29,13 @@ spectral_matching(pa, xset, ra_thres_l = 0, ra_thres_t = 2, cores = 1,
 
 \item{score_thres}{numeric; Dot product cosine score threshold}
 
-\item{out_dir}{character; Out directory for the SQLite result database}
-
 \item{topn}{numeric [optional]; Only use top n matches}
 
-\item{db_name}{character [optional]; Name of the result database}
-
-\item{grp_peaklist}{dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
+\item{db_name}{character [optional]; Name of the result database
 (e.g. can use CAMERA peaklist)}
 
-\item{library_db_pth}{character [optional]; path to library spectral SQLite database. Defaults to msPurityData package data.}
+\item{library_db_pth}{character [optional]; path to library spectral SQLite database.
+Defaults to msPurityData package data.}
 
 \item{instrument_types}{vector [optional]; Vector of instrument types, defaults to all}
 
@@ -48,6 +44,14 @@ library is also available}
 
 \item{scan_ids}{vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 used for the spectral matching. All scans will be used if set to NA}
+
+\item{pa}{purityA object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+
+\item{xset}{xcms object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+
+\item{grp_peaklist}{dataframe [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+
+\item{out_dir}{character [deprecated]; If target_db_pth set to NA, Out directory for the SQLite result database}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features
@@ -63,8 +67,8 @@ xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
+pa <- frag4feature(pa, xset, create_db=TRUE)
 #NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
 #Only required if you want to limit the spectral matching to certain scans
-result <- spectral_matching(pa, xset, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
+result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 }

@@ -194,7 +194,7 @@ removeIsotopes <- function(peaks, im, target_mz, target_i, writeout=FALSE){
   peaks$id <- seq(1, nrow(peaks))
 
   l = apply(im, 1, im_tag, peaks=peaks, target_mz=target_mz, target_i=target_i)
-  idf <- data.frame(matrix(unlist(l), nrow=length(l)*2, byrow=T))
+  idf <- data.frame(matrix(unlist(l), nrow=length(l)*2, byrow=TRUE))
 
   to_remove <- idf[,2][!is.na(idf[,2])]
 

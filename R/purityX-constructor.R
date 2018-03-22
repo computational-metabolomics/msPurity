@@ -28,8 +28,10 @@
 #' @param mzRback character; backend to use for mzR parsing
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
-#' @param rtraw_columns boolean; TRUE if if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
+#' @param rtrawColumns boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
 #' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
+#' @param saveEIC boolean; If True extracted ion chromatograms will be saved to SQLite database
+#' @param sqlitePth character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -44,18 +46,18 @@
 purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     fileignore=NULL, cores=1, xgroups=NULL,
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
-                    singleFile=0, rtraw_columns=FALSE){
+                    singleFile=0, rtrawColumns=FALSE, saveEIC=FALSE, sqlitePth=NULL){
 
   if (singleFile>0){
 
     ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
                                iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
-                               isotopes=isotopes, im=im, rtraw_columns=rtraw_columns)
+                               isotopes=isotopes, im=im, rtrawColumns=rtrawColumns)
   }else{
     ppLCMS <- xcmsGroupPurity(xset, offsets=offsets, fileignore=fileignore, purityType=purityType,
                               cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
                               ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im,
-                              rtraw_columns=rtraw_columns)
+                              rtrawColumns=rtrawColumns, saveEIC=saveEIC, sqlitePth=sqlitePth)
   }
 
 
@@ -64,7 +66,7 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
 }
 
 xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im,
-                             rtraw_columns){
+                             rtrawColumns){
 
   # get the filepaths from the xcms object
   filepth <- xset@filepaths[fileidx]
@@ -92,7 +94,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
-    lidx <- get_rt_idx(peak, xset, rtraw_columns)
+    lidx <- get_rt_idx(peak, xset, rtrawColumns)
 
     peaklist[i,]['minscan'] <- lidx$rtminidx
     peaklist[i,]['maxscan'] <- lidx$rtmaxidx
@@ -104,10 +106,12 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
+  msLevelTracking <- get_mslevel_tracking(filepth)
 
   sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
                       rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
-                      ilim=ilim, plotP=plotP, isotopes=isotopes, im=im, singleCheck=FALSE)
+                      ilim=ilim, plotP=plotP, isotopes=isotopes, im=im, singleCheck=FALSE,
+                      msLevelTracking=msLevelTracking)
 
   ppLCMS@predictions <- sgrp
 
@@ -120,12 +124,15 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
 
 xcmsGroupPurity <- function(xset, purityType, offsets,
                             fileignore, cores, xgroups,
-                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im, rtraw_columns){
+                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im, rtrawColumns,
+                            saveEIC, sqlitePth){
   # get the filepaths from the xcms object
   filepths <- xset@filepaths
 
   # get xcms peaklist
   peaklist <- xset@peaks
+
+  peaklist <- cbind(peaklist, 'c_peak_id'=1:nrow(peaklist))
 
   # Create a purityX object
   ppLCMS <- new("purityX")
@@ -177,7 +184,7 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
   # (i.e. the times prior to retention time correction)
   for(i in 1:nrow(grouplist)){
     peak <- grouplist[i,]
-    lidx <- get_rt_idx(peak, xset, rtraw_columns)
+    lidx <- get_rt_idx(peak, xset, rtrawColumns)
 
     grouplist[i,]['rtraw'] <- lidx$rtraw
     grouplist[i,]['rtminraw'] <- lidx$rtminraw
@@ -220,6 +227,7 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
 
+  msLevelTracking <- get_mslevel_tracking(filepths)
 
   # perform predictions
   purityPredictions <- plyr::dlply(grouplist,
@@ -234,7 +242,11 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
                                    ilim=ilim,
                                    plotP=plotP,
                                    isotopes=isotopes,
-                                   im=im)
+                                   im=im,
+                                   xset=xset,
+                                   saveEIC=saveEIC,
+                                   sqlitePth=sqlitePth,
+                                   msLevelTracking=msLevelTracking)
 
   if(cores>1){
     parallel::stopCluster(cl)
@@ -285,13 +297,13 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 }
 
 
-get_rt_idx <- function(peak, xset, rtraw_columns){
+get_rt_idx <- function(peak, xset, rtrawColumns){
 
   sid <- as.numeric(peak['sample'])
   raw <- xset@rt$raw[[sid]]
   corrected <- xset@rt$corrected[[sid]]
 
-  if (rtraw_columns){
+  if (rtrawColumns){
     rtmed <- as.numeric(peak['rt_raw'])
     rtmin <- as.numeric(peak['rtmin_raw'])
     rtmax <- as.numeric(peak['rtmax_raw'])
@@ -316,14 +328,18 @@ get_rt_idx <- function(peak, xset, rtraw_columns){
 }
 
 predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
-                                  offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im){
+                                  offsets, iwNorm, iwNormFun, ilim,
+                                  plotP, isotopes, im, xset, saveEIC,
+                                  sqlitePth, msLevelTracking){
 
   # Need to loop through for each file in each group
   grp <- data.frame(grp)
   rtmed <- median(grp$rt)
 
+
   sgrp <- plyr::ddply(grp, ~ sample, pp4file, scanpeaks,
-                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im)
+                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im, xset,
+                      singleCheck=TRUE, saveEIC=saveEIC, sqlitePth=sqlitePth, msLevelTracking)
 
   puritySummary <- apply(sgrp[,2:ncol(sgrp)], 2, function(x){
     x <- na.omit(x)
@@ -334,7 +350,8 @@ predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
 }
 
 pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
-                    plotP, isotopes, im, singleCheck=TRUE){
+                    plotP, isotopes, im, xset, singleCheck=TRUE, saveEIC=FALSE,
+                    sqlitePth=NULL, msLevelTracking){
 
   # Sometimes XCMS groups more than 1 peak from the same file in the XCMS
   # grouping stage.
@@ -388,6 +405,13 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
   # Calculate FWHM
   fwhm <- calculateFWHM(dfp)
 
+
+  # we wan't to ignore any ms2 or above scans for any of the proceeding calculations
+  msLevelTrackingShrt <- msLevelTracking[msLevelTracking$sample==target$sample,]
+  dfp <- merge(x = dfp, y = msLevelTrackingShrt, by = "scan")
+  dfp <- dfp[dfp$msLevel==1, ]
+  mslevel1_indx <- as.numeric(rownames(dfp))
+
   if(plotP){
     if (singleCheck){
       tid = target$grpid
@@ -400,11 +424,15 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
 
     tic <- plyr::ldply(roi_scns, getTic, target = target, minOff = offsets[1],
                        maxOff = offsets[2])
-    contamination <- tic$V1-dfp$intensity
+    tic <- tic[mslevel1_indx,]
+
+    contamination <- tic-dfp$intensity
     maxi <- max(c(max(contamination), max(dfp$intensity)))
 
     fpth <- file.path(getwd(),"purityXplots", plotnm)
     png(fpth)
+
+
 
 
     plot(dfp$scan, dfp$intensity, type = "l", col="red", lwd=2.5,
@@ -420,6 +448,22 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     dev.off()
   }
 
+  if (saveEIC){
+    if (!is.null(sqlitePth)){
+      con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
+    }else{
+      con <- DBI::dbConnect(RSQLite::SQLite(),'eics.sqlite')
+    }
+
+
+    dfp$rt_raw <- xset@rt$raw[[target$sample]][dfp$scan]
+    dfp$rt_corrected <- xset@rt$corrected[[target$sample]][dfp$scan]
+    dfp$grpid <- target$grpid
+    dfp$c_peak_id <- target$c_peak_id
+    dfp$eicidi <- 1:nrow(dfp)
+    DBI::dbWriteTable(con, name='eics', value=dfp, row.names=FALSE, append=TRUE)
+    #custom_dbWriteTable(name_pk = 'eicid', fks=NA, table_name = 'eic', df=dfp, con=con)
+  }
 
 
   purityFWHMmedian <- median(dfp$purity[dfp$scan>=fwhm[1] & dfp$scan<=fwhm[2]],
@@ -486,3 +530,27 @@ getTic <- function(roi_scn, target, minOff, maxOff ){
 
 stde <- function(x) sd(x)/sqrt(length(x))
 CV <- function(x) (sd(x)/mean(x))*100
+
+get_mslevel_tracking <- function(filepths){
+  msLevelTracking <- getmrdf_standard_all(filepths)
+  msLevelTracking <- msLevelTracking[,c('seqNum','sample', 'msLevel')]
+  colnames(msLevelTracking)[1] <- 'scan'
+  return(msLevelTracking)
+}
+
+getmrdf_standard_all <- function(filepths, backend=NULL){
+  mrdf <- plyr::adply(filepths, 1, getmrdf_standard, backend=backend)
+  colnames(mrdf)[1] <- 'sample'
+  return(mrdf)
+}
+
+# get the standard mrdf
+getmrdf_standard <- function(filepth, backend=NULL){
+  if(is.null(backend)){
+    mr <- mzR::openMSfile(filepth)
+  }else{
+    mr <- mzR::openMSfile(filepth, backend=backend)
+  }
+  return(mzR::header(mr))
+
+}

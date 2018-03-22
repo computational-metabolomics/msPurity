@@ -75,7 +75,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
                                                       minfrac=minfrac,
                                                       snMeth = snMeth,
                                                       cores = cores4cl,
-                                                      MSFileReader = msfrOpt,
+                                                      csvFile = msfrOpt,
                                                       normTIC = normTIC,
                                                       mzRback=Object@mzRback) )
 
@@ -115,27 +115,28 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #' calculate the SN for every scan as the
 #' "Intensity of peak / the median intensity of the scan".
 #'
-#' Alternatively if using a .CSV file a precalculated snr can be on of the
-#' columns and this can be used.
+#' Alternatively if using a .csv file as input (and assigning the csvFile parameter to TRUE), a precalculated SNR can be one of the
+#' columns. The precalculated SNR can then be chosen by using the option 'precalc' for the parameter snMethod
 #'
-#' The function works for LC-MS or DI-MS datasets.
+#' The function will work for both LC-MS or DI-MS datasets.
 #'
 #' @param filePth character; Path of the file to be processed
 #' @param rtscn character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']
 #' @param scanRange vector; Scan range (if rtscn='scns') e.g. c(40, 69)
 #' @param timeRange vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)
-#' @param clustType character; Type of clustering used either Hierarchical or just simple 1dgrouping ['hc', 'simple'], default 'hc'
-#' @param ppm numeric; The ppm error to cluster mz together default 1.5
-#' @param snthr numeric; Signal to noise ratio threshold, default 0
+#' @param clustType character; Type of clustering used either Hierarchical or just simple 1D grouping ['hc', 'simple']
+#' @param ppm numeric; The ppm error to cluster mz together
+#' @param snthr numeric; Signal to noise ratio threshold
 #' @param av character; What type of averaging to do between peaks
 #' @param missingV character; What to do with missing values (zero or ignore)
 #' @param minfrac numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak
 #' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2
-#' @param MSFileReader boolean; For thermo files a the MSFileReader API can extract peaklist. This can consist of an .csv file with
+#' @param csvFile boolean; A csv file can be used as input. Useful for thermo files where the MSFileReader API can extract peaklist. This can consist of an .csv file with
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
-#' @param snMeth character; Type of snMethod to use
+#' @param snMeth character; Type of snMethod to use ['mean', 'median', 'precalc']. Precalc only applicable when using the csvFile parameter as TRUE
 #' @param normTIC boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
 #' @param mzRback character; Backend to use for mzR parsing
+#' @param MSFileReader boolean; Deprecapted. Use csvFile parameter
 #' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
 #' @examples
 #' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
@@ -153,14 +154,20 @@ averageSpectraSingle <- function(filePth,
                                  missingV="ignore",
                                  minfrac=0.6667,
                                  snMeth = "median",
-                                 MSFileReader=FALSE,
+                                 csvFile=FALSE,
                                  normTIC = FALSE,
-                                 mzRback='pwiz'){
+                                 mzRback='pwiz',
+                                 MSFileReader=FALSE){
+
+  if (MSFileReader){
+    message('MSFileReader option deprecated, please use csvFile parameter for further development')
+    csvFile = MSFileReader
+  }
 
   # Get the peaks from each scan
   # (filtering out any above the signal to noise thres)
-  if(MSFileReader){
-    # CSV file created from Thermo MSFileReader
+  if(csvFile){
+    # CSV file created from Thermo csvFile
     peaklist <- msfrProcess(filePth, scanRange, snthr, snMeth)
   }else{
     # mzML file to be read in by mzR
@@ -309,15 +316,15 @@ snrFilter <- function(x, snthr, snMeth){
 }
 
 msfrProcess <- function(filePth, scanRange, snthr, snMeth){
-  MSFileReaderOut <- read.csv(filePth)
+  csvFileOut <- read.csv(filePth)
 
   keep <- c('mz', 'i', 'scanid', 'snr')
-  MSFileReaderOut <- MSFileReaderOut[,(names(MSFileReaderOut ) %in% keep)]
+  csvFileOut <- csvFileOut[,(names(csvFileOut ) %in% keep)]
 
   # First filter out on scan by scan basis those peaks below a certain threshold
   cat("snmeth:", snMeth)
 
-  peaklist <- plyr::ddply(MSFileReaderOut, ~ scanid,
+  peaklist <- plyr::ddply(csvFileOut, ~ scanid,
                           snrFilter, # FUNCTION
                           snthr=snthr,
                           snMeth=snMeth)
@@ -605,7 +612,7 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
 
 medGroup <- function(x){
   if(nrow(x)>1){
-    medx <- apply(x[,-which(names(x) %in% c(".id"))], 2, median, na.rm=T)
+    medx <- apply(x[,-which(names(x) %in% c(".id"))], 2, median, na.rm=TRUE)
     x <- data.frame(.id=unique(x$.id), t(medx))
   }
 
