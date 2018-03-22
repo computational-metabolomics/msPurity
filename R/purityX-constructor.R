@@ -132,6 +132,8 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
   # get xcms peaklist
   peaklist <- xset@peaks
 
+  peaklist <- cbind(peaklist, 'c_peak_id'=1:nrow(peaklist))
+
   # Create a purityX object
   ppLCMS <- new("purityX")
 
@@ -457,6 +459,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     dfp$rt_raw <- xset@rt$raw[[target$sample]][dfp$scan]
     dfp$rt_corrected <- xset@rt$corrected[[target$sample]][dfp$scan]
     dfp$grpid <- target$grpid
+    dfp$c_peak_id <- target$c_peak_id
     dfp$eicidi <- 1:nrow(dfp)
     DBI::dbWriteTable(con, name='eics', value=dfp, row.names=FALSE, append=TRUE)
     #custom_dbWriteTable(name_pk = 'eicid', fks=NA, table_name = 'eic', df=dfp, con=con)
