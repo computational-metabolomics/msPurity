@@ -56,7 +56,8 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   # Add File info
   ###############################################
   scan_info <- pa@puritydf
-  filepth_df <- data.frame(cbind('filename'=basename(pa@fileList), 'filepth'=pa@fileList))
+  fileList <- unname(pa@fileList)
+  filepth_df <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList))
   filedf <- unique(scan_info[ ,c('fileid', 'filename')])
   filedf <- merge(filedf, filepth_df)
 
@@ -290,10 +291,12 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 
 scan_peaks_4_db <- function(x){
+
   mr <- mzR::openMSfile(as.character(x$filepth))
   scanpeaks <- mzR::peaks(mr)
   scans <- mzR::header(mr)
   names(scanpeaks) <- seq(1, length(scanpeaks))
+
   scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)
 }
 
