@@ -59,6 +59,7 @@ purityA <- function(fileList,
     message("no file list")
     return(NULL)
   }
+  names(fileList) <- basename(fileList)
 
   requireNamespace('foreach')
   pa <- new("purityA", fileList = fileList, cores = cores, mzRback=mzRback)
