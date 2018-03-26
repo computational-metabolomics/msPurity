@@ -48,7 +48,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     xset <- xsa@xcmsSet
   }
 
-  pa@fileList <- unname(pa@fileList)
 
   db_pth <- file.path(out_dir, db_name)
 
@@ -57,9 +56,12 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   ###############################################
   # Add File info
   ###############################################
+  nm_save <- names(pa@fileList) # this is for name tracking in Galaxy
+  pa@fileList <- unname(pa@fileList)
+
   scan_info <- pa@puritydf
   fileList <- pa@fileList
-  filepth_df <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList))
+  filepth_df <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList, 'nm_save'=nm_save))
   filedf <- unique(scan_info[ ,c('fileid', 'filename')])
   filedf <- merge(filedf, filepth_df)
 
