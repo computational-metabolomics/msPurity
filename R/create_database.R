@@ -48,6 +48,16 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     xset <- xsa@xcmsSet
   }
 
+  if(!all(basename(pa@fileList)==basename(xset@filepaths))){
+    if(!all(names(pa@fileList)==basename(xset@filepaths))){
+      print('FILELISTS DO NOT MATCH')
+      message('FILELISTS DO NOT MATCH')
+      return(NULL)
+    }else{
+      xset@filepaths <- unname(pa@fileList)
+    }
+  }
+
 
   db_pth <- file.path(out_dir, db_name)
 
@@ -61,11 +71,11 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   scan_info <- pa@puritydf
   fileList <- pa@fileList
-  filepth_df <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList, 'nm_save'=nm_save))
-  filedf <- unique(scan_info[ ,c('fileid', 'filename')])
-  filedf <- merge(filedf, filepth_df)
 
-  filedf <- filedf[,c('fileid', 'filename', 'filepth', 'nm_save')]
+
+  filedf <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList, 'nm_save'=nm_save),
+                                 'fileid'=seq(1, length(fileList))
+                           )
 
   custom_dbWriteTable(name_pk = 'fileid', fks=NA, table_name = 'fileinfo', df=filedf, con=con)
 
