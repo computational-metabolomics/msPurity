@@ -48,6 +48,8 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     xset <- xsa@xcmsSet
   }
 
+  pa@fileList <- unname(pa@fileList)
+
   db_pth <- file.path(out_dir, db_name)
 
   con <- DBI::dbConnect(RSQLite::SQLite(),db_pth)
@@ -56,7 +58,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   # Add File info
   ###############################################
   scan_info <- pa@puritydf
-  fileList <- unname(pa@fileList)
+  fileList <- pa@fileList
   filepth_df <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList))
   filedf <- unique(scan_info[ ,c('fileid', 'filename')])
   filedf <- merge(filedf, filepth_df)
@@ -325,7 +327,7 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con){
 get_group_peak_link <- function(xset, method='medret'){
 
   gidx <- xset@groupidx
-  bestpeaks <- groupval(xset, method=method)
+  bestpeaks <- xcms::groupval(xset, method=method)
 
   sids = xset@peaks[,'sample']
   filenames = rownames(xset@phenoData)
