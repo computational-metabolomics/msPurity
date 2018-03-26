@@ -65,7 +65,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   filedf <- unique(scan_info[ ,c('fileid', 'filename')])
   filedf <- merge(filedf, filepth_df)
 
-  filedf <- filedf[,c('fileid', 'filename', 'filepth')]
+  filedf <- filedf[,c('fileid', 'filename', 'filepth', 'nm_save')]
 
   custom_dbWriteTable(name_pk = 'fileid', fks=NA, table_name = 'fileinfo', df=filedf, con=con)
 
