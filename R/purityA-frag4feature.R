@@ -167,6 +167,10 @@ getMS2scans  <- function(grpm, filepths, mzRback){
 
   scans <- getscans(filepths, mzRback)
 
+  if(length(filepths)==1){
+    scans = list(scans)
+  }
+
   grpm$fid <- seq(1, nrow(grpm))
 
   ms2l <- plyr::dlply(grpm, ~ grpid, getScanLoop, scans=scans)

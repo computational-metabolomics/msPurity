@@ -9,7 +9,7 @@ test_that("checking lcms based functions", {
   xset <- xcmsSet(msmsPths)
   xset <- group(xset)
 
-  pa  <- purityA(msmsPths, interpol = "linear")
+  pa  <- purityA(msmsPths)
   pa <- frag4feature(pa, xset, create_db=FALSE)
 
   expect_equal(nrow(pa@puritydf), 1658)
