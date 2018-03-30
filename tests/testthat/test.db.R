@@ -5,12 +5,12 @@ test_that("checking database functions", {
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
   library(xcms)
-
+  msmsPths <- '/home/tomnl/data/tomnl/WAX1/mzml/daph_P_WAX_1_PHE_LCMSMS/Daph_P_WAX_1_LCMSMS-FC_Phenyl_pos_inj3__incl2___2.mzML'
   xset <- xcmsSet(msmsPths)
   xset <- group(xset)
 
   pa <- purityA(msmsPths)
-  pa <- frag4feature(pa, xset)
+  pa <- frag4feature(pa, xset, create_db = T)
 
   td <- tempdir()
   db_pth = create_database(pa, xset, out_dir = td)
