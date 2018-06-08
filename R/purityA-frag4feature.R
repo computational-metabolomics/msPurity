@@ -185,6 +185,7 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
 
   if(ppmerror<ppm){
     mtchRow$precurMtchID <- pro$seqNum
+    mtchRow$precurMtchScan <- pro$precursorScanNum
     mtchRow$precurMtchRT <- pro$precursorRT
     mtchRow$precurMtchMZ <- mz1
     mtchRow$precurMtchPPM <- ppmerror
