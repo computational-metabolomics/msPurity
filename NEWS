@@ -1,3 +1,9 @@
+CHANGES IN VERSION 1.6.1
+=========================
+* Bug fix. For pos/neg switching acquisition two files are can be generated when converting from RAW to mzML (1 for pos, 1 for neg).   The resulting files retention time scans were not being tracked properly in msPurity in these cases. This is now fixed. Thanks
+  to Julien (https://github.com/jsaintvanne) for spotting the bug.
+
+
 CHANGES IN VERSION 1.5.1
 =========================
 * Updates for database creation (can use CAMERA objects now)

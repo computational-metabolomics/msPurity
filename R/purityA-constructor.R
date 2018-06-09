@@ -195,7 +195,7 @@ assessPuritySingle <- function(filepth,
   }
 
   # Get a shortened mzR dataframe
-  mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","precursorIntensity",
+  mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
                                         "precursorMZ", "precursorRT",
                                         "precursorScanNum", "id", "filename")]
 
@@ -590,14 +590,11 @@ getmrdf <- function(files, backend='pwiz'){
       mrdfn  <- missing_prec_scan(mrdfn)
     }
 
-    # mrdfn  <- missing_prec_scan(mrdfn)
-    if(length(files)==1){
-
-    }
     #mrdfn$fileid <- rep(i,nrow(mrdfn))
-    mrdfn$filename <- rep(basename(files[1]),nrow(mrdfn))
+    mrdfn$filename <- rep(basename(files[i]),nrow(mrdfn))
     mrdfn$precursorRT <- NA
-    mrdfn[mrdfn$msLevel==2,]$precursorRT <- mrdfn[mrdfn$precursorScanNum,]$retentionTime
+    # precursorScanNum matches to the acuisitionNum, get row matching row number and relevant retntion time
+    mrdfn[mrdfn$msLevel==2,]$precursorRT <- mrdfn[match(mrdfn[mrdfn$msLevel==2,]$precursorScanNum, mrdfn$acquisitionNum),]$retentionTime
 
     if(!is.data.frame(mrdf)){
       mrdf <- mrdfn
@@ -614,7 +611,7 @@ missing_prec_scan <- function(mrdfn){
       # Find most recent ms1 level scan
       for (x in i:1){
         if(mrdfn[x,]$msLevel==1){
-          mrdfn[i,]$precursorScanNum = mrdfn[x,]$seqNum
+          mrdfn[i,]$precursorScanNum = mrdfn[x,]$acquisitionNum
           break
         }
       }
