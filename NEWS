@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.7.2
+=========================
+* create_sql bug fix for msms spectra table. Was crashing due to incorrect ordering.
+
 CHANGES IN VERSION 1.6.1
 =========================
 * Bug fix. For pos/neg switching acquisition two files are can be generated when converting from RAW to mzML (1 for pos, 1 for neg).   The resulting files retention time scans were not being tracked properly in msPurity in these cases. This is now fixed. Thanks

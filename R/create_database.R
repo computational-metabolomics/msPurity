@@ -54,7 +54,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
       message('FILELISTS DO NOT MATCH')
       return(NULL)
     }else{
-      xset@filepaths <- unname(pa@fileList)
+     xset@filepaths <- unname(pa@fileList)
     }
   }
 
@@ -95,6 +95,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   fks_fileid <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
   custom_dbWriteTable(name_pk = 'cid', fks=fks_fileid, table_name = 'c_peaks', df=c_peaks, con=con)
 
+
   ###############################################
   # Add c_peak_groups (i.e. XCMS grouped peaks)
   ###############################################
@@ -116,8 +117,8 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   # Add s_peaks (i.e. the mz, i from each scan)
   ###############################################
   # ensure the filedf is in the same order as the scan_info file
-  # other wise the s_peak_meta ids might not match up
-  filedf <- filedf[as.numeric(unique(scan_info$fileid)),]
+  # other wise the s_peak_meta ids might not match up (should be fixed from previous matching)
+  # filedf <- filedf[as.numeric(unique(scan_info$fileid)),]
 
   scanpeaks_frag <- plyr::ddply(filedf, ~ fileid, scan_peaks_4_db)
 
