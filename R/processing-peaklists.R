@@ -92,7 +92,7 @@ sum_calc_peaklist <- function(xset){
   rownames(grp_peaklist) <- seq(1, nrow(grp_peaklist))
 
   # Get the itensity values
-  indiv_peaks <- groupval(xset, 'medret', intensity="into", value='into')
+  indiv_peaks <- xcms::groupval(xset, 'medret', intensity="into", value='into')
   grp_peaklist <- cbind(grp_peaklist, indiv_peaks)
 
 
@@ -138,7 +138,7 @@ sum_calc_peaklist <- function(xset){
 
 
   # Get the retention time values
-  grouprt <- groupval(xset, method='medret', value = 'rt')
+  grouprt <- xcms::groupval(xset, method='medret', value = 'rt')
 
   # retention time RSD
   for (c in unique(classes$class)){
@@ -257,7 +257,7 @@ flag_peaks <- function(peaklist, RSD_I_filter, minfrac_filter, RSD_RT_filter, i_
   }else if(nrow(sub)==1){
     peaklist[rownames(sub),][valid_col_nm] = 1
   }else if(nrow(sub)<1){
-    print(paste('Warning (ignore this statement if blank peaks have been remove). No peaks for ', fclass))
+    message(paste('Warning (ignore this statement if blank peaks have been remove). No peaks for ', fclass))
   }else{
     peaklist[rownames(sub),][,valid_col_nm] = 1
   }
@@ -277,7 +277,7 @@ remove_spectra <- function(xset, peaklist, rclass, rm_peak_out=FALSE){
   invalid_sample_bool <- peaklist[,'all_sample_valid']==0
 
 
-  removed_peaks <- peaklist[(valid_blank_bool | invalid_sample_bool), ,drop=F]
+  removed_peaks <- peaklist[(valid_blank_bool | invalid_sample_bool), ,drop=FALSE]
 
   grp_ids_rm <- unlist(removed_peaks[,'grpid'])
 
@@ -309,11 +309,11 @@ get_full_peak_width <- function(peaklist, xsa){
   # See also:
   #   full_minmax, getpeaks, ldply (from the plyr library)
 
-  print("Getting full peak widths")
+  message("Getting full peak widths")
   # Get 'peaks' (xcms features) from the xcmsSet object stored
   # in the camera annotation object
 
-  print("Get 'individual' peaks from camera-xcms object")
+  message("Get 'individual' peaks from camera-xcms object")
 
   #Modification by M Jones to allow for retrieving full chromatographic peak widths of the excluded peaks before removal from peaklist.
   if(attributes(xsa)$class[1] != "xcmsSet"){
@@ -325,16 +325,16 @@ get_full_peak_width <- function(peaklist, xsa){
   }
 
 
-  rt.min = groupval(obj, method = "medret", value = "rtmin", intensity = "into")
+  rt.min = xcms::groupval(obj, method = "medret", value = "rtmin", intensity = "into")
   rt.min = apply(rt.min, 1, min, na.rm = TRUE)
 
-  rt.max = groupval(obj, method = "medret", value = "rtmax", intensity = "into")
+  rt.max = xcms::groupval(obj, method = "medret", value = "rtmax", intensity = "into")
   rt.max = apply(rt.max, 1, min, na.rm = TRUE)
 
-  mz.min = groupval(obj, method = "medret", value = "mzmin", intensity = "into")
+  mz.min = xcms::groupval(obj, method = "medret", value = "mzmin", intensity = "into")
   mz.min = apply(mz.min, 1, min, na.rm = TRUE)
 
-  mz.max = groupval(obj, method = "medret", value = "mzmax", intensity = "into")
+  mz.max = xcms::groupval(obj, method = "medret", value = "mzmax", intensity = "into")
   mz.max = apply(mz.max, 1, min, na.rm = TRUE)
 
   peaklist_full = cbind(peaklist, "mzmin_full" = mz.min, "mzmax_full" = mz.max, "rtmin_full" = rt.min, "rtmax_full" = rt.max)
@@ -342,12 +342,12 @@ get_full_peak_width <- function(peaklist, xsa){
   # #peaks <- data.frame(xsa@xcmsSet@peaks)
   # peaks$peakID <- seq(1,nrow(peaks))
   #
-  # print("Get associated peak for each group")
+  # message("Get associated peak for each group")
   # # Get a list of the 'peaks' assoicated with each group
   # prnt <- lapply(obj@groupidx, function(x){ peaks[x,]})
   # #prnt <- lapply(xsa@xcmsSet@groupidx, function(x){ peaks[x,]})
   #
-  # print("update the peak list")
+  # message("update the peak list")
   # peaklist_xcms_full <- full_minmax(grouplist = prnt, peaks = peaks, groupdf = peaklist)
 
 }
@@ -355,7 +355,7 @@ get_full_peak_width <- function(peaklist, xsa){
 full_minmax <- function(grouplist,peaks,groupdf){
   # Use the the plyr package to go through a list() of peaks and output a
   # dataframe of actual rtmin, rtmax, mzmin and mzmax
-  full_info <- ldply(grouplist,getpeaks,peaks=peaks)
+  full_info <- plyr::ldply(grouplist,getpeaks,peaks=peaks)
 
   # Update users original dataframe
   groupdf$mzmin_full <- full_info$mzmin

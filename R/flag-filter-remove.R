@@ -37,7 +37,7 @@
 #' @examples
 #'
 #' msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-#' xset <- xcms::xcmsSet(msPths, BPPARAM = BiocParallel::SnowParam())
+#' xset <- xcms::xcmsSet(msPths)
 #' xset@phenoData[,1] <- c('blank', 'blank', 'sample', 'sample')
 #' xset <- xcms::group(xset)
 #' fr = flag_remove(xset)
@@ -66,7 +66,7 @@ flag_remove <- function(xset, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
   xset.count <- 1
 
   if(remove_spectra){
-    print('########## REMOVING FLAGGED PEAKS ###########')
+    message('########## REMOVING FLAGGED PEAKS ###########')
 
     # Remove any grouped peaks that have been specifically selected
     if (!anyNA(grp_rm_ids)){
@@ -78,7 +78,7 @@ flag_remove <- function(xset, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
     removed_peaks = data.frame()
     while(sum(grp_peaklist[,paste(ref.class, '_valid', sep='')])>0){
       # Remove blank peaks and invalid sample peaks from xcms object (then regroup)
-      print(paste('xset', xset.count,sep=''))
+      message(paste('xset', xset.count,sep=''))
 
       rms <- remove_spectra(xset, grp_peaklist, rclass=ref.class, rm_peak_out=TRUE)
       xset <- rms[[1]]
@@ -131,7 +131,7 @@ flag_remove <- function(xset, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
     write.csv(grp_peaklist, file.path(out_dir, paste(pol, 'grp_peaklist_blanksRemoved.csv', sep='_')))
   }
 
-  return(list(xset, grp_peaklist, removed_peaks))
+  return(list('xset'=xset, 'grp_peaklist'=grp_peaklist, 'removed_peaks'=removed_peaks))
 
 
 }

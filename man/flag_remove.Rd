@@ -68,7 +68,7 @@ The output is a list of the updated xcmsSet object, grouped peaklist and the bla
 \examples{
 
 msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-xset <- xcms::xcmsSet(msPths, BPPARAM = BiocParallel::SnowParam())
+xset <- xcms::xcmsSet(msPths)
 xset@phenoData[,1] <- c('blank', 'blank', 'sample', 'sample')
 xset <- xcms::group(xset)
 fr = flag_remove(xset)
