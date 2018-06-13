@@ -45,8 +45,7 @@ Collate:
     'flag-filter-remove.R'
     'iw-norm.R'
     'meta_extract.R'
-    'pcalc.R'
-    'processing-peaklists.R'
+    'pcalc.R
     'purityA-class.R'
     'purityA-constructor.R'
     'purityA-frag4feature.R'
