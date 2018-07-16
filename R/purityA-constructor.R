@@ -180,6 +180,16 @@ assessPuritySingle <- function(filepth,
   # add filename
   mrdf$filename <- basename(filepth)
 
+  # Get a shortened mzR dataframe
+  mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
+                                        "precursorMZ", "precursorRT",
+                                        "precursorScanNum", "id", "filename", "retentionTime")]
+
+  if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
+    message("only MS2 data, not possible to calculate purity")
+    return(mrdfshrt)
+  }
+
   # get scans (list of mz and i) from mzR
   scans <- getscans(filepth, mzRback)
 
@@ -194,16 +204,7 @@ assessPuritySingle <- function(filepth,
     iwNormFun <- iwNormGauss(minOff = -minoff, maxOff = maxoff)
   }
 
-  # Get a shortened mzR dataframe
-  mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
-                                        "precursorMZ", "precursorRT",
-                                        "precursorScanNum", "id", "filename")]
 
-
-  if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
-    message("only MS2 data, not possible to calculate purity")
-    return(mrdfshrt)
-  }
 
 
   # For n MS1 scans before and after the MS2 scan. For linear interpolation
@@ -585,17 +586,25 @@ getmrdf <- function(files, backend='pwiz'){
     #message(paste("processing file:" ,i))
     mr <- mzR::openMSfile(files[i], backend=backend)
     mrdfn <- mzR::header(mr)
-    if((length(unique(mrdfn$msLevel))<2) && (unique(mrdfn$msLevel)==1)){
-      message("only MS1 data")
-      next
+    if(length(unique(mrdfn$msLevel))<2){
+      if (unique(mrdfn$msLevel)==1){
+        message("only MS1 data")
+        next
+      }
+      #else{
+      #  message("only fragmentation data")
+      #  next
+      #}
+    }else{
+      if(length(unique(mrdfn$precursorScanNum))<2){
+        # Note: will be of length 1 even if no scans associated because
+        # the mrdf will be zero for not assigned
+        message("MS2 data has no associated scan data, will use most recent full scan for information")
+        mrdfn  <- missing_prec_scan(mrdfn)
+      }
+
     }
 
-    if(length(unique(mrdfn$precursorScanNum))<2){
-      # Note: will be of length 1 even if no scans associated because
-      # the mrdf will be zero for not assigned
-      message("MS2 data has no associated scan data, will use most recent full scan for information")
-      mrdfn  <- missing_prec_scan(mrdfn)
-    }
 
     #mrdfn$fileid <- rep(i,nrow(mrdfn))
     mrdfn$filename <- rep(basename(files[i]),nrow(mrdfn))

@@ -39,10 +39,12 @@ setMethod(f="frag4feature", signature="purityA",
                                 out_dir='.', db_name=NA, grp_peaklist=NA, use_group=FALSE){
 
   # Makes sure the same files are being used
-  for(i in 1:length(pa@fileList)){
-    if(!basename(pa@fileList[i])==basename(xset@filepaths[i])){
-      print("xset and pa file paths do not match")
-      return(NULL)
+  if (!use_group){
+    for(i in 1:length(pa@fileList)){
+      if(!basename(pa@fileList[i])==basename(xset@filepaths[i])){
+        print("xset and pa file paths do not match")
+        return(NULL)
+      }
     }
   }
 
@@ -75,12 +77,7 @@ setMethod(f="frag4feature", signature="purityA",
     fullpeakw <- data.frame(get_full_peak_width(xset@groups, xset))
     fullpeakw$grpid <- seq(1, nrow(fullpeakw))
 
-    if(convert2RawRT){
-      fullpeakw$rtminCorrected_full <- fullpeakw$rtmin_full
-      fullpeakw$rtmaxCorrected_full <- fullpeakw$rtmax_full
-      fullpeakw <- ddply(fullpeakw, ~ sample, convert2Raw, xset=xset)
-    }
-    matched <- ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm, fullp=TRUE, use_grped=TRUE)
+    matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm, fullp=TRUE, use_grped=TRUE)
 
   }else{
     # Map xcms features to the data frame (takes a while)
@@ -151,8 +148,8 @@ fsub1  <- function(prod, allpeaks, intense, ppm){
 
 fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
   # check for each MS/MS scan if there is an associated feature
-   #found in that region for that file
-  if(intense){
+  #found in that region for that file
+  if(intense && !use_grped){
     mz1 <- pro$iMz
   }else{
     if ('aMz' %in% colnames(pro)){
@@ -163,11 +160,16 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
 
   }
 
+
   if(is.na(mz1) | is.null(mz1)){
     return(NULL)
   }
 
   prt <- pro$precursorRT
+  if (is.na(prt)){
+    prt <- pro$retentionTime
+  }
+
   if (fullp){
     mtchRT <- allpeaks[prt>=allpeaks$rtmin_full & prt<=allpeaks$rtmax_full, ]
   }else{
@@ -216,16 +218,21 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
     mz2 <- mtchRow$mz
   }
 
+
   ppmerror <- check_ppm(mz1, mz2)
 
   if(ppmerror<ppm){
+    if ('inPurity' %in% colnames(pro)){
+      mtchRow$inPurity <- pro$inPurity
+    }
+
     mtchRow$pid <- pro$pid
     mtchRow$precurMtchID <- pro$seqNum
     mtchRow$precurMtchScan <- pro$precursorScanNum
     mtchRow$precurMtchRT <- pro$precursorRT
     mtchRow$precurMtchMZ <- mz1
     mtchRow$precurMtchPPM <- ppmerror
-    mtchRow$inPurity <- pro$inPurity
+
     mtchRow$seqNum <- pro$seqNum
     return(mtchRow)
   }else{
