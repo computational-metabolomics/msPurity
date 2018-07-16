@@ -14,6 +14,7 @@
 #' @param ppm numeric; ppm tolerance between precursor mz and feature mz
 #' @param plim numeric; min purity of precursor to be included
 #' @param intense boolean; If the most intense precursor or the centered precursor is used
+#' @param use_group boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature
 #' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
 #' @param create_db boolean; SQLite database will be created of the results
 #' @param db_name character; If create_db is TRUE, a custom database name can be used, default is a time stamp
@@ -35,7 +36,7 @@
 #' @export
 setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
-                                out_dir='.', db_name=NA, grp_peaklist=NA){
+                                out_dir='.', db_name=NA, grp_peaklist=NA, use_group=FALSE){
 
   # Makes sure the same files are being used
   for(i in 1:length(pa@fileList)){
@@ -66,41 +67,57 @@ setMethod(f="frag4feature", signature="purityA",
     para = TRUE
   }else{
     para = FALSE
-
-    # perform multicore
-
   }
 
   para=FALSE
 
-  # Map xcms features to the data frame (takes a while)
-  matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1,
-                                        allpeaks=allpeaks,
-                                        ppm = ppm,
-                                        intense = intense)
+  if(use_group){
+    fullpeakw <- data.frame(get_full_peak_width(xset@groups, xset))
+    fullpeakw$grpid <- seq(1, nrow(fullpeakw))
+
+    if(convert2RawRT){
+      fullpeakw$rtminCorrected_full <- fullpeakw$rtmin_full
+      fullpeakw$rtmaxCorrected_full <- fullpeakw$rtmax_full
+      fullpeakw <- ddply(fullpeakw, ~ sample, convert2Raw, xset=xset)
+    }
+    matched <- ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm, fullp=TRUE, use_grped=TRUE)
+
+  }else{
+    # Map xcms features to the data frame (takes a while)
+    matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1,
+                           allpeaks=allpeaks,
+                           ppm = ppm,
+                           intense = intense)
+  }
+
 
   if(pa@cores>1){
       parallel::stopCluster(cl)
   }
 
-  #Group by the xcms groups
-  grpedp <- plyr::llply(xset@groupidx, grpByXCMS, matched=matched)
-  names(grpedp) <- seq(1, length(grpedp))
-  grpedp <- plyr::ldply(grpedp, .id = TRUE)
-  colnames(grpedp)[1] <- "grpid"
+  #shrt <- puritydf[,c('fileid', 'seqNum', 'inPurity','pid')]
+
+  if (use_group){
+    grpedp <- matched
+  }else{
+    #Group by the xcms groups
+    grpedp <- plyr::llply(xset@groupidx, grpByXCMS, matched=matched)
+    names(grpedp) <- seq(1, length(grpedp))
+    grpedp <- plyr::ldply(grpedp, .id = TRUE)
+    colnames(grpedp)[1] <- "grpid"
+  }
 
   # Add some extra info for filtering purposes
-  shrt <- puritydf[,c('fileid', 'seqNum', 'inPurity','pid')]
-  grpm <- merge(grpedp, shrt, by = c("seqNum", "fileid"))
-
-  # remove the first two (columns duplicates)
-  grpm <- grpm[,!(names(grpm) %in% c("seqNum", "fileid"))]
+  #grpm <- merge(grpedp, shrt, by = c('pid', 'fileid', 'seqNum'))
+  grpm <- grpedp
 
   # Make sure order is by grpid
   grpm <- grpm[order(grpm$grpid),]
 
   # Filter out any precursor below purity threshold
-  grpm <- grpm[grpm$inPurity>plim,]
+  if (!is.na(plim) && plim>0){
+    grpm <- grpm[grpm$inPurity>plim,]
+  }
 
   # add to the slots
   pa@grped_df <- grpm
@@ -120,8 +137,9 @@ setMethod(f="frag4feature", signature="purityA",
 
 })
 
+
 fsub1  <- function(prod, allpeaks, intense, ppm){
-  # go through all the MS/MS files from the each file
+  # go through all the MS/MS files from each file
   allpeakfile <- allpeaks[allpeaks$filename==unique(prod$filename),]
 
   grpdFile <- plyr::ddply(prod, ~ seqNum,
@@ -131,13 +149,18 @@ fsub1  <- function(prod, allpeaks, intense, ppm){
                           ppm = ppm)
 }
 
-fsub2  <- function(pro, allpeaks, intense, ppm){
+fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
   # check for each MS/MS scan if there is an associated feature
    #found in that region for that file
   if(intense){
     mz1 <- pro$iMz
   }else{
-    mz1 <- pro$aMz
+    if ('aMz' %in% colnames(pro)){
+      mz1 <- pro$aMz
+    }else{
+      mz1 <- pro$precursorMZ
+    }
+
   }
 
   if(is.na(mz1) | is.null(mz1)){
@@ -145,15 +168,22 @@ fsub2  <- function(pro, allpeaks, intense, ppm){
   }
 
   prt <- pro$precursorRT
+  if (fullp){
+    mtchRT <- allpeaks[prt>=allpeaks$rtmin_full & prt<=allpeaks$rtmax_full, ]
+  }else{
+    mtchRT <- allpeaks[prt>=allpeaks$rtmin & prt<=allpeaks$rtmax, ]
+  }
 
-  mtchRT <- allpeaks[prt>=allpeaks$rtmin & prt<=allpeaks$rtmax, ]
 
   if(nrow(mtchRT)==0){
     return(NULL)
   }
-
-  mtchMZ <- plyr::ddply(mtchRT, ~ cid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
-
+  if (use_grped){
+    # can only use fullp when using the grouped peaklist
+    mtchMZ <- plyr::ddply(mtchRT, ~ grpid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
+  }else{
+    mtchMZ <- plyr::ddply(mtchRT, ~ cid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
+  }
   return(mtchMZ)
 
 }
@@ -180,15 +210,23 @@ getMS2scans  <- function(grpm, filepths, mzRback){
 
 
 mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
-  mz2 <- mtchRow$mz
+  if ('mzmed' %in% colnames(mtchRow)){
+    mz2 <- mtchRow$mzmed
+  }else{
+    mz2 <- mtchRow$mz
+  }
+
   ppmerror <- check_ppm(mz1, mz2)
 
   if(ppmerror<ppm){
+    mtchRow$pid <- pro$pid
     mtchRow$precurMtchID <- pro$seqNum
     mtchRow$precurMtchScan <- pro$precursorScanNum
     mtchRow$precurMtchRT <- pro$precursorRT
     mtchRow$precurMtchMZ <- mz1
     mtchRow$precurMtchPPM <- ppmerror
+    mtchRow$inPurity <- pro$inPurity
+    mtchRow$seqNum <- pro$seqNum
     return(mtchRow)
   }else{
     return(NULL)
@@ -197,9 +235,16 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
 
 getScanLoop <- function(peaks, scans){
   grpl <-  list()
+
+  if ('sample' %in% colnames(peaks)){
+    idx_nm ='sample'
+  }else{
+    idx_nm = 'fileid'
+  }
   for(i in 1:nrow(peaks)){
     x <- peaks[i,]
-    grpl[[i]] <- scans[[x$sample]][[x$precurMtchID]]
+    idx <- x[,idx_nm]
+    grpl[[i]] <- scans[[idx]][[x$precurMtchID]]
 
   }
   return(grpl)
@@ -222,4 +267,5 @@ convert2Raw <- function(x, xset){
   return(x)
 
 }
+
 

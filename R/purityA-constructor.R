@@ -199,6 +199,13 @@ assessPuritySingle <- function(filepth,
                                         "precursorMZ", "precursorRT",
                                         "precursorScanNum", "id", "filename")]
 
+
+  if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
+    message("only MS2 data, not possible to calculate purity")
+    return(mrdfshrt)
+  }
+
+
   # For n MS1 scans before and after the MS2 scan. For linear interpolation
   # only two points needed. More needed for spline
   if((interpol=="linear") || (interpol=="none")){
@@ -578,8 +585,8 @@ getmrdf <- function(files, backend='pwiz'){
     #message(paste("processing file:" ,i))
     mr <- mzR::openMSfile(files[i], backend=backend)
     mrdfn <- mzR::header(mr)
-    if(length(unique(mrdfn$msLevel))<2){
-      #message("only MS1 data")
+    if((length(unique(mrdfn$msLevel))<2) && (unique(mrdfn$msLevel)==1)){
+      message("only MS1 data")
       next
     }
 
