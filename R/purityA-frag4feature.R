@@ -232,6 +232,8 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
     mtchRow$precurMtchRT <- pro$precursorRT
     mtchRow$precurMtchMZ <- mz1
     mtchRow$precurMtchPPM <- ppmerror
+    mtchRow$retentionTime <- pro$retentionTime
+    mtchRow$fileid <- pro$fileid
 
     mtchRow$seqNum <- pro$seqNum
     return(mtchRow)

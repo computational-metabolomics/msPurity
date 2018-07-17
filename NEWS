@@ -1,7 +1,8 @@
-CHANGES IN VERSION 1.7.2/3
+CHANGES IN VERSION 1.7.2/3/5
 =========================
 * create_sql bug fix for msms spectra table. Was crashing due to incorrect ordering.
 * Add peak processing (flag remove peaks) for LC-MS XCMS data
+* Add option to for frag4feature to just link to the grouped peak rtmin and rtmax (e.g. do not need to link to individual files)
 
 CHANGES IN VERSION 1.6.1
 =========================
