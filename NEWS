@@ -1,4 +1,4 @@
-CHANGES IN VERSION 1.7.2/3/5
+CHANGES IN VERSION 1.7.6
 =========================
 * create_sql bug fix for msms spectra table. Was crashing due to incorrect ordering.
 * Add peak processing (flag remove peaks) for LC-MS XCMS data
