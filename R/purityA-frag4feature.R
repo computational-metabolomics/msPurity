@@ -40,12 +40,15 @@ setMethod(f="frag4feature", signature="purityA",
 
   # Makes sure the same files are being used
   if (!use_group){
+    pa@f4f_link_type = 'individual'
     for(i in 1:length(pa@fileList)){
       if(!basename(pa@fileList[i])==basename(xset@filepaths[i])){
         print("xset and pa file paths do not match")
         return(NULL)
       }
     }
+  }else{
+    pa@f4f_link_type = 'group'
   }
 
   # Get the purity data frame and the xcms peaks data frame

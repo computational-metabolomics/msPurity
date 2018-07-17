@@ -18,7 +18,7 @@ test_that("checking lcms based functions", {
   expect_equal(round(pa@puritydf$aMz[[1]],4),  391.2838)
 
   expect_equal(round(pa@grped_df$inPurity[1],4), 1)
-  expect_equal(round(pa@grped_df$precurMtchPPM[1], 4), 0.552)
+  expect_equal(round(pa@grped_df$precurMtchPPM[1], 4), 1.0048)
 
   expect_equal(length(pa@grped_ms2), 77)
   expect_equal(nrow(pa@grped_ms2[[2]][[1]]), 4)
