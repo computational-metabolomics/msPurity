@@ -35,7 +35,7 @@
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, ppm=5, plim=0, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
+          definition = function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA, use_group=FALSE){
 
   # Makes sure the same files are being used
@@ -149,13 +149,14 @@ fsub1  <- function(prod, allpeaks, intense, ppm){
 fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
   # check for each MS/MS scan if there is an associated feature
   #found in that region for that file
+
   if(intense && !use_grped){
     mz1 <- pro$iMz
   }else{
-    if ('aMz' %in% colnames(pro)){
-      mz1 <- pro$aMz
-    }else{
+    if (is.na(pro$aMz)){
       mz1 <- pro$precursorMZ
+    }else{
+      mz1 <- pro$aMz
     }
 
   }
@@ -186,6 +187,7 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
   }else{
     mtchMZ <- plyr::ddply(mtchRT, ~ cid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
   }
+
   return(mtchMZ)
 
 }
@@ -222,10 +224,8 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
   ppmerror <- check_ppm(mz1, mz2)
 
   if(ppmerror<ppm){
-    if ('inPurity' %in% colnames(pro)){
-      mtchRow$inPurity <- pro$inPurity
-    }
 
+    mtchRow$inPurity <- pro$inPurity
     mtchRow$pid <- pro$pid
     mtchRow$precurMtchID <- pro$seqNum
     mtchRow$precurMtchScan <- pro$precursorScanNum

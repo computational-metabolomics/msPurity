@@ -187,6 +187,7 @@ assessPuritySingle <- function(filepth,
 
   if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
     message("only MS2 data, not possible to calculate purity")
+    mrdfshrt[ , c("precursorNearest", "aMz", "aPurity", "apkNm", "iMz", "iPurity", "ipkNm", "inPkNm", "inPurity")] <- NA
     return(mrdfshrt)
   }
 
