@@ -48,15 +48,27 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     xset <- xsa@xcmsSet
   }
 
-  if(!all(basename(pa@fileList)==basename(xset@filepaths))){
-    if(!all(names(pa@fileList)==basename(xset@filepaths))){
-      print('FILELISTS DO NOT MATCH')
-      message('FILELISTS DO NOT MATCH')
-      return(NULL)
-    }else{
-      xset@filepaths <- unname(pa@fileList)
-    }
+
+  if ((length(pa@fileList) > length(xset@filepaths)) && (pa@f4f_link_type=='group')){
+    # if more files in pa@filelist (can happen if some files were not processed with xcms because no MS1)
+    # in this case we need to make sure any reference to a fileid is correct
+    uneven_filelists = TRUE
+  }else{
+    uneven_filelists = FALSE
   }
+
+
+  # if they are the same length, we check to make sure they are in the same order (only matters when
+  # the f4f linking was for individual peaks)
+  if(!all(basename(pa@fileList)==basename(xset@filepaths)) && (pa@f4f_link_type=='individual')){
+      if(!all(names(pa@fileList)==basename(xset@filepaths))){
+        message('FILELISTS DO NOT MATCH')
+        return(NULL)
+      }else{
+        xset@filepaths <- unname(pa@fileList)
+      }
+    }
+
 
 
   db_pth <- file.path(out_dir, db_name)
@@ -85,8 +97,16 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   c_peaks <- xset@peaks
 
+  # Normally we expect the filelists to always be the same size, but there can be times when
+  # MS/MS is collected without any full scan, or for some reasons it is not processed with xcms,
+  # in these cases we need to ensure that fileids are correct
+  if (uneven_filelists){
+    c_peaks[,'sample'] <- match(basename(xset@filepaths[c_peaks[,'sample']]), filedf$filename)
+  }
+
   c_peaks <- data.frame(cbind('cid'=1:nrow(c_peaks), c_peaks))
   ccn <- colnames(c_peaks)
+
   colnames(c_peaks)[which(ccn=='sample')] <- 'fileid'
   colnames(c_peaks)[which(ccn=='into')] <- '_into'
   if ('i' %in% colnames(c_peaks)){
@@ -94,6 +114,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   }
   fks_fileid <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
   custom_dbWriteTable(name_pk = 'cid', fks=fks_fileid, table_name = 'c_peaks', df=c_peaks, con=con)
+
 
   ###############################################
   # Add c_peak_groups (i.e. XCMS grouped peaks)
@@ -116,8 +137,8 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   # Add s_peaks (i.e. the mz, i from each scan)
   ###############################################
   # ensure the filedf is in the same order as the scan_info file
-  # other wise the s_peak_meta ids might not match up
-  filedf <- filedf[as.numeric(unique(scan_info$fileid)),]
+  # other wise the s_peak_meta ids might not match up (should be fixed from previous matching)
+  # filedf <- filedf[as.numeric(unique(scan_info$fileid)),]
 
   scanpeaks_frag <- plyr::ddply(filedf, ~ fileid, scan_peaks_4_db)
 
@@ -142,18 +163,36 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   custom_dbWriteTable(name_pk = 'cXg_id', fks=fks_for_cxg,
                       table_name ='c_peak_X_c_peak_group', df=c_peak_X_c_peak_group, con=con)
 
-  ###############################################
-  # Add MANY-to-MANY links for c_peak to s_peak_meta
-  ###############################################
-  grpdf <- pa@grped_df
-  c_peak_X_s_peak_meta <- unique(grpdf[ ,c('pid', 'cid')])
-  c_peak_X_s_peak_meta <- cbind('cXp_id'=1:nrow(c_peak_X_s_peak_meta), c_peak_X_s_peak_meta)
+  if (pa@f4f_link_type=='individual'){
+    ###############################################
+    # Add MANY-to-MANY links for c_peak to s_peak_meta
+    ###############################################
+    grpdf <- pa@grped_df
+    c_peak_X_s_peak_meta <- unique(grpdf[ ,c('pid', 'cid')])
+    c_peak_X_s_peak_meta <- cbind('cXp_id'=1:nrow(c_peak_X_s_peak_meta), c_peak_X_s_peak_meta)
 
-  fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
-                      'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
+    fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
+                        'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
 
-  custom_dbWriteTable(name_pk = 'cXp_id', fks=fks_for_cXs,
-                      table_name ='c_peak_X_s_peak_meta', df=c_peak_X_s_peak_meta, con=con)
+    custom_dbWriteTable(name_pk = 'cXp_id', fks=fks_for_cXs,
+                        table_name ='c_peak_X_s_peak_meta', df=c_peak_X_s_peak_meta, con=con)
+  }else{
+    ###############################################
+    # Add MANY-to-MANY links for c_peak_group to s_peak_meta
+    ###############################################
+    grpdf <- pa@grped_df
+    c_peak_group_X_s_peak_meta <- unique(grpdf[ ,c('pid', 'grpid')])
+    c_peak_group_X_s_peak_meta <- cbind('gXp_id'=1:nrow(c_peak_group_X_s_peak_meta), c_peak_group_X_s_peak_meta)
+
+    fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
+                        'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'))
+
+    custom_dbWriteTable(name_pk = 'gXp_id', fks=fks_for_cXs,
+                        table_name ='c_peak_group_X_s_peak_meta', df=c_peak_group_X_s_peak_meta, con=con)
+
+
+  }
+
 
   if (!is.null(xsa)){
     ###############################################

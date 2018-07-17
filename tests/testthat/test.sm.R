@@ -34,7 +34,7 @@ test_that("checking spectral matching functions (massbank)", {
                          LEFT JOIN library_meta ON matches.lid=library_meta.lid
                          WHERE matches.score IS NOT NULL')
 
-  expect_equal(ncol(XLI), 79)
+  expect_equal(ncol(XLI), 80)
   expect_equal(nrow(XLI), 45)
   expect_equal(round(sum(XLI$mz),3), 7626.806)
   expect_equal(round(sum(XLI$precursorMZ),3), 7627.127)

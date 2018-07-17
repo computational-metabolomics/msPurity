@@ -18,7 +18,8 @@ setClass(
     grped_df = "data.frame",
     grped_ms2 = "list",
     mzRback = "character",
-    db_path = "character"
+    db_path = "character",
+    f4f_link_type = "character"
   )
 )
 
