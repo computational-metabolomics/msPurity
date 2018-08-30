@@ -39,8 +39,9 @@ Use the following links for more details:
 
 ```
 ## try http:// if https:// URLs are not supported
-source("https://bioconductor.org/biocLite.R")
-biocLite("msPurity")
+if (!requireNamespace("BiocManager", quietly=TRUE))
+    install.packages("BiocManager")
+BiocManager::install("msPurity")
 
 ```
 
