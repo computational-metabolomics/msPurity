@@ -13,6 +13,8 @@ setClass(
   # Define the slots
   slots = c(
     fileList = "vector",
+    fileListMS1 = "vector",
+    fileMatch = "data.frame",
     cores = "numeric",
     puritydf = "data.frame",
     grped_df = "data.frame",

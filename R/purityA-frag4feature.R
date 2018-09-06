@@ -54,16 +54,13 @@ setMethod(f="frag4feature", signature="purityA",
   # Get the purity data frame and the xcms peaks data frame
   puritydf <- pa@puritydf
   puritydf$fileid <- as.numeric(puritydf$fileid)
-  allpeaks <- data.frame(xset@peaks)
-  allpeaks$cid <- seq(1, nrow(allpeaks))
-  allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=xset)
-
+  print("Stock all parents ions from puritydf")
+  
   if(convert2RawRT){
     allpeaks$rtminCorrected <- allpeaks$rtmin
     allpeaks$rtmaxCorrected <- allpeaks$rtmax
     allpeaks <- ddply(allpeaks, ~ sample, convert2Raw, xset=xset)
   }
-
 
   # Check if is going to be multi-core
   if(pa@cores>1){
@@ -75,36 +72,44 @@ setMethod(f="frag4feature", signature="purityA",
   }
 
   para=FALSE
-
+  
   if(use_group){
     fullpeakw <- data.frame(get_full_peak_width(xset@groups, xset))
     fullpeakw$grpid <- seq(1, nrow(fullpeakw))
-
+    print("Stock all peaks from xset")
+    
+    # Map xcms features to the data frame (takes a while)
     matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm, fullp=TRUE, use_grped=TRUE)
 
   }else{
+    allpeaks <- data.frame(xset@peaks)
+    allpeaks$cid <- seq(1, nrow(allpeaks))
+    print(xset)
+    print(xset@filepaths)
+    allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=xset)
+    print("Stock all peaks from xset")
+    
     # Map xcms features to the data frame (takes a while)
-    matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1,
-                           allpeaks=allpeaks,
-                           ppm = ppm,
-                           intense = intense)
+    matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1, allpeaks=allpeaks, ppm = ppm, intense = intense)
   }
-
-
+  
   if(pa@cores>1){
       parallel::stopCluster(cl)
   }
 
   #shrt <- puritydf[,c('fileid', 'seqNum', 'inPurity','pid')]
-
   if (use_group){
     grpedp <- matched
+    cat(nrow(grpedp))
+    cat(" peaks matched with parents ions\n\n")
   }else{
     #Group by the xcms groups
     grpedp <- plyr::llply(xset@groupidx, grpByXCMS, matched=matched)
     names(grpedp) <- seq(1, length(grpedp))
     grpedp <- plyr::ldply(grpedp, .id = TRUE)
     colnames(grpedp)[1] <- "grpid"
+    cat(nrow(grpedp))
+    cat(" peaks matched with parents ions\n\n")
   }
 
   # Add some extra info for filtering purposes
@@ -123,25 +128,17 @@ setMethod(f="frag4feature", signature="purityA",
   pa@grped_df <- grpm
   pa@grped_ms2 <- getMS2scans(grpm, pa@fileList, mzRback = pa@mzRback)
 
-
   if (create_db){
     pa@db_path <- create_database(pa=pa, xset=xset, out_dir=out_dir,
                                   db_name=db_name, grp_peaklist=grp_peaklist)
   }
-
-
   return(pa)
-
-
-
-
 })
-
 
 fsub1  <- function(prod, allpeaks, intense, ppm){
   # go through all the MS/MS files from each file
   allpeakfile <- allpeaks[allpeaks$filename==unique(prod$filename),]
-
+  print("Find all peaks for the fileid we are working on")
   grpdFile <- plyr::ddply(prod, ~ seqNum,
                           fsub2, # FUNCTION
                           allpeaks = allpeakfile,
@@ -149,11 +146,10 @@ fsub1  <- function(prod, allpeaks, intense, ppm){
                           ppm = ppm)
 }
 
-fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
+fsub2  <- function(pro, allpeaks, intense, ppm, fullp = FALSE, use_grped=FALSE){
   # check for each MS/MS scan if there is an associated feature
   #found in that region for that file
-
-  if(intense && !use_grped){
+  if(intense){
     mz1 <- pro$iMz
   }else{
     if (is.na(pro$aMz)){
@@ -163,24 +159,18 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
     }
 
   }
-
-
   if(is.na(mz1) | is.null(mz1)){
     return(NULL)
   }
-
   prt <- pro$precursorRT
   if (is.na(prt)){
     prt <- pro$retentionTime
   }
-
   if (fullp){
     mtchRT <- allpeaks[prt>=allpeaks$rtmin_full & prt<=allpeaks$rtmax_full, ]
   }else{
     mtchRT <- allpeaks[prt>=allpeaks$rtmin & prt<=allpeaks$rtmax, ]
   }
-
-
   if(nrow(mtchRT)==0){
     return(NULL)
   }
@@ -189,32 +179,37 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
     mtchMZ <- plyr::ddply(mtchRT, ~ grpid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
   }else{
     mtchMZ <- plyr::ddply(mtchRT, ~ cid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
-  }
-
+  } 
   return(mtchMZ)
-
 }
 
-
+getscans <- function(files, backend='pwiz'){
+  if(length(files)==1){
+    mr <- mzR::openMSfile(files, backend=backend)
+    scan_peaks <- mzR::peaks(mr)
+    return(scan_peaks)
+  }else{
+    scan_peaks <- plyr::alply(files, 1 ,function(x){
+      mr <- mzR::openMSfile(x, backend=backend)
+      scan_peaks <- mzR::peaks(mr)
+      return(scan_peaks)
+    })
+    return(scan_peaks)
+  }
+}
 
 check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
 
 getMS2scans  <- function(grpm, filepths, mzRback){
   # Get all MS2 scans
-
   scans <- getscans(filepths, mzRback)
-
   if(length(filepths)==1){
     scans = list(scans)
   }
-
   grpm$fid <- seq(1, nrow(grpm))
-
   ms2l <- plyr::dlply(grpm, ~ grpid, getScanLoop, scans=scans)
-
   return(ms2l)
 }
-
 
 mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
   if ('mzmed' %in% colnames(mtchRow)){
@@ -223,11 +218,9 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
     mz2 <- mtchRow$mz
   }
 
-
   ppmerror <- check_ppm(mz1, mz2)
 
   if(ppmerror<ppm){
-
     mtchRow$inPurity <- pro$inPurity
     mtchRow$pid <- pro$pid
     mtchRow$precurMtchID <- pro$seqNum
@@ -237,7 +230,6 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
     mtchRow$precurMtchPPM <- ppmerror
     mtchRow$retentionTime <- pro$retentionTime
     mtchRow$fileid <- pro$fileid
-
     mtchRow$seqNum <- pro$seqNum
     return(mtchRow)
   }else{
@@ -257,12 +249,13 @@ getScanLoop <- function(peaks, scans){
     x <- peaks[i,]
     idx <- x[,idx_nm]
     grpl[[i]] <- scans[[idx]][[x$precurMtchID]]
-
   }
   return(grpl)
 }
 
 getname <- function(x, xset){
+  print("laaalllalalalalalaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+  print(xset@filepaths)
   x$filename <- basename(xset@filepaths[x$sample])
   return(x)
 }
@@ -277,7 +270,6 @@ convert2Raw <- function(x, xset){
   x$rtmin <- xset@rt$raw[[sid]][match(x$rtmin, xset@rt$corrected[[sid]])]
   x$rtmax <- xset@rt$raw[[sid]][match(x$rtmax, xset@rt$corrected[[sid]])]
   return(x)
-
 }
 
 

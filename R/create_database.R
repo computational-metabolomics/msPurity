@@ -39,7 +39,6 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir, grp_peaklist=NA, db_na
 
 }
 
-
 export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   if(!is.null(xsa)){
@@ -69,8 +68,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
       }
     }
 
-
-
   db_pth <- file.path(out_dir, db_name)
 
   con <- DBI::dbConnect(RSQLite::SQLite(),db_pth)
@@ -83,7 +80,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   scan_info <- pa@puritydf
   fileList <- pa@fileList
-
 
   filedf <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList, 'nm_save'=nm_save),
                                  'fileid'=seq(1, length(fileList))
@@ -114,7 +110,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   }
   fks_fileid <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
   custom_dbWriteTable(name_pk = 'cid', fks=fks_fileid, table_name = 'c_peaks', df=c_peaks, con=con)
-
 
   ###############################################
   # Add c_peak_groups (i.e. XCMS grouped peaks)
@@ -149,7 +144,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   custom_dbWriteTable(name_pk = 'sid', fks=append(fks_fileid, fks_pid),
                       table_name = 's_peaks', df=scanpeaks_frag, con=con)
-
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to c_peak_group
@@ -189,10 +183,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
     custom_dbWriteTable(name_pk = 'gXp_id', fks=fks_for_cXs,
                         table_name ='c_peak_group_X_s_peak_meta', df=c_peak_group_X_s_peak_meta, con=con)
-
-
   }
-
 
   if (!is.null(xsa)){
     ###############################################
@@ -253,19 +244,8 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
                         table_name ='isotope_annotations', df=isoID, con=con)
   }
 
-
-
-
-
-
-
-
-
-
-
   DBI::dbDisconnect(con)
   return(db_pth)
-
 }
 
 real_or_rest <- function(x){
@@ -318,14 +298,10 @@ get_create_query <- function(pk, fks=NA, table_name, df){
       allcolinfo <- paste(c(pkinfo, fksinfo), collapse=', ')
     }else{
       allcolinfo <- paste(c(pkinfo, columninfo,  fksinfo), collapse=', ')
-
     }
-
-
   }
 
   return(paste('CREATE TABLE', table_name, '(', allcolinfo, ')', sep=' '))
-
 }
 
 update_cn_order <- function(name_pk, names_fk, df){
@@ -369,8 +345,6 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con){
   sqr <- DBI::dbSendQuery(con, query)
   DBI::dbClearResult(sqr)
   DBI::dbWriteTable(con, name=table_name, value=df, row.names=FALSE, append=TRUE)
-
-
 }
 
 
@@ -410,3 +384,4 @@ get_group_peak_link <- function(xset, method='medret'){
   return(allm)
 
 }
+
