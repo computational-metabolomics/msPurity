@@ -1,6 +1,20 @@
 #@authors ABiMS TEAM, J. Saint-Vanne
 # lib.r for MSMS study
 
+#@author G. Le Corguille
+# This function will
+# - load the packages
+# - display the sessionInfo
+loadAndDisplayPackages <- function(pkgs) {
+    for(pkg in pkgs) suppressPackageStartupMessages( stopifnot( library(pkg, quietly=TRUE, logical.return=TRUE, character.only=TRUE)))
+
+    sessioninfo = sessionInfo()
+    cat(sessioninfo$R.version$version.string,"\n")
+    cat("Main packages:\n")
+    for (pkg in names(sessioninfo$otherPkgs)) { cat(paste(pkg,packageVersion(pkg)),"\t") }; cat("\n")
+    cat("Other loaded packages:\n")
+    for (pkg in names(sessioninfo$loadedOnly)) { cat(paste(pkg,packageVersion(pkg)),"\t") }; cat("\n")
+}
 
 # This function get the raw file path from the arguments
 #@author Gildas Le Corguille lecorguille@sb-roscoff.fr
@@ -95,4 +109,28 @@ use <- function(package, version=0, ...) {
     stop("Version ", version, " of '", package, 
          "' required, but only ", pver, " is available")
   invisible(pver)
+}
+
+loadRData <- function(rdata_path, name){
+#loads an RData file, and returns the named xset object if it is there
+    load(rdata_path)
+    return(get(ls()[ls() %in% name]))
+}
+
+# This function retrieve a xset like object
+#@author Gildas Le Corguille lecorguille@sb-roscoff.fr
+getxcmsSetObject <- function(xobject) {
+    # XCMS 1.x
+    if (class(xobject) == "xcmsSet")
+        return (xobject)
+    # XCMS 3.x
+    if (class(xobject) == "XCMSnExp") {
+        # Get the legacy xcmsSet object
+        suppressWarnings(xset <- as(xobject, 'xcmsSet'))
+        if (!is.null(xset@phenoData$sample_group))
+            sampclass(xset) <- xset@phenoData$sample_group
+        else
+            sampclass(xset) <- "."
+        return (xset)
+    }
 }

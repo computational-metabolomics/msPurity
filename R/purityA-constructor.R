@@ -43,6 +43,7 @@ NULL
 purityA <- function(filepathsMS2, 
                     filepathsMS1 = NULL, 
                     CSVfile = NULL,
+                    forcedMS1 = FALSE,
                     cores=1,
                     mostIntense=FALSE,
                     nearest=TRUE,
@@ -61,36 +62,51 @@ purityA <- function(filepathsMS2,
     message("no MS2 file list")
     return(NULL)
   }
-
-  names(filepathsMS2) <- basename(filepathsMS2)
-
+  
   requireNamespace('foreach')
 
   #Build the data frame of file matching
+  #First case is when you only have filepathsMS2 (when MS and MSMS are in the same file)
+  #Second case is when you have filepathsMS1 and CSVfile
+  #Other cases are false and return NULL cause when you have filepathsMS1 and filepathsMS2 you always need to match them with a CSVfile
   if(is.null(filepathsMS1) && (is.null(CSVfile))){
+    print("No MS1 and no CSV")
     filepathsMS1 <- filepathsMS2
     fileMatch <- data.frame(MS1 = filepathsMS1, MS2 = filepathsMS2)
     rownames(fileMatch) <- 1:nrow(fileMatch)
   }else{
-    #Have the data frame of the CSVfile
-    fileMatch <- read.csv2(file=CSVfile, header=FALSE)
-    names(fileMatch) <- c("MS1","MS2")
+    if(!is.null(filepathsMS1)){
+      if(!is.null(CSVfile)){
+        #Have the data frame of the CSVfile
+        fileMatch <- read.csv2(file=CSVfile, header=FALSE)
+        names(fileMatch) <- c("MS1","MS2")
+        print(fileMatch)
+      }else{
+        message("no CSV file")
+        return(NULL)
+      }
+    }else{
+      message("You have no filepaths for MS1 files")
+      return(NULL)
+    }   
   }
+  #Verify if the user set the extension in the fileMatch
+  print("TODO : verify if the user set the extension in the fileMatch")
 
   #Verify that we have all the files containing in fileMatch and reorder them if needed
-  if(NA %in% filepathsMS1[match(fileMatch[,1],basename(filepathsMS1))]){
-    cat("It misses some MS1 files to be able to match them !")
-    quit(save="no",status="It misses some MS1 files to be able to match them !")
+  if(NA %in% filepathsMS1[match(fileMatch[,1],filepathsMS1)]){
+    cat("It misses some MS1 files to be able to match them !\n")
+    #quit(save="no",status="It misses some MS1 files to be able to match them !")
   }else{
-    filepathsMS1 <-filepathsMS1[match(fileMatch[,1],basename(filepathsMS1))] 
+    filepathsMS1 <-filepathsMS1[match(fileMatch[,1],filepathsMS1)] 
   }
-  if(NA %in% filepathsMS2[match(fileMatch[,2],names(filepathsMS2))]){
-    cat("It misses some MS2 files to be able to match them !")
-    quit(save="no",status="It misses some MS1 files to be able to match them !")
+  if(NA %in% filepathsMS2[match(fileMatch[,2],filepathsMS2)]){
+    cat("It misses some MS2 files to be able to match them !\n")
+    #quit(save="no",status="It misses some MS1 files to be able to match them !")
   }else{
-    filepathsMS2 <-filepathsMS2[match(fileMatch[,2],names(filepathsMS2))] 
+    filepathsMS2 <-filepathsMS2[match(fileMatch[,2],filepathsMS2)] 
   }
-
+  print(filepathsMS2)
   #Build the purityA object
   pa <- new("purityA", fileList = filepathsMS2, fileListMS1 = filepathsMS1, fileMatch = fileMatch, cores = cores, mzRback=mzRback)
 
@@ -104,11 +120,12 @@ purityA <- function(filepathsMS2,
   }
 
   #Run MS2 file(s) in parallel (or not) using foreach
-  purityL <- operator(foreach::foreach(i = 1:length(pa@fileList),
+  purityL <- operator(foreach::foreach(i = 1:nrow(fileMatch),
                                   .packages = 'mzR'),
-                                  assessPuritySingle(filepathMS2 = pa@fileList[[i]], 
-                                                     filepathsMS1 = filepathsMS1, 
+                                  assessPuritySingle(filepathMS2 = pa@fileList[fileMatch[i,2]], 
+                                                     filepathMS1 = filepathsMS1[fileMatch[i,1]], 
                                                      CSVfile = CSVfile,
+                                                     forcedMS1 = forcedMS1,
                                                      mostIntense = mostIntense,
                                                      nearest=nearest,
                                                      offsets = offsets,
@@ -178,8 +195,9 @@ purityA <- function(filepathsMS2,
 #' @seealso \code{\link{purityA}}
 #' @export
 assessPuritySingle <- function(filepathMS2, 
-                               filepathsMS1 = NULL, 
+                               filepathMS1 = NULL, 
                                CSVfile = NULL,
+                               forcedMS1 = FALSE,
                                fileid=NA,
                                mostIntense=FALSE,
                                nearest=TRUE,
@@ -194,17 +212,18 @@ assessPuritySingle <- function(filepathMS2,
                                mzRback='pwiz',
                                isotopes=TRUE,
                                im=NULL){
-cat("\n\n===================== ")
-cat(basename(filepathMS2))
-cat(" =====================\n")
+
+  cat("\n\n===================== ")
+  cat(basename(filepathMS2))
+  cat(" =====================\n")
 
   #=================================
   # Load in files and initial setup
   #=================================
   # Get the mzR dataframes
-  mrdf <- getmrdf(filepathMS2, filepathsMS1 = filepathsMS1, CSVfile = CSVfile, mzRback)
+  mrdf <- getmrdf(filepathMS2, filepathsMS1 = filepathMS1, CSVfile = CSVfile, mzRback)
   if(is.null(mrdf)){
-    message(paste("/!\\STOP/!\\ No MS/MS spectra for file: ", filepathMS2))
+    message(paste("/!\\STOP/!\\ No MS/MS spectra for file: ", basename(filepathMS2)))
     return(NULL)
   }else if(length(mrdf) < 2){
     if(mrdf == FALSE){
@@ -227,11 +246,10 @@ cat(" =====================\n")
   if(!("precursorFilename" %in% names(mrdf))){
     mrdf$precursorFilename <- mrdf$filename
   }
-
   # Get a shortened mzR dataframe
   mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
                                         "precursorMZ", "precursorRT",
-                                        "precursorScanNum", "id", "filename", "retentionTime", "precursorFilename")]
+                                        "precursorScanNum", "id", "retentionTime", "filename", "precursorFilename")]
 
   #if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
   #  message("only MS2 data, not possible to calculate purity")
@@ -242,14 +260,37 @@ cat(" =====================\n")
   # get scans of MS2 (list of mz and i) from mzR
   scansMS2 <- getscans(filepathMS2, mzRback)
   # get scans of MS1 (list of mz and i) from mzR
-  scansMS1 <- getscans(unique(mrdf$precursorFilename), mzRback)
-
+  if(unique(mrdf$precursorFilename) == basename(filepathMS1)){
+    print("precursorFilename et names = on prend le names")
+    scansMS1 <- getscans(filepathMS1,mzRback)
+  }else{
+    print("precursorFilename et names != on regarde forcedMS1")
+    if(forcedMS1){
+      print("L'utilisateur force le MS1")
+      scansMS1 <- getscans(filepathMS1,mzRback)
+    }else{
+      print("MS1 non forcé")
+      if(unique(mrdf$precursorFilename) == basename(filepathMS1)){
+        print("precursorFilename et unname = on prend unname (mais c bizarre ça ne devrait pas arriver !)")
+        scansMS1 <- getscans(filepathMS1,mzRback)
+      }else{
+        print("Tout est différent du précurseur, faut faire quelquechose ! Genre chercher le file du prec ou bien faire quitter ou bien regarder si = filepathMS2")
+        if(unique(mrdf$filename) == unique(mrdf$precursorFilename)){
+          print("Les filename et precursorFilename sont les memes")
+          scansMS1 <- getscans(filepathMS1,mzRback)
+        }
+      }
+    }
+  }
+  #TODO verify if this function works well
+  ########
   # Get offsets from mzML unless defined by user
   if(anyNA(offsets)){
     offsets <- get_isolation_offsets(filepathMS2)
   }
   minoff <- offsets[1]
   maxoff <- offsets[2]
+  ########
 
   if(is.null(iwNormFun)){
     iwNormFun <- iwNormGauss(minOff = -minoff, maxOff = maxoff)
@@ -266,7 +307,6 @@ cat(" =====================\n")
     # if performing spline we need multiple data points
     nump <- 10
   }
-
   # Get the precursor (ms1) scans
   prec_scans <- get_prec_scans(mrdf, nump)
 
@@ -293,7 +333,6 @@ cat(" =====================\n")
                            ilim=ilim,
                            isotopes=isotopes,
                            im=im)
-    #Retirer la colonne precursorFilename ?????????????????????????????????????????????????????????
   }else{
     print("We have different filename and precursorFilename")
     initial <- plyr::ddply(mrdfshrt, ~ seqNum, get_init_purity,
@@ -334,7 +373,7 @@ cat(" =====================\n")
   }
   interDF <- plyr::ddply(mrdfshrt, ~ seqNum, .parallel = pBool,
                                    get_interp_purity, # FUNCTION
-                                   scan_peaks=scansMS1,
+                                   scan_peaks=c(scansMS1,scansMS2),
                                    ppm=7, # hard coded at the moment
                                    ms2=mrdf[mrdf$msLevel==2,]$seqNum,
                                    prec_scans=prec_scans,
@@ -350,7 +389,6 @@ cat(" =====================\n")
                                    ilim=ilim,
                                    isotopes=isotopes,
                                    im=im)
-
   if(cores>1){
     requireNamespace(parallel)
     parallel::stopCluster(clust)
@@ -362,10 +400,7 @@ cat(" =====================\n")
     mrdfshrt$inPkNm <- interDF$inPkNm
     mrdfshrt$inPurity <- interDF$inPurity
   }
-
-
   return(mrdfshrt)
-
 }
 
 
@@ -389,6 +424,7 @@ get_init_purity <- function(ms2h, scansMS2, scansMS1, minoff, maxoff, nearest,
   mzmax <-  precMZ + maxoff
 
   if(is.null(scansMS1)){
+
     allscans <- scansMS2[[precScn]]
 
     #=======================================
@@ -457,7 +493,10 @@ get_init_purity <- function(ms2h, scansMS2, scansMS1, minoff, maxoff, nearest,
     fileinfo <- c("aMz"=aMz, "aPurity" = aPurity, "apkNm" = apkNm,
                 "iMz" = iMz, "iPurity" = iPurity, "ipkNm" = ipkNm )
   }else{
-    allscans <- scansMS1[[precScn]]
+   
+    scans<-c(scansMS1,scansMS2)
+    allscans <- scans[[precScn]]
+    
     #=======================================
     # Get centered target peak
     #=======================================
@@ -482,7 +521,6 @@ get_init_purity <- function(ms2h, scansMS2, scansMS1, minoff, maxoff, nearest,
     }
     # The centered peak
     aMz <- target[1]
-
     #==================================================
     # Get most intense peak within isolation window
     #==================================================
@@ -495,7 +533,6 @@ get_init_purity <- function(ms2h, scansMS2, scansMS1, minoff, maxoff, nearest,
     }else{
       iTarget <- subp[order(subp[,2], decreasing = TRUE),][1,]
     }
-
     # the most intense peak
     iMz <- iTarget[1]
     #==================================================
@@ -525,7 +562,7 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
                               minoff, maxoff, mostIntense=FALSE, plotP=FALSE,
                               plotdir=NULL, interpol, nearest=TRUE,
                               iwNorm, iwNormFun, ilim, isotopes, im){
-
+  
   # get the region of interest for scans
   scanids <- prec_scans[which(ms2==rowi$seqNum)][[1]]
   roi_scns <- scan_peaks[c(scanids$pre, scanids$post)]
@@ -667,11 +704,12 @@ get_prec_scans <- function(mrdf, num){
       s_name <- tools::file_path_sans_ext(basename(fileToLoad))
       pd <- data.frame(sample_name=s_name, sample_group=s_groups, stringsAsFactors=FALSE)
       raw_data <- MSnbase::readMSData(files=fileToLoad, pdata = new("NAnnotatedDataFrame", pd), mode="onDisk")
+      
       #ms1 = all scans MS find in the mzML file of MS
-      ms1 <- raw_data@featureData@data[raw_data@featureData@data$msLevel==1,]$seqNum
-      ms1macth <- mrdf[mrdf$msLevel==2,]$precursorScanNum
+      ms1 <- raw_data@featureData@data[raw_data@featureData@data$msLevel==1,]$acquisitionNum
+      ms1match <- mrdf[mrdf$msLevel==2,]$precursorScanNum
       ms2 <- mrdf[mrdf$msLevel==2,]$seqNum
-      ms2list <- cbind(ms2,ms1macth)
+      ms2list <- cbind(ms2,ms1match)
 
       #Searching for the pre and post MS scan(s)
       prec_scans <- plyr::alply(ms2list, 1, function(scan2){
@@ -685,7 +723,6 @@ get_prec_scans <- function(mrdf, num){
             post <- post[1:num]
           }
         }
-
         if(length(pre)>num){
           #Problem : post and pre can be the same when we arrive at the last MS1 scan in a different file.
           #For example scan MS2 : 9620, precScan MS1 : 10902 => pre : 10902 and post : 10902
@@ -696,18 +733,14 @@ get_prec_scans <- function(mrdf, num){
             pre <- prepre[1]
           }
         }
-        
         #Searching for the nearest MS scan
         nearest <- ms1[which.min(abs(ms1 - scan2[2]))]
-
+        
         return(list("pre"=pre, "post"=post, "scan"=scan2[[1]], "nearest"= nearest))
       })
     }
-   
   }
-
   return(prec_scans)
-
 }
 
 get_isolation_offsets <- function(inputfile){
@@ -751,7 +784,7 @@ getmrdf <- function(filepathMS2, filepathsMS1 = NULL, CSVfile = NULL, backend='p
   # need to be loaded here for parallel
   mrdf <- NULL
   all_file <- TRUE
-  #does for function useless? cause we do MS2 in parallel???????????????????????????????????????????????????????????????????????????????
+  #does this "for" function useless? cause we do MS2 in each file maybe in parallel????????????????????????????????????????????????????????????????????????
   for(i in 1:length(filepathMS2)){
     mr <- mzR::openMSfile(filepathMS2[i], backend=backend)
     mrdfn <- mzR::header(mr)
@@ -791,6 +824,7 @@ getmrdf <- function(filepathMS2, filepathsMS1 = NULL, CSVfile = NULL, backend='p
           all_file = FALSE
         }else{
           print("C'est good on a tout")
+          print(filepathMS2)
           mrdfn <- find_scanMS_for_MS2(mrdfn, filepathsMS1, filepathsMS2 = filepathMS2, CSVfile)
         }
         
@@ -839,26 +873,27 @@ getmrdf <- function(filepathMS2, filepathsMS1 = NULL, CSVfile = NULL, backend='p
 }
 
 find_scanMS_for_MS2 <- function(mrdfn, filepathsMS1 = NULL, filepathsMS2 = NULL, CSVfile = NULL){
-  print("Find the MS1 scans for the MS2scan")
+  print("Find the MS1 scans for each MS2scan")
  
   print(paste("MS1 files :",filepathsMS1))
   print(paste("MS2 file :",filepathsMS2,sep=""))
   #Find the good MS file corresponding to the MSMS file
   print(paste("CSV matching files filename :",CSVfile))
   #Explore the CSV file to find the MSMS filename
-  fileToMatch <- read.csv2(file=CSVfile, header=FALSE)
-  fileToBeMatch <- strsplit(filepathsMS2, '\\.')
-  for(row in 1:nrow(fileToMatch[1])){
-    if(fileToMatch[row,2] == basename(fileToBeMatch[[1]][2])){
+  readCSV<-basename(CSVfile)
+  fileToMatch <- read.csv2(file=readCSV, header=FALSE)
+  names(fileToMatch) <- c("MS1","MS2")
+  fileToBeMatch <- names(filepathsMS2)
+  for(row in 1:nrow(fileToMatch)){
+    if(fileToMatch[row,2] == basename(fileToBeMatch)){
       MS1matching <- fileToMatch[row,1]
     }
   }
 
   #Find the complete filename of the MS file matched
   for(i in 1:length(filepathsMS1)){
-    splitMS1 <- strsplit(basename(filepathsMS1[i]),'\\.')
-    if(splitMS1[[1]][1] == MS1matching){
-      fileToLoad <- filepathsMS1[i]
+    if(names(filepathsMS1) == MS1matching){
+      fileToLoad <- paste("./",names(filepathsMS1),sep="")
       print(fileToLoad)
     }
   }
@@ -869,6 +904,7 @@ find_scanMS_for_MS2 <- function(mrdfn, filepathsMS1 = NULL, filepathsMS2 = NULL,
   pd <- data.frame(sample_name=s_name, sample_group=s_groups, stringsAsFactors=FALSE)
 
   print(paste("Reading the MS file ",fileToLoad,"...",sep=""))
+
   raw_data <- MSnbase::readMSData(files=fileToLoad, pdata = new("NAnnotatedDataFrame", pd), mode="onDisk")
   # Transform the files absolute pathways into relative pathways
   raw_data@processingData@files <- sub(paste(getwd(), "/", sep="") , "", raw_data@processingData@files)
@@ -921,13 +957,12 @@ getscans <- function(files, backend='pwiz'){
     scan_peaks <- mzR::peaks(mr)
     return(scan_peaks)
   }else{
-
     scan_peaks <- plyr::alply(files, 1 ,function(x){
+      print(x)
       mr <- mzR::openMSfile(x, backend=backend)
       scan_peaks <- mzR::peaks(mr)
       return(scan_peaks)
     })
-
     return(scan_peaks)
   }
 }
