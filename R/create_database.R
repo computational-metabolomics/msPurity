@@ -48,7 +48,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   }
 
 
-  if ((length(pa@fileList) > length(xset@filepaths)) && (pa@f4f_link_type=='group')){
+  if ((length(pa@fileListMS2) > length(xset@filepaths)) && (pa@f4f_link_type=='group')){
     # if more files in pa@filelist (can happen if some files were not processed with xcms because no MS1)
     # in this case we need to make sure any reference to a fileid is correct
     uneven_filelists = TRUE
@@ -59,12 +59,12 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   # if they are the same length, we check to make sure they are in the same order (only matters when
   # the f4f linking was for individual peaks)
-  if(!all(basename(pa@fileList)==basename(xset@filepaths)) && (pa@f4f_link_type=='individual')){
-      if(!all(names(pa@fileList)==basename(xset@filepaths))){
+  if(!all(basename(pa@fileListMS2)==basename(xset@filepaths)) && (pa@f4f_link_type=='individual')){
+      if(!all(names(pa@fileListMS2)==basename(xset@filepaths))){
         message('FILELISTS DO NOT MATCH')
         return(NULL)
       }else{
-        xset@filepaths <- unname(pa@fileList)
+        xset@filepaths <- unname(pa@fileListMS2)
       }
     }
 
@@ -75,14 +75,14 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   ###############################################
   # Add File info
   ###############################################
-  nm_save <- names(pa@fileList) # this is for name tracking in Galaxy
-  pa@fileList <- unname(pa@fileList)
+  nm_save <- names(pa@fileListMS2) # this is for name tracking in Galaxy
+  pa@fileListMS2 <- unname(pa@fileListMS2)
 
   scan_info <- pa@puritydf
-  fileList <- pa@fileList
+  fileListMS2 <- pa@fileListMS2
 
-  filedf <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList, 'nm_save'=nm_save),
-                                 'fileid'=seq(1, length(fileList))
+  filedf <- data.frame(cbind('filename'=basename(fileListMS2), 'filepth'=fileListMS2, 'nm_save'=nm_save),
+                                 'fileid'=seq(1, length(fileListMS2))
                            )
 
   custom_dbWriteTable(name_pk = 'fileid', fks=NA, table_name = 'fileinfo', df=filedf, con=con)

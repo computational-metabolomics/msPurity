@@ -12,7 +12,7 @@ setClass(
 
   # Define the slots
   slots = c(
-    fileList = "vector",
+    fileListMS2 = "vector",
     fileListMS1 = "vector",
     fileMatch = "data.frame",
     cores = "numeric",
