@@ -3,11 +3,11 @@
 #' @description
 #' Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
 #'
-#' @param target_db_pth character; Path of the database of targets that will be searched against the library spectra. Generated
+#' @param target_db_pth character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
 #'                       either from frag4feature or from create_database functions.
 #' @param library_db_pth character [optional]; path to library spectral SQLite database.
 #'                                             Defaults to msPurityData package data.
-#' @param ra_thres_t numeric; Relative abundance threshold for target spectra
+#' @param ra_thres_t numeric; Relative abundance threshold for target (query) spectra
 #'                      (Peaks below this RA threshold will be excluded)
 #' @param ra_thres_l numeric; Relative abundance threshold for library spectra
 #' @param cores numeric; Number of cores to use
@@ -43,7 +43,7 @@
 #' #Only required if you want to limit the spectral matching to certain scans
 #' result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 #' @export
-spectral_matching <- function(target_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
+spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,
                                      instrument_types=NA, library_sources='massbank', scan_ids=NA,
                                      pa=NA, xset=NA, grp_peaklist=NA, out_dir='.'){
