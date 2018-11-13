@@ -565,7 +565,7 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   mz <- comb$mz
 
   # Cluster the peaks togther
-  comb$cl <- clustering(mz, clustType = clustType, cores = cores)
+  comb$cl <- clustering(mz, clustType = clustType, cores = cores, ppm = ppm)
 
   # Create a dataframe with each file is a column
   sampnms <- unique(comb$.id)
