@@ -13,23 +13,33 @@ vignette: >
 ---
 
 # Introduction
+```{r include=FALSE}
+library_database_schema_path <- system.file("extdata", "schemas", "library_database_schema.html", package="msPurity")
+query_database_schema_path <- system.file("extdata", "schemas", "query_database_schema.html", package="msPurity")
+```
 
-The msPurity package can perform spectral matching to the MassBank and LipidBlast libraries that are stored in a SQLite database. 
+The msPurity package can perform spectral matching from a query SQLite database to a library SQLite database.
 
-The user is free to add any other data to the SQLite database as well.
+See workflow below.
 
-TODO:
-  More detailed description to be added.
+[image](workflow.png)
 
-# Spectral matching 
 
-## LC-MS/MS
+The query SQLite database is generated either using `frag4feature` function with the option `create_db=True` or by using the `create_db` function. The query SQLite database contains information of the query LC-MS/MS run, e.g. file info, scan info, chromatographic peaks, group peaks, MS/MS spectral data. See [query database schema](query_database_schema.html).
 
+
+The query SQLite database is generated either using `frag4feature` function with the option `create_db=True` or by using the `create_db` function. The query SQLite database contains information of the query LC-MS/MS run, e.g. file info, scan info, chromatographic peaks, group peaks, MS/MS spectral data. See [query database schema](query_database_schema.html).
+
+
+
+[library database schema](library_database_schema.html)
+
+## Step by step
 We link the spectral matching result back to XCMS feature, therefore we need to run XCMS first. 
 
 (Please use the appropiate settings for your data)
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 library(msPurity)
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
@@ -43,23 +53,17 @@ fragmentation data back to the XCMS feature.
 
 A SQLite database is also generated with the all the results included.
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 pa  <- purityA(msmsPths, interpol = "linear")
 pa <- frag4feature(pa, xset, create_db=TRUE)
 ```
 
-The spectral matching is then run on all fragmentation scans collected in all files using the `spectral_matching` function. The function updates the previously generated database with
-the spectral matching annotations.
+The spectral matching is then run on all fragmentation scans collected in all files using the `spectral_matching` function. The function updates the query database with the spectral matching annotations.
 
-As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the 
-annotations for the XCMS grouped peaks is provided in the output
+As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the annotations for the XCMS grouped peaks is provided in the output
 
-```{r}
-result <- spectral_matching( pa@db_path, out_dir = tempdir())
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+#result <- spectral_matching( pa@db_path, out_dir = tempdir())
 ```
 
 It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.
-
-## DI-MS/MS or DI-MSn
-
-TODO

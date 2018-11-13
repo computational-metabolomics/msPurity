@@ -11,7 +11,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2018-03-20" />
+<meta name="date" content="2018-11-13" />
 
 <title>Using msPurity for spectral matching</title>
 
@@ -88,6 +88,9 @@ img {
 .tabbed-pane {
   padding-top: 12px;
 }
+.html-widget {
+  margin-bottom: 20px;
+}
 button.code-folding-btn:focus {
   outline: none;
 }
@@ -117,114 +120,45 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Using msPurity for spectral matching</h1>
 <p class="author-name">Thomas N. Lawson</p>
-<h4 class="date"><em>2018-03-20</em></h4>
+<h4 class="date"><em>2018-11-13</em></h4>
 
 </div>
 
 <h1>Contents</h1>
 <div id="TOC">
 <ul>
-<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
-<li><a href="#spectral-matching"><span class="toc-section-number">2</span> Spectral matching</a><ul>
-<li><a href="#lc-msms"><span class="toc-section-number">2.1</span> LC-MS/MS</a></li>
-<li><a href="#di-msms-or-di-msn"><span class="toc-section-number">2.2</span> DI-MS/MS or DI-MSn</a></li>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a><ul>
+<li><a href="#step-by-step"><span class="toc-section-number">1.1</span> Step by step</a></li>
 </ul></li>
 </ul>
 </div>
 
 <div id="introduction" class="section level1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>The msPurity package can perform spectral matching to the MassBank and LipidBlast libraries that are stored in a SQLite database.</p>
-<p>The user is free to add any other data to the SQLite database as well.</p>
-<p>TODO: More detailed description to be added.</p>
-</div>
-<div id="spectral-matching" class="section level1">
-<h1><span class="header-section-number">2</span> Spectral matching</h1>
-<div id="lc-msms" class="section level2">
-<h2><span class="header-section-number">2.1</span> LC-MS/MS</h2>
+<p>The msPurity package can perform spectral matching from a query SQLite database to a library SQLite database.</p>
+<p>See workflow below.</p>
+<p><a href="workflow.png">image</a></p>
+<p>The query SQLite database is generated either using <code>frag4feature</code> function with the option <code>create_db=True</code> or by using the <code>create_db</code> function. The query SQLite database contains information of the query LC-MS/MS run, e.g. file info, scan info, chromatographic peaks, group peaks, MS/MS spectral data. See <a href="query_database_schema.html">query database schema</a>.</p>
+<p>The query SQLite database is generated either using <code>frag4feature</code> function with the option <code>create_db=True</code> or by using the <code>create_db</code> function. The query SQLite database contains information of the query LC-MS/MS run, e.g. file info, scan info, chromatographic peaks, group peaks, MS/MS spectral data. See <a href="query_database_schema.html">query database schema</a>.</p>
+<p><a href="library_database_schema.html">library database schema</a></p>
+<div id="step-by-step" class="section level2">
+<h2><span class="header-section-number">1.1</span> Step by step</h2>
 <p>We link the spectral matching result back to XCMS feature, therefore we need to run XCMS first.</p>
 <p>(Please use the appropiate settings for your data)</p>
 <pre class="r"><code>library(msPurity)
 msmsPths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE, pattern = &quot;MSMS&quot;)
-xset &lt;- xcms::xcmsSet(msmsPths, nSlaves = 1)</code></pre>
-<pre><code>## Use of argument 'nSlaves' is deprecated, please use 'BPPARAM' instead.</code></pre>
-<pre><code>## Loading required package: xcms</code></pre>
-<pre><code>## Loading required package: Biobase</code></pre>
-<pre><code>## Loading required package: BiocGenerics</code></pre>
-<pre><code>## Loading required package: parallel</code></pre>
-<pre><code>## 
-## Attaching package: 'BiocGenerics'</code></pre>
-<pre><code>## The following objects are masked from 'package:parallel':
-## 
-##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
-##     clusterExport, clusterMap, parApply, parCapply, parLapply,
-##     parLapplyLB, parRapply, parSapply, parSapplyLB</code></pre>
-<pre><code>## The following objects are masked from 'package:stats':
-## 
-##     IQR, mad, sd, var, xtabs</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     Filter, Find, Map, Position, Reduce, anyDuplicated, append,
-##     as.data.frame, cbind, colMeans, colSums, colnames, do.call,
-##     duplicated, eval, evalq, get, grep, grepl, intersect,
-##     is.unsorted, lapply, lengths, mapply, match, mget, order, paste,
-##     pmax, pmax.int, pmin, pmin.int, rank, rbind, rowMeans, rowSums,
-##     rownames, sapply, setdiff, sort, table, tapply, union, unique,
-##     unsplit, which, which.max, which.min</code></pre>
-<pre><code>## Welcome to Bioconductor
-## 
-##     Vignettes contain introductory material; view with
-##     'browseVignettes()'. To cite Bioconductor, see
-##     'citation(&quot;Biobase&quot;)', and for packages 'citation(&quot;pkgname&quot;)'.</code></pre>
-<pre><code>## Loading required package: BiocParallel</code></pre>
-<pre><code>## Loading required package: MSnbase</code></pre>
-<pre><code>## Loading required package: mzR</code></pre>
-<pre><code>## Loading required package: ProtGenerics</code></pre>
-<pre><code>## 
-## This is MSnbase version 2.4.2 
-##   Visit https://lgatto.github.io/MSnbase/ to get started.</code></pre>
-<pre><code>## 
-## Attaching package: 'MSnbase'</code></pre>
-<pre><code>## The following object is masked from 'package:stats':
-## 
-##     smooth</code></pre>
-<pre><code>## The following object is masked from 'package:base':
-## 
-##     trimws</code></pre>
-<pre><code>## 
-## This is xcms version 3.0.2</code></pre>
-<pre><code>## 
-## Attaching package: 'xcms'</code></pre>
-<pre><code>## The following object is masked from 'package:stats':
-## 
-##     sigma</code></pre>
-<pre class="r"><code>xset &lt;- xcms::group(xset)</code></pre>
-<pre><code>## Processing 3163 mz slices ...</code></pre>
-<pre><code>## OK</code></pre>
-<pre class="r"><code>xset &lt;- xcms::retcor(xset)</code></pre>
-<pre><code>## Performing retention time correction using 351 peak groups.</code></pre>
-<pre class="r"><code>xset &lt;- xcms::group(xset)</code></pre>
-<pre><code>## Processing 3163 mz slices ... OK</code></pre>
+xset &lt;- xcms::xcmsSet(msmsPths, nSlaves = 1)
+xset &lt;- xcms::group(xset)
+xset &lt;- xcms::retcor(xset)
+xset &lt;- xcms::group(xset)</code></pre>
 <p>The <code>purityA</code> function is then called to calculate the precursor purity of the fragmentation results and the <code>frag4feature</code> function will links the fragmentation data back to the XCMS feature.</p>
 <p>A SQLite database is also generated with the all the results included.</p>
 <pre class="r"><code>pa  &lt;- purityA(msmsPths, interpol = &quot;linear&quot;)
 pa &lt;- frag4feature(pa, xset, create_db=TRUE)</code></pre>
-<pre><code>## Creating a database of fragmentation spectra and LC features</code></pre>
-<p>The spectral matching is then run on all fragmentation scans collected in all files using the <code>spectral_matching</code> function. The function updates the previously generated database with the spectral matching annotations.</p>
+<p>The spectral matching is then run on all fragmentation scans collected in all files using the <code>spectral_matching</code> function. The function updates the query database with the spectral matching annotations.</p>
 <p>As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the annotations for the XCMS grouped peaks is provided in the output</p>
-<pre class="r"><code>result &lt;- spectral_matching( pa@db_path, out_dir = tempdir())</code></pre>
-<pre><code>## Running msPurity spectral matching function for LC-MS(/MS) data</code></pre>
-<pre><code>## Performing spectral matching</code></pre>
-<pre><code>## Warning in rsqlite_fetch(res@ptr, n = n): Column `precursor_mz`: mixed type,
-## first seen values of type real, coercing other values of type string</code></pre>
-<pre><code>## Warning in rsqlite_fetch(res@ptr, n = n): Column `mass_accuracy`: mixed type,
-## first seen values of type real, coercing other values of type string</code></pre>
-<pre><code>## Summarising LC features annotations</code></pre>
+<pre class="r"><code>#result &lt;- spectral_matching( pa@db_path, out_dir = tempdir())</code></pre>
 <p>It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.</p>
-</div>
-<div id="di-msms-or-di-msn" class="section level2">
-<h2><span class="header-section-number">2.2</span> DI-MS/MS or DI-MSn</h2>
-<p>TODO</p>
 </div>
 </div>
 

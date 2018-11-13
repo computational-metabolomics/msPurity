@@ -5,8 +5,8 @@
 \alias{initialize,purityD-method}
 \title{Constructor for S4 class to represent a DI-MS purityD}
 \usage{
-\S4method{initialize}{purityD}(.Object, fileList, cores = 1, mzML = TRUE,
-  mzRback = "pwiz")
+\S4method{initialize}{purityD}(.Object, fileList, cores = 1,
+  mzML = TRUE, mzRback = "pwiz")
 }
 \arguments{
 \item{.Object}{object; purityD object}

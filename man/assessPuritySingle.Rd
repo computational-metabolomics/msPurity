@@ -6,8 +6,9 @@
 \usage{
 assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
   nearest = TRUE, offsets = NA, cores = 1, plotP = FALSE,
-  plotdir = NULL, interpol = "linear", iwNorm = FALSE, iwNormFun = NULL,
-  ilim = 0, mzRback = "pwiz", isotopes = TRUE, im = NULL)
+  plotdir = NULL, interpol = "linear", iwNorm = FALSE,
+  iwNormFun = NULL, ilim = 0, mzRback = "pwiz", isotopes = TRUE,
+  im = NULL)
 }
 \arguments{
 \item{filepth}{character; mzML file path for MS/MS spectra}
