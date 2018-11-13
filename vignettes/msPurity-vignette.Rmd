@@ -14,7 +14,7 @@ vignette: >
 
 # Introduction
 
-The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. See associted paper [@Lawson2017]. 
+The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. See associated paper [@Lawson2017]. 
 
 What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer
 
@@ -142,7 +142,7 @@ The slot `predictions` provides the anticipated (predicted) purity scores for ea
 * __mz__: _m/z_ of the XCMS grouped feature
 
 _XCMS run on an LC-MS dataset_
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 xset <- xcms::xcmsSet(msPths)
 xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)

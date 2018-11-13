@@ -23,9 +23,9 @@ pa <- frag4feature(pa, xset)
 print(head(pa@grped_df[1:3]))
 
 ## --------------------------------------------------------------------------
-print(pa@grped_ms2[2:3])
+print(pa@grped_ms2[2])
 
-## --------------------------------------------------------------------------
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 xset <- xcms::xcmsSet(msPths)
 xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)

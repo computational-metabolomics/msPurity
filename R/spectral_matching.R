@@ -43,7 +43,7 @@
 #' #Only required if you want to limit the spectral matching to certain scans
 #' result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 #' @export
-spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
+spectral_matching <- function(target_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,
                                      instrument_types=NA, library_sources='massbank', scan_ids=NA,
                                      pa=NA, xset=NA, grp_peaklist=NA, out_dir='.'){

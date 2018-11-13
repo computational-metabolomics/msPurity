@@ -143,7 +143,7 @@ $(document).ready(function () {
 
 <div id="introduction" class="section level1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”.</p>
+<p>The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. See associated paper <span class="citation">(Lawson et al. 2017)</span>.</p>
 <p>What we call “Precursor purity” is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is very similar to the “Precursor Ion Fraction” (PIF) metric described by <span class="citation">(Michalski, Cox, and Mann 2011)</span> for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer</p>
 <p>There are two main use cases for the package</p>
 <ol style="list-style-type: decimal">
@@ -243,7 +243,7 @@ xset &lt;- xcms::group(xset)</code></pre>
 ## 5    12 116.0706 116.0109
 ## 6    12 116.0706 116.0109</code></pre>
 <p>The slot <code>grped_ms2</code> is a list of the associated fragmentation spectra for the grouped features.</p>
-<pre class="r"><code>print(pa@grped_ms2[2:3])</code></pre>
+<pre class="r"><code>print(pa@grped_ms2[2])</code></pre>
 <pre><code>## $`12`
 ## $`12`[[1]]
 ##          [,1]       [,2]
@@ -279,39 +279,7 @@ xset &lt;- xcms::group(xset)</code></pre>
 ##          [,1]       [,2]
 ## [1,] 116.0168  14364.784
 ## [2,] 116.0709 149471.266
-## [3,] 116.1074   8359.903
-## 
-## 
-## $`27`
-## $`27`[[1]]
-##          [,1]      [,2]
-## [1,] 132.1020 402822.69
-## [2,] 144.2789   7715.69
-## [3,] 146.6829   7014.51
-## 
-## $`27`[[2]]
-##          [,1]      [,2]
-## [1,] 104.9648  111113.7
-## [2,] 132.1021 3328366.8
-## 
-## $`27`[[3]]
-##          [,1]     [,2]
-## [1,] 115.4372  2424.58
-## [2,] 132.1020 67118.03
-## 
-## $`27`[[4]]
-##          [,1]       [,2]
-## [1,] 117.8772   5004.664
-## [2,] 132.1019 273406.250
-## 
-## $`27`[[5]]
-##         [,1]      [,2]
-## [1,] 130.187  121726.4
-## [2,] 132.102 3973065.5
-## 
-## $`27`[[6]]
-##          [,1]     [,2]
-## [1,] 132.1021 77799.47</code></pre>
+## [3,] 116.1074   8359.903</code></pre>
 </div>
 </div>
 <div id="assessing-precursor-purity-of-anticipated-isolation-windows-for-ms2-spectra" class="section level1">
@@ -334,12 +302,9 @@ xset &lt;- xcms::group(xset)</code></pre>
 </ul>
 <p><em>XCMS run on an LC-MS dataset</em></p>
 <pre class="r"><code>xset &lt;- xcms::xcmsSet(msPths)
+xset &lt;- xcms::group(xset)
+xset &lt;- xcms::retcor(xset)
 xset &lt;- xcms::group(xset)</code></pre>
-<pre><code>## Processing 3179 mz slices ... OK</code></pre>
-<pre class="r"><code>xset &lt;- xcms::retcor(xset)</code></pre>
-<pre><code>## Performing retention time correction using 763 peak groups.</code></pre>
-<pre class="r"><code>xset &lt;- xcms::group(xset)</code></pre>
-<pre><code>## Processing 3179 mz slices ... OK</code></pre>
 <p><em>Perform purity calculations</em></p>
 <pre class="r"><code>ppLCMS &lt;- purityX(xset, offsets=c(0.5, 0.5), xgroups = c(1, 2))</code></pre>
 <pre><code>## [1] 4</code></pre>
@@ -409,6 +374,9 @@ print(predicted)</code></pre>
 <div id="references" class="section level1 unnumbered">
 <h1>References</h1>
 <div id="refs" class="references">
+<div id="ref-Lawson2017">
+<p>Lawson, Thomas Nigel, Ralf J. M. Weber, Martin R. Jones, Andrew J. Chetwynd, Giovanny Alejandro Rodriguez Blanco, Riccardo Di Guida, Mark R. Viant, and Warwick B Dunn. 2017. “msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics.” <em>Analytical Chemistry</em>, acs.analchem.6b04358. doi:<a href="https://doi.org/10.1021/acs.analchem.6b04358">10.1021/acs.analchem.6b04358</a>.</p>
+</div>
 <div id="ref-Michalski2011">
 <p>Michalski, Annette, Juergen Cox, and Matthias Mann. 2011. “More than 100,000 detectable peptide species elute in single shotgun proteomics runs but the majority is inaccessible to data-dependent LC-MS/MS.” <em>Journal of Proteome Research</em> 10 (4): 1785–93. doi:<a href="https://doi.org/10.1021/pr101060v">10.1021/pr101060v</a>.</p>
 </div>

@@ -21,7 +21,7 @@ The query SQLite database is generated either using `frag4feature` function with
 See [query database schema](query_sqlite_schema.html).
 
 
-The default library SQLite database is in the msPurityData Bioconductor Data package and hashas been generated from data derived from [MoNA](http://mona.fiehnlab.ucdavis.edu/downloads). This contains data from FAHFA, GNPS, HMDB, RTX5 Fiehnlib, Vaniya/Fiehn Natural products library, Fiehn HILIC, Respect, MassBank, Lipidblast, MetaboBASE, Pathogen box and Riken IMS oxidised phospholpids. An alternative database is also provided that has been created just from MassBank using data directly from [MassBank](https://github.com/MassBank/MassBank-data). If a user would like to create their own spectral database, a python package can be used to generate the appropiate SQLite database from a collection of msp files, see [msp2db](https://msp2db.readthedocs.io/en/latest/).
+The default library SQLite database is in the msPurityData Bioconductor Data package and has been generated from data derived from [MoNA](http://mona.fiehnlab.ucdavis.edu/downloads). This contains data from FAHFA, GNPS, HMDB, RTX5 Fiehnlib, Vaniya/Fiehn Natural products library, Fiehn HILIC, Respect, MassBank, Lipidblast, MetaboBASE, Pathogen box and Riken IMS oxidised phospholpids. An alternative database is also provided that has been created just from MassBank using data directly from [MassBank](https://github.com/MassBank/MassBank-data). If a user would like to create their own spectral database, a python package can be used to generate the appropriate SQLite database from a collection of msp files, see [msp2db](https://msp2db.readthedocs.io/en/latest/).
 
 See [library database schema](library_sqlite_schema.html).
 
@@ -31,7 +31,7 @@ See [library database schema](library_sqlite_schema.html).
 
 
 # How to perform spectral matching for LC-MS/MS with XCMS and msPurity
-We link the spectral matching result back to XCMS feature, therefore we need to run XCMS first. 
+We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
 
 (Please use the appropiate settings for your data)
 
@@ -59,9 +59,9 @@ The spectral matching is then run on all fragmentation scans collected in all fi
 As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the annotations for the XCMS grouped peaks is provided in the output. The scan_ids parameter can be omitted if all scans are to be used for spectral matching (recommended)
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-result <- spectral_matching(target_db_pth = pa@db_path)
+result <- spectral_matching(target_db_pth = pa@db_path,  scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 ```
 
 
 
-It should be noted that in a typical Data Dependent Acuisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.
+It should be noted that in a typical Data Dependent Acquisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.
