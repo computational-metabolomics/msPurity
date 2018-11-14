@@ -4,18 +4,18 @@ msPurity: Package to assess precursor ion purity and perform spectral matching
 
 
 
-**General**
+**General:**
 
-|Version| |Py versions| |Git| |Build Status (Travis)| |Build Status (AppVeyor)| |License| |RTD doc| |codecov|
+|Git| |Build Status (Travis)| |Build Status (AppVeyor)| |License| |RTD doc| |codecov|
 
 
-**Bioconductor (release)**
+**Bioconductor (release):**
 
-|Bioconductor release availability| |Bioconductor release downloads| 
+|Bioconductor release availability| |Bioconductor release downloads|  |Bioconductor release build results|
 
-**Bioconductor (devel)**
+**Bioconductor (devel):**
 
-|Bioconductor devel availability| |Bioconductor devel downloads| 
+|Bioconductor devel availability| |Bioconductor devel downloads|  |Bioconductor release build results|
 
 ------------
 Which version to use?
@@ -106,44 +106,25 @@ Ref
 [2] Lawson, T.N., Weber, R.J., Jones, M.R., Chetwynd, A.J., Rodriguez Blanco, G.A., Di Guida, R., Viant, M.R. and Dunn, W.B., 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry.
 
 
-.. |Bioconductor release downloads| image:: http://www.bioconductor.org/shields/downloads/release/msPurity.svg
-    :target: https://bioconductor.org/packages/msPurity
 
-.. |Bioconductor devel downloads| image:: http://www.bioconductor.org/shields/downloads/devel/msPurity.svg
-    :target: https://bioconductor.org/packages/devel/msPurity
+.. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msPurity.svg?style=flat&maxAge=3600&label=Travis-CI
+   :target: https://travis-ci.org/computational-metabolomics/msPurity
 
-
-.. |Bioconductor release availability| image:: http://www.bioconductor.org/shields/availability/3.8/msPurity.svg
-    :target: https://bioconductor.org/packages/release/bioc/html/msPurity.html#archives
-
-.. |Bioconductor devel availability| image:: http://www.bioconductor.org/shields/availability/3.9/msPurity.svg
-    :target: https://bioconductor.org/packages/devel/bioc/html/msPurity.html#archives
-
-
-
-.. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msp2db.svg?style=flat&maxAge=3600&label=Travis-CI
-   :target: https://travis-ci.org/computational-metabolomics/msp2db
-
-.. |Py versions| image:: https://img.shields.io/pypi/pyversions/msp2db.svg?style=flat&maxAge=3600
-   :target: https://pypi.python.org/pypi/msp2db/
-  
-.. |Build Status (AppVeyor)| image:: https://img.shields.io/appveyor/ci/Tomnl/msp2db.svg?style=flat&maxAge=3600&label=AppVeyor
-   :target: https://ci.appveyor.com/project/Tomnl/msp2db
-
-.. |Version| image:: https://img.shields.io/pypi/v/msp2db.svg?style=flat&maxAge=3600
-   :target: https://pypi.python.org/pypi/msp2db/
+.. |Build Status (AppVeyor)| image:: https://img.shields.io/appveyor/ci/Tomnl/msPurity.svg?style=flat&maxAge=3600&label=AppVeyor
+   :target: https://ci.appveyor.com/project/Tomnl/msPurity
 
 .. |Git| image:: https://img.shields.io/badge/repository-GitHub-blue.svg?style=flat&maxAge=3600
-   :target: https://github.com/ISA-tools/msp2db
+   :target: https://github.com/computational-metabolomics/msPurity
 
+.. |Bioconda| image:: https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat&maxAge=3600
+   :target: http://bioconda.github.io/recipes/msPurity/README.html
 
-.. |License| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
+.. |License| image:: https://img.shields.io/pypi/l/mzml2isa.svg?style=flat&maxAge=3600
    :target: https://www.gnu.org/licenses/gpl-3.0.html
 
-.. |RTD doc| image:: https://img.shields.io/readthedocs/msp2db.svg?style=flat&maxAge=3600
-   :target: https://msp2db.readthedocs.io/en/latest/
-   
-.. |codecov| image:: https://codecov.io/gh/computational-metabolomics/msp2db/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/computational-metabolomics/msp2db
+.. |DOI| image:: https://img.shields.io/badge/DOI-10.18129/B9.bioc.msPurity-teal.svg?style=flat&maxAge=3600
+   :target: https://10.18129/B9.bioc.msPurity 
 
+.. |Paper| image:: https://img.shields.io/badge/paper-Analytical_Chemistry-teal.svg?style=flat&maxAge=3600
+   :target: https://10.1021/acs.analchem.6b04358.
 
