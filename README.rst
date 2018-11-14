@@ -6,7 +6,7 @@ msPurity: Package to assess precursor ion purity and perform spectral matching
 
 **General:**
 
-|Git| |Build Status (Travis)| |Build Status (AppVeyor)| |License| |RTD doc| |codecov|
+|Git| |Build Status (Travis)| |Build Status (AppVeyor)| |License| |codecov|
 
 
 **Bioconductor (release):**
@@ -128,3 +128,5 @@ Ref
 .. |Paper| image:: https://img.shields.io/badge/paper-Analytical_Chemistry-teal.svg?style=flat&maxAge=3600
    :target: https://10.1021/acs.analchem.6b04358.
 
+.. |codecov| image:: https://codecov.io/gh/computational-metabolomics/msp2db/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/computational-metabolomics/msp2db
