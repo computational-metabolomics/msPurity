@@ -214,7 +214,6 @@ body {
 <!-- == Desktop == -->
 <rect x='1' y='1' width='862' height='796' rx='8' ry='8' style='fill:url(#layoutBgB); stroke:#777777; stroke-width:0.5;' />
 <rect x='1' y='1' width='862' height='796' rx='8' ry='8' style='fill:url(#layoutBgA); stroke:#777777; stroke-width:0.5;' />
-<rect x='1' y='1' width='862' height='796' rx='8' ry='8' style='fill:url(#layoutBgTr);' />
 
 <!-- == Legend == -->
 <g transform='translate(10,10)'>
@@ -241,14 +240,6 @@ c_peak_X_s_peak_meta ref s_peak_meta ( pid )</title>
 <path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 432 80 L 656,80' ></path>
 <text x='441' y='75' transform='rotate(0 441,75)' title='Fk Fk_c_peak_X_s_peak_meta
 c_peak_X_s_peak_meta ref s_peak_meta ( pid )' class='relName' style='fill:#748EA7'>pid</text>
-<!-- == Fk 'c_peaks_Fk_c_peaks' == -->
-<path id='c_peaks_Fk_c_peaks'  onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 128 224 L 448,224' >
-	<title>Fk Fk_c_peaks
-c_peaks ref fileinfo ( fileid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 128 224 L 448,224' ></path>
-<text x='137' y='219' transform='rotate(0 137,219)' title='Fk Fk_c_peaks
-c_peaks ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
 <!-- == Fk 'c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group' == -->
 <path id='c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group'  onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','Default.c_peak_groups.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','Default.c_peak_groups.grpid'])" transform='translate(8,0)' class='scene' d='M 208 416 L 288,416' >
 	<title>Fk Fk_c_peak_X_c_peak_group
@@ -289,6 +280,14 @@ s_peak_meta ref fileinfo ( fileid )</title>
 <path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 656 240 L 544,240' ></path>
 <text x='641' y='235' transform='rotate(0 641,235)' title='Fk Fk_s_peak_meta
 s_peak_meta ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
+<!-- == Fk 'c_peaks_Fk_c_peaks' == -->
+<path id='c_peaks_Fk_c_peaks'  onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 128 224 L 448,224' >
+	<title>Fk Fk_c_peaks
+c_peaks ref fileinfo ( fileid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 128 224 L 448,224' ></path>
+<text x='137' y='219' transform='rotate(0 137,219)' title='Fk Fk_c_peaks
+c_peaks ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
 <!-- == Table 'c_peak_X_s_peak_meta' == -->
 <rect class='entity' x='288' y='40' width='144' height='96' rx='8' ry='8' style='stroke:none'/>
 <path d='M 288 68 L 288 48 Q 288 40 296 40 L 424 40 Q 432 40 432 48 L 432 68 L288 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
@@ -306,55 +305,6 @@ s_peak_meta id</title></a>
 integer
 c_peaks id</title></a>
 <a xlink:href='#c_peak_X_s_peak_meta.cid'><use id='fk' x='420' y='108' xlink:href='#fk'/><title>References c_peaks ( cid ) </title></a>
-
-<!-- == Table 'c_peaks' == -->
-<rect class='entity' x='48' y='40' width='80' height='256' rx='8' ry='8' style='stroke:none'/>
-<path d='M 48 68 L 48 48 Q 48 40 56 40 L 120 40 Q 128 40 128 48 L 128 68 L48 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='48' y='40' width='80' height='256' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#c_peaks'><text x='63' y='60'>c_peaks</text><title>Table Default.c_peaks
-Table for the individual chromatography peaks from each file</title></a>
-  <use id='nn' x='50' y='77' xlink:href='#nn'/><a xlink:href='#c_peaks.cid'><use id='pk' x='50' y='76' xlink:href='#pk'/><title>Pk pk_c_peaks ( cid ) </title></a>
-<a xlink:href='#c_peaks.cid'><text id='Default.c_peaks.cid' x='67' y='87' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])">cid</text><title>cid
-* integer</title></a>
-<a xlink:href='#c_peaks.cid'><use id='ref' x='116' y='76' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( cid ) 
-Referred by c_peak_X_s_peak_meta ( cid ) </title></a>
-  <a xlink:href='#c_peaks.mz'><text id='Default.c_peaks.mz' x='67' y='103'>mz</text><title>mz
-real
-mass / charge (average)</title></a>
-<text x='125' y='100' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmin'><text id='Default.c_peaks.mzmin' x='67' y='119'>mzmin</text><title>mzmin
-real
-m/z minimum</title></a>
-<text x='125' y='116' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmax'><text id='Default.c_peaks.mzmax' x='67' y='135'>mzmax</text><title>mzmax
-real
-m/z maximum</title></a>
-<text x='125' y='132' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rt'><text id='Default.c_peaks.rt' x='67' y='151'>rt</text><title>rt
-real
-Retention time (average)</title></a>
-<text x='125' y='148' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmin'><text id='Default.c_peaks.rtmin' x='67' y='167'>rtmin</text><title>rtmin
-real
-Retention time minimum</title></a>
-<text x='125' y='164' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmax'><text id='Default.c_peaks.rtmax' x='67' y='183'>rtmax</text><title>rtmax
-real
-Retention time maximum</title></a>
-<text x='125' y='180' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks._into'><text id='Default.c_peaks._into' x='67' y='199'>_into</text><title>_into
-real
-Integrated (original) intensity of the peak (xcms)</title></a>
-<text x='125' y='196' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.intf'><text id='Default.c_peaks.intf' x='67' y='215'>intf</text><title>intf
-real
-Integrated intensity of the filtered peak (xcms)</title></a>
-<text x='125' y='212' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxo'><text id='Default.c_peaks.maxo' x='67' y='231'>maxo</text><title>maxo
-real
-Maximum intensity of the peak (xcms)</title></a>
-<text x='125' y='228' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxf'><text id='Default.c_peaks.maxf' x='67' y='247'>maxf</text><title>maxf
-real
-Maximum intensity of the filtered peak (xcms)</title></a>
-<text x='125' y='244' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.sn'><text id='Default.c_peaks.sn' x='67' y='263'>sn</text><title>sn
-real
-Signal to noise ratio of the peak (xcms)</title></a>
-<text x='125' y='260' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.fileid'><text id='Default.c_peaks.fileid' x='67' y='279' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])">fileid</text><title>fileid
-integer
-fileinfo id</title></a>
-<a xlink:href='#c_peaks.fileid'><use id='fk' x='116' y='268' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
 
 <!-- == Table 'c_peak_X_c_peak_group' == -->
 <rect class='entity' x='64' y='392' width='144' height='128' rx='8' ry='8' style='stroke:none'/>
@@ -380,53 +330,6 @@ integer
 c_peak id</title></a>
 <a xlink:href='#c_peak_X_c_peak_group.cid'><use id='fk' x='196' y='492' xlink:href='#fk'/><title>References c_peaks ( cid ) </title></a>
 
-<!-- == Table 'c_peak_groups' == -->
-<rect class='entity' x='304' y='360' width='96' height='256' rx='8' ry='8' style='stroke:none'/>
-<path d='M 304 388 L 304 368 Q 304 360 312 360 L 392 360 Q 400 360 400 368 L 400 388 L304 388 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='304' y='360' width='96' height='256' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#c_peak_groups'><text x='309' y='380'>c_peak_groups</text><title>Table Default.c_peak_groups
-Table for chromatography peak groups. Details the grouped feature across individual chromotographic peaks (c_peaks).</title></a>
-  <use id='nn' x='306' y='397' xlink:href='#nn'/><a xlink:href='#c_peak_groups.grpid'><use id='pk' x='306' y='396' xlink:href='#pk'/><title>Pk pk_c_peak_groups ( grpid ) </title></a>
-<a xlink:href='#c_peak_groups.grpid'><text id='Default.c_peak_groups.grpid' x='323' y='407' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid'])">grpid</text><title>grpid
-* integer</title></a>
-<a xlink:href='#c_peak_groups.grpid'><use id='ref' x='388' y='396' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( grpid ) </title></a>
-  <a xlink:href='#c_peak_groups.mz'><text id='Default.c_peak_groups.mz' x='323' y='423'>mz</text><title>mz
-real
-m/z average</title></a>
-<text x='397' y='420' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmin'><text id='Default.c_peak_groups.mzmin' x='323' y='439'>mzmin</text><title>mzmin
-real
-m/z minimum</title></a>
-<text x='397' y='436' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmax'><text id='Default.c_peak_groups.mzmax' x='323' y='455'>mzmax</text><title>mzmax
-real
-m/z maximum</title></a>
-<text x='397' y='452' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rt'><text id='Default.c_peak_groups.rt' x='323' y='471'>rt</text><title>rt
-real
-Retention time average</title></a>
-<text x='397' y='468' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmin'><text id='Default.c_peak_groups.rtmin' x='323' y='487'>rtmin</text><title>rtmin
-real
-Retention time minimum (note that this is minimum of the average individual chromatography peak e.g. the miminum of c_peak--&gt;rt not c_peak--&gt;rtmin)</title></a>
-<text x='397' y='484' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmax'><text id='Default.c_peak_groups.rtmax' x='323' y='503'>rtmax</text><title>rtmax
-real
-Retention time maximum (note that this is maximum of the average individual chromatography peak e.g. c_peak--&gt;rt not c_peak--&gt;rtmax)</title></a>
-<text x='397' y='500' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.npeaks'><text id='Default.c_peak_groups.npeaks' x='323' y='519'>npeaks</text><title>npeaks
-real
-Number of peaks grouped</title></a>
-<text x='397' y='516' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.sample'><text id='Default.c_peak_groups.sample' x='323' y='535'>sample</text><title>sample
-real
-Sample id (as determined by XCMS)</title></a>
-<text x='397' y='532' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_2'><text id='Default.c_peak_groups.LCMSMS_2' x='323' y='551'>LCMSMS_2</text><title>LCMSMS_2
-real
-Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='548' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_1'><text id='Default.c_peak_groups.LCMSMS_1' x='323' y='567'>LCMSMS_1</text><title>LCMSMS_1
-real
-Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='564' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_2'><text id='Default.c_peak_groups.LCMS_2' x='323' y='583'>LCMS_2</text><title>LCMS_2
-real
-Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='580' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_1'><text id='Default.c_peak_groups.LCMS_1' x='323' y='599'>LCMS_1</text><title>LCMS_1
-real
-Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='596' text-anchor='end' class='colType'>#</text>
 <!-- == Table 's_peaks' == -->
 <rect class='entity' x='624' y='488' width='64' height='144' rx='8' ry='8' style='stroke:none'/>
 <path d='M 624 516 L 624 496 Q 624 488 632 488 L 680 488 Q 688 488 688 496 L 688 516 L624 516 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
@@ -454,6 +357,28 @@ integer
 s_peak_meta id</title></a>
 <a xlink:href='#s_peaks.pid'><use id='fk' x='676' y='604' xlink:href='#fk'/><title>References s_peak_meta ( pid ) </title></a>
 
+<!-- == Table 'fileinfo' == -->
+<rect class='entity' x='464' y='216' width='80' height='112' rx='8' ry='8' style='stroke:none'/>
+<path d='M 464 244 L 464 224 Q 464 216 472 216 L 536 216 Q 544 216 544 224 L 544 244 L464 244 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='464' y='216' width='80' height='112' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#fileinfo'><text x='482' y='236'>fileinfo</text><title>Table Default.fileinfo
+Table for file information</title></a>
+  <use id='nn' x='466' y='253' xlink:href='#nn'/><a xlink:href='#fileinfo.fileid'><use id='pk' x='466' y='252' xlink:href='#pk'/><title>Pk pk_fileinfo ( fileid ) </title></a>
+<a xlink:href='#fileinfo.fileid'><text id='Default.fileinfo.fileid' x='483' y='263' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid'])">fileid</text><title>fileid
+* integer</title></a>
+<a xlink:href='#fileinfo.fileid'><use id='ref' x='532' y='252' xlink:href='#ref'/><title>Referred by c_peaks ( fileid ) 
+Referred by s_peak_meta ( fileid ) 
+Referred by s_peaks ( fileid ) </title></a>
+  <a xlink:href='#fileinfo.filename'><text id='Default.fileinfo.filename' x='483' y='279'>filename</text><title>filename
+text
+Filename of mass spectrometry file (e.g. mzML file)</title></a>
+<text x='541' y='276' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.filepth'><text id='Default.fileinfo.filepth' x='483' y='295'>filepth</text><title>filepth
+text
+Path to the mass spectrometry file</title></a>
+<text x='541' y='292' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.nm_save'><text id='Default.fileinfo.nm_save' x='483' y='311'>nm_save</text><title>nm_save
+text
+Save the original name (used for Galaxy processing where the name can be replaced)</title></a>
+<text x='541' y='308' text-anchor='end' class='colType'>t</text>
 <!-- == Table 's_peak_meta' == -->
 <rect class='entity' x='672' y='72' width='144' height='320' rx='8' ry='8' style='stroke:none'/>
 <path d='M 672 100 L 672 80 Q 672 72 680 72 L 808 72 Q 816 72 816 80 L 816 100 L672 100 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
@@ -516,28 +441,102 @@ integer
 fileinfo id</title></a>
 <a xlink:href='#s_peak_meta.fileid'><use id='fk' x='804' y='364' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
 
-<!-- == Table 'fileinfo' == -->
-<rect class='entity' x='464' y='216' width='80' height='112' rx='8' ry='8' style='stroke:none'/>
-<path d='M 464 244 L 464 224 Q 464 216 472 216 L 536 216 Q 544 216 544 224 L 544 244 L464 244 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='464' y='216' width='80' height='112' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#fileinfo'><text x='482' y='236'>fileinfo</text><title>Table Default.fileinfo
-Table for file information</title></a>
-  <use id='nn' x='466' y='253' xlink:href='#nn'/><a xlink:href='#fileinfo.fileid'><use id='pk' x='466' y='252' xlink:href='#pk'/><title>Pk pk_fileinfo ( fileid ) </title></a>
-<a xlink:href='#fileinfo.fileid'><text id='Default.fileinfo.fileid' x='483' y='263' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid'])">fileid</text><title>fileid
+<!-- == Table 'c_peaks' == -->
+<rect class='entity' x='48' y='40' width='80' height='256' rx='8' ry='8' style='stroke:none'/>
+<path d='M 48 68 L 48 48 Q 48 40 56 40 L 120 40 Q 128 40 128 48 L 128 68 L48 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='48' y='40' width='80' height='256' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#c_peaks'><text x='63' y='60'>c_peaks</text><title>Table Default.c_peaks
+Table for the individual chromatography peaks from each file</title></a>
+  <use id='nn' x='50' y='77' xlink:href='#nn'/><a xlink:href='#c_peaks.cid'><use id='pk' x='50' y='76' xlink:href='#pk'/><title>Pk pk_c_peaks ( cid ) </title></a>
+<a xlink:href='#c_peaks.cid'><text id='Default.c_peaks.cid' x='67' y='87' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])">cid</text><title>cid
 * integer</title></a>
-<a xlink:href='#fileinfo.fileid'><use id='ref' x='532' y='252' xlink:href='#ref'/><title>Referred by c_peaks ( fileid ) 
-Referred by s_peak_meta ( fileid ) 
-Referred by s_peaks ( fileid ) </title></a>
-  <a xlink:href='#fileinfo.filename'><text id='Default.fileinfo.filename' x='483' y='279'>filename</text><title>filename
-text
-Filename of mass spectrometry file (e.g. mzML file)</title></a>
-<text x='541' y='276' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.filepth'><text id='Default.fileinfo.filepth' x='483' y='295'>filepth</text><title>filepth
-text
-Path to the mass spectrometry file</title></a>
-<text x='541' y='292' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.nm_save'><text id='Default.fileinfo.nm_save' x='483' y='311'>nm_save</text><title>nm_save
-text
-Save the original name (used for Galaxy processing where the name can be replaced)</title></a>
-<text x='541' y='308' text-anchor='end' class='colType'>t</text>
+<a xlink:href='#c_peaks.cid'><use id='ref' x='116' y='76' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( cid ) 
+Referred by c_peak_X_s_peak_meta ( cid ) </title></a>
+  <a xlink:href='#c_peaks.mz'><text id='Default.c_peaks.mz' x='67' y='103'>mz</text><title>mz
+real
+mass / charge (average)</title></a>
+<text x='125' y='100' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmin'><text id='Default.c_peaks.mzmin' x='67' y='119'>mzmin</text><title>mzmin
+real
+m/z minimum</title></a>
+<text x='125' y='116' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmax'><text id='Default.c_peaks.mzmax' x='67' y='135'>mzmax</text><title>mzmax
+real
+m/z maximum</title></a>
+<text x='125' y='132' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rt'><text id='Default.c_peaks.rt' x='67' y='151'>rt</text><title>rt
+real
+Retention time (average)</title></a>
+<text x='125' y='148' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmin'><text id='Default.c_peaks.rtmin' x='67' y='167'>rtmin</text><title>rtmin
+real
+Retention time minimum</title></a>
+<text x='125' y='164' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmax'><text id='Default.c_peaks.rtmax' x='67' y='183'>rtmax</text><title>rtmax
+real
+Retention time maximum</title></a>
+<text x='125' y='180' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks._into'><text id='Default.c_peaks._into' x='67' y='199'>_into</text><title>_into
+real
+Integrated (original) intensity of the peak (xcms)</title></a>
+<text x='125' y='196' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.intf'><text id='Default.c_peaks.intf' x='67' y='215'>intf</text><title>intf
+real
+Integrated intensity of the filtered peak (xcms)</title></a>
+<text x='125' y='212' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxo'><text id='Default.c_peaks.maxo' x='67' y='231'>maxo</text><title>maxo
+real
+Maximum intensity of the peak (xcms)</title></a>
+<text x='125' y='228' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxf'><text id='Default.c_peaks.maxf' x='67' y='247'>maxf</text><title>maxf
+real
+Maximum intensity of the filtered peak (xcms)</title></a>
+<text x='125' y='244' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.sn'><text id='Default.c_peaks.sn' x='67' y='263'>sn</text><title>sn
+real
+Signal to noise ratio of the peak (xcms)</title></a>
+<text x='125' y='260' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.fileid'><text id='Default.c_peaks.fileid' x='67' y='279' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])">fileid</text><title>fileid
+integer
+fileinfo id</title></a>
+<a xlink:href='#c_peaks.fileid'><use id='fk' x='116' y='268' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
+
+<!-- == Table 'c_peak_groups' == -->
+<rect class='entity' x='304' y='360' width='96' height='256' rx='8' ry='8' style='stroke:none'/>
+<path d='M 304 388 L 304 368 Q 304 360 312 360 L 392 360 Q 400 360 400 368 L 400 388 L304 388 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='304' y='360' width='96' height='256' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#c_peak_groups'><text x='309' y='380'>c_peak_groups</text><title>Table Default.c_peak_groups
+Table for chromatography peak groups. Details the grouped feature across individual chromotographic peaks (c_peaks).</title></a>
+  <use id='nn' x='306' y='397' xlink:href='#nn'/><a xlink:href='#c_peak_groups.grpid'><use id='pk' x='306' y='396' xlink:href='#pk'/><title>Pk pk_c_peak_groups ( grpid ) </title></a>
+<a xlink:href='#c_peak_groups.grpid'><text id='Default.c_peak_groups.grpid' x='323' y='407' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid'])">grpid</text><title>grpid
+* integer</title></a>
+<a xlink:href='#c_peak_groups.grpid'><use id='ref' x='388' y='396' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( grpid ) </title></a>
+  <a xlink:href='#c_peak_groups.mz'><text id='Default.c_peak_groups.mz' x='323' y='423'>mz</text><title>mz
+real
+m/z average</title></a>
+<text x='397' y='420' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmin'><text id='Default.c_peak_groups.mzmin' x='323' y='439'>mzmin</text><title>mzmin
+real
+m/z minimum</title></a>
+<text x='397' y='436' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmax'><text id='Default.c_peak_groups.mzmax' x='323' y='455'>mzmax</text><title>mzmax
+real
+m/z maximum</title></a>
+<text x='397' y='452' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rt'><text id='Default.c_peak_groups.rt' x='323' y='471'>rt</text><title>rt
+real
+Retention time average</title></a>
+<text x='397' y='468' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmin'><text id='Default.c_peak_groups.rtmin' x='323' y='487'>rtmin</text><title>rtmin
+real
+Retention time minimum (note that this is minimum of the average individual chromatography peak e.g. the miminum of c_peak--&gt;rt not c_peak--&gt;rtmin)</title></a>
+<text x='397' y='484' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmax'><text id='Default.c_peak_groups.rtmax' x='323' y='503'>rtmax</text><title>rtmax
+real
+Retention time maximum (note that this is maximum of the average individual chromatography peak e.g. c_peak--&gt;rt not c_peak--&gt;rtmax)</title></a>
+<text x='397' y='500' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.npeaks'><text id='Default.c_peak_groups.npeaks' x='323' y='519'>npeaks</text><title>npeaks
+real
+Number of peaks grouped</title></a>
+<text x='397' y='516' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.sample'><text id='Default.c_peak_groups.sample' x='323' y='535'>sample</text><title>sample
+real
+Sample id (as determined by XCMS)</title></a>
+<text x='397' y='532' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_2'><text id='Default.c_peak_groups.LCMSMS_2' x='323' y='551'>LCMSMS_2</text><title>LCMSMS_2
+real
+Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
+<text x='397' y='548' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_1'><text id='Default.c_peak_groups.LCMSMS_1' x='323' y='567'>LCMSMS_1</text><title>LCMSMS_1
+real
+Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
+<text x='397' y='564' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_2'><text id='Default.c_peak_groups.LCMS_2' x='323' y='583'>LCMS_2</text><title>LCMS_2
+real
+Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
+<text x='397' y='580' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_1'><text id='Default.c_peak_groups.LCMS_1' x='323' y='599'>LCMS_1</text><title>LCMS_1
+real
+Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
+<text x='397' y='596' text-anchor='end' class='colType'>#</text>
 </g></svg></div>
 
 

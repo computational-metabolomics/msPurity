@@ -5,6 +5,10 @@ date: "`r Sys.Date()`"
 output: 
   BiocStyle::html_document:
     toc: true
+    toc_depth: 3  
+    number_sections: true  
+    toc_float: true
+  
 bibliography: mspurity.bib
 vignette: >
   %\VignetteIndexEntry{msPurity}
