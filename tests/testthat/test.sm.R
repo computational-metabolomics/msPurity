@@ -5,7 +5,7 @@ test_that("checking spectral matching functions (massbank)", {
   library(msPurity)
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  xset <- xcms::xcmsSet(msmsPths, BPPARAM = BiocParallel::SnowParam())
+  xset <- xcms::xcmsSet(msmsPths)
   xset <- xcms::group(xset)
   xset <- xcms::retcor(xset)
   xset <- xcms::group(xset)
