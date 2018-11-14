@@ -11,10 +11,11 @@ msPurity: Package to assess precursor ion purity and perform spectral matching
 
 **Bioconductor (release)**
 
-|Bioconductor release| |Bioconductor devel| |Bioconductor downloads| 
+|Bioconductor release availability| |Bioconductor release downloads| 
 
 **Bioconductor (devel)**
 
+|Bioconductor devel availability| |Bioconductor devel downloads| 
 
 ------------
 Which version to use?
@@ -105,11 +106,19 @@ Ref
 [2] Lawson, T.N., Weber, R.J., Jones, M.R., Chetwynd, A.J., Rodriguez Blanco, G.A., Di Guida, R., Viant, M.R. and Dunn, W.B., 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry.
 
 
-.. |Bioconductor downloads| image:: http://www.bioconductor.org/shields/downloads/release/msPurity.svg
+.. |Bioconductor release downloads| image:: http://www.bioconductor.org/shields/downloads/release/msPurity.svg
     :target: https://bioconductor.org/packages/msPurity
 
-.. |Bioconductor devel| image:: http://www.bioconductor.org/shields/availability/3.8/msPurity.svg
+.. |Bioconductor devel downloads| image:: http://www.bioconductor.org/shields/downloads/devel/msPurity.svg
     :target: https://bioconductor.org/packages/devel/msPurity
+
+
+.. |Bioconductor release availability| image:: http://www.bioconductor.org/shields/availability/3.8/msPurity.svg
+    :target: https://bioconductor.org/packages/release/bioc/html/msPurity.html#archives
+
+.. |Bioconductor devel availability| image:: http://www.bioconductor.org/shields/availability/3.9/msPurity.svg
+    :target: https://bioconductor.org/packages/devel/bioc/html/msPurity.html#archives
+
 
 
 .. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msp2db.svg?style=flat&maxAge=3600&label=Travis-CI
