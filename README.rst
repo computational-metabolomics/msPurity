@@ -106,6 +106,27 @@ Ref
 [2] Lawson, T.N., Weber, R.J., Jones, M.R., Chetwynd, A.J., Rodriguez Blanco, G.A., Di Guida, R., Viant, M.R. and Dunn, W.B., 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry.
 
 
+.. |Bioconductor release availability| image:: https://bioconductor.org/shields/availability/3.8/msPurity.svg
+   :target: https://bioconductor.org/packages/release/bioc/html/msPurity.html#archives
+
+
+.. |Bioconductor devel availability| image:: https://bioconductor.org/shields/availability/3.9/msPurity.svg
+   :target: https://bioconductor.org/packages/devel/bioc/html/msPurity.html#archives
+   
+.. |Bioconductor release downloads| image:: https://bioconductor.org/shields/downloads/release/msPurity.svg
+   :target: http://bioconductor.org/packages/stats/bioc/msPurity/
+
+.. |Bioconductor devel downloads| image:: https://bioconductor.org/shields/downloads/devel/msPurity.svg
+   :target: http://bioconductor.org/packages/stats/bioc/msPurity/
+
+
+.. |Bioconductor release build results| image:: https://bioconductor.org/shields/build/devel/bioc/msPurity.svg
+   :target: http://bioconductor.org/checkResults/release/bioc-LATEST/msPurity/
+
+.. |Bioconductor release build results| image:: https://bioconductor.org/shields/build/devel/bioc/msPurity.svg
+   :target: http://bioconductor.org/checkResults/devel/bioc-LATEST/msPurity/
+   
+   
 
 .. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msPurity.svg?style=flat&maxAge=3600&label=Travis-CI
    :target: https://travis-ci.org/computational-metabolomics/msPurity
@@ -119,7 +140,7 @@ Ref
 .. |Bioconda| image:: https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat&maxAge=3600
    :target: http://bioconda.github.io/recipes/msPurity/README.html
 
-.. |License| image:: https://img.shields.io/pypi/l/mzml2isa.svg?style=flat&maxAge=3600
+.. |License| image:: https://img.shields.io/badge/licence-GNU_v3-teal.svg?style=flat&maxAge=3600
    :target: https://www.gnu.org/licenses/gpl-3.0.html
 
 .. |DOI| image:: https://img.shields.io/badge/DOI-10.18129/B9.bioc.msPurity-teal.svg?style=flat&maxAge=3600
@@ -128,5 +149,5 @@ Ref
 .. |Paper| image:: https://img.shields.io/badge/paper-Analytical_Chemistry-teal.svg?style=flat&maxAge=3600
    :target: https://10.1021/acs.analchem.6b04358.
 
-.. |codecov| image:: https://codecov.io/gh/computational-metabolomics/msp2db/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/computational-metabolomics/msp2db
+.. |codecov| image:: https://codecov.io/gh/computational-metabolomics/msPurity/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/computational-metabolomics/msPurity
