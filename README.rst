@@ -6,7 +6,7 @@ msPurity: Package to assess precursor ion purity and perform spectral matching
 
 **General:**
 
-|Git| |Build Status (Travis)| |Build Status (AppVeyor)| |License| |codecov|
+|Git| |Build Status (Travis)| |Build Status (AppVeyor)| |License|
 
 
 **Bioconductor (release):**
@@ -112,7 +112,7 @@ Ref
 
 .. |Bioconductor devel availability| image:: https://bioconductor.org/shields/availability/3.9/msPurity.svg
    :target: https://bioconductor.org/packages/devel/bioc/html/msPurity.html#archives
-   
+
 .. |Bioconductor release downloads| image:: https://bioconductor.org/shields/downloads/release/msPurity.svg
    :target: http://bioconductor.org/packages/stats/bioc/msPurity/
 
@@ -125,8 +125,8 @@ Ref
 
 .. |Bioconductor release build results| image:: https://bioconductor.org/shields/build/devel/bioc/msPurity.svg
    :target: http://bioconductor.org/checkResults/devel/bioc-LATEST/msPurity/
-   
-   
+
+
 
 .. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msPurity.svg?style=flat&maxAge=3600&label=Travis-CI
    :target: https://travis-ci.org/computational-metabolomics/msPurity
@@ -144,10 +144,7 @@ Ref
    :target: https://www.gnu.org/licenses/gpl-3.0.html
 
 .. |DOI| image:: https://img.shields.io/badge/DOI-10.18129/B9.bioc.msPurity-teal.svg?style=flat&maxAge=3600
-   :target: https://10.18129/B9.bioc.msPurity 
+   :target: https://10.18129/B9.bioc.msPurity
 
 .. |Paper| image:: https://img.shields.io/badge/paper-Analytical_Chemistry-teal.svg?style=flat&maxAge=3600
    :target: https://10.1021/acs.analchem.6b04358.
-
-.. |codecov| image:: https://codecov.io/gh/computational-metabolomics/msPurity/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/computational-metabolomics/msPurity
