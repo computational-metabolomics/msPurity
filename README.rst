@@ -71,20 +71,8 @@ Github
 
   library(devtools)
   library(testthat)
-
-  t <- try(install_github('Viant-Metabolomics/msPurity'))
-
-  if("try-error" %in% class(t)){
-    print("INSTALLATION FAILED!")
-  } else {
-    print("INSTALLATION SUCCESS!")
-    print("PERFORM UNIT TESTING")
-    # Perform unit test to make sure the package is working as expected
-    tp <- test_package('msPurity')
-    print(tp)
-  }
-
-
+  install_github('computational-metabolomics/msPurity')
+ 
 
 
 ------------
