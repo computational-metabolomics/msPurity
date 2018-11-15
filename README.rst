@@ -115,7 +115,7 @@ Ref
    :target: https://github.com/computational-metabolomics/msPurity
 
 .. |Bioconda| image:: https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat&maxAge=3600
-   :target: http://bioconda.github.io/recipes/msPurity/README.html
+   :target: https://bioconda.github.io/recipes/bioconductor-mspurity/README.html
 
 .. |License| image:: https://img.shields.io/badge/licence-GNU_v3-teal.svg?style=flat&maxAge=3600
    :target: https://www.gnu.org/licenses/gpl-3.0.html
