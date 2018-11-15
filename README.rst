@@ -97,10 +97,10 @@ Ref
    :target: http://bioconductor.org/packages/stats/bioc/msPurity/
 
 
-.. |Bioconductor release build results| image:: https://bioconductor.org/shields/build/devel/bioc/msPurity.svg
+.. |Bioconductor release build results| image:: https://bioconductor.org/shields/build/release/bioc/msPurity.svg
    :target: http://bioconductor.org/checkResults/release/bioc-LATEST/msPurity/
 
-.. |Bioconductor release build results| image:: https://bioconductor.org/shields/build/devel/bioc/msPurity.svg
+.. |Bioconductor devel build results| image:: https://bioconductor.org/shields/build/devel/bioc/msPurity.svg
    :target: http://bioconductor.org/checkResults/devel/bioc-LATEST/msPurity/
 
 
