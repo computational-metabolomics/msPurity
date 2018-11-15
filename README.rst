@@ -120,7 +120,7 @@ Ref
    :target: https://www.gnu.org/licenses/gpl-3.0.html
 
 .. |DOI| image:: https://img.shields.io/badge/DOI-10.18129/B9.bioc.msPurity-teal.svg?style=flat&maxAge=3600
-   :target: https://10.18129/B9.bioc.msPurity
+   :target: https://doi.org/doi:10.18129/B9.bioc.msPurity
 
 .. |Paper| image:: https://img.shields.io/badge/paper-Analytical_Chemistry-teal.svg?style=flat&maxAge=3600
-   :target: https://10.1021/acs.analchem.6b04358.
+   :target: http://doi.org/10.1021/acs.analchem.6b04358
