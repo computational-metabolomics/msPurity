@@ -6,9 +6,10 @@
 \alias{dimsPredictPurity}
 \title{Using purityD object, assess anticipated purity from a DI-MS run}
 \usage{
-\S4method{dimsPredictPurity}{purityD}(Object, ppm = 1.5, minOffset = 0.5,
-  maxOffset = 0.5, iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05,
-  sampleOnly = FALSE, isotopes = TRUE, im = NULL)
+\S4method{dimsPredictPurity}{purityD}(Object, ppm = 1.5,
+  minOffset = 0.5, maxOffset = 0.5, iwNorm = FALSE,
+  iwNormFun = NULL, ilim = 0.05, sampleOnly = FALSE,
+  isotopes = TRUE, im = NULL)
 }
 \arguments{
 \item{Object}{object = purityD object}

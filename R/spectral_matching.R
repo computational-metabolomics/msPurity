@@ -3,11 +3,11 @@
 #' @description
 #' Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
 #'
-#' @param target_db_pth character; Path of the database of targets that will be searched against the library spectra. Generated
+#' @param target_db_pth character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
 #'                       either from frag4feature or from create_database functions.
 #' @param library_db_pth character [optional]; path to library spectral SQLite database.
 #'                                             Defaults to msPurityData package data.
-#' @param ra_thres_t numeric; Relative abundance threshold for target spectra
+#' @param ra_thres_t numeric; Relative abundance threshold for target (query) spectra
 #'                      (Peaks below this RA threshold will be excluded)
 #' @param ra_thres_l numeric; Relative abundance threshold for library spectra
 #' @param cores numeric; Number of cores to use

@@ -5,6 +5,10 @@ date: "`r Sys.Date()`"
 output: 
   BiocStyle::html_document:
     toc: true
+    toc_depth: 3  
+    number_sections: true  
+    toc_float: true
+  
 bibliography: mspurity.bib
 vignette: >
   %\VignetteIndexEntry{msPurity}
@@ -14,7 +18,7 @@ vignette: >
 
 # Introduction
 
-The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. 
+The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. See associated paper [@Lawson2017]. 
 
 What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer
 
@@ -32,6 +36,7 @@ The package has been developed to be used with DI-MS or LC-MS data and has been 
 Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function `purityA` will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (`@puritydf`).
 
 The isolation widths will be determined automatically from the mzML file. For some mzML files this is not recorded and in these cases the offsets can be given as a parameter.
+
 
 In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da (this can be overwritten with the `offsets` argument)
 
@@ -58,7 +63,7 @@ The purity dataframe (`pa@puritydf`) consists of the following columns:
 
 
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 library(msPurity)
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
@@ -66,7 +71,7 @@ msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityDat
 
 ```{r}
 pa <- purityA(msmsPths)
-print(head(pa@puritydf))
+print(pa@puritydf[1:3,])
 ```
 
 
@@ -74,8 +79,8 @@ print(head(pa@puritydf))
 The MS/MS spectra can be assigned to an XCMS grouped feature using the `frag4feature` function. 
 
 First an xcmsSet object of the same files is required
-#```{r results='hide', message=FALSE, warning=FALSE}
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
+
 library(xcms)
 
 xset <- xcms::xcmsSet(msmsPths)
@@ -84,7 +89,7 @@ xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 ```
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 pa <- frag4feature(pa, xset)
 ```
 
@@ -110,14 +115,14 @@ The slot `grped_df` is a dataframe of the grouped XCMS features linked to a refe
 * __inPurity__: The interpolated purity score
 
 ```{r}
-print(head(pa@grped_df))
+print(head(pa@grped_df[1:3]))
 ```
 
 
 The slot `grped_ms2` is a list of the associated fragmentation spectra for the grouped features. 
 
 ```{r}
-print(pa@grped_ms2[2:3])
+print(pa@grped_ms2[2])
 ```
 
 # Assessing precursor purity of anticipated isolation windows for MS2 spectra
@@ -141,7 +146,7 @@ The slot `predictions` provides the anticipated (predicted) purity scores for ea
 * __mz__: _m/z_ of the XCMS grouped feature
 
 _XCMS run on an LC-MS dataset_
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 xset <- xcms::xcmsSet(msPths)
 xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)
@@ -152,7 +157,7 @@ _Perform purity calculations_
 ```{r}
 ppLCMS <- purityX(xset, offsets=c(0.5, 0.5), xgroups = c(1, 2))
 
-print(head(ppLCMS@predictions))
+print(ppLCMS@predictions[1:3,])
 ```
 
 
@@ -182,7 +187,7 @@ The purityD constructor requires a dataframe consisting of the following columns
 * class [for grouping samples together]
 * polarity [optional]
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE)
 ppDIMS <- purityD(inDF, mzML=TRUE)
@@ -191,17 +196,17 @@ ppDIMS <- purityD(inDF, mzML=TRUE)
 __Average spectra__:
 The default averaging will use a Hierarchal clustering approach. Noise filtering is also performed here.
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 ppDIMS <- averageSpectra(ppDIMS, snMeth = "median", snthr = 5)
 ```
 
 __Filter by RSD and Intensity__
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 ppDIMS <- filterp(ppDIMS, thr=5000, rsd = 10)
 ```
 
 __Subtract blank__
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 ppDIMS <- subtract(ppDIMS)
 ```
 
@@ -217,7 +222,7 @@ print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))
 
 The data processing steps carried out through purityPD can be bypassed if the peaks (_m/z_ values) of interest are already known. The function `dimsPredictPuritySingle()` can be used to predict the purity of a list of _m/z_ values in a chosen mzML file.
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 mzpth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
 predicted <- dimsPredictPuritySingle(filepth = mzpth, mztargets = c(111.0436, 113.1069))
 print(predicted)

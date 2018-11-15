@@ -1,0 +1,818 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<!DOCTYPE html>
+<html lang='en-us' xmlns='http://www.w3.org/1999/xhtml' >
+<head>
+<title>Library database schema</title>
+<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css" crossorigin="anonymous" />
+<link rel="shortcut icon" href="https://www.dbschema.com/images/favicon.ico">
+<style type='text/css'>
+body {
+    font-family: 'Segoe UI', 'Lucida sans', Dialog;
+    font-size: 13px;
+    background-color:#f5f5f5;
+    margin: 10px;
+}
+</style>
+</head>
+
+<body>
+<div class='svg-container'>
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'   width='720' height='958' viewBox='0 0 720 958' >
+  <script type='text/ecmascript'>
+  <![CDATA[
+  function hghl(el) { for ( var i in el ){ var elem = document.getElementById(el[i]); if ( elem != null ) elem.setAttribute('class','highlight');  }  }
+  function uhghl(el) { for ( var i in el ){ var elem = document.getElementById(el[i]); if ( elem != null ) elem.setAttribute('class','scene'); }  } 
+  ]]>
+  </script> 
+
+<style type='text/css'>
+  text                { fill:#000000; font-family: Candara, 'Trebuchet MS', Dialog; font-size:12px; }
+  a text:hover        { fill:#94025f; text-shadow: 0px 0px 6px #d0ce00; font-size:13px; }
+  text.highlight      { fill:#94025f; text-shadow: 0px 0px 4px #eac533; font-size:13px; }
+  text.colType        { fill:#b3b3b3; }
+  text.relName        { fill:#b09c7c; }
+  path                { stroke:#5c554f; stroke-width:1.15; fill:none; }
+  path                { stroke:#5c554f; stroke-width:1.15; fill:none;}
+  path.virtual        { stroke:#b7642d; }
+  path.logo           { fill:#fbeac0;fill-opacity:1;stroke-width:0.3;stroke:#222222; }
+  path.dotted         { stroke-dasharray:4,2; }
+  path.scene          { stroke-width:10; opacity:0;}
+  path.highlight      { stroke-width:5; stroke:#c1a662; opacity:0.6;}
+  rect.entity         { fill:#ffffff; stroke:#aaa; stroke-width:1;shape-rendering:crispEdges; }
+  line.delim          { stroke-width:1; shape-rendering:crispEdges; }
+  text.callout        { fill:#000000; font-family: Candara, 'Trebuchet MS', Dialog; font-size:12px; }
+  rect.callout        { fill:url(#calloutGradient); stroke:#bebdbd; stroke-width:0.5; }
+  rect.grp            { stroke:#b1b1b1; stroke-width:1.7; opacity:0.8; }
+  path.st0            { fill:#ececec;fill-opacity:1;stroke-width:0.6;stroke:#d0d0d0; }
+</style>
+<defs>
+  <pattern id='layoutBgA' patternUnits='userSpaceOnUse'  width='10' height='20' x='0' y='0' viewBox='0 0 5 10'>  
+     <line x1='-2' y1='1' x2='7' y2='10' stroke='#f3f3f3' stroke-width='.5'/>  
+     <line x1='-2' y1='6' x2='7' y2='15' stroke='#f3f3f3' stroke-width='.5'/>  
+     <line x1='-2' y1='-4' x2='7' y2='5' stroke='#f3f3f3' stroke-width='.5'/>  
+  </pattern>  
+  <radialGradient id='layoutBgB' gradientUnits='userSpaceOnUse' cx='50%' cy='50%' r='75%' fx='46%' fy='22%'>
+     <stop offset='0%' stop-opacity='.2' stop-color='#f5f5f5' />  
+     <stop offset='100%' stop-color='#efefef' />  
+  </radialGradient>
+  <pattern id='layoutBgTr' patternUnits='userSpaceOnUse'  width='300' height='300' x='0' y='0' viewBox='0 0 300 300'>  
+  <path class='st0' d='m 62.011835,91.267143 c 3.536475,3.175214 2.262669,8.705999 -1.637711,11.015197 -3.594697,5.8423 -6.34682,-2.892623 -9.715478,-4.653898 -5.609222,-2.838926 2.050802,-6.680123 4.77004,-8.319046 2.334696,-0.724067 4.935143,0.312302 6.583149,1.957747 z m -2.720492,2.538595 c -2.698397,-3.517732 -9.282815,1.269287 -3.69635,3.568637 2.765331,5.605665 7.052809,-0.56184 3.69635,-3.568637 z' />
+  <path class='st0' d='m 72.25864,84.624638 c 4.108046,3.143003 -0.737059,6.895259 -1.994918,8.323564 -3.586718,5.561143 -6.495079,-4.197379 -10.07759,-5.582178 -4.443422,-1.088878 1.349298,-7.249213 2.503526,-2.503449 2.464639,4.517161 2.304019,-3.70697 6.291113,-1.995914 1.280083,0.137865 2.410691,0.864819 3.277869,1.757977 z m -2.646109,2.323242 c -4.797162,-3.078383 -2.810517,6.305507 0.515161,1.990646 0.296432,-0.688582 0.01209,-1.493412 -0.515161,-1.990646 z' />
+  <path class='st0' d='m 78.230641,79.436735 c 4.142121,3.027466 -2.020102,10.435276 -3.450543,5.477315 3.306312,-5.248112 -9.186019,-2.220094 -5.805994,-8.77679 -0.544141,-3.93011 6.797826,-2.102227 3.386015,0.245477 -0.181085,2.915838 4.637371,1.019311 5.870522,3.053982 z' />
+  <path class='st0' d='m 82.744502,72.597397 c -4.901605,1.926521 1.146497,6.285555 2.559694,2.225783 6.21817,3.539297 -6.640186,8.416664 -7.590325,1.997457 -2.24365,-2.914883 4.026676,-10.148618 5.030631,-4.22324 z' />
+  <path class='st0' d='m 90.727458,64.259158 c 1.583987,1.690029 3.321317,3.2696 4.81267,5.026353 -2.535706,6.849794 -6.445583,-5.918773 -8.388458,-0.167017 0.782768,2.03426 5.877405,3.752079 2.670979,5.711199 -3.315119,1.519161 -5.782422,-5.157931 -8.858893,-6.780537 -4.229842,-1.139816 1.510134,-7.074128 2.586227,-2.385939 3.141198,5.495193 1.840537,-5.598295 7.177489,-1.404062 z' />
+  <path class='st0' d='m 99.622027,58.374253 c 1.493293,1.9548 -6.281936,7.024659 -0.885258,4.740447 0.386238,-4.434477 6.131941,-1.133173 2.175851,1.618005 -4.421491,6.12739 -13.666659,-3.151506 -7.058299,-7.136537 1.785129,-1.119329 4.348209,-0.743179 5.767706,0.778085 z m -2.900824,1.89746 c -3.608188,-2.208543 -2.280489,5.00803 -0.12563,0.329531 z' />
+  <path class='st0' d='m 115.18023,50.570441 c -1.61703,5.201678 -4.6204,-0.364502 -7.01598,-1.749619 -4.40977,2.122562 4.89641,4.913939 1.89606,7.018157 -2.48061,3.877635 -4.11404,-4.060614 -7.01192,-2.6391 -1.76318,3.107252 7.28394,6.252304 0.87346,7.876177 -1.74515,-2.956649 -9.055498,-5.610518 -3.950378,-8.66062 1.696478,1.897023 1.770418,-5.43503 5.347308,-3.072411 -0.44014,-5.474701 6.11995,-4.950882 7.7846,-0.815355 0.69076,0.682329 1.39587,1.351469 2.07685,2.042771 z' />
+  <path class='st0' d='m 120.54891,39.417125 c 2.50681,1.334124 4.80466,4.941837 0.75044,5.297362 -0.46414,1.89865 -5.25369,5.602652 -8.01742,1.815475 -3.87345,-2.809139 -0.0676,-7.603869 2.3036,-8.133924 1.6795,-3.853018 3.16703,-1.199465 4.96338,1.021087 z m -2.2464,2.175828 c -4.8049,-2.992167 -3.08987,6.380358 0.42374,2.036159 0.33052,-0.677508 0.12099,-1.525836 -0.42374,-2.036159 z' />
+  <path class='st0' d='m 128.50836,24.06821 c -5.10403,3.035506 3.20535,6.383175 5.05938,9.450276 -0.91853,2.95886 -4.06493,3.650723 -5.34691,0.265618 -2.25715,-2.089033 -4.65672,-6.948595 -7.07024,-2.584686 -4.71758,-3.764394 3.81217,-5.812054 5.12382,-9.226328 0.75738,0.677487 1.38637,1.498638 2.23389,2.095175 z' />
+  <path class='st0' d='m 137.14366,22.299812 c -3.09615,2.259885 0.71537,4.412454 1.99042,6.435866 -3.08975,5.080354 -5.91384,-2.98648 -8.92144,-4.094939 1.44369,-3.219573 3.3497,-1.335928 4.27156,-4.41058 0.97822,-0.894325 1.75044,1.871047 2.65946,2.069653 z' />
+  <path class='st0' d='m 136.85093,14.890174 c 2.31562,5.283511 -7.17975,1.771993 -1.29675,-0.475107 l 0.7108,0.08973 z m 4.867,5.317354 c 2.56912,1.439678 4.26517,4.725219 0.30678,5.233637 -1.56592,-3.098864 -9.51683,-5.749448 -3.64502,-8.633714 1.17746,0.325095 2.15375,2.591149 3.33824,3.400077 z' />
+  <path class='st0' d='m 149.95578,11.976423 c 2.50679,1.334142 4.80455,4.94192 0.75041,5.297394 -0.4641,1.898604 -5.25368,5.602645 -8.0174,1.81545 -3.87347,-2.80918 -0.0676,-7.603844 2.30366,-8.133968 1.67949,-3.8530525 3.16695,-1.1993573 4.96333,1.021124 z m -2.24641,2.175828 c -4.80489,-2.992177 -3.08986,6.380343 0.42374,2.036167 0.33055,-0.677518 0.121,-1.52585 -0.42374,-2.036167 z' />
+  <path class='st0' d='m 153.26135,7.538431 c 2.60497,1.5799548 6.03999,5.944272 1.08117,6.050232 -2.53319,-3.231828 -7.20316,-6.4304525 -8.84748,-9.4582682 1.89121,-2.8664883 3.78452,-2.247699 5.38514,0.8929426 0.78017,0.8503859 1.57195,1.6911437 2.38118,2.5150667 z' />
+  </pattern>  
+  <linearGradient id='groupUnderTitleLine' x1='0%' y1='0%' x2='100%' y2='0%' >
+          <stop offset='0%' stop-color='#999999' stop-opacity='0.7'/> 
+          <stop offset='100%' stop-color='#999999' stop-opacity='0' /> 
+   </linearGradient>
+  <radialGradient id='calloutGradient' cx='25%' cy='20%' r='80%' fx='10%' fy='10%'>
+	   <stop offset='0%' stop-color='#ffffff' />
+    <stop offset='100%' stop-color='#f8f6d1' />
+  </radialGradient>
+  <filter id='shadow' width='120%' height='120%'> 
+      <feOffset result='offOut' in='SourceGraphic' dx='1' dy='1' /> 
+      <feColorMatrix result='matrixOut' in='offOut' type='matrix' 
+      values='0.1 0 0 0 0 0 0.4 0 0 0 0 0 0.6 0 0 0 0 0 0.3 0' /> 
+      <feGaussianBlur result='blurOut' in='matrixOut' stdDeviation='3' /> 
+      <feBlend in='SourceGraphic' in2='blurOut' mode='normal' /> 
+    </filter> 
+  <filter id='fkShadow' height='130%'> 
+    <feGaussianBlur in='SourceAlpha' stdDeviation='1.5'/> <!-- stdDeviation is how much to blur -->
+    <feOffset dx='1.2' dy='1.2' result='offsetblur'/> <!-- how much to offset -->
+    <feMerge>
+    <feMergeNode/> <!-- this contains the offset blurred image -->
+    <feMergeNode in='SourceGraphic'/> <!-- this contains the element that the filter is applied to -->
+    </feMerge>
+  </filter>
+  <radialGradient id='legendGradient' fx='5%' fy='5%' r='75%' spreadMethod='pad'>
+          <stop offset='0%' stop-color='#eefbf2' stop-opacity='1'/> 
+          <stop offset='100%' stop-color='#cff9cb' stop-opacity='1' /> 
+   </radialGradient>
+  <symbol id='calloutArrowDown' overflow='visible' >
+      <path d='M 0,0 L 8,12 L 16,0 z' style='fill:#f8f6d1;stroke:none; filter: url(#shadow);' />
+      <path d='M 0,0 L 8,12 L 16,0' style='stroke:#bebdbd; stroke-width:0.5;' />
+  </symbol>
+  <symbol id='calloutArrowUp' overflow='visible' >
+      <path d='M 0,16 L 8,4 L 16,16 z' style='fill:#ffffff; stroke:none; filter: url(#shadow);' />
+      <path d='M 0,16 L 8,4 L 16,16' style='stroke:#bebdbd; stroke-width:0.5;' />
+  </symbol>
+  <symbol id='pk' overflow='visible' >
+    <g transform='scale(0.99)'>
+     <path style='fill:#fffa7d;stroke:#765f03;stroke-width:0.6;stroke-linecap:round;stroke-linejoin:round;'
+        d='M 9.3678877,3.5695485 C 9.1030218,3.2729386 9.0796382,2.7628519 9.3396185,2.4517097 9.5449651,2.1956495 9.9040386,2.0980533 10.199638,2.2169415 10.533525,2.3415459 10.775153,2.706942 10.750675,3.0842709 10.737029,3.3980003 10.541153,3.699122 10.258248,3.8066067 9.966649,3.9250429 9.6169668,3.8418805 9.4008073,3.6062324 9.3894892,3.5943518 9.3785264,3.582104 9.3678886,3.5695487 z M 11.226617,6.9916004 C 11.888137,6.3548946 12.293488,5.4172188 12.311087,4.442353 12.378144,2.7379364 11.248678,1.0541269 9.7322318,0.44767357 8.3887112,-0.1280313 6.7865012,0.26822889 5.8918395,1.4007929 5.080823,2.3839145 4.9336815,3.8452096 5.3635544,5.101615 L 4.3670905,5.315913 C 4.0664984,5.3682645 4.0967703,5.6316724 4.2574957,5.8208829 L 4.9124,6.5655244 4.1543436,7.2512357 3.2136002,7.2163506 3.1674775,8.5586827 2.0406832,8.5086512 1.5965306,8.9299953 1.5471661,10.179833 0.75616674,10.195223 0.2112857,10.758575 0.15354288,11.735988 0.07199052,12.765553 c 0.36440953,0.238225 0.79006967,0.195492 1.44938278,-0.02675 L 6.3033562,8.1282037 6.8217102,8.6765688 C 6.9985465,8.8799427 7.3003699,8.7497574 7.358381,8.5016252 L 7.4938877,7.5084164 c 0.8537488,0.3985387 1.8303125,0.4711541 2.6851793,0.1427713 0.393927,-0.1407258 0.746858,-0.3701772 1.04755,-0.6595873 z'/>
+     <path d='M 6.8014948,6.3102123 0.15369063,13.024481 0.21560535,12.141962 6.0062342,6.2683782 z'
+        style='fill:#ffe5a5;fill-opacity:1;stroke:#854e31;stroke-width:0.06912433;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:3.00300009'/>
+    </g>
+  </symbol>
+  <symbol id='dist' overflow='visible' >
+    <g transform='scale(0.99)'>
+      <path style='fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;' d='M 0.177,11.431 12.28,11.449'/>
+      <path style='fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;' d='m 6.124,3.954 0.066,7.154 v 0'/>
+      <rect width='11.78' height='3.40' x='0.40' y='0.44' style='fill:#fffa7d;stroke:#765f03;stroke-width:0.6;' ry='0.83'/>
+      <rect width='11.78' height='3.40' x='0.40' y='5.609' style='fill:#fffa7d;stroke:#765f03;stroke-width:0.6;' ry='0.832'/>
+    </g>
+  </symbol>
+  <symbol id='unq' overflow='visible' >
+    <g transform='scale(0.99)'>
+      <rect style='fill:#fbea8e;stroke:#7e4d31;stroke-width:0.71934468;stroke-linecap:round;stroke-linejoin:round;'
+         width='2.29' height='8.43' x='7.48' y='-0.76' ry='1.14' transform='matrix(0.701,0.713,-0.727,0.685,0,0)' />
+      <path style='fill:white;stroke:#858585;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;'
+         d='m 26.04,8.64 a 4.13,4.13 0 1 1 -8.26,0 4.13,4.13 0 1 1 8.26,0 z'
+         transform='matrix(1.025,0,0,0.987,-14.690,-3.862)' />
+      <text x='5.8' y='7.4' style='font-size:7px;fill:#8a8a8a;'>1</text>
+    </g>
+  </symbol>
+  <symbol id='idx' overflow='visible' >
+    <g transform='scale(0.99)'>
+      <rect style='fill:#fbea8e;stroke:#7e4d31;stroke-width:0.71934468;stroke-linecap:round;stroke-linejoin:round;'
+         width='2.29' height='8.43' x='7.48' y='-0.76' ry='1.14' transform='matrix(0.701,0.713,-0.727,0.685,0,0)' />
+      <path style='fill:white;stroke:#858585;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;'
+         d='m 26.04,8.64 a 4.13,4.13 0 1 1 -8.26,0 4.13,4.13 0 1 1 8.26,0 z'
+         transform='matrix(1.025,0,0,0.987,-14.690,-3.862)' />
+    </g>
+  </symbol>
+  <symbol id='fk' overflow='visible' >
+    <g transform='scale(0.87)'>
+      <path style='fill:#f3e1b7;stroke:#7e471f;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;'
+      d='M 12.48,0.33 7.07,0.89 9.067,2.974 0.329,11.731 1.073,12.597 9.811,3.841 11.77,5.78 z' />
+    </g>
+  </symbol>
+  <symbol id='ref' overflow='visible' >
+    <g transform='scale(0.87)'>
+      <path style='fill:#f3e1b7;stroke:#7e471f;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;'
+          d='M 0.10,12.70 5.31,12.15 3.40,10.06 11.82,1.32 11.11,0.45 2.68,9.19 0.80,7.24 z'/>
+    </g>
+  </symbol>
+  <symbol id='flag0' overflow='visible' >
+    <g transform='scale(0.92)'>
+      <path style='fill:#b7d0f6;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;'
+          d='M 0.12,12.67 0.16,7.22 C 2.59,7.22 4.13,8.78 9.22,4.22 5.68,4.98 2.53,4.50 0.09,1.80 z'/>
+    </g>
+  </symbol>
+  <symbol id='flag1' overflow='visible' >
+    <g transform='scale(0.92)'>
+      <path style='fill:#f4a393;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;'
+          d='M 0.12,12.67 0.16,7.22 C 2.59,7.22 4.13,8.78 9.22,4.22 5.68,4.98 2.53,4.50 0.09,1.80 z'/>
+    </g>
+  </symbol>
+  <symbol id='flag2' overflow='visible' >
+    <g transform='scale(0.92)'>
+      <path style='fill:#77ec8b;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;'
+          d='M 0.12,12.67 0.16,7.22 C 2.59,7.22 4.13,8.78 9.22,4.22 5.68,4.98 2.53,4.50 0.09,1.80 z'/>
+    </g>
+  </symbol>
+  <symbol id='nn' overflow='visible' >
+  <path style='stroke:#9b3e50;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;'
+          d='M 0,0 3,3 M 0,3 3,0 z'/>
+  </symbol>
+  <symbol id='view' overflow='visible' >
+    <g transform='scale(0.99)'>
+     <line x1='12' y1='6' x2='19' y2='0' stroke='black' stroke-width='0.5' />
+     <line x1='0' y1='6' x2='7' y2='0' stroke='black' stroke-width='0.5' />
+     <circle cx='3' cy='6' r='3' fill='#f9ebbc' stroke='black' stroke-width='0.5'/>
+     <circle cx='10' cy='6' r='3' fill='#f9ebbc' stroke='black' stroke-width='0.5'/>
+    </g>
+  </symbol>
+  <marker id='arrow01' viewBox='0 0 16.00 8.00' refX='8.00' refY='4.00' markerUnits='strokeWidth' markerWidth='16.00' markerHeight='8.00' orient='auto'>
+    <path d='M 0.00,4.00 L 16.00,4.00 z' />
+  </marker>
+  <marker id='arrow1' viewBox='0 0 16.00 8.00' refX='8.00' refY='4.00' markerUnits='strokeWidth' markerWidth='16.00' markerHeight='8.00' orient='auto'>
+    <path d='M 0.00,4.00 L 16.00,4.00 z' />
+  </marker>
+  <marker id='foot01' viewBox='0 0 16.00 8.00' refX='8.00' refY='4.00' markerUnits='strokeWidth' markerWidth='16.00' markerHeight='8.00' orient='auto'>
+    <path d='M 1.60,4.00 L 3.20,4.00 L 4.80,4.00 L 6.40,4.00 z' />
+  </marker>
+  <marker id='foot0p' viewBox='0 0 16.00 8.00' refX='8.00' refY='4.00' markerUnits='strokeWidth' markerWidth='16.00' markerHeight='8.00' orient='auto'>
+    <path d='M 1.60,4.00 L 3.20,4.00 L 4.80,4.00 L 6.40,4.00 z' />
+    <path d='M 0.00,0.00 L 8.00,4.00 L 0.00,8.00' />
+  </marker>
+  <marker id='foot1' viewBox='0 0 16.00 8.00' refX='8.00' refY='4.00' markerUnits='strokeWidth' markerWidth='16.00' markerHeight='8.00' orient='auto'>
+    <path d='M 0.00,4.00 L 16.00,4.00 z' />
+  </marker>
+  <marker id='foot1p' viewBox='0 0 16.00 8.00' refX='8.00' refY='4.00' markerUnits='strokeWidth' markerWidth='16.00' markerHeight='8.00' orient='auto'>
+    <path d='M 0.00,4.00 L 16.00,4.00 z' />
+    <path d='M 0.00,0.00 L 8.00,4.00 L 0.00,8.00' />
+  </marker>
+  <linearGradient id='tbg_BED3F4' x1='0%' y1='0%' x2='0%' y2='100%' >
+     <stop offset='0%' stop-color='#E0E9F8' /> 
+     <stop offset='60%' stop-color='#C1D2EE' /> 
+     <stop offset='100%' stop-color='#E0E9F8' /> 
+  </linearGradient>
+</defs>
+
+<!-- == Desktop == -->
+<rect x='1' y='1' width='718' height='956' rx='8' ry='8' style='fill:url(#layoutBgB); stroke:#777777; stroke-width:0.5;' />
+<rect x='1' y='1' width='718' height='956' rx='8' ry='8' style='fill:url(#layoutBgA); stroke:#777777; stroke-width:0.5;' />
+
+<!-- == Legend == -->
+<g transform='translate(10,10)'>
+  <rect x='10' y='10' width='330' height='56' rx='6' ry='6' style='fill:url(#legendGradient);filter:url(#shadow);'/> 
+  <text x='20' y='43'>Library database schema</text> 
+  <text x='20' y='57' style='fill:#aaaaaa; font-size:11px;'><tspan>Move the mouse over tables &amp; columns to read the comments.</tspan></text> 
+<a xlink:href='https://www.dbschema.com'> <path class='logo' d='m 32.309685,20.963194 c 0.411708,4.732616 -4.298055,7.925636 -8.723583,6.970196 -6.616967,1.8448 -2.656457,-6.434594 -3.911969,-10.01566 -2.15469,-5.89407 6.06247,-3.508505 9.167655,-2.863689 2.199228,1.054873 3.389343,3.582089 3.467897,5.909153 z m -3.720955,0.01451 c 0.434195,-4.414565 -7.644142,-5.37533 -5.137307,0.107342 -1.812268,5.992146 5.532698,4.379388 5.137307,-0.107342 z' /> <path class='logo' d='m 44.329732,23.050637 c 0.850982,5.097305 -5.250434,4.558924 -7.144836,4.752415 -6.418993,1.64391 -1.872992,-7.49274 -3.541914,-10.942842 -2.499646,-3.817859 5.939283,-4.402698 3.538545,-0.13612 -1.287874,4.989123 4.215411,-1.154796 5.956717,2.809584 0.840273,0.970849 1.168829,2.272413 1.191488,3.516963 z m -3.519477,-0.09299 c -1.398216,-5.518069 -6.361061,2.717467 -0.984368,1.810718 0.686994,-0.30388 1.029454,-1.087638 0.984368,-1.810718 z' /> <path class='logo' d='m 52.234961,23.301163 c 0.954818,5.035675 -8.606408,6.284861 -6.262292,1.674914 6.000358,-1.604717 -5.188764,-7.870044 1.75972,-10.384908 2.288682,-3.253567 6.399287,3.075831 2.304111,2.48058 -2.124941,2.016587 2.688777,3.89858 2.198472,6.229403 z' /> <path class='logo' d='m 60.204336,21.349224 c -4.894917,-1.916474 -3.458707,5.391212 0.347494,3.37231 2.120589,6.821713 -10.599623,1.664746 -6.906229,-3.691132 0.354172,-3.663246 9.875349,-4.711252 6.558735,0.318822 z' /> <path class='logo' d='m 71.730617,20.654299 c 0.0013,2.316285 0.190131,4.655698 0.07825,6.958009 -6.532419,3.303565 -0.660423,-8.722256 -6.009639,-5.821653 -0.818815,2.024533 1.726403,6.746337 -1.95327,6.005484 -3.458346,-1.137537 -0.696275,-7.713407 -1.833252,-10.994208 -2.308916,-3.710131 5.93704,-4.164951 3.518609,0.0063 -1.462376,6.166445 5.169629,-2.857523 6.19931,3.846079 z' /> <path class='logo' d='m 82.245738,22.378957 c -0.24581,2.448954 -9.386766,0.8867 -3.885979,2.877055 3.312576,-2.99157 5.250902,3.334514 0.482647,2.665545 -7.415384,1.492275 -7.823196,-11.597641 -0.275476,-10.032117 2.068161,0.391458 3.682204,2.408824 3.678808,4.489517 z m -3.414436,-0.578473 c -1.124703,-4.072004 -5.087405,2.125488 -0.316922,0.156453 z' /> <path class='logo' d='m 98.936899,27.222794 c -4.73541,2.718339 -3.1239,-3.406557 -3.92611,-6.050494 -4.66985,-1.438471 0.21621,6.932413 -3.41219,6.438039 -4.46096,1.160054 -0.22824,-5.774711 -3.31526,-6.700429 -3.410722,1.082173 1.04451,9.536575 -4.745091,6.372895 0.746632,-3.355214 -2.776394,-10.269232 3.034971,-9.038963 -0.058,2.544602 5.00686,-2.785359 6.00342,1.37844 3.42021,-4.316316 7.851251,0.524966 6.24018,4.690538 0.0379,0.969988 0.0954,1.940046 0.12008,2.909974 z' /> <path class='logo' d='m 110.47859,22.686058 c 0.91826,2.682088 0.13016,6.890551 -3.0725,4.397004 -1.63641,1.077877 -7.664291,0.541832 -7.09365,-4.114836 -0.907891,-4.692933 5.14729,-5.625578 7.24058,-4.40354 3.85932,-1.686263 3.13176,1.271515 2.92557,4.121372 z m -3.12695,0.0704 c -1.46278,-5.460062 -6.61615,2.5826 -1.08221,1.782003 0.70431,-0.272594 1.13111,-1.037444 1.08221,-1.782003 z' /> </a>
+</g>
+
+<g transform='translate(0,110)'>
+<!-- == Fk 'library_spectra_Fk_library_spectra' == -->
+<path id='library_spectra_Fk_library_spectra'  onmouseover="hghl(['library_spectra_Fk_library_spectra','Default.library_spectra.library_spectra_meta_id','Default.library_spectra_meta.id'])" onmouseout="uhghl(['library_spectra_Fk_library_spectra','Default.library_spectra.library_spectra_meta_id','Default.library_spectra_meta.id'])" transform='translate(8,0)' class='scene' d='M 496 96 L 224,96' >
+	<title>Fk Fk_library_spectra
+library_spectra ref library_spectra_meta ( library_spectra_meta_id -&gt; id )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 496 96 L 224,96' ></path>
+<text x='382' y='91' transform='rotate(0 382,91)' title='Fk Fk_library_spectra
+library_spectra ref library_spectra_meta ( library_spectra_meta_id -&gt; id )' class='relName' style='fill:#748EA7'>library_spectra_meta_id</text>
+<!-- == Fk 'library_spectra_annotation_Fk_library_spectra_annotation' == -->
+<path id='library_spectra_annotation_Fk_library_spectra_annotation'  onmouseover="hghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id','Default.library_spectra_meta.id'])" onmouseout="uhghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id','Default.library_spectra_meta.id'])" transform='translate(8,0)' class='scene' d='M 384 480 L 216,480 Q 208,480 208,472 L 208,416' >
+	<title>Fk Fk_library_spectra_annotation
+library_spectra_annotation ref library_spectra_meta ( library_spectra_meta_id -&gt; id )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 384 480 L 216,480 Q 208,480 208,472 L 208,416' ></path>
+<text x='270' y='475' transform='rotate(0 270,475)' title='Fk Fk_library_spectra_annotation
+library_spectra_annotation ref library_spectra_meta ( library_spectra_meta_id -&gt; id )' class='relName' style='fill:#748EA7'>library_spectra_meta_id</text>
+<!-- == Fk 'library_spectra_meta_Fk_library_spectra_meta' == -->
+<path id='library_spectra_meta_Fk_library_spectra_meta'  onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.library_spectra_source_id','Default.library_spectra_source.id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.library_spectra_source_id','Default.library_spectra_source.id'])" transform='translate(8,0)' class='scene' d='M 224 304 L 448,304' >
+	<title>Fk Fk_library_spectra_meta
+library_spectra_meta ref library_spectra_source ( library_spectra_source_id -&gt; id )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 224 304 L 448,304' ></path>
+<text x='233' y='299' transform='rotate(0 233,299)' title='Fk Fk_library_spectra_meta
+library_spectra_meta ref library_spectra_source ( library_spectra_source_id -&gt; id )' class='relName' style='fill:#748EA7'>library_spectra_source_id</text>
+<!-- == Fk 'library_spectra_meta_Fk_library_spectra_meta' == -->
+<path id='library_spectra_meta_Fk_library_spectra_meta'  onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id','Default.metab_compound.inchikey_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id','Default.metab_compound.inchikey_id'])" transform='translate(8,0)' class='scene' d='M 80 416 L 80,544' >
+	<title>Fk Fk_library_spectra_meta
+library_spectra_meta ref metab_compound ( inchikey_id )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 80 416 L 80,544' ></path>
+<text x='95' y='417' transform='rotate(90 95,417)' title='Fk Fk_library_spectra_meta
+library_spectra_meta ref metab_compound ( inchikey_id )' class='relName' style='fill:#748EA7'>inchikey_id</text>
+<!-- == Table 'library_spectra' == -->
+<rect class='entity' x='512' y='88' width='160' height='128' rx='8' ry='8' style='stroke:none'/>
+<path d='M 512 116 L 512 96 Q 512 88 520 88 L 664 88 Q 672 88 672 96 L 672 116 L512 116 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='512' y='88' width='160' height='128' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#library_spectra'><text x='550' y='108'>library_spectra</text><title>Table Default.library_spectra
+Table to for the individual peaks for each spectra</title></a>
+  <a xlink:href='#library_spectra.id'><use id='unq' x='514' y='124' xlink:href='#unq'/><title>Unq pk_library_spectra ( id ) </title></a>
+<a xlink:href='#library_spectra.id'><text id='Default.library_spectra.id' x='531' y='135'>id</text><title>id
+integer</title></a>
+<text x='669' y='132' text-anchor='end' class='colType'>#</text>  <use id='nn' x='514' y='141' xlink:href='#nn'/><a xlink:href='#library_spectra.mz'><text id='Default.library_spectra.mz' x='531' y='151'>mz</text><title>mz
+* real
+m/z</title></a>
+<text x='669' y='148' text-anchor='end' class='colType'>#</text>  <use id='nn' x='514' y='157' xlink:href='#nn'/><a xlink:href='#library_spectra.i'><text id='Default.library_spectra.i' x='531' y='167'>i</text><title>i
+* real
+intensity</title></a>
+<text x='669' y='164' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra.other'><text id='Default.library_spectra.other' x='531' y='183'>other</text><title>other
+text
+Any other details</title></a>
+<text x='669' y='180' text-anchor='end' class='colType'>t</text>  <use id='nn' x='514' y='189' xlink:href='#nn'/><a xlink:href='#library_spectra.library_spectra_meta_id'><text id='Default.library_spectra.library_spectra_meta_id' x='531' y='199' onmouseover="hghl(['library_spectra_Fk_library_spectra','Default.library_spectra_meta.id'])" onmouseout="uhghl(['library_spectra_Fk_library_spectra','Default.library_spectra_meta.id'])">library_spectra_meta_id</text><title>library_spectra_meta_id
+* integer
+library_spectra_meta id</title></a>
+<a xlink:href='#library_spectra.library_spectra_meta_id'><use id='fk' x='660' y='188' xlink:href='#fk'/><title>References library_spectra_meta ( library_spectra_meta_id -&gt; id ) </title></a>
+
+<!-- == Table 'library_spectra_source' == -->
+<rect class='entity' x='464' y='296' width='128' height='112' rx='8' ry='8' style='stroke:none'/>
+<path d='M 464 324 L 464 304 Q 464 296 472 296 L 584 296 Q 592 296 592 304 L 592 324 L464 324 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='464' y='296' width='128' height='112' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#library_spectra_source'><text x='466' y='316'>library_spectra_source</text><title>Table Default.library_spectra_source
+Table for the source of the library spectra (e.g. MassBank, GNPS, etc)</title></a>
+  <a xlink:href='#library_spectra_source.id'><use id='unq' x='466' y='332' xlink:href='#unq'/><title>Unq pk_library_spectra_source ( id ) </title></a>
+<a xlink:href='#library_spectra_source.id'><text id='Default.library_spectra_source.id' x='483' y='343' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.library_spectra_source_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.library_spectra_source_id'])">id</text><title>id
+integer</title></a>
+<a xlink:href='#library_spectra_source.id'><use id='ref' x='580' y='332' xlink:href='#ref'/><title>Referred by library_spectra_meta ( library_spectra_source_id -&gt; id ) </title></a>
+  <use id='nn' x='466' y='349' xlink:href='#nn'/><a xlink:href='#library_spectra_source.name'><text id='Default.library_spectra_source.name' x='483' y='359'>name</text><title>name
+* text
+Name of the source (e.g. massbank). Should be all lowercase with no whitespace to be consistent</title></a>
+<text x='589' y='356' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_source.created_at'><text id='Default.library_spectra_source.created_at' x='483' y='375'>created_at</text><title>created_at
+date
+Automatically created at time of row insertion</title></a>
+<text x='589' y='372' text-anchor='end' class='colType'>d</text>  <a xlink:href='#library_spectra_source.parsing_software'><text id='Default.library_spectra_source.parsing_software' x='483' y='391'>parsing_software</text><title>parsing_software
+text
+Software used to get the library information (e.g. msp2db)</title></a>
+<text x='589' y='388' text-anchor='end' class='colType'>t</text>
+<!-- == Table 'library_spectra_annotation' == -->
+<rect class='entity' x='400' y='472' width='160' height='128' rx='8' ry='8' style='stroke:none'/>
+<path d='M 400 500 L 400 480 Q 400 472 408 472 L 552 472 Q 560 472 560 480 L 560 500 L400 500 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='400' y='472' width='160' height='128' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#library_spectra_annotation'><text x='407' y='492'>library_spectra_annotation</text><title>Table Default.library_spectra_annotation
+Table to store annotated spectra (e.g. the molecular formula and the theoritical m/z values)</title></a>
+  <a xlink:href='#library_spectra_annotation.id'><use id='unq' x='402' y='508' xlink:href='#unq'/><title>Unq pk_library_spectra_annotation ( id ) </title></a>
+<a xlink:href='#library_spectra_annotation.id'><text id='Default.library_spectra_annotation.id' x='419' y='519'>id</text><title>id
+integer</title></a>
+<text x='557' y='516' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra_annotation.mz'><text id='Default.library_spectra_annotation.mz' x='419' y='535'>mz</text><title>mz
+real
+m/z after correcting for mass error</title></a>
+<text x='557' y='532' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra_annotation.tentative_formula'><text id='Default.library_spectra_annotation.tentative_formula' x='419' y='551'>tentative_formula</text><title>tentative_formula
+text
+Molecular formula</title></a>
+<text x='557' y='548' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_annotation.mass_error'><text id='Default.library_spectra_annotation.mass_error' x='419' y='567'>mass_error</text><title>mass_error
+real
+Mass error</title></a>
+<text x='557' y='564' text-anchor='end' class='colType'>#</text>  <use id='nn' x='402' y='573' xlink:href='#nn'/><a xlink:href='#library_spectra_annotation.library_spectra_meta_id'><text id='Default.library_spectra_annotation.library_spectra_meta_id' x='419' y='583' onmouseover="hghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_meta.id'])" onmouseout="uhghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_meta.id'])">library_spectra_meta_id</text><title>library_spectra_meta_id
+* integer
+library_spectra_meta id</title></a>
+<a xlink:href='#library_spectra_annotation.library_spectra_meta_id'><use id='fk' x='548' y='572' xlink:href='#fk'/><title>References library_spectra_meta ( library_spectra_meta_id -&gt; id ) </title></a>
+
+<!-- == Table 'metab_compound' == -->
+<rect class='entity' x='64' y='552' width='144' height='240' rx='8' ry='8' style='stroke:none'/>
+<path d='M 64 580 L 64 560 Q 64 552 72 552 L 200 552 Q 208 552 208 560 L 208 580 L64 580 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='64' y='552' width='144' height='240' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#metab_compound'><text x='85' y='572'>metab_compound</text><title>Table Default.metab_compound
+Table for compound information, compounds are determined unique by their InChIKey.</title></a>
+  <a xlink:href='#metab_compound.inchikey_id'><use id='unq' x='66' y='588' xlink:href='#unq'/><title>Unq pk_metab_compound ( inchikey_id ) </title></a>
+<a xlink:href='#metab_compound.inchikey_id'><text id='Default.metab_compound.inchikey_id' x='83' y='599' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id'])">inchikey_id</text><title>inchikey_id
+text
+InChiKey https://inchi.info/inchikey_overview_en.html</title></a>
+<a xlink:href='#metab_compound.inchikey_id'><use id='ref' x='196' y='588' xlink:href='#ref'/><title>Referred by library_spectra_meta ( inchikey_id ) </title></a>
+  <a xlink:href='#metab_compound.name'><text id='Default.metab_compound.name' x='83' y='615'>name</text><title>name
+text
+General name of compound (see "other names" for synonyms)</title></a>
+<text x='205' y='612' text-anchor='end' class='colType'>t</text>  <a xlink:href='#metab_compound.pubchem_id'><text id='Default.metab_compound.pubchem_id' x='83' y='631'>pubchem_id</text><title>pubchem_id
+text
+PubChem compound ID</title></a>
+<text x='205' y='628' text-anchor='end' class='colType'>t</text>  <a xlink:href='#metab_compound.chemspider_id'><text id='Default.metab_compound.chemspider_id' x='83' y='647'>chemspider_id</text><title>chemspider_id
+text
+Chemspider compound id</title></a>
+<text x='205' y='644' text-anchor='end' class='colType'>t</text>  <a xlink:href='#metab_compound.other_names'><text id='Default.metab_compound.other_names' x='83' y='663'>other_names</text><title>other_names
+text
+Synonyms</title></a>
+<text x='205' y='660' text-anchor='end' class='colType'>t</text>  <a xlink:href='#metab_compound.exact_mass'><text id='Default.metab_compound.exact_mass' x='83' y='679'>exact_mass</text><title>exact_mass
+real
+Exact mass</title></a>
+<text x='205' y='676' text-anchor='end' class='colType'>#</text>  <a xlink:href='#metab_compound.molecular_formula'><text id='Default.metab_compound.molecular_formula' x='83' y='695'>molecular_formula</text><title>molecular_formula
+text
+Molecular formula</title></a>
+<text x='205' y='692' text-anchor='end' class='colType'>t</text>  <a xlink:href='#metab_compound.molecular_weight'><text id='Default.metab_compound.molecular_weight' x='83' y='711'>molecular_weight</text><title>molecular_weight
+real
+Molecular weight</title></a>
+<text x='205' y='708' text-anchor='end' class='colType'>#</text>  <a xlink:href='#metab_compound.compound_class'><text id='Default.metab_compound.compound_class' x='83' y='727'>compound_class</text><title>compound_class
+text
+Compound class</title></a>
+<text x='205' y='724' text-anchor='end' class='colType'>t</text>  <a xlink:href='#metab_compound.smiles'><text id='Default.metab_compound.smiles' x='83' y='743'>smiles</text><title>smiles
+text
+Simplified molecular-input line-entry system (SMILES) https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system</title></a>
+<text x='205' y='740' text-anchor='end' class='colType'>t</text>  <a xlink:href='#metab_compound.created_at'><text id='Default.metab_compound.created_at' x='83' y='759'>created_at</text><title>created_at
+date
+Automatically created with new insertion</title></a>
+<text x='205' y='756' text-anchor='end' class='colType'>d</text>  <a xlink:href='#metab_compound.updated_at'><text id='Default.metab_compound.updated_at' x='83' y='775'>updated_at</text><title>updated_at
+date
+Should be updated when any changes have been made</title></a>
+<text x='205' y='772' text-anchor='end' class='colType'>d</text>
+<!-- == Table 'library_spectra_meta' == -->
+<rect class='entity' x='48' y='40' width='176' height='368' rx='8' ry='8' style='stroke:none'/>
+<path d='M 48 68 L 48 48 Q 48 40 56 40 L 216 40 Q 224 40 224 48 L 224 68 L48 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='48' y='40' width='176' height='368' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<a xlink:href='#library_spectra_meta'><text x='78' y='60'>library_spectra_meta</text><title>Table Default.library_spectra_meta
+Table to store the meta data for each file (details are intended to be either extracted from an MSP file generated from either MassBank (https://github.com/MassBank/MassBank-data) or MoNA (http://mona.fiehnlab.ucdavis.edu/downloads). For associated regexes see https://github.com/computational-metabolomics/msp2db/blob/master/msp2db/re.py</title></a>
+  <a xlink:href='#library_spectra_meta.id'><use id='unq' x='50' y='76' xlink:href='#unq'/><title>Unq pk_library_spectra_meta ( id ) </title></a>
+<a xlink:href='#library_spectra_meta.id'><text id='Default.library_spectra_meta.id' x='67' y='87' onmouseover="hghl(['library_spectra_Fk_library_spectra','Default.library_spectra.library_spectra_meta_id','library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id'])" onmouseout="uhghl(['library_spectra_Fk_library_spectra','Default.library_spectra.library_spectra_meta_id','library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id'])">id</text><title>id
+integer</title></a>
+<a xlink:href='#library_spectra_meta.id'><use id='ref' x='212' y='76' xlink:href='#ref'/><title>Referred by library_spectra ( library_spectra_meta_id -&gt; id ) 
+Referred by library_spectra_annotation ( library_spectra_meta_id -&gt; id ) </title></a>
+  <a xlink:href='#library_spectra_meta.name'><text id='Default.library_spectra_meta.name' x='67' y='103'>name</text><title>name
+text
+The name of the spectra. Typically contains the name of the compound but can include other relevant information</title></a>
+<text x='221' y='100' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.collision_energy'><text id='Default.library_spectra_meta.collision_energy' x='67' y='119'>collision_energy</text><title>collision_energy
+text
+Collision energy used</title></a>
+<text x='221' y='116' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.ms_level'><text id='Default.library_spectra_meta.ms_level' x='67' y='135'>ms_level</text><title>ms_level
+real
+Mass spectrometry level (e.g. 1, 2, 3)</title></a>
+<text x='221' y='132' text-anchor='end' class='colType'>#</text>  <use id='nn' x='50' y='141' xlink:href='#nn'/><a xlink:href='#library_spectra_meta.accession'><text id='Default.library_spectra_meta.accession' x='67' y='151'>accession</text><title>accession
+* text
+The accession as determined from either MassBank or MoNA. This should be a unique identifier for the associated database the spectra was obtained from</title></a>
+<text x='221' y='148' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.resolution'><text id='Default.library_spectra_meta.resolution' x='67' y='167'>resolution</text><title>resolution
+text
+Resolution of the mass spectrometer</title></a>
+<text x='221' y='164' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.polarity'><text id='Default.library_spectra_meta.polarity' x='67' y='183'>polarity</text><title>polarity
+integer
+Polariity used for acquisition (e.g. positive or negative)</title></a>
+<text x='221' y='180' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra_meta.fragmentation_type'><text id='Default.library_spectra_meta.fragmentation_type' x='67' y='199'>fragmentation_type</text><title>fragmentation_type
+text
+Fragmentation type used e.g. HCD, CID</title></a>
+<text x='221' y='196' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.precursor_mz'><text id='Default.library_spectra_meta.precursor_mz' x='67' y='215'>precursor_mz</text><title>precursor_mz
+real
+The m/z value of the precursor fragmented</title></a>
+<text x='221' y='212' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra_meta.precursor_type'><text id='Default.library_spectra_meta.precursor_type' x='67' y='231'>precursor_type</text><title>precursor_type
+text
+The precursor adduct type (e.g.  [M-H]-, [M+H]+, [M+H-H2O]+ etc)</title></a>
+<text x='221' y='228' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.instrument_type'><text id='Default.library_spectra_meta.instrument_type' x='67' y='247'>instrument_type</text><title>instrument_type
+text
+Instrument type (ideally in the MassBank naming convention e.g. 'CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',  'LC-ESI-ITFT', 'LC-ESI-ITTOF', 'LC-ESI-QFT', 'LC-ESI-QIT', 'LC-ESI-QQ', 'LC-ESI-QTOF', 'LC-ESI-TOF', etc</title></a>
+<text x='221' y='244' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.instrument'><text id='Default.library_spectra_meta.instrument' x='67' y='263'>instrument</text><title>instrument
+text
+The mass spectrometry instrument name</title></a>
+<text x='221' y='260' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.copyright'><text id='Default.library_spectra_meta.copyright' x='67' y='279'>copyright</text><title>copyright
+text
+The copyright of the original spectra</title></a>
+<text x='221' y='276' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.column'><text id='Default.library_spectra_meta.column' x='67' y='295'>column</text><title>column
+text
+The chromatography column used</title></a>
+<text x='221' y='292' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.mass_accuracy'><text id='Default.library_spectra_meta.mass_accuracy' x='67' y='311'>mass_accuracy</text><title>mass_accuracy
+real
+The mass accuracy of the mass spectrometry instrument</title></a>
+<text x='221' y='308' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra_meta.mass_error'><text id='Default.library_spectra_meta.mass_error' x='67' y='327'>mass_error</text><title>mass_error
+real
+The mass error of the mass spectrometry instrument</title></a>
+<text x='221' y='324' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra_meta.origin'><text id='Default.library_spectra_meta.origin' x='67' y='343'>origin</text><title>origin
+text
+The origin of the individual spectra (sometimes can have a reference to the original file prior to creating the msp)</title></a>
+<text x='221' y='340' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.splash'><text id='Default.library_spectra_meta.splash' x='67' y='359'>splash</text><title>splash
+text
+SPLASH database spectral identifier https://splash.fiehnlab.ucdavis.edu/</title></a>
+<text x='221' y='356' text-anchor='end' class='colType'>t</text>  <use id='nn' x='50' y='365' xlink:href='#nn'/><a xlink:href='#library_spectra_meta.library_spectra_source_id'><text id='Default.library_spectra_meta.library_spectra_source_id' x='67' y='375' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_source.id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_source.id'])">library_spectra_source_id</text><title>library_spectra_source_id
+* integer
+library_spectra_source id</title></a>
+<a xlink:href='#library_spectra_meta.library_spectra_source_id'><use id='fk' x='212' y='364' xlink:href='#fk'/><title>References library_spectra_source ( library_spectra_source_id -&gt; id ) </title></a>
+  <use id='nn' x='50' y='381' xlink:href='#nn'/><a xlink:href='#library_spectra_meta.inchikey_id'><text id='Default.library_spectra_meta.inchikey_id' x='67' y='391' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.metab_compound.inchikey_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.metab_compound.inchikey_id'])">inchikey_id</text><title>inchikey_id
+* text
+inchikey id</title></a>
+<a xlink:href='#library_spectra_meta.inchikey_id'><use id='fk' x='212' y='380' xlink:href='#fk'/><title>References metab_compound ( inchikey_id ) </title></a>
+
+</g></svg></div>
+
+
+<br><br>
+<div class='card'><div class='card-body'><a name='library_spectra' onclick='window.scrollTo(312, 96);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra</h4></a>
+<p class="text-muted">Table to for the individual peaks for each spectra</p>
+<table class='table-sm table-bordered'>
+<thead>
+<tr><th>Indexes</th><th>Field Name</th><th>Data Type</th><th>Description</th></tr></thead>
+<tbody>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg></td>
+		<td><a name='library_spectra.id'>id</a></td>
+		<td> integer   </td>
+		<td>  </td>
+	</tr>
+	<tr>
+		<td>*</td>
+		<td><a name='library_spectra.mz'>mz</a></td>
+		<td> real   </td>
+		<td> m&#47;z </td>
+	</tr>
+	<tr>
+		<td>*</td>
+		<td><a name='library_spectra.i'>i</a></td>
+		<td> real   </td>
+		<td> intensity </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra.other'>other</a></td>
+		<td> text   </td>
+		<td> Any other details </td>
+	</tr>
+	<tr>
+		<td>*<svg width='14' height='14'><use xlink:href='#fk'/></svg></td>
+		<td><a name='library_spectra.library_spectra_meta_id'>library&#95;spectra&#95;meta&#95;id</a></td>
+		<td> integer   </td>
+		<td> library&#95;spectra&#95;meta id </td>
+	</tr>
+<tr><th colspan='4'>Indexes</th></tr>
+	<tr>		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg></td><td>pk&#95;library&#95;spectra</td>
+		<td> ON id</td>
+		<td>  </td>
+	</tr>
+<tr><th colspan='4'>Foreign Keys</th></tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td><td>Fk_library_spectra</td>
+		<td > ( library&#95;spectra&#95;meta&#95;id ) ref <a href='#library&#95;spectra&#95;meta'>library&#95;spectra&#95;meta</a> (id) </td>
+		<td>  </td>
+	</tr>
+</tbody>
+</table></div></div>
+
+<br><br>
+<div class='card'><div class='card-body'><a name='library_spectra_annotation' onclick='window.scrollTo(200, 480);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra_annotation</h4></a>
+<p class="text-muted">Table to store annotated spectra (e.g. the molecular formula and the theoritical m/z values)</p>
+<table class='table-sm table-bordered'>
+<thead>
+<tr><th>Indexes</th><th>Field Name</th><th>Data Type</th><th>Description</th></tr></thead>
+<tbody>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg></td>
+		<td><a name='library_spectra_annotation.id'>id</a></td>
+		<td> integer   </td>
+		<td>  </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_annotation.mz'>mz</a></td>
+		<td> real   </td>
+		<td> m&#47;z after correcting for mass error </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_annotation.tentative_formula'>tentative&#95;formula</a></td>
+		<td> text   </td>
+		<td> Molecular formula </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_annotation.mass_error'>mass&#95;error</a></td>
+		<td> real   </td>
+		<td> Mass error </td>
+	</tr>
+	<tr>
+		<td>*<svg width='14' height='14'><use xlink:href='#fk'/></svg></td>
+		<td><a name='library_spectra_annotation.library_spectra_meta_id'>library&#95;spectra&#95;meta&#95;id</a></td>
+		<td> integer   </td>
+		<td> library&#95;spectra&#95;meta id </td>
+	</tr>
+<tr><th colspan='4'>Indexes</th></tr>
+	<tr>		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg></td><td>pk&#95;library&#95;spectra&#95;annotation</td>
+		<td> ON id</td>
+		<td>  </td>
+	</tr>
+<tr><th colspan='4'>Foreign Keys</th></tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td><td>Fk_library_spectra_annotation</td>
+		<td > ( library&#95;spectra&#95;meta&#95;id ) ref <a href='#library&#95;spectra&#95;meta'>library&#95;spectra&#95;meta</a> (id) </td>
+		<td>  </td>
+	</tr>
+</tbody>
+</table></div></div>
+
+<br><br>
+<div class='card'><div class='card-body'><a name='library_spectra_meta' onclick='window.scrollTo(60, 48);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra_meta</h4></a>
+<p class="text-muted">Table to store the meta data for each file (details are intended to be either extracted from an MSP file generated from either MassBank (https://github.com/MassBank/MassBank-data) or MoNA (http://mona.fiehnlab.ucdavis.edu/downloads). For associated regexes see https://github.com/computational-metabolomics/msp2db/blob/master/msp2db/re.py</p>
+<table class='table-sm table-bordered'>
+<thead>
+<tr><th>Indexes</th><th>Field Name</th><th>Data Type</th><th>Description</th></tr></thead>
+<tbody>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg><svg width='14' height='14'><use xlink:href='#ref'/></svg></td>
+		<td><a name='library_spectra_meta.id'>id</a></td>
+		<td> integer   </td>
+		<td>  </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.name'>name</a></td>
+		<td> text   </td>
+		<td> The name of the spectra&#46; Typically contains the name of the compound but can include other relevant information </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.collision_energy'>collision&#95;energy</a></td>
+		<td> text   </td>
+		<td> Collision energy used </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.ms_level'>ms&#95;level</a></td>
+		<td> real   </td>
+		<td> Mass spectrometry level &#40;e&#46;g&#46; 1&#44; 2&#44; 3&#41; </td>
+	</tr>
+	<tr>
+		<td>*</td>
+		<td><a name='library_spectra_meta.accession'>accession</a></td>
+		<td> text   </td>
+		<td> The accession as determined from either MassBank or MoNA&#46; This should be a unique identifier for the associated database the spectra was obtained from </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.resolution'>resolution</a></td>
+		<td> text   </td>
+		<td> Resolution of the mass spectrometer </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.polarity'>polarity</a></td>
+		<td> integer   </td>
+		<td> Polariity used for acquisition &#40;e&#46;g&#46; positive or negative&#41; </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.fragmentation_type'>fragmentation&#95;type</a></td>
+		<td> text   </td>
+		<td> Fragmentation type used e&#46;g&#46; HCD&#44; CID </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.precursor_mz'>precursor&#95;mz</a></td>
+		<td> real   </td>
+		<td> The m&#47;z value of the precursor fragmented </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.precursor_type'>precursor&#95;type</a></td>
+		<td> text   </td>
+		<td> The precursor adduct type &#40;e&#46;g&#46;  &#91;M&#45;H&#93;&#45;&#44; &#91;M&#43;H&#93;&#43;&#44; &#91;M&#43;H&#45;H2O&#93;&#43; etc&#41; </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.instrument_type'>instrument&#95;type</a></td>
+		<td> text   </td>
+		<td> Instrument type &#40;ideally in the MassBank naming convention e&#46;g&#46; &#39;CE&#45;ESI&#45;TOF&#39;&#44; &#39;ESI&#45;ITFT&#39;&#44; &#39;ESI&#45;ITTOF&#39;&#44; &#39;ESI&#45;QTOF&#39;&#44; &#39;LC&#45;ESI&#45;IT&#39;&#44;  &#39;LC&#45;ESI&#45;ITFT&#39;&#44; &#39;LC&#45;ESI&#45;ITTOF&#39;&#44; &#39;LC&#45;ESI&#45;QFT&#39;&#44; &#39;LC&#45;ESI&#45;QIT&#39;&#44; &#39;LC&#45;ESI&#45;QQ&#39;&#44; &#39;LC&#45;ESI&#45;QTOF&#39;&#44; &#39;LC&#45;ESI&#45;TOF&#39;&#44; etc </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.instrument'>instrument</a></td>
+		<td> text   </td>
+		<td> The mass spectrometry instrument name </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.copyright'>copyright</a></td>
+		<td> text   </td>
+		<td> The copyright of the original spectra </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.column'>column</a></td>
+		<td> text   </td>
+		<td> The chromatography column used </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.mass_accuracy'>mass&#95;accuracy</a></td>
+		<td> real   </td>
+		<td> The mass accuracy of the mass spectrometry instrument </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.mass_error'>mass&#95;error</a></td>
+		<td> real   </td>
+		<td> The mass error of the mass spectrometry instrument </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.origin'>origin</a></td>
+		<td> text   </td>
+		<td> The origin of the individual spectra &#40;sometimes can have a reference to the original file prior to creating the msp&#41; </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.splash'>splash</a></td>
+		<td> text   </td>
+		<td> SPLASH database spectral identifier https&#58;&#47;&#47;splash&#46;fiehnlab&#46;ucdavis&#46;edu&#47; </td>
+	</tr>
+	<tr>
+		<td>*<svg width='14' height='14'><use xlink:href='#fk'/></svg></td>
+		<td><a name='library_spectra_meta.library_spectra_source_id'>library&#95;spectra&#95;source&#95;id</a></td>
+		<td> integer   </td>
+		<td> library&#95;spectra&#95;source id </td>
+	</tr>
+	<tr>
+		<td>*<svg width='14' height='14'><use xlink:href='#fk'/></svg></td>
+		<td><a name='library_spectra_meta.inchikey_id'>inchikey&#95;id</a></td>
+		<td> text   </td>
+		<td> inchikey id </td>
+	</tr>
+<tr><th colspan='4'>Indexes</th></tr>
+	<tr>		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg></td><td>pk&#95;library&#95;spectra&#95;meta</td>
+		<td> ON id</td>
+		<td>  </td>
+	</tr>
+<tr><th colspan='4'>Foreign Keys</th></tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td><td>Fk_library_spectra_meta</td>
+		<td > ( library&#95;spectra&#95;source&#95;id ) ref <a href='#library&#95;spectra&#95;source'>library&#95;spectra&#95;source</a> (id) </td>
+		<td>  </td>
+	</tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td><td>Fk_library_spectra_meta</td>
+		<td > ( inchikey&#95;id ) ref <a href='#metab&#95;compound'>metab&#95;compound</a> (inchikey&#95;id) </td>
+		<td>  </td>
+	</tr>
+</tbody>
+</table></div></div>
+
+<br><br>
+<div class='card'><div class='card-body'><a name='library_spectra_source' onclick='window.scrollTo(264, 304);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra_source</h4></a>
+<p class="text-muted">Table for the source of the library spectra (e.g. MassBank, GNPS, etc)</p>
+<table class='table-sm table-bordered'>
+<thead>
+<tr><th>Indexes</th><th>Field Name</th><th>Data Type</th><th>Description</th></tr></thead>
+<tbody>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg><svg width='14' height='14'><use xlink:href='#ref'/></svg></td>
+		<td><a name='library_spectra_source.id'>id</a></td>
+		<td> integer   </td>
+		<td>  </td>
+	</tr>
+	<tr>
+		<td>*</td>
+		<td><a name='library_spectra_source.name'>name</a></td>
+		<td> text   </td>
+		<td> Name of the source &#40;e&#46;g&#46; massbank&#41;&#46; Should be all lowercase with no whitespace to be consistent </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_source.created_at'>created&#95;at</a></td>
+		<td> date   </td>
+		<td> Automatically created at time of row insertion </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_source.parsing_software'>parsing&#95;software</a></td>
+		<td> text   </td>
+		<td> Software used to get the library information &#40;e&#46;g&#46; msp2db&#41; </td>
+	</tr>
+<tr><th colspan='4'>Indexes</th></tr>
+	<tr>		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg></td><td>pk&#95;library&#95;spectra&#95;source</td>
+		<td> ON id</td>
+		<td>  </td>
+	</tr>
+</tbody>
+</table></div></div>
+
+<br><br>
+<div class='card'><div class='card-body'><a name='metab_compound' onclick='window.scrollTo(60, 560);return false;' style='cursor:pointer;'><h4 class='card-title'>Table metab_compound</h4></a>
+<p class="text-muted">Table for compound information, compounds are determined unique by their InChIKey.</p>
+<table class='table-sm table-bordered'>
+<thead>
+<tr><th>Indexes</th><th>Field Name</th><th>Data Type</th><th>Description</th></tr></thead>
+<tbody>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg><svg width='14' height='14'><use xlink:href='#ref'/></svg></td>
+		<td><a name='metab_compound.inchikey_id'>inchikey&#95;id</a></td>
+		<td> text   </td>
+		<td> InChiKey https&#58;&#47;&#47;inchi&#46;info&#47;inchikey&#95;overview&#95;en&#46;html </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.name'>name</a></td>
+		<td> text   </td>
+		<td> General name of compound &#40;see &quot;other names&quot; for synonyms&#41; </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.pubchem_id'>pubchem&#95;id</a></td>
+		<td> text   </td>
+		<td> PubChem compound ID </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.chemspider_id'>chemspider&#95;id</a></td>
+		<td> text   </td>
+		<td> Chemspider compound id </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.other_names'>other&#95;names</a></td>
+		<td> text   </td>
+		<td> Synonyms </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.exact_mass'>exact&#95;mass</a></td>
+		<td> real   </td>
+		<td> Exact mass </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.molecular_formula'>molecular&#95;formula</a></td>
+		<td> text   </td>
+		<td> Molecular formula </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.molecular_weight'>molecular&#95;weight</a></td>
+		<td> real   </td>
+		<td> Molecular weight </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.compound_class'>compound&#95;class</a></td>
+		<td> text   </td>
+		<td> Compound class </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.smiles'>smiles</a></td>
+		<td> text   </td>
+		<td> Simplified molecular&#45;input line&#45;entry system &#40;SMILES&#41; https&#58;&#47;&#47;en&#46;wikipedia&#46;org&#47;wiki&#47;Simplified&#95;molecular&#45;input&#95;line&#45;entry&#95;system </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.created_at'>created&#95;at</a></td>
+		<td> date   </td>
+		<td> Automatically created with new insertion </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='metab_compound.updated_at'>updated&#95;at</a></td>
+		<td> date   </td>
+		<td> Should be updated when any changes have been made </td>
+	</tr>
+<tr><th colspan='4'>Indexes</th></tr>
+	<tr>		<td><svg width='14' height='14'><use xlink:href='#unq'/></svg></td><td>pk&#95;metab&#95;compound</td>
+		<td> ON inchikey&#95;id</td>
+		<td>  </td>
+	</tr>
+</tbody>
+</table></div></div>
+
+<p align='right'><a href='https://www.dbschema.com' style='color:#aaa'>Powered by DbSchema</a></p></body></html>

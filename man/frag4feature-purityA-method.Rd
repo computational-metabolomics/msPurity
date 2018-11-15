@@ -8,7 +8,8 @@
 \usage{
 \S4method{frag4feature}{purityA}(pa, xset, ppm = 5, plim = NA,
   intense = TRUE, convert2RawRT = TRUE, create_db = FALSE,
-  out_dir = ".", db_name = NA, grp_peaklist = NA, use_group = FALSE)
+  out_dir = ".", db_name = NA, grp_peaklist = NA,
+  use_group = FALSE)
 }
 \arguments{
 \item{pa}{object; purityA object}

@@ -8,10 +8,10 @@
 and signal-to-noise of multiple scans from multiple MS datafiles
 (mzML or .csv)}
 \usage{
-\S4method{averageSpectra}{purityD}(Object, rtscn = "all", scanRange = NA,
-  timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3,
-  av = "median", missingV = "zero", minfrac = 0.6667, normTIC = FALSE,
-  snMeth = "median")
+\S4method{averageSpectra}{purityD}(Object, rtscn = "all",
+  scanRange = NA, timeRange = NA, clustType = "hc", ppm = 1.5,
+  snthr = 3, av = "median", missingV = "zero", minfrac = 0.6667,
+  normTIC = FALSE, snMeth = "median")
 }
 \arguments{
 \item{Object}{object; purityD object}

@@ -11,12 +11,12 @@ spectral_matching(target_db_pth, ra_thres_l = 0, ra_thres_t = 2,
   pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".")
 }
 \arguments{
-\item{target_db_pth}{character; Path of the database of targets that will be searched against the library spectra. Generated
+\item{target_db_pth}{character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
 either from frag4feature or from create_database functions.}
 
 \item{ra_thres_l}{numeric; Relative abundance threshold for library spectra}
 
-\item{ra_thres_t}{numeric; Relative abundance threshold for target spectra
+\item{ra_thres_t}{numeric; Relative abundance threshold for target (query) spectra
 (Peaks below this RA threshold will be excluded)}
 
 \item{cores}{numeric; Number of cores to use}

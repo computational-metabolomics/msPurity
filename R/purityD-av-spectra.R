@@ -176,7 +176,7 @@ averageSpectraSingle <- function(filePth,
   }
 
   # get normalised TIC intensity
-  peaklist <- ddply( peaklist, .(scanid), function(x){
+  peaklist <- plyr::ddply( peaklist, .(scanid), function(x){
     x$inorm = x$i/sum(x$i)
     return(x)
     })
@@ -549,7 +549,7 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #' grpedP <- groupPeaks(ppDIMS)
 #' @export
 groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
-  comb <- ldply(peak_list)
+  comb <- plyr::ldply(peak_list)
 
   if (cores>1) {
     clust<-parallel::makeCluster(cores)
@@ -558,14 +558,14 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   } else {
     parallelBool = FALSE
   }
+  # Need to be ordered! important for when clustering (especially if when the peaks have
+  # to be split for hc
+  comb <- comb[order(comb$mz),]
 
   mz <- comb$mz
 
   # Cluster the peaks togther
-  comb$cl <- clustering(mz, clustType = clustType, cores = cores)
-
-
-  comb[order(comb$mz),]
+  comb$cl <- clustering(mz, clustType = clustType, cores = cores, ppm = ppm)
 
   # Create a dataframe with each file is a column
   sampnms <- unique(comb$.id)
@@ -578,7 +578,7 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
     sub <- comb[comb$.id == snmi, ]
 
     # if multiple mz values in the group then average
-    sub <- ddply(sub, ~ cl, medGroup)
+    sub <- plyr::ddply(sub, ~ cl, medGroup)
 
     addnew <- sub[ , -which(names(sub) %in% c("cl", ".id"))]
 

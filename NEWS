@@ -1,3 +1,9 @@
+CHANGES IN VERSION 1.9.1
+=========================
+* Bug fix for groupPeaks and groupPeaksEx (the ppm argument was not working and there was inconsistent behaviour with larger datasets). Thanks to Elliot for spotting (https://github.com/litepalmer)
+* Updated documentation for spectral matching
+
+
 CHANGES IN VERSION 1.7.6
 =========================
 * create_sql bug fix for msms spectra table. Was crashing due to incorrect ordering.
