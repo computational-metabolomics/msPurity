@@ -23,7 +23,7 @@ Which version to use?
 
 Recommendation for most uses cases is to install and use the `Bioconductor stable version <http://bioconductor.org/packages/msPurity/>`_ of msPurity
 
-The code available from both the _`Bioconductor development branch <http://bioconductor.org/packages/devel/bioc/html/msPurity.html>`_ and _`the master branch on github <https://github.com/computational-metabolomics/mspurity>`_ are intended for development use only and should be used with caution.
+The code available from both the `Bioconductor development branch <http://bioconductor.org/packages/devel/bioc/html/msPurity.html>`_ and `the master branch on github <https://github.com/computational-metabolomics/mspurity>`_ are intended for development use only and should be used with caution.
 
 ------------
 About
@@ -35,7 +35,7 @@ The software can either be used on fragmentation spectra that has been collected
 
 Since the paper has been published the package now supports spectral matching, SQLite interaction and some of the functionality is now implemented in Galaxy.
 
-Associated paper ["msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry"](http://pubs.acs.org/doi/abs/10.1021/acs.analchem.6b04358) [2]
+Associated paper  `msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry <http://pubs.acs.org/doi/abs/10.1021/acs.analchem.6b04358>`_ [2]
 
 Use the following links for more details:
 
