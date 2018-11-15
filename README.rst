@@ -64,17 +64,6 @@ Bioconductor
 
 
 
-Bioconductor (old)
-------------
-Older versions of bioconductor used this installation approach
-
-.. code-block:: r
-
-  ## try http:// if https:// URLs are not supported
-  source("https://bioconductor.org/biocLite.R")
-  biocLite("msPurity")
-
-
 Github
 ------------
 
