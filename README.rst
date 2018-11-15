@@ -42,7 +42,6 @@ Use the following links for more details:
 * Bioconductor: http://bioconductor.org/packages/msPurity/
 * Vignette: https://bioconductor.org/packages/devel/bioc/vignettes/msPurity/inst/doc/msPurity-vignette.html
 * Manual: http://bioconductor.org/packages/devel/bioc/manuals/msPurity/man/msPurity.pdf
-* Bioconductor mirror code: https://github.com/Bioconductor-mirror/msPurity
 * Galaxy implementation: https://github.com/computational-metabolomics/mspurity-galaxy
 * Bioconda (stable): https://anaconda.org/bioconda/bioconductor-mspurity
 * Conda (dev and testing): https://anaconda.org/tomnl/bioconductor-mspurity
