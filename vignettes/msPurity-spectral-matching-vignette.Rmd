@@ -8,6 +8,7 @@ output:
     toc_depth: 3  
     number_sections: true  
     toc_float: true
+    
 bibliography: mspurity.bib
 vignette: >
   %\VignetteIndexEntry{msPurity spectral matching}
@@ -21,12 +22,12 @@ The msPurity package can perform spectral matching from a query SQLite database 
 
 The query SQLite database is generated either using `frag4feature` function with the option `create_db=True` or by using the `create_db` function. The query SQLite database contains information of the query LC-MS/MS run, e.g. file info, scan info, chromatographic peaks, group peaks, MS/MS spectral data. 
 
-See [query database schema](query_sqlite_schema.html).
+See [query database schema][Query database schema]
 
 
 The default library SQLite database is in the msPurityData Bioconductor Data package and has been generated from data derived from [MoNA](http://mona.fiehnlab.ucdavis.edu/downloads). This contains data from FAHFA, GNPS, HMDB, RTX5 Fiehnlib, Vaniya/Fiehn Natural products library, Fiehn HILIC, Respect, MassBank, Lipidblast, MetaboBASE, Pathogen box and Riken IMS oxidised phospholpids. An alternative database is also provided that has been created just from MassBank using data directly from [MassBank](https://github.com/MassBank/MassBank-data). If a user would like to create their own spectral database, a python package can be used to generate the appropriate SQLite database from a collection of msp files, see [msp2db](https://msp2db.readthedocs.io/en/latest/).
 
-See [library database schema](library_sqlite_schema.html).
+See [library database schema][Library database schema].
 
 ![spectral matching workflow (LC-MS/MS)](spectral-matching-workflow.png)
 
@@ -68,3 +69,18 @@ result <- spectral_matching(target_db_pth = pa@db_path,  scan_ids = c(1120,  366
 
 
 It should be noted that in a typical Data Dependent Acquisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.
+
+
+# Query database schema
+
+```{r, echo=FALSE}
+htmltools::includeHTML("query_sqlite_schema.html")
+
+```
+
+# Library database schema
+
+```{r, echo=FALSE}
+htmltools::includeHTML("library_sqlite_schema.html")
+
+```
