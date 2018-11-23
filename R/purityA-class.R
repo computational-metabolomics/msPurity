@@ -19,7 +19,9 @@ setClass(
     grped_ms2 = "list",
     mzRback = "character",
     db_path = "character",
-    f4f_link_type = "character"
+    f4f_link_type = "character",
+    av_spectra = "list",
+    av_params = "list"
   )
 )
 

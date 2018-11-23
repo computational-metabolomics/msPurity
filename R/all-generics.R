@@ -2,6 +2,9 @@ setGeneric("getP", function(x) standardGeneric("getP"))
 
 setGeneric("updatePeaks", function(x, newlist) standardGeneric("updatePeaks"))
 
+
+
+
 setGeneric(name="averageSpectra",
            def=function(Object,rtscn = "all", scanRange=NA, timeRange = NA,
                         clustType="hc", ppm=1.5, snthr = 3, av="median",
@@ -52,6 +55,15 @@ setGeneric(name="frag4feature",
              standardGeneric("frag4feature")
            }
 )
+
+setGeneric(name="averageFragmentation",
+           def=function(pa, minfrac_intra=0.5, minfrac_inter=0.5,  minnum_intra=1,
+                        minnum_inter=1, ppm_intra=5, ppm_inter=5, av='median', sum_i=TRUE,
+                        purity_thres=0.5) {
+             standardGeneric("averageFragmentation")
+           }
+)
+
 
 setGeneric(name="validate",
            def=function(pa, ppLCMS){
