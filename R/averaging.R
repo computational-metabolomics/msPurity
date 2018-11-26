@@ -133,11 +133,13 @@ averageCluster <- function(x, av="median", minnum=1,
     snr <- median(x$snr)
     inorm <- median(x$inorm)
     purity <- median(x$inPurity)
+    ra <- median(x$ra)
   }else{
     i <- mean(x$i)
     snr <- mean(x$snr)
     inorm <- mean(x$inorm)
     purity <- mean(x$inPurity)
+    ra <- median(x$mean)
   }
 
   if (sumI){
@@ -147,7 +149,21 @@ averageCluster <- function(x, av="median", minnum=1,
 
 
   return(c("mz" = mz, "i" = i, "snr" = snr, "rsd" = rsdRes,
-           "inorm" = inorm, 'count' =length(x$i), 'total'=totalScans, 'inPurity'=purity))
+           "inorm" = inorm, 'count' =length(x$i), 'total'=totalScans, 'inPurity'=purity, 'ra'=ra))
 
 }
 
+snrFilter <- function(x, snthr, snMeth){
+  # If snMethod is "precalc" then the SNR does not need to
+  # be calculated required
+  if (snMeth=="median"){
+    x$snr <- x$i/median(x$i)
+  }else if(snMeth=="mean"){
+    x$snr <- x$i/mean(x$i)
+  }
+
+  x <- x[x$snr>snthr, ]
+
+  return(x)
+
+}

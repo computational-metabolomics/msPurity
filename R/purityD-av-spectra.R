@@ -300,20 +300,7 @@ mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth, bac
 
 }
 
-snrFilter <- function(x, snthr, snMeth){
-  # If snMethod is "precalc" then the SNR does not need to
-  # be calculated required
-  if (snMeth=="median"){
-    x$snr <- x$i/median(x$i)
-  }else if(snMeth=="mean"){
-    x$snr <- x$i/mean(x$i)
-  }
 
-  x <- x[x$snr>snthr, ]
-
-  return(x)
-
-}
 
 msfrProcess <- function(filePth, scanRange, snthr, snMeth){
   csvFileOut <- read.csv(filePth)
