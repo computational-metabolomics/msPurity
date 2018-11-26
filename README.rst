@@ -104,10 +104,10 @@ Ref
 
 
 
-.. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msPurity.svg?style=flat&maxAge=3600&label=Travis-CI
+.. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msPurity/master.svg?label=Travis
    :target: https://travis-ci.org/computational-metabolomics/msPurity
 
-.. |Build Status (AppVeyor)| image:: https://img.shields.io/appveyor/ci/Tomnl/msPurity.svg?style=flat&maxAge=3600&label=AppVeyor
+.. |Build Status (AppVeyor)| image:: https://ci.appveyor.com/api/projects/status/github/computational-metabolomics/mspurity?branch=master&svg=true
    :target: https://ci.appveyor.com/project/Tomnl/msPurity
 
 .. |Git| image:: https://img.shields.io/badge/repository-GitHub-blue.svg?style=flat&maxAge=3600
