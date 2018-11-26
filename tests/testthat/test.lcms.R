@@ -24,6 +24,33 @@ test_that("checking lcms based functions", {
   expect_equal(nrow(pa@grped_ms2[[2]][[1]]), 4)
   expect_equal(round(pa@grped_ms2[[1]][[1]][1],4), 112.0509)
 
+  pa <- averageFragmentation(pa)
+
+
+
+  expect_equal(length(pa@av_spectra), 77)
+  expect_equal(length(pa@av_spectra$`12`$av_intra), 2)
+  expect_equal(length(pa@av_spectra$`12`$av_inter), 9)
+  expect_equal(length(pa@av_spectra$`12`$av_all), 9)
+  expect_equal(round(pa@av_spectra$`12`$av_all$mz, 4), c(103.1290, 107.2701, 116.0166, 116.0709, 116.1073, 130.0276))
+  expect_equal(round(pa@av_spectra$`12`$av_all$frac, 4), c(0.1667, 0.1667, 0.8333, 1.0000, 0.6667, 0.1667))
+  expect_equal(round(pa@av_spectra$`12`$av_all$i, 2), c(4419.71, 1726.61, 31097.73, 4143476.25, 26102.33, 4081.14))
+
+  expect_equal(round(pa@av_spectra$`12`$av_intra$`1`$mz, 4), c(107.2701, 116.0165, 116.0709, 116.1073))
+  expect_equal(round(pa@av_spectra$`12`$av_intra$`2`$mz, 4), c(103.1290, 116.0168, 116.0709, 116.1073, 130.0276))
+  expect_equal(round(pa@av_spectra$`12`$av_intra$`1`$frac, 4), c(0.3333, 0.6667, 1.0000, 0.6667))
+  expect_equal(round(pa@av_spectra$`12`$av_intra$`2`$frac, 4), c(0.3333, 1.0000, 1.0000, 0.6667, 0.3333))
+  expect_equal(round(pa@av_spectra$`12`$av_intra$`1`$i, 2), c(1726.61, 7324.86, 2114202.40, 13797.10))
+  expect_equal(round(pa@av_spectra$`12`$av_intra$`2`$i, 2), c( 4419.71, 23772.87, 2029273.85, 12305.23, 4081.14))
+
+  expect_equal(round(pa@av_spectra$`12`$av_inter$mz, 4), c(116.0166,116.0709,116.1073))
+  expect_equal(round(pa@av_spectra$`12`$av_inter$frac, 4), c(1,1,1))
+  expect_equal(round(pa@av_spectra$`12`$av_inter$i, 2), c(31097.73, 4143476.25, 26102.33))
+
+  expect_equal(round(pa@av_spectra$`12`$av_all$mz, 4), c(103.1290, 107.2701, 116.0166, 116.0709, 116.1073, 130.0276))
+  expect_equal(round(pa@av_spectra$`12`$av_all$frac, 4), c(0.1667, 0.1667, 0.8333, 1.0000, 0.6667, 0.1667))
+  expect_equal(round(pa@av_spectra$`12`$av_all$i, 2), c(4419.71, 1726.61, 31097.73, 4143476.25, 26102.33, 4081.14))
+
 
   msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
   xset2 <- xcmsSet(msPths)

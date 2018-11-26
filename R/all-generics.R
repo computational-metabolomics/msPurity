@@ -58,8 +58,8 @@ setGeneric(name="frag4feature",
 
 setGeneric(name="averageFragmentation",
            def=function(pa, minfrac_intra=0.5, minfrac_inter=0.5,  minnum_intra=1,
-                        minnum_inter=1, ppm_intra=5, ppm_inter=5, av='median', sum_i=TRUE,
-                        purity_thres=0.5) {
+                        minnum_inter=1, ppm_intra=5, ppm_inter=5, minfrac_all=0.5, minnum_all=1,
+                        ppm_all=5, av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1) {
              standardGeneric("averageFragmentation")
            }
 )

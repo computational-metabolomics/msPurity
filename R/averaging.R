@@ -22,6 +22,7 @@ group1d <- function(v, thr){
 performHc <- function(mzs, ppm){
 
   if(length(mzs)==1){return(1)}
+
   mdist = dist(mzs)
   averageMzPair = as.dist(outer(mzs, mzs, "+")/2)
   relativeErrors = averageMzPair * 0.000001
@@ -131,10 +132,12 @@ averageCluster <- function(x, av="median", minnum=1,
     i <- median(x$i)
     snr <- median(x$snr)
     inorm <- median(x$inorm)
+    purity <- median(x$inPurity)
   }else{
     i <- mean(x$i)
     snr <- mean(x$snr)
     inorm <- mean(x$inorm)
+    purity <- mean(x$inPurity)
   }
 
   if (sumI){
@@ -143,7 +146,8 @@ averageCluster <- function(x, av="median", minnum=1,
 
 
 
-  return(c("mz" = mz, "i" = i, "snr" = snr, "rsd" = rsdRes, "inorm" = inorm, 'count' =length(x$i), 'total'=totalScans))
+  return(c("mz" = mz, "i" = i, "snr" = snr, "rsd" = rsdRes,
+           "inorm" = inorm, 'count' =length(x$i), 'total'=totalScans, 'inPurity'=purity))
 
 }
 

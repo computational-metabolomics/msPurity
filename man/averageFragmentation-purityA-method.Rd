@@ -3,42 +3,53 @@
 \docType{methods}
 \name{averageFragmentation,purityA-method}
 \alias{averageFragmentation,purityA-method}
-\alias{frag4feature}
+\alias{averageFragmentation}
 \title{Average fragemntation spectra across XCMS features}
 \usage{
 \S4method{averageFragmentation}{purityA}(pa, minfrac_intra = 0.5,
   minfrac_inter = 0.5, minnum_intra = 1, minnum_inter = 1,
-  ppm_intra = 5, ppm_inter = 5, av = "median", sum_i = TRUE,
-  purity_thres = 0.5)
+  ppm_intra = 5, ppm_inter = 5, minfrac_all = 0.5, minnum_all = 1,
+  ppm_all = 5, av = "median", sum_i = TRUE, plim = 0.5,
+  remove_peaks = FALSE, cores = 1)
 }
 \arguments{
 \item{pa}{object; purityA object}
 
-\item{xset}{object; XCMS object derived from the same files as the puritydf}
+\item{minfrac_intra}{numeric; minimum ratio of the peak fraction (peak count / total peaks) within each file}
 
-\item{ppm}{numeric; ppm tolerance between precursor mz and feature mz}
+\item{minfrac_inter}{numeric; minimum ratio of the peak fraction (peak count / total peaks) across files}
 
-\item{plim}{numeric; min purity of precursor to be included}
+\item{minnum_intra}{numeric; minimum number of times peak is present across fragmentation spectra within each file}
 
-\item{intense}{boolean; If the most intense precursor or the centered precursor is used}
+\item{minnum_inter}{numeric; minimum number of times peak is present across fragmentation spectra across files}
 
-\item{use_group}{boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature}
+\item{ppm_intra}{numeric; ppm threshold to average within each file}
 
-\item{convert2RawRT}{boolean; If retention time correction has been used in XCMS set this to TRUE}
+\item{ppm_inter}{numeric; ppm threshold to average across files}
 
-\item{create_db}{boolean; SQLite database will be created of the results}
+\item{minfrac_all}{numeric;minimum ratio of the peak fraction (peak count / total peaks) across all (ignoring intra and inter relationships)}
 
-\item{db_name}{character; If create_db is TRUE, a custom database name can be used, default is a time stamp}
+\item{minnum_all}{numeric; minimum number of times peak is present across all fragmentation spectra (ignoring intra and inter relationships)}
 
-\item{out_dir}{character; Path where database will be created}
+\item{ppm_all}{numeric; ppm threshold to average across all scans (ignoring intra and inter relationships)}
 
-\item{grp_peaklist}{dataframe [optional]; Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though}
-}
-\value{
-purityA object with slots for fragmentation-XCMS links
+\item{av}{character; type of averaging to use (median or mean)}
+
+\item{sum_i}{boolean; TRUE if the intensity for each peak is summed across averaged spectra}
+
+\item{plim}{numeric; min purity of precursor for fragmentation spectra scan to be included}
+
+\item{remove_peaks}{boolean; TRUE if peaks are to be removed that do not meet the minfrac criteria. Otherwise they will just be flagged}
+
+\item{cores}{numeric; Number of cores for multiprocessing}
 }
 \description{
-Average fragemntation spectra across XCMS features.
+Average fragemntation spectra across XCMS features. Averaging can be done within file (intra), across files (inter)
+and independantly of the files (all).
+
+The default approach is to use hierarchical clustering where peaks within a set ppm tolerance will be clustered.
+
+The clustered peaks are then averaged (or summed) and filtered.
 }
 \examples{
 

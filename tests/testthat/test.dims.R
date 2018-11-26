@@ -32,7 +32,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 553.278)
   expect_equal(round(median(avP$i), 0), 4639006)
   expect_equal(round(median(avP$snr), 3), 90.165)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006, 0.015))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006, 0.015, 5, 4))
 
   #print("=== check multi-core ===")
   #Multi-core seems to fail on unit tests but fine outside of unit test enviroment, not sure why
@@ -45,7 +45,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 553.278)
   expect_equal(round(median(avP$i), 0), 4639006)
   expect_equal(round(median(avP$snr), 3), 90.165)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006, 0.015))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 173.081, 11272447.000, 216.506, 9.006, 0.015, 5, 4))
 
 
   print("=== check using MsFileReader output (median SNR thres) ===")
@@ -55,7 +55,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 164.075)
   expect_equal(round(median(avP$i), 0), 5855576)
   expect_equal(round(median(avP$snr), 3), 292.333)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 155.070, 1491491.750, 74.527, 1.756, 0.127))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c(1.000, 155.070, 1491491.750, 74.527, 1.756, 0.127, 2, 2))
 
 
 
@@ -66,7 +66,7 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$mz), 3), 173.081)
   expect_equal(round(median(avP$i), 0), 691679)
   expect_equal(round(median(avP$snr), 3), 51.868)
-  expect_equal(round(unname(unlist(avP[1,])), 3), c( 1.000, 155.070, 1491491.750, 113.299, 1.756, 0.110))
+  expect_equal(round(unname(unlist(avP[1,])), 3), c( 1.000, 155.070, 1491491.750, 113.299, 1.756, 0.110, 2, 2))
 
 })
 
@@ -138,7 +138,7 @@ test_that("Check groupPeaks (function only)", {
   gpeaks <- groupPeaksEx(peak_list)
 
   expect_equal(nrow(gpeaks), 111)
-  expect_equal(ncol(gpeaks), 13)
+  expect_equal(ncol(gpeaks), 17)
 })
 
 

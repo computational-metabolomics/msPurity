@@ -74,7 +74,7 @@ setMethod(f="frag4feature", signature="purityA",
     para = FALSE
   }
 
-  para=FALSE
+
 
   if(use_group){
     fullpeakw <- data.frame(get_full_peak_width(xset@groups, xset))
