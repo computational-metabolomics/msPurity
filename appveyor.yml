@@ -17,7 +17,7 @@ build_script:
   - R -e source('https://install-github.me/r-lib/remotes')
   - travis-tool.sh install_bioc_deps
   - travis-tool.sh install_deps
-  - echo install.packages("BiocManager");BiocManager::install("msPurityData", version = "3.8"); > dinstall.R
+  - echo install.packages("BiocManager");BiocManager::install("msPurityData", version = "3.7"); > dinstall.R
 
 test_script:
   - travis-tool.sh run_tests
