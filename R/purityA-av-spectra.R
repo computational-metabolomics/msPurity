@@ -242,9 +242,6 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
 
   averages$frac <- averages$count/averages$total
 
-
-
-
   averages$snr_pass_flag <- averages$snr > snthr
 
   averages$minfrac_pass_flag <- averages$frac > minfrac
