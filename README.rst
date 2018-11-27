@@ -23,7 +23,7 @@ Which version to use?
 
 Recommendation for most uses cases is to install and use the `Bioconductor stable version <http://bioconductor.org/packages/msPurity/>`_ of msPurity.
 
-The code available from both the `Bioconductor development branch <http://bioconductor.org/packages/devel/bioc/html/msPurity.html>`_ and `the master branch on github <https://github.com/computational-metabolomics/mspurity>`_ are intended for development use only.
+The code available from both the `Bioconductor development branch <http://bioconductor.org/packages/devel/bioc/html/msPurity.html>`_ and `the master branch on github <https://github.com/computational-metabolomics/mspurity>`_ has the newest functionality.
 
 ------------
 About
