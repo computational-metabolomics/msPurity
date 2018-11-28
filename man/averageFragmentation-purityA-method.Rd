@@ -9,7 +9,9 @@
 \S4method{averageFragmentation}{purityA}(pa, minfrac_intra = 0.5,
   minfrac_inter = 0.5, minnum_intra = 1, minnum_inter = 1,
   ppm_intra = 5, ppm_inter = 5, minfrac_all = 0.5, minnum_all = 1,
-  ppm_all = 5, av = "median", sum_i = TRUE, plim = 0.5,
+  ppm_all = 5, snr_inter = 0, snr_intra = 0, snr_all = 0,
+  ra_inter = 0, ra_intra = 0, ra_all = 0, snr_pre = 0,
+  ra_pre = 0, av = "median", sum_i = TRUE, plim = 0.5,
   remove_peaks = FALSE, cores = 1)
 }
 \arguments{
@@ -33,13 +35,29 @@
 
 \item{ppm_all}{numeric; ppm threshold to average across all scans (ignoring intra and inter relationships)}
 
+\item{snr_inter}{numeric; minimum signal-to-noise of the peak across files}
+
+\item{snr_intra}{numeric; minimum signal-to-noise of the peak within each file}
+
+\item{snr_all}{numeric;  minimum signal-to-noise of the peak across all (ignoring intra and inter relationships)}
+
+\item{ra_inter}{numeric; minimum relative abundance of the peak across files}
+
+\item{ra_intra}{numeric; minimum relative abundance of the peak within each file}
+
+\item{ra_all}{numeric; minimum relative abundance of the peak fraction across all (ignoring intra and inter relationships)}
+
+\item{snr_pre}{numeric;  minimum signal-to-noise prior to averaging}
+
+\item{ra_pre}{numeric;  minimum relative abundance prior to averaging}
+
 \item{av}{character; type of averaging to use (median or mean)}
 
 \item{sum_i}{boolean; TRUE if the intensity for each peak is summed across averaged spectra}
 
 \item{plim}{numeric; min purity of precursor for fragmentation spectra scan to be included}
 
-\item{remove_peaks}{boolean; TRUE if peaks are to be removed that do not meet the minfrac criteria. Otherwise they will just be flagged}
+\item{remove_peaks}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
 
 \item{cores}{numeric; Number of cores for multiprocessing}
 }

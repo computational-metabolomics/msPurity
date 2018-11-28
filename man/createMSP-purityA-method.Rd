@@ -6,9 +6,9 @@
 \alias{createMSP}
 \title{Create MSP file from purityA object}
 \usage{
-\S4method{createMSP}{purityA}(pa, msp_file, metadata,
-  metadata_cols = c("Name", "ion"), xcms_groupid = NULL,
-  win_format = FALSE, method = "all")
+\S4method{createMSP}{purityA}(pa, msp_file, metadata = NULL,
+  metadata_cols = c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
+  xcms_groupids = NULL, win_format = FALSE, method = "all")
 }
 \arguments{
 \item{pa}{object;  purityA object}
@@ -17,16 +17,29 @@
 
 \item{metadata}{Data frame with additional coumpound infomation to include in msp output}
 
-\item{metadata_cols}{Column names of meta data to incorporate in specta annotation}
-
-\item{xcms_groupid}{XCMS group id's to extract ms/ms data for}
+\item{metadata_cols}{Column names of meta data to incorporate into name}
 
 \item{win_format}{If set to TRUE will use MS Windows line endings, otherwise UNIX format}
 
 \item{method}{"all" will export all matching ms/ms spectra to xcms features, "max" will use spectra with the highest inensity,
 "average-intra" will use the intra file averaged file, "average-inter" will use the inter file (within file)
  averaged spectra, "average-all" will use the averaged spectra (ignoring inter and intra)}
+
+\item{xcms_groupid}{XCMS group id's to extract ms/ms data for}
 }
 \description{
 Create a MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
+}
+\examples{
+
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+
+pa  <- purityA(msmsPths)
+pa <- frag4feature(pa, xset)
+pa <- averageFragmentation(pa)
+createMSP(pa)
 }

@@ -67,7 +67,7 @@ setGeneric(name="averageFragmentation",
 
 setGeneric(name="createMSP",
            def=function(pa, msp_file, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-                        xcms_groupid=NULL, win_format=FALSE, method="all") {
+                        xcms_groupids=NULL, win_format=FALSE, method="all") {
              standardGeneric("createMSP")
            }
 )
