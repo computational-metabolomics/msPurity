@@ -38,6 +38,7 @@ setMethod(f="createMSP", signature="purityA",
           }
 )
 
+
 mspurity_to_msp <- function (pa, msp_file_pth, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
                              xcms_groupid=NULL, win_format=FALSE, method="all"){
 
@@ -50,11 +51,13 @@ mspurity_to_msp <- function (pa, msp_file_pth, metadata=NULL, metadata_cols=c("C
   if (is.null(xcms_groupid)){
     xcms_groupid <- as.numeric(names(pa@grped_ms2))
   }
-  for(i in xcms_groupid){
+  for(grpid in xcms_groupid){
 
-    group_id <- which(grped_df$grpid==i)
 
-    spec <- msms[[as.character(i)]]
+    group_id <- which(grped_df$grpid==grpid)
+
+    spec <- msms[[as.character(grpid)]]
+
 
     if (length(group_id)>=1){
 
@@ -72,18 +75,11 @@ mspurity_to_msp <- function (pa, msp_file_pth, metadata=NULL, metadata_cols=c("C
           }
 
           spectrum <- spec[[j]]
+          spectrum <- add_mzi_cols(spectrum)
 
-          spectrum <- data.frame(spectrum)
-          colnames(spectrum) <- c('mz', 'i')
 
-          if (!is.null(metadata) && nrow(metadata[metadata$grpid==i,])>0){
-            name = paste( paste(metadata[metadata$grpid==i, metadata_cols], collapse = ", ")
-                          ,", XCMS_group:" ,i, ", file:" ,fileid, sep='')
-            write.msp(name,grpdj$precurMtchMZ, spectrum, metadata[metadata$grpid==i,], of)
-          }else{
-            name = paste( "MZ: ", round(grpdj$precurMtchMZ,4), ", RT: ", round(grpdj$rt,2), ", XCMS_group:" ,i, ", file:" ,fileid, sep='')
-            write.msp(name,grpdj$precurMtchMZ, spectrum, metadata, of)
-          }
+          write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method=method)
+
 
         }
 
@@ -92,36 +88,41 @@ mspurity_to_msp <- function (pa, msp_file_pth, metadata=NULL, metadata_cols=c("C
         prec_int <- puritydf[puritydf$pid %in% grpd$pid,'precursorIntensity']
         idx <- which(prec_int==max(prec_int))[1]  # if joint place, take the first one (very unlikely to occur)
 
-        grpd <- grpd[idx,]
+        grpdi <- grpd[idx,]
 
-        if ('sample' %in% colnames(grpd)){
-          fileid = grpd$sample
+        if ('sample' %in% colnames(grpdi)){
+          fileid = grpdi$sample
         }else{
-          fileid = grpd$fileid
+          fileid = grpdi$fileid
         }
 
-        spec_max <- data.frame(spec[[idx]])
-        colnames(spec_max) <- c('mz', 'i')
+        spec_max<- add_mzi_cols(spec[[idx]])
 
-        name = paste(i, fileid, grpd$pid, sep='-')
-        write.msp(name,grpd$precurMtchMZ,spec_max, metadata, of)
+        write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, spec_max, metadata, metadata_cols, of, method=method)
 
       }else if (method=="av_inter"){
 
-        av_inter <- pa@av_spectra[[as.character(i)]]$av_inter
+        av_inter <- pa@av_spectra[[as.character(grpid)]]$av_inter
 
-        if ('sample' %in% colnames(grpd)){
-          fileid = grpd$sample
-        }else{
-          fileid = grpd$fileid
+        write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_inter, metadata, metadata_cols, of, method=method)
+
+      }else if (method=="av_intra"){
+
+        av_intra <- pa@av_spectra[[as.character(grpid)]]$av_intra
+
+        for (j in 1:length(av_intra)){
+          av_intra_j <- av_intra[j]
+          fileid <- names(av_intra_j)
+          write.msp(grpd$mz[1], grpd$rt[1], grpid, fileid, av_intra_j[[1]], metadata, metadata_cols, of, method=method)
         }
 
-        name = paste(i, fileid, grpd$pid, sep='-')
-        write.msp(name, grpd$precurMtchMZ, av_inter, metadata, of)
+      }else if (method=="av_all"){
+
+        av_all <- pa@av_spectra[[as.character(grpid)]]$av_all
+
+        write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of, method=method)
 
       }
-
-
     }
   }
   close.connection(of)
@@ -130,49 +131,74 @@ mspurity_to_msp <- function (pa, msp_file_pth, metadata=NULL, metadata_cols=c("C
 
 
 
-write.msp <- function(name,precmz, spectra,metadata, ofile, win_format=FALSE, msp_schema="massbank2"){
+write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, msp_schema="massbank", method){
 
-  if (win_format){
-    line_end = "\r\n"
-  } else {
+  name <- concat_name(precmz, rtmed, grpid, fileid, metadata, metadata_cols)
+
+  if (!is.null(metadata) && nrow(metadata[metadata$grpid==grpid,])>0){
+    metadata <-  metadata[metadata$grpid==grpid,]
+  }
+
+  if(.Platform$OS.type == "unix") {
     line_end = "\n"
+  } else {
+    line_end = "\r\n"
   }
-
-  if (msp_schema=='massbank2'){
-    cat(paste("CH$NAME: ", name, line_end, sep = ""), file = ofile)
-
-    cat(paste("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end, sep = ""), file = ofile)
-
-    if (!is.null(metadata)){
-      cat(paste(names(metadata), unlist(metadata), line_end), sep="", file = ofile)
-    }
-
-
-    cat("COMMENT:", line_end,file = ofile)
-
-    cat(paste("PK$NUM_PEAK: ", nrow(spectra), line_end, sep = ""), file = ofile)
-
-    cat(paste("PK$PEAK: m/z int. rel.int.", line_end, sep = ""), file = ofile)
-
-  }else{
+  if (!msp_schema=='massbank'){
     cat(paste("NAME: ", name, line_end, sep = ""), file = ofile)
-
     cat(paste("PRECURSORMZ: ", precmz , line_end, sep = ""), file = ofile)
-
-    if (!is.null(metadata)){
-      cat(paste(names(metadata), unlist(metadata), line_end), sep="", file = ofile)
-    }
-
-
-    cat("Comment:", line_end,file = ofile)
-
-    cat(paste("Num Peaks: ", nrow(spectra), line_end, sep = ""), file = ofile)
-
   }
 
-  cat(paste(paste(spectra[,1], spectra[,2],  round(spectra[,2]/max(spectra[,2])*100,2), sep = "\t"), sep = line_end),
+  cat(paste("CH$NAME: ", name, line_end, sep = ""), file = ofile)
+  cat(paste("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end, sep = ""), file = ofile)
+
+  if (!is.null(metadata)){
+    cat(paste(names(metadata), unlist(metadata), line_end), sep="", file = ofile)
+  }
+  cat(paste("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end, sep = ""), file = ofile)
+
+  cat(paste("COMMENT: Exported from msPurity purityA object using function createMSP, using method '",
+              method, "' msPurity version:", packageVersion("msPurity"), sep=''),
+        line_end,file = ofile)
+
+  cat(paste("PK$NUM_PEAK: ", nrow(spectra), line_end, sep = ""), file = ofile)
+  cat(paste("PK$PEAK: m/z int. rel.int.", line_end, sep = ""), file = ofile)
+
+  if (!is.null(metadata)){
+    cat(paste(names(metadata), unlist(metadata), line_end), sep="", file = ofile)
+  }
+  cat(paste("COMMENT: Exported from msPurity purityA object using function createMSP, using method '",
+              method, "' msPurity version:", packageVersion("msPurity"), sep=''),
+        line_end,file = ofile)
+
+  cat(paste("Num Peaks: ", nrow(spectra), line_end, sep = ""), file = ofile)
+
+
+
+
+  cat(paste(paste(spectra$mz, spectra$i,  round(spectra$i/max(spectra$i)*100,2), sep = "\t"), sep = line_end),
       sep = line_end, file = ofile)
 
   cat(line_end, file = ofile)
+}
+
+concat_name <- function(mz, rtmed, grpid, fileid=NA, metadata, metadata_cols){
+
+  name <- paste(" MZ:" ,round(mz, 4)," | RT:" ,round(rtmed,1),  " | XCMS_group:" ,grpid, " | file:" ,fileid, sep='')
+
+  if (!is.null(metadata) && nrow(metadata[metadata$grpid==grpid,])>0){
+
+    name <- paste(paste(metadata[metadata$grpid==grpid, metadata_cols], collapse = " | "), name, sep=' | ')
+
+  }
+
+  return(name)
+
+}
+
+add_mzi_cols <- function(x){
+  x <- data.frame(x)
+  colnames(x) <- c('mz', 'i')
+  return(x)
 }
 
