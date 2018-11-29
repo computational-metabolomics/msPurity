@@ -6,29 +6,30 @@
 \alias{createMSP}
 \title{Create MSP file from purityA object}
 \usage{
-\S4method{createMSP}{purityA}(pa, msp_file, metadata = NULL,
+\S4method{createMSP}{purityA}(pa, msp_file_pth = NULL, metadata = NULL,
   metadata_cols = c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-  xcms_groupids = NULL, win_format = FALSE, method = "all")
+  xcms_groupids = NULL, method = "all", adduct_split = TRUE)
 }
 \arguments{
 \item{pa}{object;  purityA object}
 
-\item{msp_file}{Name of the output msp file}
+\item{metadata}{data.frame; Data frame with additional coumpound infomation to include in msp output}
 
-\item{metadata}{Data frame with additional coumpound infomation to include in msp output}
+\item{metadata_cols}{vector; Column names of meta data to incorporate into name}
 
-\item{metadata_cols}{Column names of meta data to incorporate into name}
+\item{method}{character; "all" will export all matching ms/ms spectra to xcms features, "max" will use spectra with the highest inensity,
+"av-intra" will use the intra file averaged file, "av-inter" will use the inter file (within file)
+ averaged spectra, "av-all" will use the averaged spectra (ignoring inter and intra)}
 
-\item{win_format}{If set to TRUE will use MS Windows line endings, otherwise UNIX format}
+\item{adduct_split}{boolean; If either "adduct" or  MS$FOCUSED_ION: PRECURSOR_TYPE column is in metadata then each adduct will have it's own MSP spectra.
+(Useful, if the MSP file will be used for further annotation)}
 
-\item{method}{"all" will export all matching ms/ms spectra to xcms features, "max" will use spectra with the highest inensity,
-"average-intra" will use the intra file averaged file, "average-inter" will use the inter file (within file)
- averaged spectra, "average-all" will use the averaged spectra (ignoring inter and intra)}
+\item{msp_file}{character; Name of the output msp file, if NULL the file "frag_spectra_{time stamp}.msp" will be created in the current directory}
 
-\item{xcms_groupid}{XCMS group id's to extract ms/ms data for}
+\item{xcms_groupid}{vector; XCMS group id's to extract ms/ms data for}
 }
 \description{
-Create a MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
+Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
 }
 \examples{
 
