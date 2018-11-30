@@ -193,6 +193,12 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   }
 
+  if (length(pa@av_spectra)>0){
+
+
+
+  }
+
 
   if (!is.null(xsa)){
     ###############################################

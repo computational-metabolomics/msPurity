@@ -41,13 +41,16 @@ RoxygenNote: 6.1.1
 biocViews: MassSpectrometry, Metabolomics, Software
 Collate: 
     'all-generics.R'
+    'averaging.R'
     'create_database.R'
     'flag-filter-remove.R'
     'iw-norm.R'
     'meta_extract.R'
     'pcalc.R'
+    'purityA-av-spectra.R'
     'purityA-class.R'
     'purityA-constructor.R'
+    'purityA-create-msp.R'
     'purityA-frag4feature.R'
     'purityA-validate.R'
     'purityD-class.R'
