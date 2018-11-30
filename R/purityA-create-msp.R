@@ -7,16 +7,15 @@
 #' @aliases createMSP
 #
 #' @param pa object;  purityA object
-#' @param msp_file character; Name of the output msp file, if NULL the file "frag_spectra_{time stamp}.msp" will be created in the current directory
+#' @param msp_file_pth character; Name of the output msp file, if NULL the file "frag_spectra_{time stamp}.msp" will be created in the current directory
 #' @param metadata data.frame; Data frame with additional coumpound infomation to include in msp output
 #' @param metadata_cols vector; Column names of meta data to incorporate into name
-#' @param xcms_groupid vector; XCMS group id's to extract ms/ms data for
+#' @param xcms_groupids vector; XCMS group id's to extract ms/ms data for
 #' @param method character; "all" will export all matching ms/ms spectra to xcms features, "max" will use spectra with the highest inensity,
 #'               "av-intra" will use the intra file averaged file, "av-inter" will use the inter file (within file)
 #'                averaged spectra, "av-all" will use the averaged spectra (ignoring inter and intra)
 #' @param adduct_split boolean; If either "adduct" or  MS$FOCUSED_ION: PRECURSOR_TYPE column is in metadata then each adduct will have it's own MSP spectra.
 #'                     (Useful, if the MSP file will be used for further annotation)
-#'
 #' @examples
 #'
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
