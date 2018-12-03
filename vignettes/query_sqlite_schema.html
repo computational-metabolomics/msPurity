@@ -9,17 +9,15 @@
 <link rel="shortcut icon" href="https://www.dbschema.com/images/favicon.ico">
 <style type='text/css'>
 body {
-    font-family: 'Segoe UI', 'Lucida sans', Dialog;
-    font-size: 13px;
-    background-color:#f5f5f5;
     margin: 10px;
+    font-size:90%;
 }
 </style>
 </head>
 
 <body>
 <div class='svg-container'>
-<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'   width='864' height='798' viewBox='0 0 864 798' >
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'   width='912' height='1054' viewBox='0 0 912 1054' >
   <script type='text/ecmascript'>
   <![CDATA[
   function hghl(el) { for ( var i in el ){ var elem = document.getElementById(el[i]); if ( elem != null ) elem.setAttribute('class','highlight');  }  }
@@ -40,7 +38,7 @@ body {
   path.dotted         { stroke-dasharray:4,2; }
   path.scene          { stroke-width:10; opacity:0;}
   path.highlight      { stroke-width:5; stroke:#c1a662; opacity:0.6;}
-  rect.entity         { fill:#ffffff; stroke:#aaa; stroke-width:1;shape-rendering:crispEdges; }
+  rect.entity         { fill:#ffffff; stroke:#aaa; stroke-width:1;shape-rendering:crispEdges; filter:url(#shadow); }
   line.delim          { stroke-width:1; shape-rendering:crispEdges; }
   text.callout        { fill:#000000; font-family: Candara, 'Trebuchet MS', Dialog; font-size:12px; }
   rect.callout        { fill:url(#calloutGradient); stroke:#bebdbd; stroke-width:0.5; }
@@ -54,8 +52,8 @@ body {
      <line x1='-2' y1='-4' x2='7' y2='5' stroke='#f3f3f3' stroke-width='.5'/>  
   </pattern>  
   <radialGradient id='layoutBgB' gradientUnits='userSpaceOnUse' cx='50%' cy='50%' r='75%' fx='46%' fy='22%'>
-     <stop offset='0%' stop-opacity='.2' stop-color='#f5f5f5' />  
-     <stop offset='100%' stop-color='#efefef' />  
+     <stop offset='0%' stop-opacity='.2' stop-color='#f2f2f2' />  
+     <stop offset='100%' stop-color='#eaeaea' />  
   </radialGradient>
   <pattern id='layoutBgTr' patternUnits='userSpaceOnUse'  width='300' height='300' x='0' y='0' viewBox='0 0 300 300'>  
   <path class='st0' d='m 62.011835,91.267143 c 3.536475,3.175214 2.262669,8.705999 -1.637711,11.015197 -3.594697,5.8423 -6.34682,-2.892623 -9.715478,-4.653898 -5.609222,-2.838926 2.050802,-6.680123 4.77004,-8.319046 2.334696,-0.724067 4.935143,0.312302 6.583149,1.957747 z m -2.720492,2.538595 c -2.698397,-3.517732 -9.282815,1.269287 -3.69635,3.568637 2.765331,5.605665 7.052809,-0.56184 3.69635,-3.568637 z' />
@@ -83,7 +81,7 @@ body {
   <filter id='shadow' width='120%' height='120%'> 
       <feOffset result='offOut' in='SourceGraphic' dx='1' dy='1' /> 
       <feColorMatrix result='matrixOut' in='offOut' type='matrix' 
-      values='0.1 0 0 0 0 0 0.4 0 0 0 0 0 0.6 0 0 0 0 0 0.3 0' /> 
+      values='0.1 0 0 0 0 0 0.4 0 0 0 0 0 0.6 0 0 0 0 0 0.5 0' /> 
       <feGaussianBlur result='blurOut' in='matrixOut' stdDeviation='3' /> 
       <feBlend in='SourceGraphic' in2='blurOut' mode='normal' /> 
     </filter> 
@@ -209,11 +207,15 @@ body {
      <stop offset='60%' stop-color='#C1D2EE' /> 
      <stop offset='100%' stop-color='#E0E9F8' /> 
   </linearGradient>
+  <linearGradient id='tbg_3986C1' x1='0%' y1='0%' x2='0%' y2='100%' >
+     <stop offset='0%' stop-color='#E0EDF8' /> 
+     <stop offset='60%' stop-color='#C1DAEE' /> 
+     <stop offset='100%' stop-color='#E0EDF8' /> 
+  </linearGradient>
 </defs>
 
 <!-- == Desktop == -->
-<rect x='1' y='1' width='862' height='796' rx='8' ry='8' style='fill:url(#layoutBgB); stroke:#777777; stroke-width:0.5;' />
-<rect x='1' y='1' width='862' height='796' rx='8' ry='8' style='fill:url(#layoutBgA); stroke:#777777; stroke-width:0.5;' />
+<rect x='1' y='1' width='910' height='1052' rx='8' ry='8' style='fill:url(#layoutBgB); stroke:#777777; stroke-width:0.5;' />
 
 <!-- == Legend == -->
 <g transform='translate(10,10)'>
@@ -224,324 +226,548 @@ body {
 </g>
 
 <g transform='translate(0,110)'>
-<!-- == Fk 'c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta' == -->
-<path id='c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta'  onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid','Default.c_peaks.cid'])" transform='translate(8,0)' class='scene' d='M 272 64 L 128,64' >
-	<title>Fk Fk_c_peak_X_s_peak_meta
-c_peak_X_s_peak_meta ref c_peaks ( cid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 272 64 L 128,64' ></path>
-<text x='267' y='59' transform='rotate(0 267,59)' title='Fk Fk_c_peak_X_s_peak_meta
-c_peak_X_s_peak_meta ref c_peaks ( cid )' class='relName' style='fill:#748EA7'>cid</text>
-<!-- == Fk 'c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta' == -->
-<path id='c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta'  onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','Default.s_peak_meta.pid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','Default.s_peak_meta.pid'])" transform='translate(8,0)' class='scene' d='M 432 80 L 656,80' >
-	<title>Fk Fk_c_peak_X_s_peak_meta
-c_peak_X_s_peak_meta ref s_peak_meta ( pid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 432 80 L 656,80' ></path>
-<text x='441' y='75' transform='rotate(0 441,75)' title='Fk Fk_c_peak_X_s_peak_meta
-c_peak_X_s_peak_meta ref s_peak_meta ( pid )' class='relName' style='fill:#748EA7'>pid</text>
-<!-- == Fk 'c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group' == -->
-<path id='c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group'  onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','Default.c_peak_groups.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','Default.c_peak_groups.grpid'])" transform='translate(8,0)' class='scene' d='M 208 416 L 288,416' >
-	<title>Fk Fk_c_peak_X_c_peak_group
-c_peak_X_c_peak_group ref c_peak_groups ( grpid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 208 416 L 288,416' ></path>
-<text x='217' y='411' transform='rotate(0 217,411)' title='Fk Fk_c_peak_X_c_peak_group
-c_peak_X_c_peak_group ref c_peak_groups ( grpid )' class='relName' style='fill:#748EA7'>grpid</text>
-<!-- == Fk 'c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group' == -->
-<path id='c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group'  onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','Default.c_peaks.cid'])" transform='translate(8,0)' class='scene' d='M 80 384 L 80,304' >
-	<title>Fk Fk_c_peak_X_c_peak_group
-c_peak_X_c_peak_group ref c_peaks ( cid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 80 384 L 80,304' ></path>
-<text x='83' y='379' transform='rotate(270 83,379)' title='Fk Fk_c_peak_X_c_peak_group
-c_peak_X_c_peak_group ref c_peaks ( cid )' class='relName' style='fill:#748EA7'>cid</text>
-<!-- == Fk 's_peaks_Fk_s_peaks' == -->
-<path id='s_peaks_Fk_s_peaks'  onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.s_peaks.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.s_peaks.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 608 496 L 536,496 Q 528,496 528,488 L 528,336' >
-	<title>Fk Fk_s_peaks
-s_peaks ref fileinfo ( fileid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 608 496 L 536,496 Q 528,496 528,488 L 528,336' ></path>
-<text x='593' y='491' transform='rotate(0 593,491)' title='Fk Fk_s_peaks
-s_peaks ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
-<!-- == Fk 's_peaks_Fk_s_peaks' == -->
-<path id='s_peaks_Fk_s_peaks'  onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.s_peaks.pid','Default.s_peak_meta.pid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.s_peaks.pid','Default.s_peak_meta.pid'])" transform='translate(8,0)' class='scene' d='M 640 480 L 640,376 Q 640,368 648,368 L 656,368' >
-	<title>Fk Fk_s_peaks
-s_peaks ref s_peak_meta ( pid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 640 480 L 640,376 Q 640,368 648,368 L 656,368' ></path>
-<text x='643' y='475' transform='rotate(270 643,475)' title='Fk Fk_s_peaks
-s_peaks ref s_peak_meta ( pid )' class='relName' style='fill:#748EA7'>pid</text>
-<!-- == Fk 's_peak_meta_Fk_s_peak_meta' == -->
-<path id='s_peak_meta_Fk_s_peak_meta'  onmouseover="hghl(['s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 656 240 L 544,240' >
-	<title>Fk Fk_s_peak_meta
-s_peak_meta ref fileinfo ( fileid )</title>
-</path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 656 240 L 544,240' ></path>
-<text x='641' y='235' transform='rotate(0 641,235)' title='Fk Fk_s_peak_meta
-s_peak_meta ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
 <!-- == Fk 'c_peaks_Fk_c_peaks' == -->
-<path id='c_peaks_Fk_c_peaks'  onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 128 224 L 448,224' >
+<path id='c_peaks_Fk_c_peaks'  onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 176 256 L 400,256' >
 	<title>Fk Fk_c_peaks
 c_peaks ref fileinfo ( fileid )</title>
 </path>
-<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 128 224 L 448,224' ></path>
-<text x='137' y='219' transform='rotate(0 137,219)' title='Fk Fk_c_peaks
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 176 256 L 400,256' ></path>
+<text x='185' y='251' transform='rotate(0 185,251)' title='Fk Fk_c_peaks
 c_peaks ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
-<!-- == Table 'c_peak_X_s_peak_meta' == -->
-<rect class='entity' x='288' y='40' width='144' height='96' rx='8' ry='8' style='stroke:none'/>
-<path d='M 288 68 L 288 48 Q 288 40 296 40 L 424 40 Q 432 40 432 48 L 432 68 L288 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='288' y='40' width='144' height='96' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#c_peak_X_s_peak_meta'><text x='295' y='60'>c_peak_X_s_peak_meta</text><title>Table Default.c_peak_X_s_peak_meta
-Table to link the chromatography peaks to the scan peak meta. Used to see show which chromatography peaks (features) have associated fragmentation. Mapping can be generated via frag4feature function.</title></a>
-  <use id='nn' x='290' y='77' xlink:href='#nn'/><a xlink:href='#c_peak_X_s_peak_meta.cXp_id'><use id='pk' x='290' y='76' xlink:href='#pk'/><title>Pk pk_c_peak_X_s_peak_meta ( cXp_id ) </title></a>
-<a xlink:href='#c_peak_X_s_peak_meta.cXp_id'><text id='Default.c_peak_X_s_peak_meta.cXp_id' x='307' y='87'>cXp_id</text><title>cXp_id
-* integer</title></a>
-<text x='429' y='84' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_s_peak_meta.pid'><text id='Default.c_peak_X_s_peak_meta.pid' x='307' y='103' onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.s_peak_meta.pid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.s_peak_meta.pid'])">pid</text><title>pid
-integer
-s_peak_meta id</title></a>
-<a xlink:href='#c_peak_X_s_peak_meta.pid'><use id='fk' x='420' y='92' xlink:href='#fk'/><title>References s_peak_meta ( pid ) </title></a>
-  <a xlink:href='#c_peak_X_s_peak_meta.cid'><text id='Default.c_peak_X_s_peak_meta.cid' x='307' y='119' onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peaks.cid'])">cid</text><title>cid
-integer
-c_peaks id</title></a>
-<a xlink:href='#c_peak_X_s_peak_meta.cid'><use id='fk' x='420' y='108' xlink:href='#fk'/><title>References c_peaks ( cid ) </title></a>
-
-<!-- == Table 'c_peak_X_c_peak_group' == -->
-<rect class='entity' x='64' y='392' width='144' height='128' rx='8' ry='8' style='stroke:none'/>
-<path d='M 64 420 L 64 400 Q 64 392 72 392 L 200 392 Q 208 392 208 400 L 208 420 L64 420 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='64' y='392' width='144' height='128' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#c_peak_X_c_peak_group'><text x='68' y='412'>c_peak_X_c_peak_group</text><title>Table Default.c_peak_X_c_peak_group
-Table to link the individual chromatography peaks (c_peak) to the grouped chromatographic peaks (c_peak_group)</title></a>
-  <use id='nn' x='66' y='429' xlink:href='#nn'/><a xlink:href='#c_peak_X_c_peak_group.cXg_id'><use id='pk' x='66' y='428' xlink:href='#pk'/><title>Pk pk_c_peak_X_c_peak_group ( cXg_id ) </title></a>
-<a xlink:href='#c_peak_X_c_peak_group.cXg_id'><text id='Default.c_peak_X_c_peak_group.cXg_id' x='83' y='439'>cXg_id</text><title>cXg_id
-* integer</title></a>
-<text x='205' y='436' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_c_peak_group.idi'><text id='Default.c_peak_X_c_peak_group.idi' x='83' y='455'>idi</text><title>idi
-real
-grouping specific id</title></a>
-<text x='205' y='452' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_c_peak_group.bestpeak'><text id='Default.c_peak_X_c_peak_group.bestpeak' x='83' y='471'>bestpeak</text><title>bestpeak
-real
-In some cases multiple individual peaks (c_peaks) from a single file can be grouped. The "best" peak can be flagged in these cases (e.g. by choosing the peak that is the most intense or closest to the minimum retention time)</title></a>
-<text x='205' y='468' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_c_peak_group.grpid'><text id='Default.c_peak_X_c_peak_group.grpid' x='83' y='487' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_groups.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_groups.grpid'])">grpid</text><title>grpid
-integer
-c_peak_group id</title></a>
-<a xlink:href='#c_peak_X_c_peak_group.grpid'><use id='fk' x='196' y='476' xlink:href='#fk'/><title>References c_peak_groups ( grpid ) </title></a>
-  <a xlink:href='#c_peak_X_c_peak_group.cid'><text id='Default.c_peak_X_c_peak_group.cid' x='83' y='503' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peaks.cid'])">cid</text><title>cid
-integer
-c_peak id</title></a>
-<a xlink:href='#c_peak_X_c_peak_group.cid'><use id='fk' x='196' y='492' xlink:href='#fk'/><title>References c_peaks ( cid ) </title></a>
-
-<!-- == Table 's_peaks' == -->
-<rect class='entity' x='624' y='488' width='64' height='144' rx='8' ry='8' style='stroke:none'/>
-<path d='M 624 516 L 624 496 Q 624 488 632 488 L 680 488 Q 688 488 688 496 L 688 516 L624 516 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='624' y='488' width='64' height='144' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#s_peaks'><text x='632' y='508'>s_peaks</text><title>Table Default.s_peaks
-Table for the scan peaks. Used for the fragmentation spectra</title></a>
-  <use id='nn' x='626' y='525' xlink:href='#nn'/><a xlink:href='#s_peaks.sid'><use id='pk' x='626' y='524' xlink:href='#pk'/><title>Pk pk_s_peaks ( sid ) </title></a>
-<a xlink:href='#s_peaks.sid'><text id='Default.s_peaks.sid' x='643' y='535'>sid</text><title>sid
-* integer</title></a>
-<text x='685' y='532' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peaks.scan'><text id='Default.s_peaks.scan' x='643' y='551'>scan</text><title>scan
-text
-scan number</title></a>
-<text x='685' y='548' text-anchor='end' class='colType'>t</text>  <a xlink:href='#s_peaks.mz'><text id='Default.s_peaks.mz' x='643' y='567'>mz</text><title>mz
-real
-m/z</title></a>
-<text x='685' y='564' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peaks.i'><text id='Default.s_peaks.i' x='643' y='583'>i</text><title>i
-real
-intensity</title></a>
-<text x='685' y='580' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peaks.fileid'><text id='Default.s_peaks.fileid' x='643' y='599' onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.fileinfo.fileid'])">fileid</text><title>fileid
-integer
-fileinfo id</title></a>
-<a xlink:href='#s_peaks.fileid'><use id='fk' x='676' y='588' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
-  <a xlink:href='#s_peaks.pid'><text id='Default.s_peaks.pid' x='643' y='615' onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.s_peak_meta.pid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.s_peak_meta.pid'])">pid</text><title>pid
-integer
-s_peak_meta id</title></a>
-<a xlink:href='#s_peaks.pid'><use id='fk' x='676' y='604' xlink:href='#fk'/><title>References s_peak_meta ( pid ) </title></a>
-
-<!-- == Table 'fileinfo' == -->
-<rect class='entity' x='464' y='216' width='80' height='112' rx='8' ry='8' style='stroke:none'/>
-<path d='M 464 244 L 464 224 Q 464 216 472 216 L 536 216 Q 544 216 544 224 L 544 244 L464 244 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='464' y='216' width='80' height='112' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#fileinfo'><text x='482' y='236'>fileinfo</text><title>Table Default.fileinfo
-Table for file information</title></a>
-  <use id='nn' x='466' y='253' xlink:href='#nn'/><a xlink:href='#fileinfo.fileid'><use id='pk' x='466' y='252' xlink:href='#pk'/><title>Pk pk_fileinfo ( fileid ) </title></a>
-<a xlink:href='#fileinfo.fileid'><text id='Default.fileinfo.fileid' x='483' y='263' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid'])">fileid</text><title>fileid
-* integer</title></a>
-<a xlink:href='#fileinfo.fileid'><use id='ref' x='532' y='252' xlink:href='#ref'/><title>Referred by c_peaks ( fileid ) 
-Referred by s_peak_meta ( fileid ) 
-Referred by s_peaks ( fileid ) </title></a>
-  <a xlink:href='#fileinfo.filename'><text id='Default.fileinfo.filename' x='483' y='279'>filename</text><title>filename
-text
-Filename of mass spectrometry file (e.g. mzML file)</title></a>
-<text x='541' y='276' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.filepth'><text id='Default.fileinfo.filepth' x='483' y='295'>filepth</text><title>filepth
-text
-Path to the mass spectrometry file</title></a>
-<text x='541' y='292' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.nm_save'><text id='Default.fileinfo.nm_save' x='483' y='311'>nm_save</text><title>nm_save
-text
-Save the original name (used for Galaxy processing where the name can be replaced)</title></a>
-<text x='541' y='308' text-anchor='end' class='colType'>t</text>
-<!-- == Table 's_peak_meta' == -->
-<rect class='entity' x='672' y='72' width='144' height='320' rx='8' ry='8' style='stroke:none'/>
-<path d='M 672 100 L 672 80 Q 672 72 680 72 L 808 72 Q 816 72 816 80 L 816 100 L672 100 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='672' y='72' width='144' height='320' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#s_peak_meta'><text x='706' y='92'>s_peak_meta</text><title>Table Default.s_peak_meta
-Table for scan peak meta. Used to record the details regarding the fragmentation to generate the scan peaks (e.g. the precursor m/z isolated and precursor ion purity)</title></a>
-  <use id='nn' x='674' y='109' xlink:href='#nn'/><a xlink:href='#s_peak_meta.pid'><use id='pk' x='674' y='108' xlink:href='#pk'/><title>Pk pk_s_peak_meta ( pid ) </title></a>
-<a xlink:href='#s_peak_meta.pid'><text id='Default.s_peak_meta.pid' x='691' y='119' onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','s_peaks_Fk_s_peaks','Default.s_peaks.pid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','s_peaks_Fk_s_peaks','Default.s_peaks.pid'])">pid</text><title>pid
-* integer
-The "p" stands for purity as the id is calculated by msPurity</title></a>
-<a xlink:href='#s_peak_meta.pid'><use id='ref' x='804' y='108' xlink:href='#ref'/><title>Referred by c_peak_X_s_peak_meta ( pid ) 
-Referred by s_peaks ( pid ) </title></a>
-  <a xlink:href='#s_peak_meta.seqNum'><text id='Default.s_peak_meta.seqNum' x='691' y='135'>seqNum</text><title>seqNum
-real
-Sequence number. Similar to scan number but calculated by mzR at time of file parsing, so if scans have been removed prior to processing, the scan number and the seqNum will differ</title></a>
-<text x='813' y='132' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorIntensity'><text id='Default.s_peak_meta.precursorIntensity' x='691' y='151'>precursorIntensity</text><title>precursorIntensity
-real
-Precursor intensity as determined from original data file (e.g. mzML)</title></a>
-<text x='813' y='148' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorMZ'><text id='Default.s_peak_meta.precursorMZ' x='691' y='167'>precursorMZ</text><title>precursorMZ
-real
-Precursor m/z as determined from original data file (e.g. mzML)</title></a>
-<text x='813' y='164' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorRT'><text id='Default.s_peak_meta.precursorRT' x='691' y='183'>precursorRT</text><title>precursorRT
-real
-Precursor rentention time as determined from original data file (e.g. mzML)</title></a>
-<text x='813' y='180' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorScanNum'><text id='Default.s_peak_meta.precursorScanNum' x='691' y='199'>precursorScanNum</text><title>precursorScanNum
-real
-Precursor scan number as determined from original data file (e.g. mzML)</title></a>
-<text x='813' y='196' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.id'><text id='Default.s_peak_meta.id' x='691' y='215'>id</text><title>id
-real
-id (file specific)</title></a>
-<text x='813' y='212' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorNearest'><text id='Default.s_peak_meta.precursorNearest' x='691' y='231'>precursorNearest</text><title>precursorNearest
-real
-Precursor scan number nearest to the fragmentation event as determined by msPurity</title></a>
-<text x='813' y='228' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.aMz'><text id='Default.s_peak_meta.aMz' x='691' y='247'>aMz</text><title>aMz
-real
-The m/z value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file (msPurity)</title></a>
-<text x='813' y='244' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.aPurity'><text id='Default.s_peak_meta.aPurity' x='691' y='263'>aPurity</text><title>aPurity
-real
-The purity score for aMz</title></a>
-<text x='813' y='260' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.apkNm'><text id='Default.s_peak_meta.apkNm' x='691' y='279'>apkNm</text><title>apkNm
-real
-The number of peaks in the isolation window for aMz</title></a>
-<text x='813' y='276' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.iMz'><text id='Default.s_peak_meta.iMz' x='691' y='295'>iMz</text><title>iMz
-real
-The m/z value in the precursorNearest scan that is the most intense within the isolation window</title></a>
-<text x='813' y='292' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.iPurity'><text id='Default.s_peak_meta.iPurity' x='691' y='311'>iPurity</text><title>iPurity
-real
-The purity score for iMz</title></a>
-<text x='813' y='308' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.ipkNm'><text id='Default.s_peak_meta.ipkNm' x='691' y='327'>ipkNm</text><title>ipkNm
-real
-The number of peaks in the isolation window for iMz</title></a>
-<text x='813' y='324' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.inPkNm'><text id='Default.s_peak_meta.inPkNm' x='691' y='343'>inPkNm</text><title>inPkNm
-real
-The interpolated number of peaks in the isolation window</title></a>
-<text x='813' y='340' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.inPurity'><text id='Default.s_peak_meta.inPurity' x='691' y='359'>inPurity</text><title>inPurity
-real
-The interpolated purity score</title></a>
-<text x='813' y='356' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.fileid'><text id='Default.s_peak_meta.fileid' x='691' y='375' onmouseover="hghl(['s_peak_meta_Fk_s_peak_meta','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peak_meta_Fk_s_peak_meta','Default.fileinfo.fileid'])">fileid</text><title>fileid
-integer
-fileinfo id</title></a>
-<a xlink:href='#s_peak_meta.fileid'><use id='fk' x='804' y='364' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
-
+<!-- == Fk 's_peaks_Fk_s_peaks' == -->
+<path id='s_peaks_Fk_s_peaks'  onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.s_peaks.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.s_peaks.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 672 528 L 488,528 Q 480,528 480,520 L 480,368' >
+	<title>Fk Fk_s_peaks
+s_peaks ref fileinfo ( fileid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 672 528 L 488,528 Q 480,528 480,520 L 480,368' ></path>
+<text x='657' y='523' transform='rotate(0 657,523)' title='Fk Fk_s_peaks
+s_peaks ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
+<!-- == Fk 's_peaks_Fk_s_peaks' == -->
+<path id='s_peaks_Fk_s_peaks'  onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.s_peaks.pid','Default.s_peak_meta.pid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.s_peaks.pid','Default.s_peak_meta.pid'])" transform='translate(8,0)' class='scene' d='M 736 512 L 736,432' >
+	<title>Fk Fk_s_peaks
+s_peaks ref s_peak_meta ( pid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 736 512 L 736,432' ></path>
+<text x='739' y='507' transform='rotate(270 739,507)' title='Fk Fk_s_peaks
+s_peaks ref s_peak_meta ( pid )' class='relName' style='fill:#748EA7'>pid</text>
+<!-- == Fk 'c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group' == -->
+<path id='c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group'  onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','Default.c_peak_groups.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','Default.c_peak_groups.grpid'])" transform='translate(8,0)' class='scene' d='M 144 480 L 144,560' >
+	<title>Fk Fk_c_peak_X_c_peak_group
+c_peak_X_c_peak_group ref c_peak_groups ( grpid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 144 480 L 144,560' ></path>
+<text x='159' y='481' transform='rotate(90 159,481)' title='Fk Fk_c_peak_X_c_peak_group
+c_peak_X_c_peak_group ref c_peak_groups ( grpid )' class='relName' style='fill:#748EA7'>grpid</text>
+<!-- == Fk 'c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group' == -->
+<path id='c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group'  onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','Default.c_peaks.cid'])" transform='translate(8,0)' class='scene' d='M 112 336 L 112,304' >
+	<title>Fk Fk_c_peak_X_c_peak_group
+c_peak_X_c_peak_group ref c_peaks ( cid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 112 336 L 112,304' ></path>
+<text x='115' y='331' transform='rotate(270 115,331)' title='Fk Fk_c_peak_X_c_peak_group
+c_peak_X_c_peak_group ref c_peaks ( cid )' class='relName' style='fill:#748EA7'>cid</text>
+<!-- == Fk 'c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta' == -->
+<path id='c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta'  onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid','Default.c_peaks.cid'])" transform='translate(8,0)' class='scene' d='M 336 64 L 176,64' >
+	<title>Fk Fk_c_peak_X_s_peak_meta
+c_peak_X_s_peak_meta ref c_peaks ( cid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 336 64 L 176,64' ></path>
+<text x='331' y='59' transform='rotate(0 331,59)' title='Fk Fk_c_peak_X_s_peak_meta
+c_peak_X_s_peak_meta ref c_peaks ( cid )' class='relName' style='fill:#748EA7'>cid</text>
+<!-- == Fk 'c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta' == -->
+<path id='c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta'  onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','Default.s_peak_meta.pid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','Default.s_peak_meta.pid'])" transform='translate(8,0)' class='scene' d='M 496 80 L 704,80' >
+	<title>Fk Fk_c_peak_X_s_peak_meta
+c_peak_X_s_peak_meta ref s_peak_meta ( pid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 496 80 L 704,80' ></path>
+<text x='505' y='75' transform='rotate(0 505,75)' title='Fk Fk_c_peak_X_s_peak_meta
+c_peak_X_s_peak_meta ref s_peak_meta ( pid )' class='relName' style='fill:#748EA7'>pid</text>
+<!-- == Fk 's_peak_meta_Fk_s_peak_meta' == -->
+<path id='s_peak_meta_Fk_s_peak_meta'  onmouseover="hghl(['s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 704 272 L 496,272' >
+	<title>Fk Fk_s_peak_meta
+s_peak_meta ref fileinfo ( fileid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 704 272 L 496,272' ></path>
+<text x='689' y='267' transform='rotate(0 689,267)' title='Fk Fk_s_peak_meta
+s_peak_meta ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
+<!-- == Fk 'av_peaks_fk_av_peaks_fileinfo' == -->
+<path id='av_peaks_fk_av_peaks_fileinfo'  onmouseover="hghl(['av_peaks_fk_av_peaks_fileinfo','Default.av_peaks.fileid','Default.fileinfo.fileid'])" onmouseout="uhghl(['av_peaks_fk_av_peaks_fileinfo','Default.av_peaks.fileid','Default.fileinfo.fileid'])" transform='translate(8,0)' class='scene' d='M 432 544 L 432,368' >
+	<title>Fk fk_av_peaks_fileinfo
+av_peaks ref fileinfo ( fileid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 432 544 L 432,368' ></path>
+<text x='435' y='539' transform='rotate(270 435,539)' title='Fk fk_av_peaks_fileinfo
+av_peaks ref fileinfo ( fileid )' class='relName' style='fill:#748EA7'>fileid</text>
+<!-- == Fk 'av_peaks_fk_av_peaks_c_peak_groups' == -->
+<path id='av_peaks_fk_av_peaks_c_peak_groups'  onmouseover="hghl(['av_peaks_fk_av_peaks_c_peak_groups','Default.av_peaks.grpid','Default.c_peak_groups.grpid'])" onmouseout="uhghl(['av_peaks_fk_av_peaks_c_peak_groups','Default.av_peaks.grpid','Default.c_peak_groups.grpid'])" transform='translate(8,0)' class='scene' d='M 336 592 L 224,592' >
+	<title>Fk fk_av_peaks_c_peak_groups
+av_peaks ref c_peak_groups ( grpid )</title>
+</path>
+<path transform='translate(8,0)' marker-start='url(#foot0p)' marker-end='url(#arrow1)'  class='dotted '  d='M 336 592 L 224,592' ></path>
+<text x='319' y='587' transform='rotate(0 319,587)' title='Fk fk_av_peaks_c_peak_groups
+av_peaks ref c_peak_groups ( grpid )' class='relName' style='fill:#748EA7'>grpid</text>
 <!-- == Table 'c_peaks' == -->
-<rect class='entity' x='48' y='40' width='80' height='256' rx='8' ry='8' style='stroke:none'/>
-<path d='M 48 68 L 48 48 Q 48 40 56 40 L 120 40 Q 128 40 128 48 L 128 68 L48 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='48' y='40' width='80' height='256' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#c_peaks'><text x='63' y='60'>c_peaks</text><title>Table Default.c_peaks
+<rect class='entity' style='stroke:#1E498F' x='96' y='40' width='80' height='256' rx='8' ry='8' style='stroke:none'/>
+<path d='M 96 68 L 96 48 Q 96 40 104 40 L 168 40 Q 176 40 176 48 L 176 68 L96 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='96' y='40' width='80' height='256' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
+<a xlink:href='#c_peaks'><text x='111' y='60'>c_peaks</text><title>Table Default.c_peaks
 Table for the individual chromatography peaks from each file</title></a>
-  <use id='nn' x='50' y='77' xlink:href='#nn'/><a xlink:href='#c_peaks.cid'><use id='pk' x='50' y='76' xlink:href='#pk'/><title>Pk pk_c_peaks ( cid ) </title></a>
-<a xlink:href='#c_peaks.cid'><text id='Default.c_peaks.cid' x='67' y='87' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])">cid</text><title>cid
+  <use id='nn' x='98' y='77' xlink:href='#nn'/><a xlink:href='#c_peaks.cid'><use id='pk' x='98' y='76' xlink:href='#pk'/><title>Pk pk_c_peaks ( cid ) </title></a>
+<a xlink:href='#c_peaks.cid'><text id='Default.c_peaks.cid' x='115' y='87' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.cid','c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.cid'])">cid</text><title>cid
 * integer</title></a>
-<a xlink:href='#c_peaks.cid'><use id='ref' x='116' y='76' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( cid ) 
+<a xlink:href='#c_peaks.cid'><use id='ref' x='164' y='76' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( cid ) 
 Referred by c_peak_X_s_peak_meta ( cid ) </title></a>
-  <a xlink:href='#c_peaks.mz'><text id='Default.c_peaks.mz' x='67' y='103'>mz</text><title>mz
+  <a xlink:href='#c_peaks.mz'><text id='Default.c_peaks.mz' x='115' y='103'>mz</text><title>mz
 real
 mass / charge (average)</title></a>
-<text x='125' y='100' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmin'><text id='Default.c_peaks.mzmin' x='67' y='119'>mzmin</text><title>mzmin
+<text x='173' y='100' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmin'><text id='Default.c_peaks.mzmin' x='115' y='119'>mzmin</text><title>mzmin
 real
 m/z minimum</title></a>
-<text x='125' y='116' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmax'><text id='Default.c_peaks.mzmax' x='67' y='135'>mzmax</text><title>mzmax
+<text x='173' y='116' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.mzmax'><text id='Default.c_peaks.mzmax' x='115' y='135'>mzmax</text><title>mzmax
 real
 m/z maximum</title></a>
-<text x='125' y='132' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rt'><text id='Default.c_peaks.rt' x='67' y='151'>rt</text><title>rt
+<text x='173' y='132' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rt'><text id='Default.c_peaks.rt' x='115' y='151'>rt</text><title>rt
 real
 Retention time (average)</title></a>
-<text x='125' y='148' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmin'><text id='Default.c_peaks.rtmin' x='67' y='167'>rtmin</text><title>rtmin
+<text x='173' y='148' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmin'><text id='Default.c_peaks.rtmin' x='115' y='167'>rtmin</text><title>rtmin
 real
 Retention time minimum</title></a>
-<text x='125' y='164' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmax'><text id='Default.c_peaks.rtmax' x='67' y='183'>rtmax</text><title>rtmax
+<text x='173' y='164' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.rtmax'><text id='Default.c_peaks.rtmax' x='115' y='183'>rtmax</text><title>rtmax
 real
 Retention time maximum</title></a>
-<text x='125' y='180' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks._into'><text id='Default.c_peaks._into' x='67' y='199'>_into</text><title>_into
+<text x='173' y='180' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks._into'><text id='Default.c_peaks._into' x='115' y='199'>_into</text><title>_into
 real
 Integrated (original) intensity of the peak (xcms)</title></a>
-<text x='125' y='196' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.intf'><text id='Default.c_peaks.intf' x='67' y='215'>intf</text><title>intf
+<text x='173' y='196' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.intf'><text id='Default.c_peaks.intf' x='115' y='215'>intf</text><title>intf
 real
 Integrated intensity of the filtered peak (xcms)</title></a>
-<text x='125' y='212' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxo'><text id='Default.c_peaks.maxo' x='67' y='231'>maxo</text><title>maxo
+<text x='173' y='212' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxo'><text id='Default.c_peaks.maxo' x='115' y='231'>maxo</text><title>maxo
 real
 Maximum intensity of the peak (xcms)</title></a>
-<text x='125' y='228' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxf'><text id='Default.c_peaks.maxf' x='67' y='247'>maxf</text><title>maxf
+<text x='173' y='228' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.maxf'><text id='Default.c_peaks.maxf' x='115' y='247'>maxf</text><title>maxf
 real
 Maximum intensity of the filtered peak (xcms)</title></a>
-<text x='125' y='244' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.sn'><text id='Default.c_peaks.sn' x='67' y='263'>sn</text><title>sn
+<text x='173' y='244' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.sn'><text id='Default.c_peaks.sn' x='115' y='263'>sn</text><title>sn
 real
 Signal to noise ratio of the peak (xcms)</title></a>
-<text x='125' y='260' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.fileid'><text id='Default.c_peaks.fileid' x='67' y='279' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])">fileid</text><title>fileid
+<text x='173' y='260' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peaks.fileid'><text id='Default.c_peaks.fileid' x='115' y='279' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.fileinfo.fileid'])">fileid</text><title>fileid
 integer
 fileinfo id</title></a>
-<a xlink:href='#c_peaks.fileid'><use id='fk' x='116' y='268' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
+<a xlink:href='#c_peaks.fileid'><use id='fk' x='164' y='268' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
 
 <!-- == Table 'c_peak_groups' == -->
-<rect class='entity' x='304' y='360' width='96' height='256' rx='8' ry='8' style='stroke:none'/>
-<path d='M 304 388 L 304 368 Q 304 360 312 360 L 392 360 Q 400 360 400 368 L 400 388 L304 388 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='304' y='360' width='96' height='256' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
-<a xlink:href='#c_peak_groups'><text x='309' y='380'>c_peak_groups</text><title>Table Default.c_peak_groups
+<rect class='entity' style='stroke:#1E498F' x='128' y='568' width='96' height='256' rx='8' ry='8' style='stroke:none'/>
+<path d='M 128 596 L 128 576 Q 128 568 136 568 L 216 568 Q 224 568 224 576 L 224 596 L128 596 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='128' y='568' width='96' height='256' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
+<a xlink:href='#c_peak_groups'><text x='133' y='588'>c_peak_groups</text><title>Table Default.c_peak_groups
 Table for chromatography peak groups. Details the grouped feature across individual chromotographic peaks (c_peaks).</title></a>
-  <use id='nn' x='306' y='397' xlink:href='#nn'/><a xlink:href='#c_peak_groups.grpid'><use id='pk' x='306' y='396' xlink:href='#pk'/><title>Pk pk_c_peak_groups ( grpid ) </title></a>
-<a xlink:href='#c_peak_groups.grpid'><text id='Default.c_peak_groups.grpid' x='323' y='407' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid'])">grpid</text><title>grpid
+  <use id='nn' x='130' y='605' xlink:href='#nn'/><a xlink:href='#c_peak_groups.grpid'><use id='pk' x='130' y='604' xlink:href='#pk'/><title>Pk pk_c_peak_groups ( grpid ) </title></a>
+<a xlink:href='#c_peak_groups.grpid'><text id='Default.c_peak_groups.grpid' x='147' y='615' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','av_peaks_fk_av_peaks_c_peak_groups','Default.av_peaks.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_X_c_peak_group.grpid','av_peaks_fk_av_peaks_c_peak_groups','Default.av_peaks.grpid'])">grpid</text><title>grpid
 * integer</title></a>
-<a xlink:href='#c_peak_groups.grpid'><use id='ref' x='388' y='396' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( grpid ) </title></a>
-  <a xlink:href='#c_peak_groups.mz'><text id='Default.c_peak_groups.mz' x='323' y='423'>mz</text><title>mz
+<a xlink:href='#c_peak_groups.grpid'><use id='ref' x='212' y='604' xlink:href='#ref'/><title>Referred by c_peak_X_c_peak_group ( grpid ) 
+Referred by av_peaks ( grpid ) </title></a>
+  <a xlink:href='#c_peak_groups.mz'><text id='Default.c_peak_groups.mz' x='147' y='631'>mz</text><title>mz
 real
 m/z average</title></a>
-<text x='397' y='420' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmin'><text id='Default.c_peak_groups.mzmin' x='323' y='439'>mzmin</text><title>mzmin
+<text x='221' y='628' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmin'><text id='Default.c_peak_groups.mzmin' x='147' y='647'>mzmin</text><title>mzmin
 real
 m/z minimum</title></a>
-<text x='397' y='436' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmax'><text id='Default.c_peak_groups.mzmax' x='323' y='455'>mzmax</text><title>mzmax
+<text x='221' y='644' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.mzmax'><text id='Default.c_peak_groups.mzmax' x='147' y='663'>mzmax</text><title>mzmax
 real
 m/z maximum</title></a>
-<text x='397' y='452' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rt'><text id='Default.c_peak_groups.rt' x='323' y='471'>rt</text><title>rt
+<text x='221' y='660' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rt'><text id='Default.c_peak_groups.rt' x='147' y='679'>rt</text><title>rt
 real
 Retention time average</title></a>
-<text x='397' y='468' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmin'><text id='Default.c_peak_groups.rtmin' x='323' y='487'>rtmin</text><title>rtmin
+<text x='221' y='676' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmin'><text id='Default.c_peak_groups.rtmin' x='147' y='695'>rtmin</text><title>rtmin
 real
 Retention time minimum (note that this is minimum of the average individual chromatography peak e.g. the miminum of c_peak--&gt;rt not c_peak--&gt;rtmin)</title></a>
-<text x='397' y='484' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmax'><text id='Default.c_peak_groups.rtmax' x='323' y='503'>rtmax</text><title>rtmax
+<text x='221' y='692' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.rtmax'><text id='Default.c_peak_groups.rtmax' x='147' y='711'>rtmax</text><title>rtmax
 real
 Retention time maximum (note that this is maximum of the average individual chromatography peak e.g. c_peak--&gt;rt not c_peak--&gt;rtmax)</title></a>
-<text x='397' y='500' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.npeaks'><text id='Default.c_peak_groups.npeaks' x='323' y='519'>npeaks</text><title>npeaks
+<text x='221' y='708' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.npeaks'><text id='Default.c_peak_groups.npeaks' x='147' y='727'>npeaks</text><title>npeaks
 real
 Number of peaks grouped</title></a>
-<text x='397' y='516' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.sample'><text id='Default.c_peak_groups.sample' x='323' y='535'>sample</text><title>sample
+<text x='221' y='724' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.sample'><text id='Default.c_peak_groups.sample' x='147' y='743'>sample</text><title>sample
 real
 Sample id (as determined by XCMS)</title></a>
-<text x='397' y='532' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_2'><text id='Default.c_peak_groups.LCMSMS_2' x='323' y='551'>LCMSMS_2</text><title>LCMSMS_2
+<text x='221' y='740' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_2'><text id='Default.c_peak_groups.LCMSMS_2' x='147' y='759'>LCMSMS_2</text><title>LCMSMS_2
 real
 Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='548' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_1'><text id='Default.c_peak_groups.LCMSMS_1' x='323' y='567'>LCMSMS_1</text><title>LCMSMS_1
+<text x='221' y='756' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMSMS_1'><text id='Default.c_peak_groups.LCMSMS_1' x='147' y='775'>LCMSMS_1</text><title>LCMSMS_1
 real
 Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='564' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_2'><text id='Default.c_peak_groups.LCMS_2' x='323' y='583'>LCMS_2</text><title>LCMS_2
+<text x='221' y='772' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_2'><text id='Default.c_peak_groups.LCMS_2' x='147' y='791'>LCMS_2</text><title>LCMS_2
 real
 Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='580' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_1'><text id='Default.c_peak_groups.LCMS_1' x='323' y='599'>LCMS_1</text><title>LCMS_1
+<text x='221' y='788' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_groups.LCMS_1'><text id='Default.c_peak_groups.LCMS_1' x='147' y='807'>LCMS_1</text><title>LCMS_1
 real
 Example individual intensity values (note these columns will change depending on the dataset analysed, each file has it's own column)</title></a>
-<text x='397' y='596' text-anchor='end' class='colType'>#</text>
+<text x='221' y='804' text-anchor='end' class='colType'>#</text>
+<!-- == Table 's_peaks' == -->
+<rect class='entity' style='stroke:#1E498F' x='688' y='520' width='64' height='144' rx='8' ry='8' style='stroke:none'/>
+<path d='M 688 548 L 688 528 Q 688 520 696 520 L 744 520 Q 752 520 752 528 L 752 548 L688 548 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='688' y='520' width='64' height='144' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
+<a xlink:href='#s_peaks'><text x='696' y='540'>s_peaks</text><title>Table Default.s_peaks
+Table for the scan peaks. Used for the fragmentation spectra</title></a>
+  <use id='nn' x='690' y='557' xlink:href='#nn'/><a xlink:href='#s_peaks.sid'><use id='pk' x='690' y='556' xlink:href='#pk'/><title>Pk pk_s_peaks ( sid ) </title></a>
+<a xlink:href='#s_peaks.sid'><text id='Default.s_peaks.sid' x='707' y='567'>sid</text><title>sid
+* integer</title></a>
+<text x='749' y='564' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peaks.scan'><text id='Default.s_peaks.scan' x='707' y='583'>scan</text><title>scan
+text
+scan number</title></a>
+<text x='749' y='580' text-anchor='end' class='colType'>t</text>  <a xlink:href='#s_peaks.mz'><text id='Default.s_peaks.mz' x='707' y='599'>mz</text><title>mz
+real
+m/z</title></a>
+<text x='749' y='596' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peaks.i'><text id='Default.s_peaks.i' x='707' y='615'>i</text><title>i
+real
+intensity</title></a>
+<text x='749' y='612' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peaks.fileid'><text id='Default.s_peaks.fileid' x='707' y='631' onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.fileinfo.fileid'])">fileid</text><title>fileid
+integer
+fileinfo id</title></a>
+<a xlink:href='#s_peaks.fileid'><use id='fk' x='740' y='620' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
+  <a xlink:href='#s_peaks.pid'><text id='Default.s_peaks.pid' x='707' y='647' onmouseover="hghl(['s_peaks_Fk_s_peaks','Default.s_peak_meta.pid'])" onmouseout="uhghl(['s_peaks_Fk_s_peaks','Default.s_peak_meta.pid'])">pid</text><title>pid
+integer
+s_peak_meta id</title></a>
+<a xlink:href='#s_peaks.pid'><use id='fk' x='740' y='636' xlink:href='#fk'/><title>References s_peak_meta ( pid ) </title></a>
+
+<!-- == Table 'fileinfo' == -->
+<rect class='entity' style='stroke:#1E498F' x='416' y='248' width='80' height='112' rx='8' ry='8' style='stroke:none'/>
+<path d='M 416 276 L 416 256 Q 416 248 424 248 L 488 248 Q 496 248 496 256 L 496 276 L416 276 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='416' y='248' width='80' height='112' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
+<a xlink:href='#fileinfo'><text x='434' y='268'>fileinfo</text><title>Table Default.fileinfo
+Table for file information</title></a>
+  <use id='nn' x='418' y='285' xlink:href='#nn'/><a xlink:href='#fileinfo.fileid'><use id='pk' x='418' y='284' xlink:href='#pk'/><title>Pk pk_fileinfo ( fileid ) </title></a>
+<a xlink:href='#fileinfo.fileid'><text id='Default.fileinfo.fileid' x='435' y='295' onmouseover="hghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid','av_peaks_fk_av_peaks_fileinfo','Default.av_peaks.fileid'])" onmouseout="uhghl(['c_peaks_Fk_c_peaks','Default.c_peaks.fileid','s_peak_meta_Fk_s_peak_meta','Default.s_peak_meta.fileid','s_peaks_Fk_s_peaks','Default.s_peaks.fileid','av_peaks_fk_av_peaks_fileinfo','Default.av_peaks.fileid'])">fileid</text><title>fileid
+* integer</title></a>
+<a xlink:href='#fileinfo.fileid'><use id='ref' x='484' y='284' xlink:href='#ref'/><title>Referred by c_peaks ( fileid ) 
+Referred by s_peak_meta ( fileid ) 
+Referred by s_peaks ( fileid ) 
+Referred by av_peaks ( fileid ) </title></a>
+  <a xlink:href='#fileinfo.filename'><text id='Default.fileinfo.filename' x='435' y='311'>filename</text><title>filename
+text
+Filename of mass spectrometry file (e.g. mzML file)</title></a>
+<text x='493' y='308' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.filepth'><text id='Default.fileinfo.filepth' x='435' y='327'>filepth</text><title>filepth
+text
+Path to the mass spectrometry file</title></a>
+<text x='493' y='324' text-anchor='end' class='colType'>t</text>  <a xlink:href='#fileinfo.nm_save'><text id='Default.fileinfo.nm_save' x='435' y='343'>nm_save</text><title>nm_save
+text
+Save the original name (used for Galaxy processing where the name can be replaced)</title></a>
+<text x='493' y='340' text-anchor='end' class='colType'>t</text>
+<!-- == Table 'c_peak_X_c_peak_group' == -->
+<rect class='entity' style='stroke:#1E498F' x='48' y='344' width='144' height='128' rx='8' ry='8' style='stroke:none'/>
+<path d='M 48 372 L 48 352 Q 48 344 56 344 L 184 344 Q 192 344 192 352 L 192 372 L48 372 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='48' y='344' width='144' height='128' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
+<a xlink:href='#c_peak_X_c_peak_group'><text x='52' y='364'>c_peak_X_c_peak_group</text><title>Table Default.c_peak_X_c_peak_group
+Table to link the individual chromatography peaks (c_peak) to the grouped chromatographic peaks (c_peak_group)</title></a>
+  <use id='nn' x='50' y='381' xlink:href='#nn'/><a xlink:href='#c_peak_X_c_peak_group.cXg_id'><use id='pk' x='50' y='380' xlink:href='#pk'/><title>Pk pk_c_peak_X_c_peak_group ( cXg_id ) </title></a>
+<a xlink:href='#c_peak_X_c_peak_group.cXg_id'><text id='Default.c_peak_X_c_peak_group.cXg_id' x='67' y='391'>cXg_id</text><title>cXg_id
+* integer</title></a>
+<text x='189' y='388' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_c_peak_group.idi'><text id='Default.c_peak_X_c_peak_group.idi' x='67' y='407'>idi</text><title>idi
+real
+grouping specific id</title></a>
+<text x='189' y='404' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_c_peak_group.bestpeak'><text id='Default.c_peak_X_c_peak_group.bestpeak' x='67' y='423'>bestpeak</text><title>bestpeak
+real
+In some cases multiple individual peaks (c_peaks) from a single file can be grouped. The "best" peak can be flagged in these cases (e.g. by choosing the peak that is the most intense or closest to the minimum retention time)</title></a>
+<text x='189' y='420' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_c_peak_group.grpid'><text id='Default.c_peak_X_c_peak_group.grpid' x='67' y='439' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_groups.grpid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peak_groups.grpid'])">grpid</text><title>grpid
+integer
+c_peak_group id</title></a>
+<a xlink:href='#c_peak_X_c_peak_group.grpid'><use id='fk' x='180' y='428' xlink:href='#fk'/><title>References c_peak_groups ( grpid ) </title></a>
+  <a xlink:href='#c_peak_X_c_peak_group.cid'><text id='Default.c_peak_X_c_peak_group.cid' x='67' y='455' onmouseover="hghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_c_peak_group_Fk_c_peak_X_c_peak_group','Default.c_peaks.cid'])">cid</text><title>cid
+integer
+c_peak id</title></a>
+<a xlink:href='#c_peak_X_c_peak_group.cid'><use id='fk' x='180' y='444' xlink:href='#fk'/><title>References c_peaks ( cid ) </title></a>
+
+<!-- == Table 'c_peak_X_s_peak_meta' == -->
+<rect class='entity' style='stroke:#1E498F' x='352' y='40' width='144' height='96' rx='8' ry='8' style='stroke:none'/>
+<path d='M 352 68 L 352 48 Q 352 40 360 40 L 488 40 Q 496 40 496 48 L 496 68 L352 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='352' y='40' width='144' height='96' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
+<a xlink:href='#c_peak_X_s_peak_meta'><text x='359' y='60'>c_peak_X_s_peak_meta</text><title>Table Default.c_peak_X_s_peak_meta
+Table to link the chromatography peaks to the scan peak meta. Used to see show which chromatography peaks (features) have associated fragmentation. Mapping can be generated via frag4feature function.</title></a>
+  <use id='nn' x='354' y='77' xlink:href='#nn'/><a xlink:href='#c_peak_X_s_peak_meta.cXp_id'><use id='pk' x='354' y='76' xlink:href='#pk'/><title>Pk pk_c_peak_X_s_peak_meta ( cXp_id ) </title></a>
+<a xlink:href='#c_peak_X_s_peak_meta.cXp_id'><text id='Default.c_peak_X_s_peak_meta.cXp_id' x='371' y='87'>cXp_id</text><title>cXp_id
+* integer</title></a>
+<text x='493' y='84' text-anchor='end' class='colType'>#</text>  <a xlink:href='#c_peak_X_s_peak_meta.pid'><text id='Default.c_peak_X_s_peak_meta.pid' x='371' y='103' onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.s_peak_meta.pid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.s_peak_meta.pid'])">pid</text><title>pid
+integer
+s_peak_meta id</title></a>
+<a xlink:href='#c_peak_X_s_peak_meta.pid'><use id='fk' x='484' y='92' xlink:href='#fk'/><title>References s_peak_meta ( pid ) </title></a>
+  <a xlink:href='#c_peak_X_s_peak_meta.cid'><text id='Default.c_peak_X_s_peak_meta.cid' x='371' y='119' onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peaks.cid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peaks.cid'])">cid</text><title>cid
+integer
+c_peaks id</title></a>
+<a xlink:href='#c_peak_X_s_peak_meta.cid'><use id='fk' x='484' y='108' xlink:href='#fk'/><title>References c_peaks ( cid ) </title></a>
+
+<!-- == Table 's_peak_meta' == -->
+<rect class='entity' style='stroke:#1E498F' x='720' y='72' width='144' height='352' rx='8' ry='8' style='stroke:none'/>
+<path d='M 720 100 L 720 80 Q 720 72 728 72 L 856 72 Q 864 72 864 80 L 864 100 L720 100 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='720' y='72' width='144' height='352' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
+<a xlink:href='#s_peak_meta'><text x='754' y='92'>s_peak_meta</text><title>Table Default.s_peak_meta
+Table for scan peak meta. Used to record the details regarding the fragmentation to generate the scan peaks (e.g. the precursor m/z isolated and precursor ion purity)</title></a>
+  <use id='nn' x='722' y='109' xlink:href='#nn'/><a xlink:href='#s_peak_meta.pid'><use id='pk' x='722' y='108' xlink:href='#pk'/><title>Pk pk_s_peak_meta ( pid ) </title></a>
+<a xlink:href='#s_peak_meta.pid'><text id='Default.s_peak_meta.pid' x='739' y='119' onmouseover="hghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','s_peaks_Fk_s_peaks','Default.s_peaks.pid'])" onmouseout="uhghl(['c_peak_X_s_peak_meta_Fk_c_peak_X_s_peak_meta','Default.c_peak_X_s_peak_meta.pid','s_peaks_Fk_s_peaks','Default.s_peaks.pid'])">pid</text><title>pid
+* integer
+The "p" stands for purity as the id is calculated by msPurity</title></a>
+<a xlink:href='#s_peak_meta.pid'><use id='ref' x='852' y='108' xlink:href='#ref'/><title>Referred by c_peak_X_s_peak_meta ( pid ) 
+Referred by s_peaks ( pid ) </title></a>
+  <a xlink:href='#s_peak_meta.seqNum'><text id='Default.s_peak_meta.seqNum' x='739' y='135'>seqNum</text><title>seqNum
+real
+Sequence number. Similar to scan number but calculated by mzR at time of file parsing, so if scans have been removed prior to processing, the scan number and the seqNum will differ</title></a>
+<text x='861' y='132' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorIntensity'><text id='Default.s_peak_meta.precursorIntensity' x='739' y='151'>precursorIntensity</text><title>precursorIntensity
+real
+Precursor intensity as determined from original data file (e.g. mzML)</title></a>
+<text x='861' y='148' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorMZ'><text id='Default.s_peak_meta.precursorMZ' x='739' y='167'>precursorMZ</text><title>precursorMZ
+real
+Precursor m/z as determined from original data file (e.g. mzML)</title></a>
+<text x='861' y='164' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorRT'><text id='Default.s_peak_meta.precursorRT' x='739' y='183'>precursorRT</text><title>precursorRT
+real
+Precursor rentention time as determined from original data file (e.g. mzML)</title></a>
+<text x='861' y='180' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorScanNum'><text id='Default.s_peak_meta.precursorScanNum' x='739' y='199'>precursorScanNum</text><title>precursorScanNum
+real
+Precursor scan number as determined from original data file (e.g. mzML)</title></a>
+<text x='861' y='196' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.id'><text id='Default.s_peak_meta.id' x='739' y='215'>id</text><title>id
+real
+id (file specific)</title></a>
+<text x='861' y='212' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.precursorNearest'><text id='Default.s_peak_meta.precursorNearest' x='739' y='231'>precursorNearest</text><title>precursorNearest
+real
+Precursor scan number nearest to the fragmentation event as determined by msPurity</title></a>
+<text x='861' y='228' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.aMz'><text id='Default.s_peak_meta.aMz' x='739' y='247'>aMz</text><title>aMz
+real
+The m/z value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file (msPurity)</title></a>
+<text x='861' y='244' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.aPurity'><text id='Default.s_peak_meta.aPurity' x='739' y='263'>aPurity</text><title>aPurity
+real
+The purity score for aMz</title></a>
+<text x='861' y='260' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.apkNm'><text id='Default.s_peak_meta.apkNm' x='739' y='279'>apkNm</text><title>apkNm
+real
+The number of peaks in the isolation window for aMz</title></a>
+<text x='861' y='276' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.iMz'><text id='Default.s_peak_meta.iMz' x='739' y='295'>iMz</text><title>iMz
+real
+The m/z value in the precursorNearest scan that is the most intense within the isolation window</title></a>
+<text x='861' y='292' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.iPurity'><text id='Default.s_peak_meta.iPurity' x='739' y='311'>iPurity</text><title>iPurity
+real
+The purity score for iMz</title></a>
+<text x='861' y='308' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.ipkNm'><text id='Default.s_peak_meta.ipkNm' x='739' y='327'>ipkNm</text><title>ipkNm
+real
+The number of peaks in the isolation window for iMz</title></a>
+<text x='861' y='324' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.inPkNm'><text id='Default.s_peak_meta.inPkNm' x='739' y='343'>inPkNm</text><title>inPkNm
+real
+The interpolated number of peaks in the isolation window</title></a>
+<text x='861' y='340' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.inPurity'><text id='Default.s_peak_meta.inPurity' x='739' y='359'>inPurity</text><title>inPurity
+real
+The interpolated purity score</title></a>
+<text x='861' y='356' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.fileid'><text id='Default.s_peak_meta.fileid' x='739' y='375' onmouseover="hghl(['s_peak_meta_Fk_s_peak_meta','Default.fileinfo.fileid'])" onmouseout="uhghl(['s_peak_meta_Fk_s_peak_meta','Default.fileinfo.fileid'])">fileid</text><title>fileid
+integer
+fileinfo id</title></a>
+<a xlink:href='#s_peak_meta.fileid'><use id='fk' x='852' y='364' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
+  <a xlink:href='#s_peak_meta.acquisitionNum'><text id='Default.s_peak_meta.acquisitionNum' x='739' y='391'>acquisitionNum</text><title>acquisitionNum
+real</title></a>
+<text x='861' y='388' text-anchor='end' class='colType'>#</text>  <a xlink:href='#s_peak_meta.retentionTime'><text id='Default.s_peak_meta.retentionTime' x='739' y='407'>retentionTime</text><title>retentionTime
+real</title></a>
+<text x='861' y='404' text-anchor='end' class='colType'>#</text>
+<!-- == Table 'av_peaks' == -->
+<rect class='entity' style='stroke:#1E5D8F' x='352' y='552' width='128' height='336' rx='8' ry='8' style='stroke:none'/>
+<path d='M 352 580 L 352 560 Q 352 552 360 552 L 472 552 Q 480 552 480 560 L 480 580 L352 580 ' style='fill:url(#tbg_3986C1);stroke:1;stroke-opacity:0.1;' />
+<rect class='entity' x='352' y='552' width='128' height='336' rx='8' ry='8' style='fill:none;stroke:#DADDE1'/>
+<a xlink:href='#av_peaks'><text x='388' y='572'>av_peaks</text><title>Table Default.av_peaks
+Table for averaged peaks. Used to record the averaged fragmentation spectra associated with for chromatography grouped peaks (e.g. XCMS grouped peaks). 
+
+Three different methods can create the averaged spectra. "av_intra": averaged within files, "inter": averaged within files and then across files and "av_all": averaged across all associated spectra found for the chromatography grouped peak.</title></a>
+  <use id='nn' x='354' y='589' xlink:href='#nn'/><a xlink:href='#av_peaks.avid'><use id='pk' x='354' y='588' xlink:href='#pk'/><title>Pk pk_av_peaks ( avid ) </title></a>
+<a xlink:href='#av_peaks.avid'><text id='Default.av_peaks.avid' x='371' y='599'>avid</text><title>avid
+* integer
+average peak id</title></a>
+<text x='477' y='596' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.cl'><text id='Default.av_peaks.cl' x='371' y='615'>cl</text><title>cl
+real
+cluster group - id given when clustering spectra</title></a>
+<text x='477' y='612' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.mz'><text id='Default.av_peaks.mz' x='371' y='631'>mz</text><title>mz
+real
+averaged mass / charge  value</title></a>
+<text x='477' y='628' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.i'><text id='Default.av_peaks.i' x='371' y='647'>i</text><title>i
+real
+averaged intensity  value</title></a>
+<text x='477' y='644' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.snr'><text id='Default.av_peaks.snr' x='371' y='663'>snr</text><title>snr
+real
+averaged signal to noise ratio value</title></a>
+<text x='477' y='660' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.rsd'><text id='Default.av_peaks.rsd' x='371' y='679'>rsd</text><title>rsd
+real
+Relative standard deviation</title></a>
+<text x='477' y='676' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.count'><text id='Default.av_peaks.count' x='371' y='695'>count</text><title>count
+real
+Total number of peaks averaged across</title></a>
+<text x='477' y='692' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.total'><text id='Default.av_peaks.total' x='371' y='711'>total</text><title>total
+real
+Total number of potential peaks that could be averaged across if each scan contained a corresponding peak</title></a>
+<text x='477' y='708' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.inPurity'><text id='Default.av_peaks.inPurity' x='371' y='727'>inPurity</text><title>inPurity
+real
+averaged precursor ion purity value</title></a>
+<text x='477' y='724' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.ra'><text id='Default.av_peaks.ra' x='371' y='743'>ra</text><title>ra
+real
+Averaged relative abundance</title></a>
+<text x='477' y='740' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.frac'><text id='Default.av_peaks.frac' x='371' y='759'>frac</text><title>frac
+real
+fraction of peaks (e.g. count/total)</title></a>
+<text x='477' y='756' text-anchor='end' class='colType'>#</text>  <a xlink:href='#av_peaks.snr_pass_flag'><text id='Default.av_peaks.snr_pass_flag' x='371' y='775'>snr_pass_flag</text><title>snr_pass_flag
+text
+flag for signal to noise threshold</title></a>
+<text x='477' y='772' text-anchor='end' class='colType'>t</text>  <a xlink:href='#av_peaks.minfrac_pass_flag'><text id='Default.av_peaks.minfrac_pass_flag' x='371' y='791'>minfrac_pass_flag</text><title>minfrac_pass_flag
+text
+flag for minfrac threshold</title></a>
+<text x='477' y='788' text-anchor='end' class='colType'>t</text>  <a xlink:href='#av_peaks.ra_pass_flag'><text id='Default.av_peaks.ra_pass_flag' x='371' y='807'>ra_pass_flag</text><title>ra_pass_flag
+text
+flag for relative abundance threshold</title></a>
+<text x='477' y='804' text-anchor='end' class='colType'>t</text>  <a xlink:href='#av_peaks.pass_flag'><text id='Default.av_peaks.pass_flag' x='371' y='823'>pass_flag</text><title>pass_flag
+text
+overvall pass flag</title></a>
+<text x='477' y='820' text-anchor='end' class='colType'>t</text>  <a xlink:href='#av_peaks.method'><text id='Default.av_peaks.method' x='371' y='839'>method</text><title>method
+text
+method used for averaging (av_inter, av_intra and av_all)</title></a>
+<text x='477' y='836' text-anchor='end' class='colType'>t</text>  <a xlink:href='#av_peaks.fileid'><text id='Default.av_peaks.fileid' x='371' y='855' onmouseover="hghl(['av_peaks_fk_av_peaks_fileinfo','Default.fileinfo.fileid'])" onmouseout="uhghl(['av_peaks_fk_av_peaks_fileinfo','Default.fileinfo.fileid'])">fileid</text><title>fileid
+integer
+fileid from fileinfo</title></a>
+<a xlink:href='#av_peaks.fileid'><use id='fk' x='468' y='844' xlink:href='#fk'/><title>References fileinfo ( fileid ) </title></a>
+  <a xlink:href='#av_peaks.grpid'><text id='Default.av_peaks.grpid' x='371' y='871' onmouseover="hghl(['av_peaks_fk_av_peaks_c_peak_groups','Default.c_peak_groups.grpid'])" onmouseout="uhghl(['av_peaks_fk_av_peaks_c_peak_groups','Default.c_peak_groups.grpid'])">grpid</text><title>grpid
+integer
+grpid from c_peak_groups</title></a>
+<a xlink:href='#av_peaks.grpid'><use id='fk' x='468' y='860' xlink:href='#fk'/><title>References c_peak_groups ( grpid ) </title></a>
+
 </g></svg></div>
 
 
 <br><br>
-<div class='card'><div class='card-body'><a name='c_peak_X_c_peak_group' onclick='window.scrollTo(60, 400);return false;' style='cursor:pointer;'><h4 class='card-title'>Table c_peak_X_c_peak_group</h4></a>
+<div class='card'><div class='card-body'><a name='av_peaks' onclick='window.scrollTo(152, 560);return false;' style='cursor:pointer;'><h5 class='card-title'>Table av_peaks</h5></a>
+<p class="text-muted">Table for averaged peaks. Used to record the averaged fragmentation spectra associated with for chromatography grouped peaks (e.g. XCMS grouped peaks). 
+
+Three different methods can create the averaged spectra. "av_intra": averaged within files, "inter": averaged within files and then across files and "av_all": averaged across all associated spectra found for the chromatography grouped peak.</p>
+<table class='table-sm table-bordered'>
+<thead>
+<tr><th>Indexes</th><th>Field Name</th><th>Data Type</th><th>Description</th></tr></thead>
+<tbody>
+	<tr>
+		<td>*<svg width='14' height='14'><use xlink:href='#pk'/></svg></td>
+		<td><a name='av_peaks.avid'>avid</a></td>
+		<td> integer   </td>
+		<td> average peak id </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.cl'>cl</a></td>
+		<td> real   </td>
+		<td> cluster group &#45; id given when clustering spectra </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.mz'>mz</a></td>
+		<td> real   </td>
+		<td> averaged mass &#47; charge  value </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.i'>i</a></td>
+		<td> real   </td>
+		<td> averaged intensity  value </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.snr'>snr</a></td>
+		<td> real   </td>
+		<td> averaged signal to noise ratio value </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.rsd'>rsd</a></td>
+		<td> real   </td>
+		<td> Relative standard deviation </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.count'>count</a></td>
+		<td> real   </td>
+		<td> Total number of peaks averaged across </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.total'>total</a></td>
+		<td> real   </td>
+		<td> Total number of potential peaks that could be averaged across if each scan contained a corresponding peak </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.inPurity'>inPurity</a></td>
+		<td> real   </td>
+		<td> averaged precursor ion purity value </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.ra'>ra</a></td>
+		<td> real   </td>
+		<td> Averaged relative abundance </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.frac'>frac</a></td>
+		<td> real   </td>
+		<td> fraction of peaks &#40;e&#46;g&#46; count&#47;total&#41; </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.snr_pass_flag'>snr&#95;pass&#95;flag</a></td>
+		<td> text   </td>
+		<td> flag for signal to noise threshold </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.minfrac_pass_flag'>minfrac&#95;pass&#95;flag</a></td>
+		<td> text   </td>
+		<td> flag for minfrac threshold </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.ra_pass_flag'>ra&#95;pass&#95;flag</a></td>
+		<td> text   </td>
+		<td> flag for relative abundance threshold </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.pass_flag'>pass&#95;flag</a></td>
+		<td> text   </td>
+		<td> overvall pass flag </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='av_peaks.method'>method</a></td>
+		<td> text   </td>
+		<td> method used for averaging &#40;av&#95;inter&#44; av&#95;intra and av&#95;all&#41; </td>
+	</tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td>
+		<td><a name='av_peaks.fileid'>fileid</a></td>
+		<td> integer   </td>
+		<td> fileid from fileinfo </td>
+	</tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td>
+		<td><a name='av_peaks.grpid'>grpid</a></td>
+		<td> integer   </td>
+		<td> grpid from c&#95;peak&#95;groups </td>
+	</tr>
+<tr><th colspan='4'>Indexes</th></tr>
+	<tr>		<td><svg width='14' height='14'><use xlink:href='#pk'/></svg></td><td>pk&#95;av&#95;peaks</td>
+		<td> ON avid</td>
+		<td>  </td>
+	</tr>
+<tr><th colspan='4'>Foreign Keys</th></tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td><td>fk_av_peaks_fileinfo</td>
+		<td > ( fileid ) ref <a href='#fileinfo'>fileinfo</a> (fileid) </td>
+		<td>  </td>
+	</tr>
+	<tr>
+		<td><svg width='14' height='14'><use xlink:href='#fk'/></svg></td><td>fk_av_peaks_c_peak_groups</td>
+		<td > ( grpid ) ref <a href='#c&#95;peak&#95;groups'>c&#95;peak&#95;groups</a> (grpid) </td>
+		<td>  </td>
+	</tr>
+</tbody>
+</table></div></div>
+
+<br><br>
+<div class='card'><div class='card-body'><a name='c_peak_X_c_peak_group' onclick='window.scrollTo(60, 352);return false;' style='cursor:pointer;'><h5 class='card-title'>Table c_peak_X_c_peak_group</h5></a>
 <p class="text-muted">Table to link the individual chromatography peaks (c_peak) to the grouped chromatographic peaks (c_peak_group)</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -597,7 +823,7 @@ Example individual intensity values (note these columns will change depending on
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='c_peak_X_s_peak_meta' onclick='window.scrollTo(88, 48);return false;' style='cursor:pointer;'><h4 class='card-title'>Table c_peak_X_s_peak_meta</h4></a>
+<div class='card'><div class='card-body'><a name='c_peak_X_s_peak_meta' onclick='window.scrollTo(152, 48);return false;' style='cursor:pointer;'><h5 class='card-title'>Table c_peak_X_s_peak_meta</h5></a>
 <p class="text-muted">Table to link the chromatography peaks to the scan peak meta. Used to see show which chromatography peaks (features) have associated fragmentation. Mapping can be generated via frag4feature function.</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -641,7 +867,7 @@ Example individual intensity values (note these columns will change depending on
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='c_peak_groups' onclick='window.scrollTo(104, 368);return false;' style='cursor:pointer;'><h4 class='card-title'>Table c_peak_groups</h4></a>
+<div class='card'><div class='card-body'><a name='c_peak_groups' onclick='window.scrollTo(60, 576);return false;' style='cursor:pointer;'><h5 class='card-title'>Table c_peak_groups</h5></a>
 <p class="text-muted">Table for chromatography peak groups. Details the grouped feature across individual chromotographic peaks (c_peaks).</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -734,7 +960,7 @@ Example individual intensity values (note these columns will change depending on
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='c_peaks' onclick='window.scrollTo(60, 48);return false;' style='cursor:pointer;'><h4 class='card-title'>Table c_peaks</h4></a>
+<div class='card'><div class='card-body'><a name='c_peaks' onclick='window.scrollTo(60, 48);return false;' style='cursor:pointer;'><h5 class='card-title'>Table c_peaks</h5></a>
 <p class="text-muted">Table for the individual chromatography peaks from each file</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -833,7 +1059,7 @@ Example individual intensity values (note these columns will change depending on
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='fileinfo' onclick='window.scrollTo(264, 224);return false;' style='cursor:pointer;'><h4 class='card-title'>Table fileinfo</h4></a>
+<div class='card'><div class='card-body'><a name='fileinfo' onclick='window.scrollTo(216, 256);return false;' style='cursor:pointer;'><h5 class='card-title'>Table fileinfo</h5></a>
 <p class="text-muted">Table for file information</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -872,7 +1098,7 @@ Example individual intensity values (note these columns will change depending on
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='s_peak_meta' onclick='window.scrollTo(472, 80);return false;' style='cursor:pointer;'><h4 class='card-title'>Table s_peak_meta</h4></a>
+<div class='card'><div class='card-body'><a name='s_peak_meta' onclick='window.scrollTo(520, 80);return false;' style='cursor:pointer;'><h5 class='card-title'>Table s_peak_meta</h5></a>
 <p class="text-muted">Table for scan peak meta. Used to record the details regarding the fragmentation to generate the scan peaks (e.g. the precursor m/z isolated and precursor ion purity)</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -980,6 +1206,18 @@ Example individual intensity values (note these columns will change depending on
 		<td> integer   </td>
 		<td> fileinfo id </td>
 	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='s_peak_meta.acquisitionNum'>acquisitionNum</a></td>
+		<td> real   </td>
+		<td>  </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='s_peak_meta.retentionTime'>retentionTime</a></td>
+		<td> real   </td>
+		<td>  </td>
+	</tr>
 <tr><th colspan='4'>Indexes</th></tr>
 	<tr>		<td><svg width='14' height='14'><use xlink:href='#pk'/></svg></td><td>pk&#95;s&#95;peak&#95;meta</td>
 		<td> ON pid</td>
@@ -995,7 +1233,7 @@ Example individual intensity values (note these columns will change depending on
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='s_peaks' onclick='window.scrollTo(424, 496);return false;' style='cursor:pointer;'><h4 class='card-title'>Table s_peaks</h4></a>
+<div class='card'><div class='card-body'><a name='s_peaks' onclick='window.scrollTo(488, 528);return false;' style='cursor:pointer;'><h5 class='card-title'>Table s_peaks</h5></a>
 <p class="text-muted">Table for the scan peaks. Used for the fragmentation spectra</p>
 <table class='table-sm table-bordered'>
 <thead>

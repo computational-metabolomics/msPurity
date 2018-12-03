@@ -216,7 +216,9 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
     colnames(av_spectra)[2] <- 'fileid'
     av_spectra$avid <- 1:nrow(av_spectra)
-    fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
+    fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
+                               'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups')
+                               )
 
     custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
                         table_name ='av_peaks', df=av_spectra, con=con)
