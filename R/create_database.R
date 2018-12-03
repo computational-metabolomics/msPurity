@@ -13,8 +13,21 @@
 #' @param grp_peaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
 #' @param out_dir character; Out directory for the SQLite result database
 #' @return path to SQLite database and database name
+#'
+#' @examples
+#'
+#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#' xset <- xcms::group(xset)
+#' xset <- xcms::retcor(xset)
+#' xset <- xcms::group(xset)
+#'
+#' pa  <- purityA(msmsPths)
+#' pa <- frag4feature(pa, xset)
+#' pa <- averageFragmentation(pa)
+#' db_pth <- create_database(pa, xset)
 #' @export
-create_database <-  function(pa, xset, xsa=NULL, out_dir, grp_peaklist=NA, db_name=NA){
+create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, db_name=NA){
   ########################################################
   # Export the target data into sqlite database
   ########################################################
@@ -196,6 +209,20 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   if (length(pa@av_spectra)>0){
 
 
+    av_spectra <- plyr::ldply(pa@av_spectra, get_av_spectra_for_db)
+
+    # for some reason the names are not being saved for the list as a column, so we just get them back
+    colnames(av_spectra)[1] <- 'grpid'
+    av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
+
+    colnames(av_spectra)[2] <- 'fileid'
+    av_spectra$avid <- 1:nrow(av_spectra)
+    fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
+
+    custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
+                        table_name ='av_peaks', df=av_spectra, con=con)
+
+
 
   }
 
@@ -260,19 +287,45 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   }
 
 
-
-
-
-
-
-
-
-
-
   DBI::dbDisconnect(con)
   return(db_pth)
 
 }
+
+
+get_av_spectra_for_db <- function(x){
+
+  if (length(x$av_intra)>0){
+    av_intra_df <- plyr::ldply(x$av_intra)
+    av_intra_df$method <- 'intra'
+  }else{
+    av_intra_df <- NULL
+  }
+
+  if (!is.null(x$av_inter)){
+    av_inter_df <- x$av_inter
+    av_inter_df$sample <- NA
+    av_inter_df$method <- 'inter'
+  }else{
+    av_inter_df <- NULL
+  }
+
+  if (!is.null(x$av_all)){
+    av_all_df <- x$av_all
+    av_all_df$sample <- NA
+    av_all_df$method <- 'all'
+  }else{
+    av_all_df <- NULL
+  }
+
+
+  combined <- rbind(av_intra_df, av_inter_df, av_all_df)
+
+
+  return(combined)
+
+}
+
 
 real_or_rest <- function(x){
   if(is.numeric(x)){

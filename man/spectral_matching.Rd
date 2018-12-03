@@ -4,19 +4,21 @@
 \alias{spectral_matching}
 \title{Spectral matching}
 \usage{
-spectral_matching(target_db_pth, ra_thres_l = 0, ra_thres_t = 2,
+spectral_matching(query_db_pth, ra_thres_l = 0, ra_thres_q = 2,
   cores = 1, pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
   score_thres = 0.6, topn = NA, db_name = NA, library_db_pth = NA,
   instrument_types = NA, library_sources = "massbank", scan_ids = NA,
-  pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".")
+  pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".",
+  ra_w_q = 0.5, ra_w_l = 0.5, mz_w_q = 2, mz_w_l = 2,
+  spectra_type_q = "scans", ra_thres_t = NA, target_db_pth = NA)
 }
 \arguments{
-\item{target_db_pth}{character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
+\item{query_db_pth}{character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
 either from frag4feature or from create_database functions.}
 
 \item{ra_thres_l}{numeric; Relative abundance threshold for library spectra}
 
-\item{ra_thres_t}{numeric; Relative abundance threshold for target (query) spectra
+\item{ra_thres_q}{numeric; Relative abundance threshold for target (query) spectra
 (Peaks below this RA threshold will be excluded)}
 
 \item{cores}{numeric; Number of cores to use}
@@ -45,13 +47,29 @@ library is also available}
 \item{scan_ids}{vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 used for the spectral matching. All scans will be used if set to NA}
 
-\item{pa}{purityA object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+\item{pa}{purityA object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
 
-\item{xset}{xcms object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+\item{xset}{xcms object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
 
-\item{grp_peaklist}{dataframe [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+\item{grp_peaklist}{dataframe [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
 
-\item{out_dir}{character [deprecated]; If target_db_pth set to NA, Out directory for the SQLite result database}
+\item{out_dir}{character [optional]; If target_db_pth set to NA, Out directory for the SQLite result database}
+
+\item{ra_w_q}{numeric; Relative abundance weight for query spectra}
+
+\item{ra_w_l}{numeric; Relative abundance weight for library spectra}
+
+\item{mz_w_q}{numeric; mz weight for query spectra}
+
+\item{mz_w_l}{numeric; mz weight for library spectra}
+
+\item{spectra_type_q}{character; Type of fragmentation spectra from query to match with "scans" =  all individual scans,
+"av_intra" = averaged spectra (intra), "av_inter" = averaged spectra (inter), "av_all" = averaged all
+ spectra ignoring inter-intra relationships}
+
+\item{ra_thres_t}{numeric [deprecated]; The relative abundance threshold for the query spectra (use ra_thres_q for future use)}
+
+\item{target_db_pth}{character [deprecated]; The query database path (use query_db_pth for future use)}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features

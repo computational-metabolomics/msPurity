@@ -4,8 +4,8 @@
 \alias{create_database}
 \title{Create database}
 \usage{
-create_database(pa, xset, xsa = NULL, out_dir, grp_peaklist = NA,
-  db_name = NA)
+create_database(pa, xset, xsa = NULL, out_dir = ".",
+  grp_peaklist = NA, db_name = NA)
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}
@@ -28,4 +28,17 @@ path to SQLite database and database name
 }
 \description{
 Create and SQLite database of an LC-MS(/MS) experiment
+}
+\examples{
+
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
+
+pa  <- purityA(msmsPths)
+pa <- frag4feature(pa, xset)
+pa <- averageFragmentation(pa)
+db_pth <- create_database(pa, xset)
 }
