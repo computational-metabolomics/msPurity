@@ -3,11 +3,11 @@
 #' @description
 #' Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
 #'
-#' @param target_db_pth character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
+#' @param query_db_pth character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
 #'                       either from frag4feature or from create_database functions.
 #' @param library_db_pth character [optional]; path to library spectral SQLite database.
 #'                                             Defaults to msPurityData package data.
-#' @param ra_thres_t numeric; Relative abundance threshold for target (query) spectra
+#' @param ra_thres_q numeric; Relative abundance threshold for target (query) spectra
 #'                      (Peaks below this RA threshold will be excluded)
 #' @param ra_thres_l numeric; Relative abundance threshold for library spectra
 #' @param cores numeric; Number of cores to use
@@ -15,6 +15,13 @@
 #' @param ppm_tol_prod numeric; PPM tolerance to match to product
 #' @param ppm_tol_prec numeric; PPM tolerance to match to precursor
 #' @param score_thres numeric; Dot product cosine score threshold
+#' @param ra_w_q numeric; Relative abundance weight for query spectra
+#' @param ra_w_l numeric; Relative abundance weight for library spectra
+#' @param mz_w_q numeric; mz weight for query spectra
+#' @param mz_w_l numeric; mz weight for library spectra
+#' @param spectra_type_q character; Type of fragmentation spectra from query to match with "scans" =  all individual scans,
+#'                                  "av_intra" = averaged spectra (intra), "av_inter" = averaged spectra (inter), "av_all" = averaged all
+#'                                   spectra ignoring inter-intra relationships
 #' @param topn numeric [optional]; Only use top n matches
 #' @param db_name character [optional]; Name of the result database
 #'                                   (e.g. can use CAMERA peaklist)
@@ -23,11 +30,12 @@
 #'                                    library is also available
 #' @param scan_ids vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 #'                        used for the spectral matching. All scans will be used if set to NA
-#' @param pa purityA object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
-#' @param xset xcms object [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
-#' @param grp_peaklist dataframe [deprecated]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
-#' @param out_dir character [deprecated]; If target_db_pth set to NA, Out directory for the SQLite result database
-#'
+#' @param pa purityA object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param xset xcms object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param grp_peaklist dataframe [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param out_dir character [optional]; If target_db_pth set to NA, Out directory for the SQLite result database
+#' @param target_db_pth character [deprecated]; The query database path (use query_db_pth for future use)
+#' @param ra_thres_t numeric [deprecated]; The relative abundance threshold for the query spectra (use ra_thres_q for future use)
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
@@ -43,17 +51,32 @@
 #' #Only required if you want to limit the spectral matching to certain scans
 #' result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 #' @export
-spectral_matching <- function(target_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
+spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,
                                      instrument_types=NA, library_sources='massbank', scan_ids=NA,
-                                     pa=NA, xset=NA, grp_peaklist=NA, out_dir='.'){
+                                     pa=NA, xset=NA, grp_peaklist=NA, out_dir='.', ra_w_q=0.5, ra_w_l=0.5, mz_w_q=2, mz_w_l=2,
+                                     spectra_type_q="scans", ra_thres_t=NA, target_db_pth=NA ){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
+
+  if (!is.na(ra_thres_t)){
+    message("ra_thres_t argument has been deprecated and will be remove in future versions of msPurity,
+            use ra_thres_q for future use")
+    ra_thres_q <- ra_thres_t
+  }
+
+  if (!is.na(target_db_pth)){
+    message("Please note that target_db_pth argument has been deprecated and will be remove in future versions of msPurity,
+            use query_db_pth for future use")
+    query_db_pth <- target_db_pth
+  }
+
+
 
   ########################################################
   # Export the target data into sqlite database
   ########################################################
-  if (is.na(target_db_pth)){
-    target_db_pth <- create_database(pa=pa, xset=xset, out_dir=out_dir, grp_peaklist=grp_peaklist, db_name=db_name)
+  if (is.na(query_db_pth)){
+    query_db_pth <- create_database(pa=pa, xset=xset, out_dir=out_dir, grp_peaklist=grp_peaklist, db_name=db_name)
   }
 
   if (is.na(library_db_pth)){
@@ -65,9 +88,9 @@ spectral_matching <- function(target_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1
   # Perform the spectral matching
   ########################################################
   message("Performing spectral matching")
-  matched <- match_2_library(target_db_pth,
+  matched <- match_2_library(query_db_pth,
                   library_db_pth,
-                  ra_thres_t=ra_thres_t,
+                  ra_thres_q=ra_thres_q,
                   ra_thres_l=ra_thres_l,
                   cores=cores,
                   pol=pol,
@@ -76,20 +99,26 @@ spectral_matching <- function(target_db_pth, ra_thres_l=0, ra_thres_t=2, cores=1
                   topn=topn,
                   instrument_types = instrument_types,
                   library_sources = library_sources,
-                  scan_ids = scan_ids)
+                  scan_ids = scan_ids,
+                  ra_w_q = ra_w_q,
+                  ra_w_l = ra_w_l,
+                  mz_w_q = mz_w_q,
+                  mz_w_l = mz_w_l,
+                  spectra_type_q = spectra_type_q
+                  )
 
   ########################################################
   # Create a summary table for xcms grouped objects
   ########################################################
   if (matched){
     message("Summarising LC features annotations")
-    xcms_summary_df <- get_xcms_sm_summary(target_db_pth, topn=topn, score_f=score_thres)
+    xcms_summary_df <- get_xcms_sm_summary(query_db_pth, topn=topn, score_f=score_thres,spectra_type_q=spectra_type_q)
   }else{
     xcms_summary_df <- NA
   }
 
 
-  return(list('result_db_pth' = target_db_pth, 'xcms_summary_df' = xcms_summary_df))
+  return(list('result_db_pth' = query_db_pth, 'xcms_summary_df' = xcms_summary_df))
 }
 
 
@@ -99,38 +128,61 @@ ra_calc <- function(x){
   return(x)
 }
 
-get_target_spectra_list <- function(x, scan_info){
+get_query_spectra_list_s_peak <- function(x, scan_info){
   list(x, scan_info[scan_info$pid==unique(x$pid),]$precursorMZ)
 }
 
-match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, mslevel=NA, mslevel_match=TRUE,
-                            ra_thres_t=2, ra_thres_l=0, cores=1, pol, ppm_tol_prod=100, ppm_tol_prec=50, topn=5,
-                            library_sources=NA, scan_ids=NA){
+get_query_spectra_list_c_peak_group <- function(x, c_peak_groups){
+  av_peaks = x[,c('mz','ra','type','w','grpid','grpid_fileid')]
+  list(av_peaks, c_peak_groups[c_peak_groups$grpid==unique(x$grpid),]$mz)
+}
+
+match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, mslevel=NA, mslevel_match=TRUE,
+                            ra_thres_q=2, ra_thres_l=0, cores=1, pol, ppm_tol_prod=100, ppm_tol_prec=50, topn=5,
+                            library_sources=NA, scan_ids=NA, ra_w_q=0.5, ra_w_l=0.5, mz_w_q=2, mz_w_l=2, spectra_type_q="scans"){
 
 
 
 
   ########################################################
-  # Get target spectra
+  # Get target (query) spectra
   ########################################################
   # Get all of the target MS2 data
-  conT <- DBI::dbConnect(RSQLite::SQLite(), target_db_pth)
+  conQ <- DBI::dbConnect(RSQLite::SQLite(), query_db_pth)
 
   # Get scan peaks for target spectra
-  target_spectra <- DBI::dbGetQuery(conT, 'SELECT * FROM s_peaks ' )
-
-  if (!anyNA(scan_ids)){
-    target_spectra <- target_spectra[target_spectra[,'pid'] %in% scan_ids,]
+  if (spectra_type_q=="scans"){
+    query_spectra <- DBI::dbGetQuery(conQ, 'SELECT * FROM s_peaks ' )
+  }else if (spectra_type_q=="av_intra"){
+    query_spectra <- DBI::dbGetQuery(conQ, 'SELECT * FROM av_peaks WHERE  method="intra" AND pass_flag=1' )
+  }else if (spectra_type_q=="av_inter"){
+    query_spectra <- DBI::dbGetQuery(conQ, 'SELECT * FROM av_peaks WHERE  method="inter" AND pass_flag=1' )
+  }else if (spectra_type_q=="av_all"){
+    query_spectra <- DBI::dbGetQuery(conQ, 'SELECT * FROM av_peaks WHERE  method="all" AND pass_flag=1' )
   }
 
-  # Calculate relative abundance
-  target_spectra <- plyr::ddply(target_spectra, ~ pid, ra_calc)
+  if (!anyNA(scan_ids) && spectra_type_q=="scans"){
+    query_spectra <- query_spectra[query_spectra[,'pid'] %in% scan_ids,]
+  }
 
-  # Relative abundnace threshold
-  target_spectra <- target_spectra[target_spectra$ra>=ra_thres_t,]
+  query_spectra$grpid_fileid <- paste(query_spectra$grpid, query_spectra$fileid, sep='_')
+
+  # Calculate relative abundance
+  if (spectra_type_q=="scans"){
+    query_spectra <- plyr::ddply(query_spectra, ~ pid, ra_calc)
+  }else if (spectra_type_q=="av_intra"){
+
+    query_spectra <- plyr::ddply(query_spectra, ~ grpid_fileid, ra_calc)
+  }else{
+    query_spectra <- plyr::ddply(query_spectra, ~ grpid, ra_calc)
+  }
+
+
+  # Relative abundance threshold
+  query_spectra <- query_spectra[query_spectra$ra>=ra_thres_q,]
 
   # Flag for spectra type
-  target_spectra$type <- 1
+  query_spectra$type <- 1
 
 
   ########################################################
@@ -182,21 +234,41 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   # Weight spectra
   ########################################################
   # weighted intensity value
-  target_spectra$w <- (target_spectra$ra^0.5)*(target_spectra$mz^2)
-  library_spectra$w <- (library_spectra$ra^0.5)*(library_spectra$mz^2)
+  query_spectra$w <- (query_spectra$ra^ra_w_q)*(query_spectra$mz^mz_w_q)
+  library_spectra$w <- (library_spectra$ra^ra_w_l)*(library_spectra$mz^mz_w_l)
 
 
   ########################################################
-  # Get target spectra in format ready for matching
+  # Get target (query) spectra in format ready for matching
   ########################################################
   # Order by relative abundance for target spectra
-  target_spectra <- target_spectra[order(target_spectra[,'pid'], -target_spectra[,'ra']), ]
+  if (spectra_type_q=="scans"){
+    query_spectra <- query_spectra[order(query_spectra[,'pid'], -query_spectra[,'ra']), ]
+    scan_info <- DBI::dbGetQuery(conQ,'SELECT * FROM s_peak_meta' )
+    # we loop through the target spectra as list
+    query_spectra_list <- plyr::dlply(query_spectra, ~ pid, get_query_spectra_list_s_peak,
+                                      scan_info=scan_info)
 
-  scan_info <- DBI::dbGetQuery(conT,'SELECT * FROM s_peak_meta' )
 
-  # we loop through the target spectra as list
-  target_spectra_list <- plyr::dlply(target_spectra, ~ pid, get_target_spectra_list,
-                                     scan_info=scan_info)
+
+  }else{
+
+    c_peak_groups <- DBI::dbGetQuery(conQ,'SELECT * FROM c_peak_groups' )
+    # we loop through the target spectra as list
+    if (spectra_type_q=='av_intra'){
+
+      query_spectra <- query_spectra[order(query_spectra[,'grpid_fileid'], -query_spectra[,'ra']), ]
+      query_spectra_list <- plyr::dlply(query_spectra, ~ grpid_fileid, get_query_spectra_list_c_peak_group,
+                                        c_peak_groups=c_peak_groups)
+    }else{
+      query_spectra <- query_spectra[order(query_spectra[,'grpid'], -query_spectra[,'ra']), ]
+      query_spectra_list <- plyr::dlply(query_spectra, ~ grpid, get_query_spectra_list_c_peak_group,
+                                        c_peak_groups=c_peak_groups)
+    }
+
+
+
+  }
 
 
   ########################################################
@@ -213,13 +285,24 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
     parallel = FALSE
   }
 
-  allmatches_l <- plyr::llply(target_spectra_list, .parallel = parallel, match_targets,
+  allmatches_l <- plyr::llply(query_spectra_list, .parallel = parallel, match_targets,
                         library_spectra=library_spectra,
                         library_precs=library_meta$precursor_mz,
                         ppm_tol_prod=ppm_tol_prod,
                         ppm_tol_prec=ppm_tol_prec)
 
-  allmatches <- plyr::ldply(allmatches_l, .id = 'pid')
+  if (spectra_type_q=="scans"){
+    allmatches <- plyr::ldply(allmatches_l, .id = 'pid')
+  }else if (spectra_type_q=="av_intra"){
+    allmatches <- plyr::ldply(allmatches_l, .id = 'grpid_fileid')
+    grpid_fileid_df <- data.frame(stringr::str_split_fixed(allmatches$grpid_fileid, "_", 2))
+    colnames(grpid_fileid_df) <- c('grpid', 'fileid')
+    allmatches <- cbind(allmatches, grpid_fileid_df)
+
+  }else{
+    allmatches <- plyr::ldply(allmatches_l, .id = 'grpid')
+  }
+
 
 
   ########################################################
@@ -227,7 +310,13 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
   ########################################################
   if (nrow(allmatches)>0){
     if (!is.na(topn)){
-      allmatches <- plyr::ddply(allmatches, ~ pid, get_topn)
+      if (spectra_type_q=="scans"){
+        allmatches <- plyr::ddply(allmatches, ~ pid, get_topn)
+      }else if (spectra_type_q=="av_intra"){
+        allmatches <- plyr::ddply(allmatches, ~ grpid_fileid, get_topn)
+      }else{
+        allmatches <- plyr::ddply(allmatches, ~ grpid, get_topn)
+      }
     }
 
     library_meta_f <- library_meta[library_meta$id %in% allmatches$lid, ]
@@ -235,21 +324,26 @@ match_2_library <- function(target_db_pth, library_db_pth, instrument_types=NA, 
     colnames(library_meta_f)[which(colnames(library_meta_f)=='id')] = 'lid'
 
     custom_dbWriteTable(name_pk = 'lid', fks = NA,
-                        df=library_meta_f, table_name = 'library_meta', con = conT)
+                        df=library_meta_f, table_name = 'library_meta', con = conQ)
 
     allmatches$mid <- 1:nrow(allmatches)
 
     fks_lid <- list('lid'=list('new_name'='lid', 'ref_name'='lid', 'ref_table'='library_spectra_meta'))
-    fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
 
-    custom_dbWriteTable(name_pk = 'mid', fks = append(fks_lid, fks_pid),
-                        df=allmatches, table_name = 'matches', con = conT)
+    if (spectra_type_q=="scans"){
+      fks_q <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
+    }else{
+      fks_q <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'))
+    }
+
+    custom_dbWriteTable(name_pk = 'mid', fks = append(fks_lid, fks_q),
+                        df=allmatches, table_name = 'matches', con = conQ)
     matched = TRUE
   }else{
     matched = FALSE
   }
 
-  DBI::dbDisconnect(conT)
+  DBI::dbDisconnect(conQ)
   DBI::dbDisconnect(conL)
 
   return(matched)
@@ -265,19 +359,26 @@ get_topn <- function(x){
 
 }
 
-get_xcms_sm_summary <- function(target_db_pth, topn=NA, score_f=0.3, frag_nm_f=1){
+get_xcms_sm_summary <- function(query_db_pth, topn=NA, score_f=0.3, frag_nm_f=1,spectra_type_q='scans'){
 
   # Get all of the target fragmentation data
-  conT <- DBI::dbConnect(RSQLite::SQLite(), target_db_pth)
+  conQ <- DBI::dbConnect(RSQLite::SQLite(), query_db_pth)
 
-  XLI <- DBI::dbGetQuery(conT, 'SELECT * FROM c_peak_groups
-   LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.grpid=c_peak_groups.grpid
-   LEFT JOIN c_peaks on c_peaks.cid=cXg.cid
-   LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
-   LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
-   LEFT JOIN matches ON matches.pid=s_peak_meta.pid
-   LEFT JOIN library_meta ON matches.lid=library_meta.lid
-   WHERE matches.score IS NOT NULL')
+  if (spectra_type_q=="scans"){
+    XLI <- DBI::dbGetQuery(conQ, 'SELECT * FROM c_peak_groups
+        LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.grpid=c_peak_groups.grpid
+        LEFT JOIN c_peaks on c_peaks.cid=cXg.cid
+        LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
+        LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
+        LEFT JOIN matches ON matches.pid=s_peak_meta.pid
+        LEFT JOIN library_meta ON matches.lid=library_meta.lid
+        WHERE matches.score IS NOT NULL')
+  }else{
+    XLI <- DBI::dbGetQuery(conQ, 'SELECT * FROM c_peak_groups
+        LEFT JOIN matches ON matches.grpid=c_peak_groups.grpid
+        LEFT JOIN library_meta ON matches.lid=library_meta.lid
+        WHERE matches.score IS NOT NULL')
+  }
 
   XLI <- XLI[XLI$score>=score_f & XLI$match>=frag_nm_f,]
 
@@ -285,20 +386,26 @@ get_xcms_sm_summary <- function(target_db_pth, topn=NA, score_f=0.3, frag_nm_f=1
 
   # Only use topn of hits per scan
   if (!is.na(topn)){
-    XLI <- plyr::ddply(XLI, ~ pid, check_topn, topn=topn)
+    if (spectra_type_q){
+      XLI <- plyr::ddply(XLI, ~ pid, check_topn, topn=topn)
+    }else{
+      XLI <- plyr::ddply(XLI, ~ grpid, check_topn, topn=topn)
+    }
+
   }
 
+
   # Summaries the annotation hits
-  xcms_mtch <- plyr::ddply(XLI, ~ grpid, get_ann_summary)
+  xcms_mtch <- plyr::ddply(XLI, ~ grpid, get_ann_summary, spectra_type_q=spectra_type_q)
 
   if(nrow(xcms_mtch)==0){
-    print('NO MATCHES FOR XCMS')
-    DBI::dbDisconnect(conT)
+    message('NO MATCHES FOR XCMS')
+    DBI::dbDisconnect(conQ)
     return(0)
   }
 
-  DBI::dbWriteTable(conT, name='xcms_match', value=xcms_mtch, row.names=F, append=T)
-
+  DBI::dbWriteTable(conQ, name='xcms_match', value=xcms_mtch, row.names=F, append=T)
+  DBI::dbDisconnect(conQ)
   return(xcms_mtch)
 
 
@@ -318,7 +425,7 @@ median_match_results <- function(y){
   c('best_median_score'=median(y$score), 'best_median_perc_mtch'=median(y$perc_mtch), 'best_median_match'=median(y$match))
 }
 
-get_ann_summary <- function(x){
+get_ann_summary <- function(x, spectra_type_q){
   # get the 'best' match based on the best scored compounds with
   # the same name
   med_results <- plyr::ddply(x, ~ name, median_match_results)
@@ -331,14 +438,22 @@ get_ann_summary <- function(x){
 
   # Get all the matches
   allnames <- paste(unlist(x$name),collapse=", ")
-  allpids <- paste(unlist(x$pid),collapse=", ")
+  if (spectra_type_q=='scans'){
+    allpids <- paste(unlist(x$pid),collapse=", ")
+    snm <- length(unique(unlist(allpids)))
+
+  }else{
+    allpids <- NA
+    snm <- NA
+  }
+
   alllids <- paste(unlist(x$lid),collapse=", ")
   allscores <- paste(unlist(round(x$score,3)),collapse=", ")
 
-  snm <- length(unique(unlist(x$pid)))
+
 
   out_v <- c(unlist(best_match), 'all_names'=allnames, 'all_pids'=allpids,
-             'all_lids'=alllids, 'all_scores'=allscores, 'numb_unique_scans'=snm)
+             'all_lids'=alllids, 'all_scores'=allscores, 'numb_unique_scans'=snm, 'spectra_type'= spectra_type_q)
 
 }
 
@@ -356,7 +471,6 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, 
     target_peaks <- matrix(as.numeric(target_peaks), nrow=1, ncol=4)
     colnames(target_peaks) <- tcnm
   }else{
-    pid <- unique(target_peaks[,'pid'])
     target_peaks <- as.matrix(target_peaks[,tcnm])
   }
 

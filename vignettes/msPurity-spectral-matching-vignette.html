@@ -11,7 +11,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2018-11-17" />
+<meta name="date" content="2018-12-03" />
 
 <title>Using msPurity for spectral matching</title>
 
@@ -215,7 +215,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Using msPurity for spectral matching</h1>
 <p class="author-name">Thomas N. Lawson</p>
-<h4 class="date"><em>2018-11-17</em></h4>
+<h4 class="date"><em>2018-12-03</em></h4>
 
 </div>
 
@@ -248,7 +248,7 @@ xset &lt;- xcms::group(xset)</code></pre>
 pa &lt;- frag4feature(pa, xset, create_db=TRUE)</code></pre>
 <p>The spectral matching is then run on all fragmentation scans collected in all files using the <code>spectral_matching</code> function. The function updates the query database with the spectral matching annotations.</p>
 <p>As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the annotations for the XCMS grouped peaks is provided in the output. The scan_ids parameter can be omitted if all scans are to be used for spectral matching (recommended)</p>
-<pre class="r"><code>result &lt;- spectral_matching(target_db_pth = pa@db_path,  scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))</code></pre>
+<pre class="r"><code>result &lt;- spectral_matching(pa@db_path,  scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))</code></pre>
 <p>It should be noted that in a typical Data Dependent Acquisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.</p>
 </div>
 <div id="query-database-schema" class="section level1">

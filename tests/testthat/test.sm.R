@@ -20,7 +20,7 @@ test_that("checking spectral matching functions (massbank)", {
 
   expect_equal(unname(unlist(result$xcms_summary_df)),
                c("46", "Methionine", "0.603443951203275", "0.120192307692308", "3",
-                 "Methionine, Methionine", "1190, 1190", "34329, 34337", "0.606, 0.601", "1"))
+                 "Methionine, Methionine", "1190, 1190", "34329, 34337", "0.606, 0.601", "1", "scans"))
 
 
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(result$result_db_pth))
@@ -64,3 +64,33 @@ test_that("checking spectral matching functions (massbank)", {
 
 })
 
+
+test_that("checking spectral matching functions with averaging", {
+  print("########################################################")
+  print("## Spectral matching functions                        ##")
+  print("########################################################")
+  library(msPurity)
+
+  msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+  xset <- xcms::xcmsSet(msmsPths)
+  xset <- xcms::group(xset)
+  xset <- xcms::retcor(xset)
+  xset <- xcms::group(xset)
+
+  pa  <- purityA(msmsPths)
+  pa <- frag4feature(pa, xset)
+  pa  <- averageFragmentation(pa)
+  td <- tempdir()
+  db_path <- create_database(pa, xset = xset, out_dir = ".")
+
+  result <- spectral_matching(db_path, spectra_type_q = 'av_all')
+
+  expect_equal(result$xcms_summary_df$grpid, c(12,27,33, 42, 49, 61, 65, 76, 213, 351))
+  expect_equal(result$xcms_summary_df$best_name, c('proline', 'Isoleucine', 'N-methylnicotinate',
+                                                   'Acetylcholine', 'Oxypurinol', '4-Coumaric acid',
+                                                   'alpha-Methyl-DL-histidine', 'Tyrosine',
+                                                   'Aspartame', 'Doxazosin'))
+  expect_equal(round(as.numeric(result$xcms_summary_df$best_median_score), 3),
+               c(1.000,0.929,0.988,0.949,0.797,0.615,0.922,0.774,0.718,0.975))
+
+})

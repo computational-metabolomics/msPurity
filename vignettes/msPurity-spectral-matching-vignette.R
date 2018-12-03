@@ -11,7 +11,7 @@ pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset, create_db=TRUE)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
-result <- spectral_matching(target_db_pth = pa@db_path,  scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
+result <- spectral_matching(pa@db_path,  scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
 
 ## ---- echo=FALSE-----------------------------------------------------------
 htmltools::includeHTML("query_sqlite_schema.html")

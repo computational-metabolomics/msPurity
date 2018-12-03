@@ -1,3 +1,14 @@
+CHANGES IN VERSION 1.9.3
+=========================
+* NEW FUNCTION: averageFrag (for purityA objects)
+** LC-MS/MS averaging and filtering functionality
+* NEW FUNCTION: createMSP
+** Create msp files from purityA objects where XCMS features have been linked to fragmentation spectra
+* Updated create_database and spectral matching to have the option to use averaged fragmentation spectra
+
+
+
+
 CHANGES IN VERSION 1.9.2
 =========================
 * Bug fix for groupPeaks and groupPeaksEx (the ppm argument was not working and there was inconsistent behaviour with larger datasets). Thanks to Elliot for spotting (https://github.com/litepalmer)
