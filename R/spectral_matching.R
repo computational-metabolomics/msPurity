@@ -30,6 +30,8 @@
 #'                                    library is also available
 #' @param scan_ids vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 #'                        used for the spectral matching. All scans will be used if set to NA
+#' @param rt_range vector [optional]; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
+#'                                    retention time range
 #' @param pa purityA object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
 #' @param xset xcms object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
 #' @param grp_peaklist dataframe [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
@@ -46,16 +48,16 @@
 #' xset <- xcms::group(xset)
 #'
 #' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa, xset, create_db=TRUE)
-#' #NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
-#' #Only required if you want to limit the spectral matching to certain scans
-#' result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
+#' pa <- frag4feature(pa, xset)
+#' pa <- averageFragmentation(pa)
+#' db_path <- create_database(pa, xset)
+#' result <- spectral_matching(db_path, spectra_type_q="av_all")
 #' @export
 spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,
                                      instrument_types=NA, library_sources='massbank', scan_ids=NA,
                                      pa=NA, xset=NA, grp_peaklist=NA, out_dir='.', ra_w_q=0.5, ra_w_l=0.5, mz_w_q=2, mz_w_l=2,
-                                     spectra_type_q="scans", ra_thres_t=NA, target_db_pth=NA ){
+                                     spectra_type_q="scans", ra_thres_t=NA, target_db_pth=NA, rt_range=c(NA, NA) ){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
 
   if (!is.na(ra_thres_t)){
@@ -104,7 +106,8 @@ spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1,
                   ra_w_l = ra_w_l,
                   mz_w_q = mz_w_q,
                   mz_w_l = mz_w_l,
-                  spectra_type_q = spectra_type_q
+                  spectra_type_q = spectra_type_q,
+                  rt_range = rt_range
                   )
 
   ########################################################
@@ -139,7 +142,8 @@ get_query_spectra_list_c_peak_group <- function(x, c_peak_groups){
 
 match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, mslevel=NA, mslevel_match=TRUE,
                             ra_thres_q=2, ra_thres_l=0, cores=1, pol, ppm_tol_prod=100, ppm_tol_prec=50, topn=5,
-                            library_sources=NA, scan_ids=NA, ra_w_q=0.5, ra_w_l=0.5, mz_w_q=2, mz_w_l=2, spectra_type_q="scans"){
+                            library_sources=NA, scan_ids=NA, ra_w_q=0.5, ra_w_l=0.5, mz_w_q=2, mz_w_l=2,
+                            spectra_type_q="scans", rt_range=NA){
 
 
 
@@ -203,6 +207,8 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
                                     WHERE m.polarity = '%s' AND s.name IN (%s)", pol, l_source_str)
   }
 
+  print(library_meta_query)
+
 
   if (!anyNA(instrument_types)){
     # instrument_types <- c('CE-ESI-TOF', 'ESI-ITFT', 'ESI-ITTOF', 'ESI-QTOF', 'LC-ESI-IT',
@@ -210,6 +216,11 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
     ints_string <- paste("'",paste(instrument_types, collapse = "', '"), "'", sep='')
     library_meta_query <- paste(library_meta_query, sprintf(" AND instrument_type IN (%s)", ints_string))
 
+  }
+
+
+  if (!anyNA(rt_range)){
+    library_meta_query <- paste(library_meta_query, sprintf(" AND retention_time > %f AND retention_time < %f", rt_range[1], rt_range[2]))
   }
 
 
@@ -228,6 +239,8 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
   library_spectra <- library_spectra[library_spectra$ra>ra_thres_l,] # mass bank default does not do this filter
 
   library_spectra$type <- 2
+
+
 
 
   ########################################################

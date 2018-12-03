@@ -9,10 +9,8 @@
 <link rel="shortcut icon" href="https://www.dbschema.com/images/favicon.ico">
 <style type='text/css'>
 body {
-    font-family: 'Segoe UI', 'Lucida sans', Dialog;
-    font-size: 13px;
-    background-color:#f5f5f5;
     margin: 10px;
+    font-size:90%;
 }
 </style>
 </head>
@@ -40,7 +38,7 @@ body {
   path.dotted         { stroke-dasharray:4,2; }
   path.scene          { stroke-width:10; opacity:0;}
   path.highlight      { stroke-width:5; stroke:#c1a662; opacity:0.6;}
-  rect.entity         { fill:#ffffff; stroke:#aaa; stroke-width:1;shape-rendering:crispEdges; }
+  rect.entity         { fill:#ffffff; stroke:#aaa; stroke-width:1;shape-rendering:crispEdges; filter:url(#shadow); }
   line.delim          { stroke-width:1; shape-rendering:crispEdges; }
   text.callout        { fill:#000000; font-family: Candara, 'Trebuchet MS', Dialog; font-size:12px; }
   rect.callout        { fill:url(#calloutGradient); stroke:#bebdbd; stroke-width:0.5; }
@@ -54,8 +52,8 @@ body {
      <line x1='-2' y1='-4' x2='7' y2='5' stroke='#f3f3f3' stroke-width='.5'/>  
   </pattern>  
   <radialGradient id='layoutBgB' gradientUnits='userSpaceOnUse' cx='50%' cy='50%' r='75%' fx='46%' fy='22%'>
-     <stop offset='0%' stop-opacity='.2' stop-color='#f5f5f5' />  
-     <stop offset='100%' stop-color='#efefef' />  
+     <stop offset='0%' stop-opacity='.2' stop-color='#f2f2f2' />  
+     <stop offset='100%' stop-color='#eaeaea' />  
   </radialGradient>
   <pattern id='layoutBgTr' patternUnits='userSpaceOnUse'  width='300' height='300' x='0' y='0' viewBox='0 0 300 300'>  
   <path class='st0' d='m 62.011835,91.267143 c 3.536475,3.175214 2.262669,8.705999 -1.637711,11.015197 -3.594697,5.8423 -6.34682,-2.892623 -9.715478,-4.653898 -5.609222,-2.838926 2.050802,-6.680123 4.77004,-8.319046 2.334696,-0.724067 4.935143,0.312302 6.583149,1.957747 z m -2.720492,2.538595 c -2.698397,-3.517732 -9.282815,1.269287 -3.69635,3.568637 2.765331,5.605665 7.052809,-0.56184 3.69635,-3.568637 z' />
@@ -83,7 +81,7 @@ body {
   <filter id='shadow' width='120%' height='120%'> 
       <feOffset result='offOut' in='SourceGraphic' dx='1' dy='1' /> 
       <feColorMatrix result='matrixOut' in='offOut' type='matrix' 
-      values='0.1 0 0 0 0 0 0.4 0 0 0 0 0 0.6 0 0 0 0 0 0.3 0' /> 
+      values='0.1 0 0 0 0 0 0.4 0 0 0 0 0 0.6 0 0 0 0 0 0.5 0' /> 
       <feGaussianBlur result='blurOut' in='matrixOut' stdDeviation='3' /> 
       <feBlend in='SourceGraphic' in2='blurOut' mode='normal' /> 
     </filter> 
@@ -213,7 +211,6 @@ body {
 
 <!-- == Desktop == -->
 <rect x='1' y='1' width='718' height='956' rx='8' ry='8' style='fill:url(#layoutBgB); stroke:#777777; stroke-width:0.5;' />
-<rect x='1' y='1' width='718' height='956' rx='8' ry='8' style='fill:url(#layoutBgA); stroke:#777777; stroke-width:0.5;' />
 
 <!-- == Legend == -->
 <g transform='translate(10,10)'>
@@ -233,11 +230,11 @@ library_spectra ref library_spectra_meta ( library_spectra_meta_id -&gt; id )</t
 <text x='382' y='91' transform='rotate(0 382,91)' title='Fk Fk_library_spectra
 library_spectra ref library_spectra_meta ( library_spectra_meta_id -&gt; id )' class='relName' style='fill:#748EA7'>library_spectra_meta_id</text>
 <!-- == Fk 'library_spectra_annotation_Fk_library_spectra_annotation' == -->
-<path id='library_spectra_annotation_Fk_library_spectra_annotation'  onmouseover="hghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id','Default.library_spectra_meta.id'])" onmouseout="uhghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id','Default.library_spectra_meta.id'])" transform='translate(8,0)' class='scene' d='M 384 480 L 216,480 Q 208,480 208,472 L 208,416' >
+<path id='library_spectra_annotation_Fk_library_spectra_annotation'  onmouseover="hghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id','Default.library_spectra_meta.id'])" onmouseout="uhghl(['library_spectra_annotation_Fk_library_spectra_annotation','Default.library_spectra_annotation.library_spectra_meta_id','Default.library_spectra_meta.id'])" transform='translate(8,0)' class='scene' d='M 384 480 L 216,480 Q 208,480 208,472 L 208,448' >
 	<title>Fk Fk_library_spectra_annotation
 library_spectra_annotation ref library_spectra_meta ( library_spectra_meta_id -&gt; id )</title>
 </path>
-<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 384 480 L 216,480 Q 208,480 208,472 L 208,416' ></path>
+<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 384 480 L 216,480 Q 208,480 208,472 L 208,448' ></path>
 <text x='270' y='475' transform='rotate(0 270,475)' title='Fk Fk_library_spectra_annotation
 library_spectra_annotation ref library_spectra_meta ( library_spectra_meta_id -&gt; id )' class='relName' style='fill:#748EA7'>library_spectra_meta_id</text>
 <!-- == Fk 'library_spectra_meta_Fk_library_spectra_meta' == -->
@@ -249,17 +246,17 @@ library_spectra_meta ref library_spectra_source ( library_spectra_source_id -&gt
 <text x='233' y='299' transform='rotate(0 233,299)' title='Fk Fk_library_spectra_meta
 library_spectra_meta ref library_spectra_source ( library_spectra_source_id -&gt; id )' class='relName' style='fill:#748EA7'>library_spectra_source_id</text>
 <!-- == Fk 'library_spectra_meta_Fk_library_spectra_meta' == -->
-<path id='library_spectra_meta_Fk_library_spectra_meta'  onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id','Default.metab_compound.inchikey_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id','Default.metab_compound.inchikey_id'])" transform='translate(8,0)' class='scene' d='M 80 416 L 80,544' >
+<path id='library_spectra_meta_Fk_library_spectra_meta'  onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id','Default.metab_compound.inchikey_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_meta.inchikey_id','Default.metab_compound.inchikey_id'])" transform='translate(8,0)' class='scene' d='M 80 448 L 80,544' >
 	<title>Fk Fk_library_spectra_meta
 library_spectra_meta ref metab_compound ( inchikey_id )</title>
 </path>
-<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 80 416 L 80,544' ></path>
-<text x='95' y='417' transform='rotate(90 95,417)' title='Fk Fk_library_spectra_meta
+<path transform='translate(8,0)' marker-start='url(#foot1p)' marker-end='url(#arrow01)'    d='M 80 448 L 80,544' ></path>
+<text x='95' y='449' transform='rotate(90 95,449)' title='Fk Fk_library_spectra_meta
 library_spectra_meta ref metab_compound ( inchikey_id )' class='relName' style='fill:#748EA7'>inchikey_id</text>
 <!-- == Table 'library_spectra' == -->
-<rect class='entity' x='512' y='88' width='160' height='128' rx='8' ry='8' style='stroke:none'/>
+<rect class='entity' style='stroke:#1E498F' x='512' y='88' width='160' height='128' rx='8' ry='8' style='stroke:none'/>
 <path d='M 512 116 L 512 96 Q 512 88 520 88 L 664 88 Q 672 88 672 96 L 672 116 L512 116 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='512' y='88' width='160' height='128' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<rect class='entity' x='512' y='88' width='160' height='128' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
 <a xlink:href='#library_spectra'><text x='550' y='108'>library_spectra</text><title>Table Default.library_spectra
 Table to for the individual peaks for each spectra</title></a>
   <a xlink:href='#library_spectra.id'><use id='unq' x='514' y='124' xlink:href='#unq'/><title>Unq pk_library_spectra ( id ) </title></a>
@@ -280,9 +277,9 @@ library_spectra_meta id</title></a>
 <a xlink:href='#library_spectra.library_spectra_meta_id'><use id='fk' x='660' y='188' xlink:href='#fk'/><title>References library_spectra_meta ( library_spectra_meta_id -&gt; id ) </title></a>
 
 <!-- == Table 'library_spectra_source' == -->
-<rect class='entity' x='464' y='296' width='128' height='112' rx='8' ry='8' style='stroke:none'/>
+<rect class='entity' style='stroke:#1E498F' x='464' y='296' width='128' height='112' rx='8' ry='8' style='stroke:none'/>
 <path d='M 464 324 L 464 304 Q 464 296 472 296 L 584 296 Q 592 296 592 304 L 592 324 L464 324 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='464' y='296' width='128' height='112' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<rect class='entity' x='464' y='296' width='128' height='112' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
 <a xlink:href='#library_spectra_source'><text x='466' y='316'>library_spectra_source</text><title>Table Default.library_spectra_source
 Table for the source of the library spectra (e.g. MassBank, GNPS, etc)</title></a>
   <a xlink:href='#library_spectra_source.id'><use id='unq' x='466' y='332' xlink:href='#unq'/><title>Unq pk_library_spectra_source ( id ) </title></a>
@@ -300,9 +297,9 @@ text
 Software used to get the library information (e.g. msp2db)</title></a>
 <text x='589' y='388' text-anchor='end' class='colType'>t</text>
 <!-- == Table 'library_spectra_annotation' == -->
-<rect class='entity' x='400' y='472' width='160' height='128' rx='8' ry='8' style='stroke:none'/>
+<rect class='entity' style='stroke:#1E498F' x='400' y='472' width='160' height='128' rx='8' ry='8' style='stroke:none'/>
 <path d='M 400 500 L 400 480 Q 400 472 408 472 L 552 472 Q 560 472 560 480 L 560 500 L400 500 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='400' y='472' width='160' height='128' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<rect class='entity' x='400' y='472' width='160' height='128' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
 <a xlink:href='#library_spectra_annotation'><text x='407' y='492'>library_spectra_annotation</text><title>Table Default.library_spectra_annotation
 Table to store annotated spectra (e.g. the molecular formula and the theoritical m/z values)</title></a>
   <a xlink:href='#library_spectra_annotation.id'><use id='unq' x='402' y='508' xlink:href='#unq'/><title>Unq pk_library_spectra_annotation ( id ) </title></a>
@@ -323,9 +320,9 @@ library_spectra_meta id</title></a>
 <a xlink:href='#library_spectra_annotation.library_spectra_meta_id'><use id='fk' x='548' y='572' xlink:href='#fk'/><title>References library_spectra_meta ( library_spectra_meta_id -&gt; id ) </title></a>
 
 <!-- == Table 'metab_compound' == -->
-<rect class='entity' x='64' y='552' width='144' height='240' rx='8' ry='8' style='stroke:none'/>
+<rect class='entity' style='stroke:#1E498F' x='64' y='552' width='144' height='240' rx='8' ry='8' style='stroke:none'/>
 <path d='M 64 580 L 64 560 Q 64 552 72 552 L 200 552 Q 208 552 208 560 L 208 580 L64 580 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='64' y='552' width='144' height='240' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<rect class='entity' x='64' y='552' width='144' height='240' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
 <a xlink:href='#metab_compound'><text x='85' y='572'>metab_compound</text><title>Table Default.metab_compound
 Table for compound information, compounds are determined unique by their InChIKey.</title></a>
   <a xlink:href='#metab_compound.inchikey_id'><use id='unq' x='66' y='588' xlink:href='#unq'/><title>Unq pk_metab_compound ( inchikey_id ) </title></a>
@@ -368,9 +365,9 @@ date
 Should be updated when any changes have been made</title></a>
 <text x='205' y='772' text-anchor='end' class='colType'>d</text>
 <!-- == Table 'library_spectra_meta' == -->
-<rect class='entity' x='48' y='40' width='176' height='368' rx='8' ry='8' style='stroke:none'/>
+<rect class='entity' style='stroke:#1E498F' x='48' y='40' width='176' height='400' rx='8' ry='8' style='stroke:none'/>
 <path d='M 48 68 L 48 48 Q 48 40 56 40 L 216 40 Q 224 40 224 48 L 224 68 L48 68 ' style='fill:url(#tbg_BED3F4);stroke:1;stroke-opacity:0.1;' />
-<rect class='entity' x='48' y='40' width='176' height='368' rx='8' ry='8' style='fill:none;stroke:#BED3F4'/>
+<rect class='entity' x='48' y='40' width='176' height='400' rx='8' ry='8' style='fill:none;stroke:#DADCE1'/>
 <a xlink:href='#library_spectra_meta'><text x='78' y='60'>library_spectra_meta</text><title>Table Default.library_spectra_meta
 Table to store the meta data for each file (details are intended to be either extracted from an MSP file generated from either MassBank (https://github.com/MassBank/MassBank-data) or MoNA (http://mona.fiehnlab.ucdavis.edu/downloads). For associated regexes see https://github.com/computational-metabolomics/msp2db/blob/master/msp2db/re.py</title></a>
   <a xlink:href='#library_spectra_meta.id'><use id='unq' x='50' y='76' xlink:href='#unq'/><title>Unq pk_library_spectra_meta ( id ) </title></a>
@@ -429,20 +426,26 @@ The origin of the individual spectra (sometimes can have a reference to the orig
 <text x='221' y='340' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.splash'><text id='Default.library_spectra_meta.splash' x='67' y='359'>splash</text><title>splash
 text
 SPLASH database spectral identifier https://splash.fiehnlab.ucdavis.edu/</title></a>
-<text x='221' y='356' text-anchor='end' class='colType'>t</text>  <use id='nn' x='50' y='365' xlink:href='#nn'/><a xlink:href='#library_spectra_meta.library_spectra_source_id'><text id='Default.library_spectra_meta.library_spectra_source_id' x='67' y='375' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_source.id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_source.id'])">library_spectra_source_id</text><title>library_spectra_source_id
+<text x='221' y='356' text-anchor='end' class='colType'>t</text>  <a xlink:href='#library_spectra_meta.retention_index'><text id='Default.library_spectra_meta.retention_index' x='67' y='375'>retention_index</text><title>retention_index
+real
+the retention index</title></a>
+<text x='221' y='372' text-anchor='end' class='colType'>#</text>  <a xlink:href='#library_spectra_meta.retention_time'><text id='Default.library_spectra_meta.retention_time' x='67' y='391'>retention_time</text><title>retention_time
+real
+The retention time (seconds)</title></a>
+<text x='221' y='388' text-anchor='end' class='colType'>#</text>  <use id='nn' x='50' y='397' xlink:href='#nn'/><a xlink:href='#library_spectra_meta.library_spectra_source_id'><text id='Default.library_spectra_meta.library_spectra_source_id' x='67' y='407' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_source.id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.library_spectra_source.id'])">library_spectra_source_id</text><title>library_spectra_source_id
 * integer
 library_spectra_source id</title></a>
-<a xlink:href='#library_spectra_meta.library_spectra_source_id'><use id='fk' x='212' y='364' xlink:href='#fk'/><title>References library_spectra_source ( library_spectra_source_id -&gt; id ) </title></a>
-  <use id='nn' x='50' y='381' xlink:href='#nn'/><a xlink:href='#library_spectra_meta.inchikey_id'><text id='Default.library_spectra_meta.inchikey_id' x='67' y='391' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.metab_compound.inchikey_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.metab_compound.inchikey_id'])">inchikey_id</text><title>inchikey_id
+<a xlink:href='#library_spectra_meta.library_spectra_source_id'><use id='fk' x='212' y='396' xlink:href='#fk'/><title>References library_spectra_source ( library_spectra_source_id -&gt; id ) </title></a>
+  <use id='nn' x='50' y='413' xlink:href='#nn'/><a xlink:href='#library_spectra_meta.inchikey_id'><text id='Default.library_spectra_meta.inchikey_id' x='67' y='423' onmouseover="hghl(['library_spectra_meta_Fk_library_spectra_meta','Default.metab_compound.inchikey_id'])" onmouseout="uhghl(['library_spectra_meta_Fk_library_spectra_meta','Default.metab_compound.inchikey_id'])">inchikey_id</text><title>inchikey_id
 * text
 inchikey id</title></a>
-<a xlink:href='#library_spectra_meta.inchikey_id'><use id='fk' x='212' y='380' xlink:href='#fk'/><title>References metab_compound ( inchikey_id ) </title></a>
+<a xlink:href='#library_spectra_meta.inchikey_id'><use id='fk' x='212' y='412' xlink:href='#fk'/><title>References metab_compound ( inchikey_id ) </title></a>
 
 </g></svg></div>
 
 
 <br><br>
-<div class='card'><div class='card-body'><a name='library_spectra' onclick='window.scrollTo(312, 96);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra</h4></a>
+<div class='card'><div class='card-body'><a name='library_spectra' onclick='window.scrollTo(312, 96);return false;' style='cursor:pointer;'><h5 class='card-title'>Table library_spectra</h5></a>
 <p class="text-muted">Table to for the individual peaks for each spectra</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -493,7 +496,7 @@ inchikey id</title></a>
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='library_spectra_annotation' onclick='window.scrollTo(200, 480);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra_annotation</h4></a>
+<div class='card'><div class='card-body'><a name='library_spectra_annotation' onclick='window.scrollTo(200, 480);return false;' style='cursor:pointer;'><h5 class='card-title'>Table library_spectra_annotation</h5></a>
 <p class="text-muted">Table to store annotated spectra (e.g. the molecular formula and the theoritical m/z values)</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -544,7 +547,7 @@ inchikey id</title></a>
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='library_spectra_meta' onclick='window.scrollTo(60, 48);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra_meta</h4></a>
+<div class='card'><div class='card-body'><a name='library_spectra_meta' onclick='window.scrollTo(60, 48);return false;' style='cursor:pointer;'><h5 class='card-title'>Table library_spectra_meta</h5></a>
 <p class="text-muted">Table to store the meta data for each file (details are intended to be either extracted from an MSP file generated from either MassBank (https://github.com/MassBank/MassBank-data) or MoNA (http://mona.fiehnlab.ucdavis.edu/downloads). For associated regexes see https://github.com/computational-metabolomics/msp2db/blob/master/msp2db/re.py</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -659,6 +662,18 @@ inchikey id</title></a>
 		<td> SPLASH database spectral identifier https&#58;&#47;&#47;splash&#46;fiehnlab&#46;ucdavis&#46;edu&#47; </td>
 	</tr>
 	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.retention_index'>retention&#95;index</a></td>
+		<td> real   </td>
+		<td> the retention index </td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+		<td><a name='library_spectra_meta.retention_time'>retention&#95;time</a></td>
+		<td> real   </td>
+		<td> The retention time &#40;seconds&#41; </td>
+	</tr>
+	<tr>
 		<td>*<svg width='14' height='14'><use xlink:href='#fk'/></svg></td>
 		<td><a name='library_spectra_meta.library_spectra_source_id'>library&#95;spectra&#95;source&#95;id</a></td>
 		<td> integer   </td>
@@ -690,7 +705,7 @@ inchikey id</title></a>
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='library_spectra_source' onclick='window.scrollTo(264, 304);return false;' style='cursor:pointer;'><h4 class='card-title'>Table library_spectra_source</h4></a>
+<div class='card'><div class='card-body'><a name='library_spectra_source' onclick='window.scrollTo(264, 304);return false;' style='cursor:pointer;'><h5 class='card-title'>Table library_spectra_source</h5></a>
 <p class="text-muted">Table for the source of the library spectra (e.g. MassBank, GNPS, etc)</p>
 <table class='table-sm table-bordered'>
 <thead>
@@ -729,7 +744,7 @@ inchikey id</title></a>
 </table></div></div>
 
 <br><br>
-<div class='card'><div class='card-body'><a name='metab_compound' onclick='window.scrollTo(60, 560);return false;' style='cursor:pointer;'><h4 class='card-title'>Table metab_compound</h4></a>
+<div class='card'><div class='card-body'><a name='metab_compound' onclick='window.scrollTo(60, 560);return false;' style='cursor:pointer;'><h5 class='card-title'>Table metab_compound</h5></a>
 <p class="text-muted">Table for compound information, compounds are determined unique by their InChIKey.</p>
 <table class='table-sm table-bordered'>
 <thead>

@@ -10,7 +10,8 @@ spectral_matching(query_db_pth, ra_thres_l = 0, ra_thres_q = 2,
   instrument_types = NA, library_sources = "massbank", scan_ids = NA,
   pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".",
   ra_w_q = 0.5, ra_w_l = 0.5, mz_w_q = 2, mz_w_l = 2,
-  spectra_type_q = "scans", ra_thres_t = NA, target_db_pth = NA)
+  spectra_type_q = "scans", ra_thres_t = NA, target_db_pth = NA,
+  rt_range = c(NA, NA))
 }
 \arguments{
 \item{query_db_pth}{character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
@@ -70,6 +71,9 @@ used for the spectral matching. All scans will be used if set to NA}
 \item{ra_thres_t}{numeric [deprecated]; The relative abundance threshold for the query spectra (use ra_thres_q for future use)}
 
 \item{target_db_pth}{character [deprecated]; The query database path (use query_db_pth for future use)}
+
+\item{rt_range}{vector [optional]; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
+retention time range}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features
@@ -85,8 +89,8 @@ xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset, create_db=TRUE)
-#NOTE that scan_ids here are refer the unique scan id calculated by purityA (pids).
-#Only required if you want to limit the spectral matching to certain scans
-result <- spectral_matching(pa@db_path, scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
+pa <- frag4feature(pa, xset)
+pa <- averageFragmentation(pa)
+db_path <- create_database(pa, xset)
+result <- spectral_matching(db_path, spectra_type_q="av_all")
 }

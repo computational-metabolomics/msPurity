@@ -11,7 +11,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2018-11-14" />
+<meta name="date" content="2018-12-03" />
 
 <title>Using msPurity for Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics</title>
 
@@ -215,7 +215,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Using msPurity for Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics</h1>
 <p class="author-name">Thomas N. Lawson</p>
-<h4 class="date"><em>2018-11-14</em></h4>
+<h4 class="date"><em>2018-12-03</em></h4>
 
 </div>
 
@@ -427,20 +427,20 @@ ppDIMS &lt;- purityD(inDF, mzML=TRUE)</code></pre>
 <pre class="r"><code>ppDIMS &lt;- dimsPredictPurity(ppDIMS)
 
 print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))</code></pre>
-<pre><code>##    peakID       mz          i        snr      rsd        inorm medianPurity
-## 5       5 173.0806 11272447.0 216.506319 9.006126 0.0108585920    1.0000000
-## 7       7 179.1177   606983.2  11.425825 6.019861 0.0005729283    1.0000000
-## 10     10 217.1067 17770220.0 343.292914 8.602331 0.0171178067    0.7797864
-## 15     15 235.1173  4950841.5  95.991762 6.302825 0.0047694791    1.0000000
-## 16     16 236.1206   486912.0   9.270517 8.811437 0.0004638254    0.8818313
-## 17     17 239.1485  2533134.5  48.892062 5.781277 0.0024401334    0.8123950
-##    meanPurity   sdPurity cvPurity   sdePurity medianPeakNum
-## 5   1.0000000 0.00000000 0.000000 0.000000000             1
-## 7   1.0000000 0.00000000 0.000000 0.000000000             1
-## 10  0.7808917 0.01261501 1.615462 0.005641605             2
-## 15  1.0000000 0.00000000 0.000000 0.000000000             1
-## 16  0.8755873 0.01056807 1.206969 0.004726184             2
-## 17  0.8229505 0.04384595 5.327896 0.019608505             2</code></pre>
+<pre><code>##    peakID       mz          i        snr      rsd        inorm count total
+## 5       5 173.0806 11272447.0 216.506319 9.006126 0.0108585920     5     4
+## 7       7 179.1177   606983.2  11.425825 6.019861 0.0005729283     5     4
+## 10     10 217.1067 17770220.0 343.292914 8.602331 0.0171178067     5     4
+## 15     15 235.1173  4950841.5  95.991762 6.302825 0.0047694791     5     4
+## 16     16 236.1206   486912.0   9.270517 8.811437 0.0004638254     5     4
+## 17     17 239.1485  2533134.5  48.892062 5.781277 0.0024401334     5     4
+##    medianPurity meanPurity   sdPurity cvPurity   sdePurity medianPeakNum
+## 5     1.0000000  1.0000000 0.00000000 0.000000 0.000000000             1
+## 7     1.0000000  1.0000000 0.00000000 0.000000 0.000000000             1
+## 10    0.7797864  0.7808917 0.01261501 1.615462 0.005641605             2
+## 15    1.0000000  1.0000000 0.00000000 0.000000 0.000000000             1
+## 16    0.8818313  0.8755873 0.01056807 1.206969 0.004726184             2
+## 17    0.8123950  0.8229505 0.04384595 5.327896 0.019608505             2</code></pre>
 </div>
 <div id="calculating-the-anticipated-predicted-purity-from-a-known-mz-target-list-for-di-ms" class="section level2">
 <h2><span class="header-section-number">3.3</span> Calculating the anticipated (predicted) purity from a known <em>m/z</em> target list for DI-MS</h2>
