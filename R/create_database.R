@@ -208,7 +208,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   if (length(pa@av_spectra)>0){
 
-
     av_spectra <- plyr::ldply(pa@av_spectra, get_av_spectra_for_db)
 
     # for some reason the names are not being saved for the list as a column, so we just get them back
@@ -217,11 +216,12 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
     colnames(av_spectra)[2] <- 'fileid'
     av_spectra$avid <- 1:nrow(av_spectra)
-    fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
+    fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
+                               'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups')
+                               )
 
     custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
                         table_name ='av_peaks', df=av_spectra, con=con)
-
 
 
   }
