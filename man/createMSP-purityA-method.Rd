@@ -41,6 +41,6 @@ xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset)
-pa <- averageFragmentation(pa)
+pa <- averageAllFragSpectra(pa)
 createMSP(pa)
 }

@@ -14,7 +14,9 @@ test_that("checking lcms based functions", {
 
 
   pa <- frag4feature(pa, xset, create_db=FALSE)
-  pa <- averageFragmentation(pa, minfrac_intra=0, minfrac_inter = 0, minfrac_all = 0, plim=0)
+  pa <- averageIntraFragSpectra(pa, minfrac=0, plim=0)
+  pa <- averageInterFragSpectra(pa, minfrac=0, plim=0)
+  pa <- averageAllFragSpectra(pa, minfrac=0, plim=0)
 
   get_msp_str <- function(msp_pth){
     msp_str <- readChar(msp_pth, file.info(msp_pth)$size)

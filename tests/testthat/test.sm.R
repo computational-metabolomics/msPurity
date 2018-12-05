@@ -79,7 +79,7 @@ test_that("checking spectral matching functions with averaging", {
 
   pa  <- purityA(msmsPths)
   pa <- frag4feature(pa, xset)
-  pa  <- averageFragmentation(pa)
+  pa  <- averageAllFragSpectra(pa)
   td <- tempdir()
   db_path <- create_database(pa, xset = xset, out_dir = ".")
 

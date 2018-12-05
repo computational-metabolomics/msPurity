@@ -39,6 +39,6 @@ xset <- xcms::group(xset)
 
 pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset)
-pa <- averageFragmentation(pa)
+pa <- averageAllFragSpectra(pa)
 db_pth <- create_database(pa, xset)
 }

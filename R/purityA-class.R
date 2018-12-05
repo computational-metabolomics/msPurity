@@ -21,7 +21,9 @@ setClass(
     db_path = "character",
     f4f_link_type = "character",
     av_spectra = "list",
-    av_params = "list"
+    av_intra_params = "list",
+    av_inter_params = "list",
+    av_all_params = "list"
   )
 )
 
