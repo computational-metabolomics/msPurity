@@ -12,8 +12,8 @@
 #' @param metadata_cols vector; Column names of meta data to incorporate into name
 #' @param xcms_groupids vector; XCMS group id's to extract ms/ms data for
 #' @param method character; "all" will export all matching ms/ms spectra to xcms features, "max" will use spectra with the highest inensity,
-#'               "av-intra" will use the intra file averaged file, "av-inter" will use the inter file (within file)
-#'                averaged spectra, "av-all" will use the averaged spectra (ignoring inter and intra)
+#'               "av_intra" will use the intra file averaged spectra (within file), "av_inter" will use the inter file (across file)
+#'                averaged spectra, "av_all" will use the averaged spectra (ignoring inter and intra)
 #' @param adduct_split boolean; If either "adduct" or  MS$FOCUSED_ION: PRECURSOR_TYPE column is in metadata then each adduct will have it's own MSP spectra.
 #'                     (Useful, if the MSP file will be used for further annotation)
 #' @examples
@@ -149,7 +149,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, adduct_split){
 
-  if (adduct_split){
+  if (adduct_split & sum(metadata$grpid==grpid) > 0){
     # To keep the naming consisten we stick with the massbank naming convention
     if ('adduct' %in% names(metadata)){
       names(metadata)[names(metadata)=='adduct'] <- 'MS$FOCUSED_ION: PRECURSOR_TYPE'
@@ -157,9 +157,11 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
 
     # check if in the precursor_type is in the columns
     if ('MS$FOCUSED_ION: PRECURSOR_TYPE' %in% names(metadata)){
+
       # extract the text, expecting to be in CAMERA format, e.g. "[M-H]- 88.016 [M-H-NH3]- 105.042"
       adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadata[metadata$grpid==grpid,'MS$FOCUSED_ION: PRECURSOR_TYPE'])
       # get a vector of the adducts
+      print(adduct_text)
       adducts <- strsplit(adduct_text, ' ')[[1]]
       # loop through the adducts creating an appropiate MSP for each
       for (i in 1:length(adducts)){
