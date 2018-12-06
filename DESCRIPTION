@@ -2,7 +2,7 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.9.4
+Version: 1.9.5
 Date: 2018-12-05
 Author: Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn
 Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
