@@ -24,7 +24,7 @@
 #'
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#' pa <- averageFragmentation(pa)
+#' pa <- averageAllFragSpectra(pa)
 #' db_pth <- create_database(pa, xset)
 #' @export
 create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, db_name=NA){

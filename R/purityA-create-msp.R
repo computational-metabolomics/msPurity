@@ -26,7 +26,7 @@
 #'
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#' pa <- averageFragmentation(pa)
+#' pa <- averageAllFragSpectra(pa)
 #' createMSP(pa)
 #' @export
 setMethod(f="createMSP", signature="purityA",
