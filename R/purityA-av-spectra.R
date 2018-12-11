@@ -231,6 +231,7 @@ average_xcms_grouped_msms <- function(pa, av_level){
 
 
 average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
+  print(grp_idx)
   ##############################################################################
   # Get the appropiate details for the xcms grouped feature from purityA object
   ##############################################################################
@@ -311,7 +312,8 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
 
   } else if (av_level=="inter") {
 
-    av_intra_df <- plyr::ldply(av_intra, function(x){x[x$pass_flag,]})
+    av_intra_df <- plyr::ldply(av_intra, .id = 'sample', function(x){x[x$pass_flag,]})
+
     # Average the averaged spectra across files
     av_inter <- average_spectra(av_intra_df,
                                  indx='sample',
