@@ -207,7 +207,7 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
                                     WHERE m.polarity = '%s' AND s.name IN (%s)", pol, l_source_str)
   }
 
-  print(library_meta_query)
+
 
 
   if (!anyNA(instrument_types)){

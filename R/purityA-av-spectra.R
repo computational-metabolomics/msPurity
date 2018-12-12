@@ -231,7 +231,7 @@ average_xcms_grouped_msms <- function(pa, av_level){
 
 
 average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
-  print(grp_idx)
+
   ##############################################################################
   # Get the appropiate details for the xcms grouped feature from purityA object
   ##############################################################################

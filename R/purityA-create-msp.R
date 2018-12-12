@@ -161,7 +161,7 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
       # extract the text, expecting to be in CAMERA format, e.g. "[M-H]- 88.016 [M-H-NH3]- 105.042"
       adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadata[metadata$grpid==grpid,'MS$FOCUSED_ION: PRECURSOR_TYPE'])
       # get a vector of the adducts
-      print(adduct_text)
+
       adducts <- strsplit(adduct_text, ' ')[[1]]
       # loop through the adducts creating an appropiate MSP for each
       for (i in 1:length(adducts)){
