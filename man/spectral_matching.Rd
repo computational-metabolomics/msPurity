@@ -9,9 +9,9 @@ spectral_matching(query_db_pth, ra_thres_l = 0, ra_thres_q = 2,
   score_thres = 0.6, topn = NA, db_name = NA, library_db_pth = NA,
   instrument_types = NA, library_sources = "massbank", scan_ids = NA,
   pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".",
-  ra_w_q = 0.5, ra_w_l = 0.5, mz_w_q = 2, mz_w_l = 2,
-  spectra_type_q = "scans", ra_thres_t = NA, target_db_pth = NA,
-  rt_range = c(NA, NA))
+  ra_w = 0.5, mz_w = 2, spectra_type_q = "scans", ra_thres_t = NA,
+  target_db_pth = NA, rt_range = c(NA, NA), rttol = NA,
+  match_alg = "dpc")
 }
 \arguments{
 \item{query_db_pth}{character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
@@ -56,13 +56,9 @@ used for the spectral matching. All scans will be used if set to NA}
 
 \item{out_dir}{character [optional]; If target_db_pth set to NA, Out directory for the SQLite result database}
 
-\item{ra_w_q}{numeric; Relative abundance weight for query spectra}
+\item{ra_w}{numeric; Relative abundance weight for spectra}
 
-\item{ra_w_l}{numeric; Relative abundance weight for library spectra}
-
-\item{mz_w_q}{numeric; mz weight for query spectra}
-
-\item{mz_w_l}{numeric; mz weight for library spectra}
+\item{mz_w}{numeric; mz weight for spectra}
 
 \item{spectra_type_q}{character; Type of fragmentation spectra from query to match with "scans" =  all individual scans,
 "av_intra" = averaged spectra (intra), "av_inter" = averaged spectra (inter), "av_all" = averaged all
@@ -74,6 +70,10 @@ used for the spectral matching. All scans will be used if set to NA}
 
 \item{rt_range}{vector [optional]; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
 retention time range}
+
+\item{rttol}{numeric [optional]; Tolerance in time range between the Library and Query database retention time (in seconds) NA to ignore}
+
+\item{match_alg}{character; Can either use dot product cosine (dpc) or match factor (mf) for spectral matching. Defaults to dpc}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features

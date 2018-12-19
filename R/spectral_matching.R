@@ -15,10 +15,9 @@
 #' @param ppm_tol_prod numeric; PPM tolerance to match to product
 #' @param ppm_tol_prec numeric; PPM tolerance to match to precursor
 #' @param score_thres numeric; Dot product cosine score threshold
-#' @param ra_w_q numeric; Relative abundance weight for query spectra
-#' @param ra_w_l numeric; Relative abundance weight for library spectra
-#' @param mz_w_q numeric; mz weight for query spectra
-#' @param mz_w_l numeric; mz weight for library spectra
+#' @param ra_w numeric; Relative abundance weight for spectra
+#' @param mz_w numeric; mz weight for spectra
+#' @param match_alg character; Can either use dot product cosine (dpc) or match factor (mf) for spectral matching. Defaults to dpc
 #' @param spectra_type_q character; Type of fragmentation spectra from query to match with "scans" =  all individual scans,
 #'                                  "av_intra" = averaged spectra (intra), "av_inter" = averaged spectra (inter), "av_all" = averaged all
 #'                                   spectra ignoring inter-intra relationships
@@ -32,6 +31,7 @@
 #'                        used for the spectral matching. All scans will be used if set to NA
 #' @param rt_range vector [optional]; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
 #'                                    retention time range
+#' @param rttol numeric [optional]; Tolerance in time range between the Library and Query database retention time (in seconds) NA to ignore
 #' @param pa purityA object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
 #' @param xset xcms object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
 #' @param grp_peaklist dataframe [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
@@ -56,8 +56,9 @@
 spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,
                                      instrument_types=NA, library_sources='massbank', scan_ids=NA,
-                                     pa=NA, xset=NA, grp_peaklist=NA, out_dir='.', ra_w_q=0.5, ra_w_l=0.5, mz_w_q=2, mz_w_l=2,
-                                     spectra_type_q="scans", ra_thres_t=NA, target_db_pth=NA, rt_range=c(NA, NA) ){
+                                     pa=NA, xset=NA, grp_peaklist=NA, out_dir='.', ra_w=0.5, mz_w=2,
+                                     spectra_type_q="scans", ra_thres_t=NA, target_db_pth=NA, rt_range=c(NA, NA), rttol=NA,
+                                     match_alg='dpc'){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
 
   if (!is.na(ra_thres_t)){
@@ -102,12 +103,13 @@ spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1,
                   instrument_types = instrument_types,
                   library_sources = library_sources,
                   scan_ids = scan_ids,
-                  ra_w_q = ra_w_q,
-                  ra_w_l = ra_w_l,
-                  mz_w_q = mz_w_q,
-                  mz_w_l = mz_w_l,
+                  ra_w = ra_w,
+                  mz_w = mz_w,
                   spectra_type_q = spectra_type_q,
-                  rt_range = rt_range
+                  rt_range = rt_range,
+                  rttol = rttol,
+                  match_alg=match_alg
+
                   )
 
   ########################################################
@@ -132,18 +134,20 @@ ra_calc <- function(x){
 }
 
 get_query_spectra_list_s_peak <- function(x, scan_info){
-  list(x, scan_info[scan_info$pid==unique(x$pid),]$precursorMZ)
+  si = scan_info[scan_info$pid==unique(x$pid),]
+  list(x, si$precursorMZ, si$retentionTime)
 }
 
 get_query_spectra_list_c_peak_group <- function(x, c_peak_groups){
   av_peaks = x[,c('mz','ra','type','w','grpid','grpid_fileid')]
-  list(av_peaks, c_peak_groups[c_peak_groups$grpid==unique(x$grpid),]$mz)
+  cgi <- c_peak_groups[c_peak_groups$grpid==unique(x$grpid),]
+  list(av_peaks, cgi$mz, cgi$rt)
 }
 
 match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, mslevel=NA, mslevel_match=TRUE,
                             ra_thres_q=2, ra_thres_l=0, cores=1, pol, ppm_tol_prod=100, ppm_tol_prec=50, topn=5,
-                            library_sources=NA, scan_ids=NA, ra_w_q=0.5, ra_w_l=0.5, mz_w_q=2, mz_w_l=2,
-                            spectra_type_q="scans", rt_range=NA){
+                            library_sources=NA, scan_ids=NA, ra_w=0.5, mz_w=2,
+                            spectra_type_q="scans", rt_range=NA, rttol=NA, match_alg='dpc'){
 
 
 
@@ -169,7 +173,13 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
     query_spectra <- query_spectra[query_spectra[,'pid'] %in% scan_ids,]
   }
 
-  query_spectra$grpid_fileid <- paste(query_spectra$grpid, query_spectra$fileid, sep='_')
+  if (spectra_type_q=="scans"){
+    query_spectra$grpid_fileid <- paste(NA, query_spectra$fileid, sep='_')
+  }else{
+    query_spectra$grpid_fileid <- paste(query_spectra$grpid, query_spectra$fileid, sep='_')
+  }
+
+
 
   # Calculate relative abundance
   if (spectra_type_q=="scans"){
@@ -205,9 +215,10 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
     library_meta_query <- sprintf("SELECT m.*, s.name AS source_name FROM library_spectra_meta as m
                                     LEFT JOIN library_spectra_source AS s ON s.id=m.library_spectra_source_id
                                     WHERE m.polarity = '%s' AND s.name IN (%s)", pol, l_source_str)
+
   }
 
-  print(library_meta_query)
+
 
 
   if (!anyNA(instrument_types)){
@@ -241,14 +252,12 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
   library_spectra$type <- 2
 
 
-
-
   ########################################################
   # Weight spectra
   ########################################################
   # weighted intensity value
-  query_spectra$w <- (query_spectra$ra^ra_w_q)*(query_spectra$mz^mz_w_q)
-  library_spectra$w <- (library_spectra$ra^ra_w_l)*(library_spectra$mz^mz_w_l)
+  query_spectra$w <- (query_spectra$ra^ra_w)*(query_spectra$mz^mz_w)
+  library_spectra$w <- (library_spectra$ra^ra_w)*(library_spectra$mz^mz_w)
 
 
   ########################################################
@@ -265,8 +274,17 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
 
 
   }else{
+    # get the group peaks (but also make sure we have the full min and max peakwidth)
+    #c_peak_groups <- DBI::dbGetQuery(conQ,
+    #                                      'SELECT  g.*, MIN(c.rtmin) as rtmin_full,  MAX(c.rtmax) as rtmax_full FROM c_peak_groups as g
+    #                                          LEFT JOIN c_peak_X_c_peak_group as cxg ON
+    #                                            cxg.grpid=g.grpid
+    #                                          LEFT JOIN c_peaks as c ON
+    #                                            cxg.cid=c.cid
+    #                                        WHERE cxg.bestpeak=1
+    #                                        GROUP BY cxg.grpid;')
+    c_peak_groups <- DBI::dbGetQuery(conQ, 'SELECT * FROM c_peak_groups')
 
-    c_peak_groups <- DBI::dbGetQuery(conQ,'SELECT * FROM c_peak_groups' )
     # we loop through the target spectra as list
     if (spectra_type_q=='av_intra'){
 
@@ -301,8 +319,11 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
   allmatches_l <- plyr::llply(query_spectra_list, .parallel = parallel, match_targets,
                         library_spectra=library_spectra,
                         library_precs=library_meta$precursor_mz,
+                        library_rt=library_meta$retention_time,
                         ppm_tol_prod=ppm_tol_prod,
-                        ppm_tol_prec=ppm_tol_prec)
+                        ppm_tol_prec=ppm_tol_prec,
+                        rttol=rttol,
+                        match_alg=match_alg)
 
   if (spectra_type_q=="scans"){
     allmatches <- plyr::ldply(allmatches_l, .id = 'pid')
@@ -470,11 +491,12 @@ get_ann_summary <- function(x, spectra_type_q){
 
 }
 
-match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, ra_diff=10, library_precs, ppm_tol_prec=50){
+match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, ra_diff=10, library_precs, library_rt, ppm_tol_prec=50, rttol=NA, match_alg){
 
   # Get target peaks and precursor of target
   target_peaks <- target_peaks_list[[1]]
   target_prec <- target_peaks_list[[2]]
+  target_rt <- target_peaks_list[[3]]
 
   tcnm = c('mz','ra','type','w')
 
@@ -497,6 +519,17 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, 
 
   # Filter the library spectra that does not meet the precursor tolerance check
   library_spectra_red <- library_spectra[library_spectra[,'library_spectra_meta_id'] %in% library_meta_ids[ppmdiff_prec<=ppm_tol_prec],]
+
+  # get difference from rention time
+  if(!is.na(rttol)){
+
+    rt_diff <- abs(target_rt-library_rt)
+
+
+
+    # Filter the library spectra that does not meet the precursor tolerance check
+    library_spectra_red <- library_spectra_red[library_spectra_red[,'library_spectra_meta_id'] %in% library_meta_ids[rt_diff<=rttol],]
+  }
 
   # Exit if no peaks left (if vector it means it is just 1 row)
   if(is.vector(library_spectra_red)){
@@ -536,7 +569,8 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, 
                   library_peaks = library_spectra_red[library_spectra_red[,'library_spectra_meta_id']==uid,],
                   target_peaks = target_peaks,
                   ppm_tol_prod=ppm_tol_prod,
-                  ra_diff=ra_diff)
+                  ra_diff=ra_diff,
+                  match_alg=match_alg)
 
     l[[j]] <- c(mtch, uid)
   }
@@ -556,7 +590,7 @@ match_targets <- function(target_peaks_list, library_spectra, ppm_tol_prod=100, 
 }
 
 
-matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, ra_diff=10){
+matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, ra_diff=10, match_alg){
 
   if (!any(ppmdiff<ppm_tol_prod)){
     return(c(NA,NA,NA))
@@ -652,13 +686,18 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
   }else{
     wl <- as.numeric(wlm[,'w'])
   }
+  if (match_alg=='dpc'){
+    sim_out <- CosSim(wt, wl)
+  }else if (match_alg=='mf'){
+    print('MATCH FACTOR')
+    sim_out <- match_factor(wt, wl)
+  }
 
-  cossim_out <- CosSim(wt, wl)
 
   percentage_match <- sum(mcount=='match')/length(mcount)
 
 
-  return(c(cossim_out,percentage_match,sum(mcount=='match')))
+  return(c(sim_out,percentage_match,sum(mcount=='match')))
 
 }
 

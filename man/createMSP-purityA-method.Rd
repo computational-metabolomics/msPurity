@@ -22,8 +22,8 @@
 \item{xcms_groupids}{vector; XCMS group id's to extract ms/ms data for}
 
 \item{method}{character; "all" will export all matching ms/ms spectra to xcms features, "max" will use spectra with the highest inensity,
-"av-intra" will use the intra file averaged file, "av-inter" will use the inter file (within file)
- averaged spectra, "av-all" will use the averaged spectra (ignoring inter and intra)}
+"av_intra" will use the intra file averaged spectra (within file), "av_inter" will use the inter file (across file)
+ averaged spectra, "av_all" will use the averaged spectra (ignoring inter and intra)}
 
 \item{adduct_split}{boolean; If either "adduct" or  MS$FOCUSED_ION: PRECURSOR_TYPE column is in metadata then each adduct will have it's own MSP spectra.
 (Useful, if the MSP file will be used for further annotation)}
