@@ -90,7 +90,11 @@ test_that("checking spectral matching functions with averaging", {
   td <- tempdir()
   db_path <- create_database(pa, xset = xset, out_dir = ".")
 
-  result <- spectral_matching(db_path, spectra_type_q = 'av_all')
+  result <- spectral_matching(db_path, spectra_type_q = 'av_all', match_alg = 'dpc')
+
+
+  #db_path <- create_database(pa, xset = xset, out_dir = ".")
+  #result2 <- spectral_matching(db_path, spectra_type_q = 'av_all', match_alg = 'mf')
 
   expect_equal(result$xcms_summary_df$grpid, c(12,27,33,42,49,61,65,76,213, 351))
   expect_equal(result$xcms_summary_df$best_name, c("proline", "Isoleucine", "N-methylnicotinate", "Acetylcholine",
@@ -98,5 +102,10 @@ test_that("checking spectral matching functions with averaging", {
                                                    "Tyrosine", "Aspartame", "Doxazosin"))
   expect_equal(round(as.numeric(result$xcms_summary_df$best_median_score), 3),
                c(1.000,0.929,0.988,0.949,0.797,0.615,0.922,0.774,0.718,0.975))
+
+
+  db_path <- create_database(pa, xset = xset, out_dir = ".")
+
+  result <- spectral_matching(db_path, spectra_type_q = 'av_all',ra_thres_q = )
 
 })
