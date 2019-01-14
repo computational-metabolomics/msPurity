@@ -45,7 +45,6 @@ Collate:
     'create_database.R'
     'flag-filter-remove.R'
     'iw-norm.R'
-    'match_factor.R'
     'meta_extract.R'
     'pcalc.R'
     'purityA-av-spectra.R'
