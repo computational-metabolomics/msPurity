@@ -209,12 +209,12 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
   # Only keep matches with certain criteria certain criteria
 
   if (anyNA(library_sources)){
-    library_meta_query <- sprintf("SELECT * FROM library_spectra_meta WHERE polarity = '%s'", pol)
+    library_meta_query <- sprintf("SELECT * FROM library_spectra_meta WHERE lower(polarity) = lower('%s')", pol)
   }else{
     l_source_str <- paste("'",paste(library_sources, collapse = "', '"), "'", sep='')
     library_meta_query <- sprintf("SELECT m.*, s.name AS source_name FROM library_spectra_meta as m
                                     LEFT JOIN library_spectra_source AS s ON s.id=m.library_spectra_source_id
-                                    WHERE m.polarity = '%s' AND s.name IN (%s)", pol, l_source_str)
+                                    WHERE lower(m.polarity) = lower('%s') AND s.name IN (%s)", pol, l_source_str)
 
   }
 
@@ -237,9 +237,20 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
 
   library_meta <- DBI::dbGetQuery(conL, library_meta_query)
 
+  if (nrow(library_meta)==0){
+    message('No library spectra matching criteria')
+    return(NULL)
+  }
+
   if (!is.na(mslevel)){
     library_meta <- library_meta[library_meta$ms_level==mslevel,]
   }
+
+  if (nrow(library_meta)==0){
+    message('No library spectra matching criteria')
+    return(NULL)
+  }
+
 
   library_meta_ids <- paste(library_meta$id, collapse=", ")
 
@@ -248,6 +259,7 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
   library_spectra <- plyr::ddply(library_spectra, ~ library_spectra_meta_id, ra_calc)
 
   library_spectra <- library_spectra[library_spectra$ra>ra_thres_l,] # mass bank default does not do this filter
+
 
   library_spectra$type <- 2
 
@@ -324,6 +336,8 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
                         ppm_tol_prec=ppm_tol_prec,
                         rttol=rttol,
                         match_alg=match_alg)
+
+
 
   if (spectra_type_q=="scans"){
     allmatches <- plyr::ldply(allmatches_l, .id = 'pid')
