@@ -237,9 +237,20 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
 
   library_meta <- DBI::dbGetQuery(conL, library_meta_query)
 
+  if (nrow(library_meta)==0){
+    message('No library spectra matching criteria')
+    return(NULL)
+  }
+
   if (!is.na(mslevel)){
     library_meta <- library_meta[library_meta$ms_level==mslevel,]
   }
+
+  if (nrow(library_meta)==0){
+    message('No library spectra matching criteria')
+    return(NULL)
+  }
+
 
   library_meta_ids <- paste(library_meta$id, collapse=", ")
 
