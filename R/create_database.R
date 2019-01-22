@@ -210,7 +210,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     custom_dbWriteTable(name_pk = 'gXp_id', fks=fks_for_cXs,
                         table_name ='c_peak_group_X_s_peak_meta', df=c_peak_group_X_s_peak_meta, con=con)
 
-
   }
 
   if (length(pa@av_spectra)>0){
@@ -233,8 +232,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
       custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
                           table_name ='av_peaks', df=av_spectra, con=con)
     }
-
-
 
   }
 
@@ -318,6 +315,7 @@ get_av_spectra_for_db <- function(x){
 
   }else{
     av_intra_df <- NULL
+
   }
 
   if ((is.null(x$av_inter)) || (nrow(x$av_inter)==0)){

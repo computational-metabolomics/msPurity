@@ -1,5 +1,3 @@
-NULL
-
 #' @title Assess the purity of multiple LC-MS/MS or DI-MS/MS files (constructor)
 #'
 #' @description
@@ -59,7 +57,8 @@ purityA <- function(fileList,
     message("no file list")
     return(NULL)
   }
-  names(fileList) <- basename(fileList)
+  #Add a name for each file (name = filename and unname = galaxy name if galaxy)
+  if(!(names(fileList) > 1) & !(names(fileList) != "")){ names(fileList) <- basename(fileList) }
 
   requireNamespace('foreach')
   pa <- new("purityA", fileList = fileList, cores = cores, mzRback=mzRback)
@@ -73,12 +72,14 @@ purityA <- function(fileList,
     operator <- foreach::'%dopar%'
   }
 
-
+  filesRun <- unname(pa@fileList)
+  nameFiles <- names(pa@fileList)
 
   # run parallel (or not) using foreach
-  purityL <- operator(foreach::foreach(i = 1:length(pa@fileList),
+  purityL <- operator(foreach::foreach(i = 1:length(filesRun),
                                   .packages = 'mzR'),
-                                  assessPuritySingle(filepth = pa@fileList[[i]],
+                                  assessPuritySingle(filepth = filesRun[i],
+                                  nameFiles = nameFiles,
                                   mostIntense = mostIntense,
                                   nearest=nearest,
                                   offsets = offsets,
@@ -145,6 +146,7 @@ purityA <- function(fileList,
 #' @seealso \code{\link{purityA}}
 #' @export
 assessPuritySingle <- function(filepth,
+                               nameFiles,
                                fileid=NA,
                                mostIntense=FALSE,
                                nearest=TRUE,
@@ -159,11 +161,13 @@ assessPuritySingle <- function(filepth,
                                mzRback='pwiz',
                                isotopes=TRUE,
                                im=NULL){
+
   #=================================
   # Load in files and initial setup
   #=================================
   # Get the mzR dataframes
-  mrdf <- getmrdf(filepth, mzRback)
+  mrdf <- getmrdf(filepth, nameFiles, mzRback)
+
   if(is.null(mrdf)){
     message(paste("No MS/MS spectra for file: ", filepth))
     return(NULL)
@@ -177,8 +181,16 @@ assessPuritySingle <- function(filepth,
     mrdf$fileid <- rep(fileid, nrow(mrdf))
   }
 
-  # add filename
-  mrdf$filename <- basename(filepth)
+  # Get a shortened mzR dataframe
+  mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
+                                        "precursorMZ", "precursorRT",
+                                        "precursorScanNum", "id", "filename", "retentionTime")]
+
+  if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
+    message("only MS2 data, not possible to calculate purity")
+    mrdfshrt[ , c("precursorNearest", "aMz", "aPurity", "apkNm", "iMz", "iPurity", "ipkNm", "inPkNm", "inPurity")] <- NA
+    return(mrdfshrt)
+  }
 
   # Get a shortened mzR dataframe
   mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
@@ -204,9 +216,6 @@ assessPuritySingle <- function(filepth,
   if(is.null(iwNormFun)){
     iwNormFun <- iwNormGauss(minOff = -minoff, maxOff = maxoff)
   }
-
-
-
 
   # For n MS1 scans before and after the MS2 scan. For linear interpolation
   # only two points needed. More needed for spline
@@ -297,10 +306,7 @@ assessPuritySingle <- function(filepth,
     mrdfshrt$inPkNm <- interDF$inPkNm
     mrdfshrt$inPurity <- interDF$inPurity
   }
-
-
   return(mrdfshrt)
-
 }
 
 
@@ -377,7 +383,6 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
     aPurity = iPurity = apkNm = ipkNm =  1
   } else if (nrow(subp)==1){
     aPurity = iPurity = apkNm = ipkNm =  1
-
   } else {
     pouta <- pcalc(peaks=subp, mzmin=mzmin, mzmax=mzmax, mztarget=aMz, ppm=NA,
                    iwNorm=iwNorm, iwNormFun=iwNormFun, ilim=ilim, isotopes=isotopes,
@@ -389,12 +394,10 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
                    im=im)
     iPurity <- unname(pouti[1])
     ipkNm <- unname(pouti[2])
-
   }
   fileinfo <- c("aMz"=aMz, "aPurity" = aPurity, "apkNm" = apkNm,
                 "iMz" = iMz, "iPurity" = iPurity, "ipkNm" = ipkNm )
   return(fileinfo)
-
 }
 
 get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
@@ -414,10 +417,7 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
     purity <- splinePurity(rowi, roi_scns, minoff, maxoff, ppm,
                            mostIntense, scanids, plotP, plotdir)
   }
-
-
   return(purity)
-
 }
 
 linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
@@ -537,9 +537,7 @@ get_prec_scans <- function(mrdf, num){
 
     return(list("pre"=pre, "post"=post, "scan"=scan2, "nearest"= nearest))
   })
-
   return(prec_scans)
-
 }
 
 get_isolation_offsets <- function(inputfile){
@@ -570,26 +568,24 @@ get_isolation_offsets <- function(inputfile){
       break
     }
   }
-
   close(con)
   return(c(low, high))
-
 }
 
 
 # Get the Data
-getmrdf <- function(files, backend='pwiz'){
+getmrdf <- function(files, nameFiles, backend='pwiz') {
+
   #requireNamespace('mzR') # problem with cpp libraries
   # need to be loaded here for parallel
   mrdf <- NULL
-
-  for(i in 1:length(files)){
+  for(i in 1:length(files)) {
     #message(paste("processing file:" ,i))
     mr <- mzR::openMSfile(files[i], backend=backend)
     mrdfn <- mzR::header(mr)
     if(length(unique(mrdfn$msLevel))<2){
       if (unique(mrdfn$msLevel)==1){
-        message("only MS1 data")
+        cat("only MS1 data")
         next
       }
       #else{
@@ -600,19 +596,16 @@ getmrdf <- function(files, backend='pwiz'){
       if(length(unique(mrdfn$precursorScanNum))<2){
         # Note: will be of length 1 even if no scans associated because
         # the mrdf will be zero for not assigned
-        message("MS2 data has no associated scan data, will use most recent full scan for information")
+        cat("MS2 data has no associated scan data, will use most recent full scan for information")
         mrdfn  <- missing_prec_scan(mrdfn)
       }
-
     }
-
-
+    
     #mrdfn$fileid <- rep(i,nrow(mrdfn))
-    mrdfn$filename <- rep(basename(files[i]),nrow(mrdfn))
+    mrdfn$filename <- rep(basename(nameFiles[i]),nrow(mrdfn))
     mrdfn$precursorRT <- NA
-    # precursorScanNum matches to the acuisitionNum, get row matching row number and relevant retntion time
-    mrdfn[mrdfn$msLevel==2,]$precursorRT <- mrdfn[match(mrdfn[mrdfn$msLevel==2,]$precursorScanNum, mrdfn$acquisitionNum),]$retentionTime
-
+    # precursorScanNum matches to the acquisitionNum, get row matching row number and relevant retntion time
+    mrdfn[mrdfn$msLevel == 2,]$precursorRT <- mrdfn[match(mrdfn[mrdfn$msLevel == 2,]$precursorScanNum, mrdfn$acquisitionNum),]$retentionTime
     if(!is.data.frame(mrdf)){
       mrdf <- mrdfn
     }else{
@@ -643,13 +636,11 @@ getscans <- function(files, backend='pwiz'){
     scan_peaks <- mzR::peaks(mr)
     return(scan_peaks)
   }else{
-
     scan_peaks <- plyr::alply(files, 1 ,function(x){
       mr <- mzR::openMSfile(x, backend=backend)
       scan_peaks <- mzR::peaks(mr)
       return(scan_peaks)
     })
-
     return(scan_peaks)
   }
 }
