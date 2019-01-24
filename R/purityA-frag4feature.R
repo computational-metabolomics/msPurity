@@ -11,6 +11,7 @@
 #'
 #' @param pa object; purityA object
 #' @param xset object; XCMS object derived from the same files as the puritydf
+#' @param CSVfile character; file to be able to match MS files with their MSMS files
 #' @param ppm numeric; ppm tolerance between precursor mz and feature mz
 #' @param plim numeric; min purity of precursor to be included
 #' @param intense boolean; If the most intense precursor or the centered precursor is used
@@ -31,22 +32,25 @@
 #' xset <- xcms::group(xset)
 #'
 #' pa  <- purityA(msmsPths, interpol = "linear")
-#' pa <- frag4feature(pa, xset)
+#' pa <- frag4feature(pa, xset, CSVfile)
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA, use_group=FALSE){
 
+  #Verify if there is an assess-purity input
   if(is.null(pa)){
     message("no pa files")
     return(NULL)
 
   }
+  #Verify that there is a xset group input
   if(is.null(xdata)){
     message("no xdata files")
     return(NULL)
   }
+  #Verify that there is a CSV file input to match files each one with each other
   if(is.null(CSVfile)){
     message("no CSV file")
     return(NULL)
@@ -58,15 +62,12 @@ setMethod(f="frag4feature", signature="purityA",
   }
 
   cat("\n===================================================================================================\n")
-  cat("Processing",length(fileNames(xdata)),"xdata file(s) and",length(pa),"pa file(s)...\n")
-  #cat("\nxdata files :\n")
-  #print(xdata)
-  #cat("\nassess-purity files :\n")
-  #print(pa)
+  cat("Processing",length(fileNames(xdata)),"xdata file(s) and",length(pa@fileList),"pa file(s)...\n")
 
   #Run process one couple of files by one couple
-  for(i in 1:nrow(fileMatch)){
-    #print(fileMatch[i,])
+  grped_ms2 <- NULL
+  for(i in 1:nrow(fileMatch)) {
+
     fileMS1 <- as.character(fileMatch[i,1])
     fileMS2 <- as.character(fileMatch[i,2])
     cat("\n====== Running",fileMS1,"with",fileMS2,"=====\n")
@@ -89,6 +90,13 @@ setMethod(f="frag4feature", signature="purityA",
       }
     }
 
+    #Verify that we have each file
+    if(numberofMS1file == 0 || numberofMS2file == 0){
+      error_message <- paste("We can't find",fileMS1,"or",fileMS2)
+      print(error_message)
+      next
+    }
+
     #Pass xdata into xset object
     if(class(xdata) == "XCMSnExp"){
       xset <- getxcmsSetObject(xdata)
@@ -106,10 +114,10 @@ setMethod(f="frag4feature", signature="purityA",
     }  
 
     # Get the purity data frame and the xcms peaks data frame of the good file
-    print("Stock all parents ions from assess-purity")
     puritydf <- pa@puritydf[which(pa@puritydf[,"fileid"] == numberofMS2file),]
     puritydf$fileid <- as.numeric(puritydf$fileid)
-    
+    cat(paste("Stock",nrow(puritydf),"spectra from assess-purity\n"))
+
     # Check if is going to be multi-core
     if(pa@cores>1){
       cl <- parallel::makeCluster(pa@cores)
@@ -123,18 +131,26 @@ setMethod(f="frag4feature", signature="purityA",
 
     if(use_group) {
       #Select peaks which are in the good file
+      #We have to check for each group of peaks if it contains a peak from our MS1 file
       fullpeakw <- data.frame(get_full_peak_width(xset@groups[which(xset@groups[,ncol(xset@groups)] == numberofMS1file),], xset))
       fullpeakw$grpid <- seq(1, nrow(fullpeakw))
-      print("Stock all group peaks from xset")
-
+      print(head(fullpeakw))
+      cat("Stock",nrow(fullpeakw),"group peaks from xset\n")
 
       # Map xcms features to the data frame (takes a while)
       matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm, fullp=TRUE, use_grped=TRUE)
+      #print(matched)
 
-
-      grpedp <- matched
-      cat(nrow(grpedp))
-      cat(" peaks matched with parents ions\n")
+      if(nrow(matched) > 0) {
+        grpedp <- matched
+        cat(nrow(grpedp))
+        cat(" peaks matched with parents ions\n")
+      } else {
+        error_message <- "No peaks matched for these files !\n"
+        cat(error_message)
+        next
+      }
+      
     } else {
       allpeaks <- data.frame(xset@peaks[which(xset@peaks[,"sample"] == numberofMS1file),])
       allpeaks$cid <- seq(1, nrow(allpeaks))
@@ -146,18 +162,23 @@ setMethod(f="frag4feature", signature="purityA",
         allpeaks <- plyr::ddply(allpeaks, ~ sample, convert2Raw, xset=xset)
       }
 
-      print(paste("Stock",nrow(allpeaks),"peaks from xset"))
-
+      cat(paste("Stock",nrow(allpeaks),"peaks from xset\n"))
       # Map xcms features to the data frame (takes a while)
       matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1, allpeaks=allpeaks, ppm = ppm, intense = intense)
 
       #Group by the xcms groups
-      grpedp <- plyr::llply(xset@groupidx, grpByXCMS, matched=matched)
-      names(grpedp) <- seq(1, length(grpedp))
-      grpedp <- plyr::ldply(grpedp, .id = TRUE)
-      colnames(grpedp)[1] <- "grpid"
-      cat(nrow(grpedp))
-      cat(" peaks matched with parents ions\n")
+      if(nrow(matched) > 0) {
+        grpedp <- plyr::llply(xset@groupidx, grpByXCMS, matched=matched)
+        names(grpedp) <- seq(1, length(grpedp))
+        grpedp <- plyr::ldply(grpedp, .id = TRUE)
+        colnames(grpedp)[1] <- "grpid"
+        cat(nrow(grpedp))
+        cat(" peaks matched with parents ions\n")
+      } else {
+        error_message <- "No peaks matched for these files !\n"
+        cat(error_message)
+        next
+      }    
     }
 
     # Filter out any precursor below purity threshold
@@ -168,7 +189,7 @@ setMethod(f="frag4feature", signature="purityA",
     #Output if no peaks matched
     if(nrow(grpedp) == 0) {
       message("No peaks matched")
-      return(pa)
+      next
     }
 
     # Add some extra info for filtering purposes
@@ -179,18 +200,19 @@ setMethod(f="frag4feature", signature="purityA",
     grpm <- grpm[order(grpm$grpid),]
 
     # Filter out any precursor below purity threshold
-    if (!is.na(plim) && plim > 0){
+    if (!is.na(plim) && plim > 0) {
       grpm <- grpm[grpm$inPurity > plim,]
     }
 
     # add to the slots
     pa@grped_df <- rbind(pa@grped_df,grpm)
-    if(i == 1) {
+
+    if(!is.list(grped_ms2)) {
       #For the first file processed
       grped_ms2 <- getMS2scans(grpm, pathfileMS2, mzRback = pa@mzRback)
     } else {
       #For the others files
-      grped_ms2 <- rbind(grped_ms2,getMS2scans(grpm, pathfileMS2, mzRback = pa@mzRback))
+      grped_ms2 <- c(grped_ms2,getMS2scans(grpm, pathfileMS2, mzRback = pa@mzRback))
     }
 
     if (create_db) {
@@ -198,8 +220,8 @@ setMethod(f="frag4feature", signature="purityA",
     }
   }
   pa@grped_ms2 <- grped_ms2
-  return(pa)
   cat("===================================================================================================\n")
+  return(pa)
 })
 
 fsub1  <- function(prod, allpeaks, intense, ppm) {
