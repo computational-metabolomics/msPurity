@@ -73,13 +73,14 @@ purityA <- function(fileList,
   }
 
   filesRun <- unname(pa@fileList)
+  print(filesRun)
   nameFiles <- names(pa@fileList)
 
   # run parallel (or not) using foreach
   purityL <- operator(foreach::foreach(i = 1:length(filesRun),
                                   .packages = 'mzR'),
                                   assessPuritySingle(filepth = filesRun[i],
-                                  nameFiles = nameFiles,
+                                  nameFile = nameFiles[i],
                                   mostIntense = mostIntense,
                                   nearest=nearest,
                                   offsets = offsets,
@@ -146,7 +147,7 @@ purityA <- function(fileList,
 #' @seealso \code{\link{purityA}}
 #' @export
 assessPuritySingle <- function(filepth,
-                               nameFiles,
+                               nameFile,
                                fileid=NA,
                                mostIntense=FALSE,
                                nearest=TRUE,
@@ -166,7 +167,7 @@ assessPuritySingle <- function(filepth,
   # Load in files and initial setup
   #=================================
   # Get the mzR dataframes
-  mrdf <- getmrdf(filepth, nameFiles, mzRback)
+  mrdf <- getmrdf(filepth, nameFile, mzRback)
 
   if(is.null(mrdf)){
     message(paste("No MS/MS spectra for file: ", filepth))
@@ -179,17 +180,6 @@ assessPuritySingle <- function(filepth,
   # add the fileid info
   if(!is.na(fileid)){
     mrdf$fileid <- rep(fileid, nrow(mrdf))
-  }
-
-  # Get a shortened mzR dataframe
-  mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
-                                        "precursorMZ", "precursorRT",
-                                        "precursorScanNum", "id", "filename", "retentionTime")]
-
-  if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
-    message("only MS2 data, not possible to calculate purity")
-    mrdfshrt[ , c("precursorNearest", "aMz", "aPurity", "apkNm", "iMz", "iPurity", "ipkNm", "inPkNm", "inPurity")] <- NA
-    return(mrdfshrt)
   }
 
   # Get a shortened mzR dataframe
@@ -574,44 +564,45 @@ get_isolation_offsets <- function(inputfile){
 
 
 # Get the Data
-getmrdf <- function(files, nameFiles, backend='pwiz') {
+getmrdf <- function(files, nameFile, backend='pwiz') {
 
   #requireNamespace('mzR') # problem with cpp libraries
   # need to be loaded here for parallel
   mrdf <- NULL
-  for(i in 1:length(files)) {
-    #message(paste("processing file:" ,i))
-    mr <- mzR::openMSfile(files[i], backend=backend)
-    mrdfn <- mzR::header(mr)
-    if(length(unique(mrdfn$msLevel))<2){
-      if (unique(mrdfn$msLevel)==1){
-        cat("only MS1 data")
-        next
-      }
-      #else{
-      #  message("only fragmentation data")
-      #  next
-      #}
-    }else{
-      if(length(unique(mrdfn$precursorScanNum))<2){
-        # Note: will be of length 1 even if no scans associated because
-        # the mrdf will be zero for not assigned
-        cat("MS2 data has no associated scan data, will use most recent full scan for information")
-        mrdfn  <- missing_prec_scan(mrdfn)
-      }
+
+  mr <- mzR::openMSfile(files, backend=backend)
+  mrdfn <- mzR::header(mr)
+  print(head(mrdfn))
+
+  if(length(unique(mrdfn$msLevel)) < 2) {
+    if (unique(mrdfn$msLevel) == 1) {
+      cat("only MS1 data")
+      next
     }
-    
-    #mrdfn$fileid <- rep(i,nrow(mrdfn))
-    mrdfn$filename <- rep(basename(nameFiles[i]),nrow(mrdfn))
-    mrdfn$precursorRT <- NA
-    # precursorScanNum matches to the acquisitionNum, get row matching row number and relevant retntion time
-    mrdfn[mrdfn$msLevel == 2,]$precursorRT <- mrdfn[match(mrdfn[mrdfn$msLevel == 2,]$precursorScanNum, mrdfn$acquisitionNum),]$retentionTime
-    if(!is.data.frame(mrdf)){
-      mrdf <- mrdfn
-    }else{
-      mrdf <- rbind(mrdf,mrdfn)
+    #else{
+    #  message("only fragmentation data")
+    #  next
+    #}
+  } else {
+    if(length(unique(mrdfn$precursorScanNum)) < 2) {
+      # Note: will be of length 1 even if no scans associated because
+      # the mrdf will be zero for not assigned
+      cat("MS2 data has no associated scan data, will use most recent full scan for information")
+      mrdfn  <- missing_prec_scan(mrdfn)
     }
   }
+
+  #mrdfn$fileid <- rep(i,nrow(mrdfn))
+  mrdfn$filename <- rep(basename(nameFile),nrow(mrdfn))
+  mrdfn$precursorRT <- NA
+  # precursorScanNum matches to the acquisitionNum, get row matching row number and relevant retntion time
+  mrdfn[mrdfn$msLevel == 2,]$precursorRT <- mrdfn[match(mrdfn[mrdfn$msLevel == 2,]$precursorScanNum, mrdfn$acquisitionNum),]$retentionTime
+  if(!is.data.frame(mrdf)) {
+    mrdf <- mrdfn
+  } else {
+    mrdf <- rbind(mrdf,mrdfn)
+  }
+  
   return(mrdf)
 }
 
