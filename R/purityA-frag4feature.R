@@ -130,48 +130,17 @@ setMethod(f="frag4feature", signature="purityA",
     para = FALSE
 
     if(use_group) {
-      fullpeakw <- NULL
-      #Select peaks which are in the good file
-      #We have to check for each group of peaks if it contains a peak from our MS1 file
-      get_groups <- function(xset, fileMS1, numberofMS1file) {
-        #1-For each group of peaks find if the class of MS file can be find in this group
-        for(x in 1:nrow(xset@phenoData)) {
-          if(basename(rownames(xset@phenoData)[x]) == fileMS1) {
-            MSclass <- xset@phenoData[x,"class"]
-          }
+
+      #Select groups which contain peaks in the same class as file class
+      for(x in 1:nrow(xset@phenoData)) {
+        if(basename(rownames(xset@phenoData)[x]) == fileMS1) {
+          MSclass <- as.character(xset@phenoData[x,"class"])
         }
-        #2-Find each peak contain in this group and find them sample number
-        for(y in 1:nrow(xset@groups)) {
-          #print(xset@groups[y,])
-          if(MSclass %in% colnames(xset@groups)) {
-            #print("sample dans xset groups")
-            if(xset@groups[y,MSclass] > 0) {
-              #print("groupe > 0")
-              groupfind <- xset@groupidx[[y]]
-              #print(groupfind)
-              for(z in 1:length(groupfind)) {
-                #print(xset@peaks[groupfind[z],])
-                #3-Keep the group if the sample found correspond to the numberMS1file
-                if(xset@peaks[groupfind[z],"sample"] == numberofMS1file) {
-                  #print("on garde ce groupe")
-                  fullpeakw <- rbind(fullpeakw,xset@groups[y,])
-                  #print(fullpeakw)
-                  break
-                }
-              }
-            }
-          }
-          
-        }
-        return(fullpeakw)
       }
-
-
-      fullpeakw <- get_groups(xset,fileMS1,numberofMS1file)
-
+      fullpeakw <- xset@groups[which(xset@groups[,MSclass] > 0),]
       fullpeakw <- data.frame(get_full_peak_width(fullpeakw, xset))
       fullpeakw$grpid <- seq(1, nrow(fullpeakw))
-      cat("Stock",nrow(fullpeakw),"group peaks from xset\n")
+      cat("Stock",nrow(fullpeakw),"group peaks from class",MSclass,"from xset\n")
 
       # Map xcms features to the data frame (takes a while)
       matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm, fullp=TRUE, use_grped=TRUE)
