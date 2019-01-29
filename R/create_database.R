@@ -297,7 +297,14 @@ get_av_spectra_for_db <- function(x){
 
   if (length(x$av_intra)>0){
     av_intra_df <- plyr::ldply(x$av_intra)
-    av_intra_df$method <- 'intra'
+
+
+    if (nrow(av_intra_df)==0){
+      av_intra_df <- NULL
+    }else{
+      av_intra_df$method <- 'intra'
+    }
+
   }else{
     av_intra_df <- NULL
   }
