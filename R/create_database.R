@@ -302,7 +302,6 @@ get_av_spectra_for_db <- function(x){
 
   if (length(x$av_intra)>0){
     av_intra_df <- plyr::ldply(x$av_intra)
-    colnames(av_intra_df)[1] = 'sample'
 
     if (nrow(av_intra_df)==0){
       av_intra_df <- NULL
@@ -325,7 +324,6 @@ get_av_spectra_for_db <- function(x){
     av_all_df <- NULL
   }else{
     av_all_df <- x$av_all
-    #av_all_df$sample <- NA
     av_all_df$method <- 'all'
   }
 
