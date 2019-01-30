@@ -1,6 +1,6 @@
 test_that("checking database functions", {
   print("########################################################")
-  print("## Checking LCMS based class and functions            ##")
+  print("## Checking database handles lcms and msms            ##")
   print("########################################################")
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
@@ -35,5 +35,33 @@ test_that("checking database functions", {
   px  <- purityX(xset, saveEIC = TRUE, sqlitePth = db_pth, plotP = TRUE, xgroups=c(1,2,3))
   eics <- DBI::dbGetQuery(con, 'SELECT * FROM eics')
   expect_equal(nrow(eics), 34)
+
+})
+
+test_that("checking database with empty averaging", {
+  print("########################################################")
+  print("## Checking database handles averaging                ##")
+  print("########################################################")
+
+  msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+  library(xcms)
+
+  xset <- xcmsSet(msmsPths)
+  xset <- group(xset)
+
+  pa <- purityA(msmsPths)
+  pa <- frag4feature(pa, xset)
+  pa <- averageIntraFragSpectra(pa, snr = 100, remove_peaks = T)
+  pa <- averageInterFragSpectra(pa, snr = 100, remove_peaks = T)
+  pa <- averageAllFragSpectra(pa, snr = 100, remove_peaks = F)
+
+  td <- tempdir()
+  db_pth = create_database(pa, xset, out_dir = '.')
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
+
+  cpg <- DBI::dbGetQuery(con, 'SELECT * FROM av_peaks')
+  expect_equal(nrow(cpg), 1739)
+
 
 })
