@@ -210,18 +210,23 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
     av_spectra <- plyr::ldply(pa@av_spectra, get_av_spectra_for_db)
 
-    # for some reason the names are not being saved for the list as a column, so we just get them back
-    colnames(av_spectra)[1] <- 'grpid'
-    av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
+    if (nrow(av_spectra)==0){
+      message('No average spectra to use for database')
+    }else{
+      # for some reason the names are not being saved for the list as a column, so we just get them back
+      colnames(av_spectra)[1] <- 'grpid'
+      av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
 
-    colnames(av_spectra)[2] <- 'fileid'
-    av_spectra$avid <- 1:nrow(av_spectra)
-    fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
-                               'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups')
-                               )
+      colnames(av_spectra)[2] <- 'fileid'
+      av_spectra$avid <- 1:nrow(av_spectra)
+      fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
+                                 'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups')
+      )
 
-    custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
-                        table_name ='av_peaks', df=av_spectra, con=con)
+      custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
+                          table_name ='av_peaks', df=av_spectra, con=con)
+    }
+
 
 
   }
@@ -298,7 +303,6 @@ get_av_spectra_for_db <- function(x){
   if (length(x$av_intra)>0){
     av_intra_df <- plyr::ldply(x$av_intra)
 
-
     if (nrow(av_intra_df)==0){
       av_intra_df <- NULL
     }else{
@@ -309,25 +313,21 @@ get_av_spectra_for_db <- function(x){
     av_intra_df <- NULL
   }
 
-  if (!is.null(x$av_inter)){
-    av_inter_df <- x$av_inter
-    av_inter_df$sample <- NA
-    av_inter_df$method <- 'inter'
-  }else{
+  if ((is.null(x$av_inter)) || (nrow(x$av_inter)==0)){
     av_inter_df <- NULL
-  }
-
-  if (!is.null(x$av_all)){
-    av_all_df <- x$av_all
-    av_all_df$sample <- NA
-    av_all_df$method <- 'all'
   }else{
-    av_all_df <- NULL
+    av_inter_df <- x$av_inter
+    av_inter_df$method <- 'inter'
   }
 
+  if ((is.null(x$av_all)) || (nrow(x$av_all)==0)){
+    av_all_df <- NULL
+  }else{
+    av_all_df <- x$av_all
+    av_all_df$method <- 'all'
+  }
 
-  combined <- rbind(av_intra_df, av_inter_df, av_all_df)
-
+  combined <- plyr::rbind.fill(av_intra_df, av_inter_df, av_all_df)
 
   return(combined)
 
