@@ -381,6 +381,9 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
     spectra <- spectra[spectra$snr>snrthr_pre, ]
   }
 
+  if (nrow(spectra)==0){
+    return(NULL)
+  }
 
 
   mz <- spectra$mz
