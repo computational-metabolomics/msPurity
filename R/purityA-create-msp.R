@@ -29,15 +29,17 @@
 #' pa <- averageAllFragSpectra(pa)
 #' createMSP(pa)
 #' @export
-setMethod(f="createMSP", signature="purityA",
-          definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
+#setMethod(f="createMSP", signature="purityA",
+ #         definition = 
+          createMSP <- function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
                                 xcms_groupids=NULL, method="all", adduct_split=TRUE){
 
+cat("Building your MSP file...\n")
             mspurity_to_msp(pa, msp_file_pth, metadata, metadata_cols,
                             xcms_groupids, method, adduct_split)
 
           }
-)
+#)
 
 
 mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
@@ -55,22 +57,22 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   if (is.null(xcms_groupids)){
     xcms_groupids <- as.numeric(names(pa@grped_ms2))
   }
+  print(xcms_groupids)
   for(grpid in xcms_groupids){
 
-
     group_id <- which(grped_df$grpid==grpid)
-
+print(group_id)
     spec <- msms[[as.character(grpid)]]
-
+    print("--------")
 
     if (length(group_id)>=1){
 
       grpd <- grped_df[group_id,]
-
+print(grpd)
       if (method=="all"){
-
+print("method all")
         for(j in 1:length(group_id)){
-
+print(j)
           grpdj <- grpd[j,]
           if ('sample' %in% colnames(grpd)){
             fileid = grpdj$sample
@@ -88,6 +90,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         }
 
       }else if (method=="max"){
+print("method max")
 
         prec_int <- puritydf[puritydf$pid %in% grpd$pid,'precursorIntensity']
         idx <- which(prec_int==max(prec_int))[1]  # if joint place, take the first one (very unlikely to occur)
@@ -105,6 +108,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, spec_max, metadata, metadata_cols, of, method, adduct_split)
 
       }else if (method=="av_inter"){
+print("method av_inter")
 
         av_inter <- pa@av_spectra[[as.character(grpid)]]$av_inter
 
@@ -114,6 +118,8 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
       }else if (method=="av_intra"){
+print("method av_intra")
+
         av_intra <- pa@av_spectra[[as.character(grpid)]]$av_intra
         if (!is.null(av_intra) && length(av_intra)==0){
           next
@@ -130,7 +136,9 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         }
 
       }else if (method=="av_all"){
-
+print("method av_all")
+print(grpid)
+print(pa@av_spectra)
         av_all <- pa@av_spectra[[as.character(grpid)]]$av_all
 
         if (!is.null(av_all) && nrow(av_all)>0){

@@ -31,6 +31,8 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
   ########################################################
   # Export the target data into sqlite database
   ########################################################
+  print("dans create_database")
+
   if (is.na(db_name)){
     db_name <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
   }
@@ -44,7 +46,7 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
 
     grp_peaklist <- data.frame(cbind('grpid'=1:nrow(grp_peaklist), grp_peaklist))
   }
-
+print(head(grp_peaklist))
   message("Creating a database of fragmentation spectra and LC features")
   target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, xsa, out_dir, db_name)
 
@@ -54,7 +56,7 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
 
 
 export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
-
+print("dans export_2_sqlite")
   if(!is.null(xsa)){
     # if user has supplied camera object we use the xset that the camera object
     # is derived from
@@ -64,14 +66,17 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
 
   if ((length(pa@fileList) > length(xset@filepaths)) && (pa@f4f_link_type=='group')){
+    print("group")
     # if more files in pa@filelist (can happen if some files were not processed with xcms because no MS1)
     # in this case we need to make sure any reference to a fileid is correct
     uneven_filelists = TRUE
   }else{
+    print("non group")
     uneven_filelists = FALSE
   }
 
-
+print(xset@filepaths)
+print(pa@fileList)
   # if they are the same length, we check to make sure they are in the same order (only matters when
   # the f4f linking was for individual peaks)
   if(!all(basename(pa@fileList)==basename(xset@filepaths)) && (pa@f4f_link_type=='individual')){
