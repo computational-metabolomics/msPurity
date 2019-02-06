@@ -232,7 +232,7 @@ setMethod(f="frag4feature", signature="purityA",
     }
 
     if (create_db) {
-      pa@db_path <- create_database(pa = pa, xset = xset, out_dir = out_dir, db_name = db_name, grp_peaklist = grp_peaklist)
+      pa@db_path <- create_database(pa = pa, xset = xset, out_dir = out_dir, db_name = db_name, grp_peaklist = grp_peaklist, grped_df = grpall, fileMS1 = numberofMS1file, fileMS2 = numberofMS2file)
     }
   }
 
