@@ -44,7 +44,7 @@ cat("Building your MSP file...\n")
 
 mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
                              xcms_groupids=NULL, method="all", adduct_split){
-
+print(paste("Methode :",method))
   if (is.null(msp_file_pth)){
     msp_file_pth <- paste('frag_spectra', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.msp', sep="")
   }
@@ -57,23 +57,24 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   if (is.null(xcms_groupids)){
     xcms_groupids <- as.numeric(names(pa@grped_ms2))
   }
-  print(xcms_groupids)
-  for(grpid in xcms_groupids){
 
+  for(grpid in xcms_groupids){
+    print("for")
+    print(grpid)
     group_id <- which(grped_df$grpid==grpid)
 print(group_id)
-    spec <- msms[[as.character(grpid)]]
-    print("--------")
-
+    spec <- which(names(msms)==grpid)
+    print(spec)
     if (length(group_id)>=1){
 
       grpd <- grped_df[group_id,]
-print(grpd)
+
       if (method=="all"){
 print("method all")
         for(j in 1:length(group_id)){
-print(j)
+
           grpdj <- grpd[j,]
+          print(grpdj)
           if ('sample' %in% colnames(grpd)){
             fileid = grpdj$sample
           }else{
@@ -83,8 +84,11 @@ print(j)
           spectrum <- spec[[j]]
           spectrum <- add_mzi_cols(spectrum)
 
-
-          write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split)
+          if(pa@f4f_link_type=='individual'){
+            write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split)
+          }else{
+            write.msp(grpdj$precurMtchMZ, grpdj$rtmed, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split)
+          }
 
 
         }
@@ -137,8 +141,7 @@ print("method av_intra")
 
       }else if (method=="av_all"){
 print("method av_all")
-print(grpid)
-print(pa@av_spectra)
+
         av_all <- pa@av_spectra[[as.character(grpid)]]$av_all
 
         if (!is.null(av_all) && nrow(av_all)>0){
@@ -179,11 +182,13 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
       }
 
     }else{
+
       # adduct set to split but adduct column not available
       write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method)
     }
 
   }else{
+
     # Ignore adduct splitting
     write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method)
   }
@@ -191,6 +196,7 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
 }
 
 write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema='massbank'){
+
   name <- concat_name(precmz, rtmed, grpid, fileid, metadata, metadata_cols)
 
   if (!is.null(metadata) && nrow(metadata[metadata$grpid==grpid,])>0){
