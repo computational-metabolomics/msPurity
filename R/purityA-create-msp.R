@@ -59,12 +59,16 @@ print(paste("Methode :",method))
   }
 
   for(grpid in xcms_groupids){
-    print("for")
-    print(grpid)
+
     group_id <- which(grped_df$grpid==grpid)
-print(group_id)
-    spec <- which(names(msms)==grpid)
-    print(spec)
+
+    specnum <- which(names(msms)==grpid)
+
+    spec <- NULL
+    for(n in 1:length(specnum)){
+      spec <- c(spec,msms[[specnum[n]]])
+    }
+
     if (length(group_id)>=1){
 
       grpd <- grped_df[group_id,]
