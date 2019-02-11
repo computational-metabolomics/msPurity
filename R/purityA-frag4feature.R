@@ -144,7 +144,6 @@ setMethod(f="frag4feature", signature="purityA",
     para = FALSE
 
     if(use_group) {
-
       #Select groups which contain peaks in the same class as file class
       for(x in 1:nrow(xset@phenoData)) {
         if(basename(rownames(xset@phenoData)[x]) == fileMS1) {
@@ -158,7 +157,6 @@ setMethod(f="frag4feature", signature="purityA",
 
       # Map xcms features to the data frame (takes a while)
       matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks = fullpeakw, intense = intense, ppm = ppm, fullp = TRUE, use_grped = TRUE)
-      #print(matched)
 
       if(nrow(matched) > 0) {
         grpedp <- matched
