@@ -307,7 +307,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                             rathr_pre= pa@av_intra_params$ra_pre,
                                             snrthr_pre= pa@av_intra_params$snr_pre)
     if (pa@av_intra_params$remove_peaks){
-      av_intra  <- plyr::llply(av_intra , function(x){x[x$minfrac_pass_flag,]})
+      av_intra  <- plyr::llply(av_intra , function(x){x[x$pass_flag,]})
     }
 
   } else if (av_level=="inter") {
@@ -381,6 +381,9 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
     spectra <- spectra[spectra$snr>snrthr_pre, ]
   }
 
+  if (nrow(spectra)==0){
+    return(NULL)
+  }
 
 
   mz <- spectra$mz
