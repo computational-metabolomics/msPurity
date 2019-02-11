@@ -42,6 +42,7 @@ biocViews: MassSpectrometry, Metabolomics, Software
 Collate: 
     'all-generics.R'
     'averaging.R'
+    'combine_annotations.R'
     'create_database.R'
     'flag-filter-remove.R'
     'iw-norm.R'

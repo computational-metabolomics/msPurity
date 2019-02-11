@@ -344,7 +344,7 @@ real_or_rest <- function(x){
 
 get_column_info <- function(x, data_type){return(paste(x, data_type[x], sep = ' '))}
 
-get_create_query <- function(pk, fks=NA, table_name, df){
+get_create_query <- function(pk, fks=NA, table_name, df, pk_type='INTEGER'){
 
   cns <- colnames(df)
 
@@ -360,7 +360,7 @@ get_create_query <- function(pk, fks=NA, table_name, df){
 
   columninfo <- paste(colmninfo, collapse = ', ')
 
-  pkinfo <- paste(pk, ' INTEGER NOT NULL PRIMARY KEY', sep='')
+  pkinfo <- paste(pk, sprintf(' %s NOT NULL PRIMARY KEY', pk_type), sep='')
   if (anyNA(fks)){
 
     if (columninfo==''){
@@ -420,7 +420,7 @@ scan_peaks_4_db <- function(x){
 }
 
 
-custom_dbWriteTable <- function(name_pk, fks, df, table_name, con){
+custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTEGER'){
   if (anyNA(fks)){
     names_fk =  NA
   }else{
@@ -431,9 +431,11 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con){
   names(df) <- gsub( ".",  "_", names(df), fixed = TRUE)
   names(df) <- gsub( "-",  "_", names(df), fixed = TRUE)
 
-  query <- get_create_query(pk=name_pk, fks=fks, table_name=table_name, df=df)
+  query <- get_create_query(pk=name_pk, fks=fks, table_name=table_name, df=df, pk_type=pk_type)
+  print(query)
   sqr <- DBI::dbSendQuery(con, query)
   DBI::dbClearResult(sqr)
+
   DBI::dbWriteTable(con, name=table_name, value=df, row.names=FALSE, append=TRUE)
 
 
