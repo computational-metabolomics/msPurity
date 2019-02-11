@@ -73,7 +73,6 @@ purityA <- function(fileList,
   }
 
   filesRun <- unname(pa@fileList)
-  print(filesRun)
   nameFiles <- names(pa@fileList)
 
   # run parallel (or not) using foreach
@@ -572,18 +571,16 @@ getmrdf <- function(files, nameFile, backend='pwiz') {
 
   mr <- mzR::openMSfile(files, backend=backend)
   mrdfn <- mzR::header(mr)
-  print(head(mrdfn))
 
   if(length(unique(mrdfn$msLevel)) < 2) {
     if (unique(mrdfn$msLevel) == 1) {
-      cat("only MS1 data")
-      next
+      cat("Only MS1 data in",nameFile,"\n")
+      return
+    } else { 
+      cat("Only MS2 data in",nameFile,"\n")
     }
-    #else{
-    #  message("only fragmentation data")
-    #  next
-    #}
   } else {
+    cat("Processing",nameFile,"\n")
     if(length(unique(mrdfn$precursorScanNum)) < 2) {
       # Note: will be of length 1 even if no scans associated because
       # the mrdf will be zero for not assigned

@@ -74,7 +74,6 @@ print(paste("Methode :",method))
       grpd <- grped_df[group_id,]
 
       if (method=="all"){
-print("method all")
         for(j in 1:length(group_id)){
 
           grpdj <- grpd[j,]
@@ -98,7 +97,6 @@ print("method all")
         }
 
       }else if (method=="max"){
-print("method max")
 
         prec_int <- puritydf[puritydf$pid %in% grpd$pid,'precursorIntensity']
         idx <- which(prec_int==max(prec_int))[1]  # if joint place, take the first one (very unlikely to occur)
@@ -116,7 +114,6 @@ print("method max")
         write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, spec_max, metadata, metadata_cols, of, method, adduct_split)
 
       }else if (method=="av_inter"){
-print("method av_inter")
 
         av_inter <- pa@av_spectra[[as.character(grpid)]]$av_inter
 
@@ -126,7 +123,6 @@ print("method av_inter")
 
 
       }else if (method=="av_intra"){
-print("method av_intra")
 
         av_intra <- pa@av_spectra[[as.character(grpid)]]$av_intra
         if (!is.null(av_intra) && length(av_intra)==0){
@@ -144,7 +140,6 @@ print("method av_intra")
         }
 
       }else if (method=="av_all"){
-print("method av_all")
 
         av_all <- pa@av_spectra[[as.character(grpid)]]$av_all
 
