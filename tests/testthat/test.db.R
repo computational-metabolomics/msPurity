@@ -61,7 +61,7 @@ test_that("checking database with empty averaging", {
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
 
   cpg <- DBI::dbGetQuery(con, 'SELECT * FROM av_peaks')
-  expect_equal(nrow(cpg), 4480)
+  expect_equal(nrow(cpg), 2820)
 
 
 })
