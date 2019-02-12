@@ -139,7 +139,7 @@ averageCluster <- function(x, av="median", minnum=1,
     snr <- mean(x$snr)
     inorm <- mean(x$inorm)
     purity <- mean(x$inPurity)
-    ra <- median(x$mean)
+    ra <- mean(x$ra)
   }
 
   if (sumI){

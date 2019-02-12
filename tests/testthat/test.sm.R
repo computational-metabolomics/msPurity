@@ -33,7 +33,7 @@
 #                          LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
 #                          LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
 #                          LEFT JOIN matches ON matches.pid=s_peak_meta.pid
-#                          LEFT JOIN library_meta ON matches.lid=library_meta.lid
+#                          LEFT JOIN library_spectra_meta ON matches.lid=library_spectra_meta.lid
 #                          WHERE matches.score IS NOT NULL')
 #
 #   expect_equal(ncol(XLI), 80)
@@ -104,9 +104,5 @@ test_that("checking spectral matching functions with averaging", {
   expect_equal(round(as.numeric(result$xcms_summary_df$best_median_score), 3),
                c(1.000,0.929,0.988,0.949,0.797,0.615,0.922,0.774,0.718,0.975))
 
-
-  db_path <- create_database(pa, xset = xset, out_dir = ".")
-
-  result <- spectral_matching(db_path, spectra_type_q = 'av_all',ra_thres_q = )
 
 })

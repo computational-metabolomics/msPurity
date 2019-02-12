@@ -42,7 +42,7 @@
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#' xset <- xcms::xcmsSet(msmsPths)
 #' xset <- xcms::group(xset)
 #' xset <- xcms::retcor(xset)
 #' xset <- xcms::group(xset)
@@ -371,8 +371,20 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
 
     colnames(library_meta_f)[which(colnames(library_meta_f)=='id')] = 'lid'
 
-    custom_dbWriteTable(name_pk = 'lid', fks = NA,
-                        df=library_meta_f, table_name = 'library_meta', con = conQ)
+    # get all compound details as well
+    compound_details <- DBI::dbGetQuery(conL, sprintf('SELECT  DISTINCT c.* FROM library_spectra_meta AS m
+                                               LEFT JOIN metab_compound AS
+                                               c on c.inchikey_id=m.inchikey_id
+                                               WHERE m.id IN (%s)', paste(unique(allmatches$lid), collapse=",")) )
+    compound_details <- data.frame(lapply(compound_details, as.character), stringsAsFactors=FALSE)
+    custom_dbWriteTable(name_pk = 'inchikey_id', fks = NA,
+                        df=compound_details, table_name = 'metab_compound', con = conQ, pk_type='TEXT')
+
+
+
+    fk_l = list('inchikey_id'=list('new_name'='inchikey_id', 'ref_name'='inchikey_id', 'ref_table'='library_spectra_meta'))
+    custom_dbWriteTable(name_pk = 'lid', fks = fk_l,
+                        df=library_meta_f, table_name = 'library_spectra_meta', con = conQ)
 
     allmatches$mid <- 1:nrow(allmatches)
 
@@ -386,6 +398,12 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
 
     custom_dbWriteTable(name_pk = 'mid', fks = append(fks_lid, fks_q),
                         df=allmatches, table_name = 'matches', con = conQ)
+
+
+
+
+
+
     matched = TRUE
   }else{
     matched = FALSE
@@ -419,12 +437,12 @@ get_xcms_sm_summary <- function(query_db_pth, topn=NA, score_f=0.3, frag_nm_f=1,
         LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
         LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
         LEFT JOIN matches ON matches.pid=s_peak_meta.pid
-        LEFT JOIN library_meta ON matches.lid=library_meta.lid
+        LEFT JOIN library_spectra_meta ON matches.lid=library_spectra_meta.lid
         WHERE matches.score IS NOT NULL')
   }else{
     XLI <- DBI::dbGetQuery(conQ, 'SELECT * FROM c_peak_groups
         LEFT JOIN matches ON matches.grpid=c_peak_groups.grpid
-        LEFT JOIN library_meta ON matches.lid=library_meta.lid
+        LEFT JOIN library_spectra_meta ON matches.lid=library_spectra_meta.lid
         WHERE matches.score IS NOT NULL')
   }
 
@@ -703,7 +721,7 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
   if (match_alg=='dpc'){
     sim_out <- CosSim(wt, wl)
   }else if (match_alg=='mf'){
-    print('MATCH FACTOR')
+
     sim_out <- match_factor(wt, wl)
   }
 
