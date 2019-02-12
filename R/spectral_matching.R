@@ -42,7 +42,7 @@
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#' xset <- xcms::xcmsSet(msmsPths)
 #' xset <- xcms::group(xset)
 #' xset <- xcms::retcor(xset)
 #' xset <- xcms::group(xset)

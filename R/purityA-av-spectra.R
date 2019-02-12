@@ -52,7 +52,7 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
             pa@av_intra_params$snr = snr
             pa@av_intra_params$ra = ra
 
-            pa@av_intra_params$av = av
+            pa@av_intra_params$av_type = av
             pa@av_intra_params$sum_i = sum_i
             pa@av_intra_params$plim = plim
 
@@ -121,7 +121,7 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
             pa@av_inter_params$snr = snr
             pa@av_inter_params$ra = ra
 
-            pa@av_inter_params$av = av
+            pa@av_inter_params$av_type = av
             pa@av_inter_params$sum_i = sum_i
             pa@av_inter_params$plim = plim
 
@@ -192,7 +192,7 @@ setMethod(f="averageAllFragSpectra", signature="purityA",
             pa@av_all_params$snr = snr
             pa@av_all_params$ra = ra
 
-            pa@av_all_params$av = av
+            pa@av_all_params$av_type = av
             pa@av_all_params$sum_i = sum_i
             pa@av_all_params$plim = plim
 
@@ -305,7 +305,9 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                             snthr=pa@av_intra_params$snr,
                                             rathr=pa@av_intra_params$ra,
                                             rathr_pre= pa@av_intra_params$ra_pre,
-                                            snrthr_pre= pa@av_intra_params$snr_pre)
+                                            snrthr_pre= pa@av_intra_params$snr_pre,
+                                            av_type=pa@av_intra_params$av_type)
+
     if (pa@av_intra_params$remove_peaks){
       av_intra  <- plyr::llply(av_intra , function(x){x[x$pass_flag,]})
     }
@@ -323,7 +325,8 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                  sum_i=pa@av_inter_params$sum_i,
                                  minfrac=pa@av_inter_params$minfrac,
                                  snthr=pa@av_inter_params$snr,
-                                 rathr=pa@av_inter_params$ra
+                                 rathr=pa@av_inter_params$ra,
+                                 av_type=pa@av_inter_params$av_type
                                )
 
     if (pa@av_inter_params$remove_peaks){
@@ -343,7 +346,8 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                 snthr=pa@av_all_params$snr,
                                 rathr=pa@av_all_params$ra,
                                 rathr_pre= pa@av_all_params$ra_pre,
-                                snrthr_pre= pa@av_all_params$snr_pre)
+                                snrthr_pre= pa@av_all_params$snr_pre,
+                                av_type=pa@av_all_params$av_type)
     if (pa@av_all_params$remove_peaks){
       av_all <- av_all[av_all$pass_flag,]
     }
@@ -359,18 +363,21 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
 
 
 average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
-                            minfrac, snthr, snmeth='median', rathr, rathr_pre=NULL, snrthr_pre=NULL){
+                            minfrac, snthr, snmeth='median', rathr, rathr_pre=NULL, snrthr_pre=NULL, av_type='median'){
   if (nrow(spectra)==0){
     return(NULL)
   }
 
-  if (snmeth=="median"){
-    spectra$snr <- spectra$i/median(spectra$i)
-  }else if(snmeth=="mean"){
-    spectra$snr <- spectra$i/mean(spectra$i)
-  }
-
-  spectra$ra <- spectra$i/max(spectra$i)*100
+  # calculate metrics per scan
+  spectra <- ddply(spectra, indx, function(x){
+    if (snmeth=="median"){
+      x$snr <- x$i/median(x$i)
+    }else if(snmeth=="mean"){
+      x$snr <- x$i/mean(x$i)
+    }
+    x$ra <- x$i/max(x$i)*100
+    return(x)
+  })
 
 
   if (!is.null(rathr_pre)){
@@ -393,7 +400,7 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
   spectra$cl <- clustering(mz, clustType = 'hc', cores = cores, ppm = ppm)
 
   averages <- plyr::ddply(spectra, ~ cl,
-                          averageCluster, av="median", minnum=minnum,
+                          averageCluster, av=av_type, minnum=minnum,
                           missingV="ignore", totalScans=length(unique(spectra[,indx])), normTIC=FALSE,
                           sumI=sum_i)
 

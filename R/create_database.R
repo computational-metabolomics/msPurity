@@ -59,6 +59,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     # if user has supplied camera object we use the xset that the camera object
     # is derived from
     xset <- xsa@xcmsSet
+
   }
 
 
@@ -98,11 +99,16 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   fileList <- pa@fileList
 
 
-  filedf <- data.frame(cbind('filename'=basename(fileList), 'filepth'=fileList, 'nm_save'=nm_save),
-                                 'fileid'=seq(1, length(fileList))
-                           )
+  filedf <- data.frame(filename=basename(fileList),
+                       filepth=fileList,
+                       nm_save=nm_save,
+                       fileid=seq(1, length(fileList)),
+                       class=xset@phenoData$class
+                       )
 
   custom_dbWriteTable(name_pk = 'fileid', fks=NA, table_name = 'fileinfo', df=filedf, con=con)
+
+
 
   ###############################################
   # Add c_peaks (i.e. XCMS individual peaks)
