@@ -5,7 +5,7 @@ grpid 8
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Sulfamethizole 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 2
 PK$PEAK: m/z int. rel.int.
 112.050880432129	565117.25	100
@@ -18,7 +18,7 @@ grpid 8
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Sulfamethizole 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 112.050888061523	440629.6875	100
@@ -30,7 +30,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
 107.270111083984	1726.61291503906	0.08
@@ -45,7 +45,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
 107.270111083984	1726.61291503906	0.08
@@ -60,13 +60,13 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 5
 PK$PEAK: m/z int. rel.int.
-103.129020690918	4419.71240234375	0.22
 116.016784667969	23772.865234375	1.17
 116.070899963379	2029273.8515625	100
 116.10725402832	12305.2299804688	0.61
+103.129020690918	4419.71240234375	0.22
 130.027648925781	4081.13793945312	0.2
 
 CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:2
@@ -76,12 +76,12 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 5
 PK$PEAK: m/z int. rel.int.
-103.129020690918	4419.71240234375	0.22
 116.016784667969	23772.865234375	1.17
 116.070899963379	2029273.8515625	100
 116.10725402832	12305.2299804688	0.61
+103.129020690918	4419.71240234375	0.22
 130.027648925781	4081.13793945312	0.2
 

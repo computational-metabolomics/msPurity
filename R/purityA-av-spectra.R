@@ -368,16 +368,12 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
     return(NULL)
   }
 
-  # calculate metrics per scan
-  spectra <- ddply(spectra, indx, function(x){
-    if (snmeth=="median"){
-      x$snr <- x$i/median(x$i)
-    }else if(snmeth=="mean"){
-      x$snr <- x$i/mean(x$i)
-    }
-    x$ra <- x$i/max(x$i)*100
-    return(x)
-  })
+
+  if (indx=='index'){
+    # calculate metrics per scan (if using inter, the index will be sample and the snr and ra will
+    # have already have been calculated
+    spectra <- ddply(spectra, indx, get_snr_ra)
+  }
 
 
   if (!is.null(rathr_pre)){
@@ -392,6 +388,8 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
     return(NULL)
   }
 
+  # ensure ordered by mz
+  spectra <- spectra[order(spectra$mz),]
 
   mz <- spectra$mz
 
@@ -418,4 +416,15 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
   return(averages)
 }
 
+
+get_snr_ra <- function(x, snmeth='median'){
+  if (snmeth=="median"){
+    x$snr <- x$i/median(x$i)
+  }else if(snmeth=="mean"){
+    x$snr <- x$i/mean(x$i)
+  }
+  x$ra <- x$i/max(x$i)*100
+
+   return(x)
+}
 

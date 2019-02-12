@@ -438,7 +438,7 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTE
   names(df) <- gsub( "-",  "_", names(df), fixed = TRUE)
 
   query <- get_create_query(pk=name_pk, fks=fks, table_name=table_name, df=df, pk_type=pk_type)
-  print(query)
+
   sqr <- DBI::dbSendQuery(con, query)
   DBI::dbClearResult(sqr)
 

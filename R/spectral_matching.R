@@ -721,7 +721,7 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
   if (match_alg=='dpc'){
     sim_out <- CosSim(wt, wl)
   }else if (match_alg=='mf'){
-    print('MATCH FACTOR')
+
     sim_out <- match_factor(wt, wl)
   }
 
