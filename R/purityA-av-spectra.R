@@ -372,7 +372,11 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
   if (indx=='index'){
     # calculate metrics per scan (if using inter, the index will be sample and the snr and ra will
     # have already have been calculated
-    spectra <- ddply(spectra, indx, get_snr_ra)
+    # these will have already been calculated if filterFragSpectra has already been applied
+    if (('snr' %in% colnames(spectra)) & ('ra' %in% colnames(spectra))){
+      spectra <- ddply(spectra, indx, set_snr_ra)
+    }
+
   }
 
 
@@ -417,7 +421,8 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
 }
 
 
-get_snr_ra <- function(x, snmeth='median'){
+set_snr_ra <- function(x, snmeth='median'){
+
   if (snmeth=="median"){
     x$snr <- x$i/median(x$i)
   }else if(snmeth=="mean"){

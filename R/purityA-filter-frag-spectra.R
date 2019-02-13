@@ -1,0 +1,133 @@
+#' @title Filter fragmentations spectra associated with an XCMS feature
+#'
+#' @description
+#'
+#' Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and
+#' precursor ion purity of precursor.
+#'
+#' The grp_spectra slot to add the columns snr, ra, snr_flag, ra_flag, purity_flag, intensity_flag pass_flag
+#'
+#' This filtering occurs at the scan level (i.e. should be run prior to any averaging)
+#'
+#' @param pa object; purityA object
+#' @param cores numeric; Number of cores for multiprocessing
+#' @param ilim numeric; min intensity of a peak
+#' @param plim numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan
+#' @param ra numeric; minimum relative abundance of a peak
+#' @param snr numeric; minimum signal-to-noise of a peak  peak within each file
+#' @param remove_peaks boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#'
+#' @examples
+#'
+#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' xset <- xcms::xcmsSet(msmsPths)
+#' xset <- xcms::group(xset)
+#' xset <- xcms::retcor(xset)
+#' xset <- xcms::group(xset)
+#'
+#' pa  <- purityA(msmsPths)
+#' pa <- frag4feature(pa, xset)
+#' pa <- filterFragSpectra(pa, xset)
+#' pa <- averageIntraFragSpectra(pa)
+#'
+#'
+#' @export
+setMethod(f="filterFragSpectra", signature="purityA",
+          definition = function(pa, i=0, p=0.8, ra=0, snr=3, cores=1, removePeaks=FALSE, snmeth='median'){
+            filter_frag_params = list()
+            filter_frag_params$i = i
+            filter_frag_params$p = p
+            filter_frag_params$ra = ra
+            filter_frag_params$snr = snr
+            filter_frag_params$snmeth = snmeth
+            filter_frag_params$cores = cores
+
+            pa@filter_frag_params <- filter_frag_params
+
+            # Calculate and add flags to matrix
+            # Add the purity flag
+            pa@grped_df$purity_pass_flag <-  pa@grped_df$inPurity > p
+            pa@grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid, set_purity_spectra, pa@grped_ms2)
+
+
+            # calculate snr, ra and add first batch of flags
+            pa@grped_ms2 <- lapply(pa@grped_ms2, set_flag_spectra, filter_frag_params)
+
+
+            # add to purityA object
+
+            return(pa)
+
+          }
+)
+
+
+set_purity_spectra <- function(x, grped_ms2){
+  grpid <- as.character(unique(x$grpid))
+  msms <- grped_ms2[grpid]
+  purity_pass_flag <- x$purity_pass_flag
+
+  if (nrow(x)==1){
+    result <- list(grpid=cbind(msms[[1]][[1]], purity_pass_flag))
+  }else{
+    result <- mapply(set_purity_flag_matrix,purity_pass_flag=purity_pass_flag,msms=msms[[1]])
+  }
+
+  return(result)
+}
+
+
+set_purity_flag_matrix <- function(purity_pass_flag, msms){
+
+  m <- cbind(msms, purity_pass_flag)
+  #print(m)
+  return(m)
+
+
+}
+
+set_flag_spectra <- function(msms_l, filter_frag_params){
+  return(lapply(msms_l, set_flag_matrix, filter_frag_params))
+}
+
+set_flag_matrix <- function(x, filter_frag_params){
+  print(x)
+  snmeth <- filter_frag_params$snmeth
+  i_thre <- filter_frag_params$i
+  ra_thre <- filter_frag_params$ra
+  snr_thre <- filter_frag_params$snr
+
+  # Add colnames
+
+
+  if (snmeth=="median"){
+    snr <- x[,2]/median(x[,2])
+  }else if(snmeth=="mean"){
+    snr <- x[,2]/mean(x[,2])
+  }
+  ra <- x[,2]/max(x[,2])*100
+
+  intensity_pass_flag <- x[,2]>i_thre
+  ra_pass_flag <- ra>ra_thre
+  snr_pass_flag <- snr>snr_thre
+
+  x <- cbind(x, snr, ra, intensity_pass_flag, ra_pass_flag, snr_pass_flag)
+
+
+
+  colnames(x) <- c('mz', 'i','purity_pass_flag', 'snr', 'ra', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag')
+
+  if (nrow(x==1)){
+    pass_flag <- sum(x[,c('purity_pass_flag', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag')])==4
+  }else{
+    pass_flag <- rowSums(x[,c('purity_pass_flag', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag')])==4
+  }
+
+
+  x <- cbind(x, pass_flag)
+  # reoder so it is easier to read
+  col_order <- c('mz', 'i', 'snr', 'ra', 'purity_pass_flag', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag', 'pass_flag')
+
+  return(x[,col_order, drop=FALSE])
+}
+
