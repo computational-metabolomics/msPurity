@@ -160,6 +160,11 @@ setMethod(f="frag4feature", signature="purityA",
 
       if(nrow(matched) > 0) {
         grpedp <- matched
+        savegrpid <- grpedp[,"grpid"]
+        coldontwant <- "grpid"
+        grpedp <- grpedp[, ! names(grpedp) %in% coldontwant, drop = F]
+        grpedp <- cbind(savegrpid,grpedp)
+        names(grpedp)[1] <- "grpid"
         cat(nrow(grpedp))
         cat(" peaks matched with parents ions\n")
       } else {
@@ -388,7 +393,6 @@ convert2Raw <- function(x, xset){
   x$rtmin <- xset@rt$raw[[sid]][match(x$rtmin, xset@rt$corrected[[sid]])]
   x$rtmax <- xset@rt$raw[[sid]][match(x$rtmax, xset@rt$corrected[[sid]])]
   return(x)
-
 }
 
 # This function retrieve a xset like object
