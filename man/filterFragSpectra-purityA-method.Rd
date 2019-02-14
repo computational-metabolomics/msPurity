@@ -5,15 +5,15 @@
 \alias{filterFragSpectra,purityA-method}
 \title{Filter fragmentations spectra associated with an XCMS feature}
 \usage{
-\S4method{filterFragSpectra}{purityA}(pa, i = 0, p = 0.8, ra = 0,
-  snr = 3, rmp = FALSE, snmeth = "median")
+\S4method{filterFragSpectra}{purityA}(pa, ilim = 0, plim = 0.8,
+  ra = 0, snr = 3, rmp = FALSE, snmeth = "median")
 }
 \arguments{
 \item{pa}{object; purityA object}
 
-\item{i}{numeric; min intensity of a peak}
+\item{ilim}{numeric; min intensity of a peak}
 
-\item{p}{numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan}
+\item{plim}{numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan}
 
 \item{ra}{numeric; minimum relative abundance of a peak}
 

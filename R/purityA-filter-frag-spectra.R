@@ -10,8 +10,8 @@
 #' This filtering occurs at the scan level (i.e. should be run prior to any averaging)
 #'
 #' @param pa object; purityA object
-#' @param i numeric; min intensity of a peak
-#' @param p numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan
+#' @param ilim numeric; min intensity of a peak
+#' @param plim numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan
 #' @param ra numeric; minimum relative abundance of a peak
 #' @param snr numeric; minimum signal-to-noise of a peak  peak within each file
 #' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.
@@ -31,7 +31,7 @@
 #'
 #' @export
 setMethod(f="filterFragSpectra", signature="purityA",
-          definition = function(pa, i=0, p=0.8, ra=0, snr=3, rmp=FALSE, snmeth='median'){
+          definition = function(pa, ilim=0, plim=0.8, ra=0, snr=3, rmp=FALSE, snmeth='median'){
 
             if ((!length(pa@filter_frag_params)==0) && (pa@filter_frag_params$rmp)){
               message('Fragmentation peaks have been previously filtered and removed - function can\'t be performed')
@@ -39,8 +39,8 @@ setMethod(f="filterFragSpectra", signature="purityA",
             }
 
             filter_frag_params = list()
-            filter_frag_params$i = i
-            filter_frag_params$p = p
+            filter_frag_params$ilim = ilim
+            filter_frag_params$plim = plim
             filter_frag_params$ra = ra
             filter_frag_params$snr = snr
             filter_frag_params$snmeth = snmeth
@@ -53,7 +53,7 @@ setMethod(f="filterFragSpectra", signature="purityA",
 
             # Calculate and add flags to matrix
             # Add the purity flag
-            pa@grped_df$purity_pass_flag <-  pa@grped_df$inPurity > p
+            pa@grped_df$purity_pass_flag <-  pa@grped_df$inPurity > plim
             pa@grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid, set_purity_spectra, pa)
 
             # calculate snr, ra and combine all flags
@@ -95,7 +95,7 @@ set_purity_flag_matrix <- function(grpinfo, msms_l){
 set_flag_matrix <- function(x, filter_frag_params){
 
   snmeth <- filter_frag_params$snmeth
-  i_thre <- filter_frag_params$i
+  i_thre <- filter_frag_params$ilim
   ra_thre <- filter_frag_params$ra
   snr_thre <- filter_frag_params$snr
   rmp <- filter_frag_params$rmp

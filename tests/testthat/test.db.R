@@ -51,9 +51,9 @@ test_that("checking database with empty averaging", {
 
   pa <- purityA(msmsPths)
   pa <- frag4feature(pa, xset)
-  pa <- averageIntraFragSpectra(pa, snr = 100, remove_peaks = T)
-  pa <- averageInterFragSpectra(pa, snr = 100, remove_peaks = T)
-  pa <- averageAllFragSpectra(pa, snr = 100, remove_peaks = F)
+  pa <- averageIntraFragSpectra(pa, snr = 100, rmp = T)
+  pa <- averageInterFragSpectra(pa, snr = 100, rmp = T)
+  pa <- averageAllFragSpectra(pa, snr = 100, rmp = F)
 
   td <- tempdir()
   db_pth = create_database(pa, xset, out_dir = td)

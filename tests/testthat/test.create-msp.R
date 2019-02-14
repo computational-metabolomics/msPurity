@@ -13,10 +13,10 @@ test_that("checking lcms based functions", {
   pa  <- purityA(msmsPths)
 
 
-  pa <- frag4feature(pa, xset, create_db=FALSE)
-  pa <- averageIntraFragSpectra(pa, minfrac=0, plim=0)
-  pa <- averageInterFragSpectra(pa, minfrac=0, plim=0)
-  pa <- averageAllFragSpectra(pa, minfrac=0, plim=0)
+  pa <- frag4feature(pa, xset)
+  pa <- averageIntraFragSpectra(pa, minfrac=0)
+  pa <- averageInterFragSpectra(pa, minfrac=0)
+  pa <- averageAllFragSpectra(pa, minfrac=0)
 
   get_msp_str <- function(msp_pth){
     msp_str <- readChar(msp_pth, file.info(msp_pth)$size)

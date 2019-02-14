@@ -1,6 +1,6 @@
 test_that("checking averaging functionality", {
   print("########################################################")
-  print("## Checking LCMS based class and functions            ##")
+  print("## Checking averaging                                ##")
   print("########################################################")
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
@@ -30,8 +30,8 @@ test_that("checking averaging functionality", {
 
 
 
-  pa_no_peaks <- averageIntraFragSpectra(pa, minfrac=0.5, snr_pre = 100000, minnum = 1, ppm=5, plim = 0.8, remove_peaks = T)
-  expect_equal(unlist(pa_no_peaks@av_spectra), NULL)
+  pa_no_peaks <- averageIntraFragSpectra(pa, minfrac=0.1, minnum = 1, snr=10000, ppm=5, rmp = T)
+  expect_equal(unlist(pa_no_peaks@av_spectra), numeric(0))
 
   paf <- filterFragSpectra(pa, snr=100)
   pafIntra <- averageIntraFragSpectra(paf)

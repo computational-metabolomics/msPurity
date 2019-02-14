@@ -13,7 +13,7 @@ test_that("checking filterFragSpectra purityA", {
 
 
   pa <- frag4feature(pa, xset)
-  pa <- filterFragSpectra(pa, p = 0.7, snr = 3)
+  pa <- filterFragSpectra(pa, plim = 0.7, snr = 3)
 
   expect_equal(colnames(pa@grped_ms2[[1]][[1]]), c("mz", "i","snr", "ra" ,
                                                    "purity_pass_flag",    "intensity_pass_flag",
