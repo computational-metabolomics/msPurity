@@ -15,6 +15,7 @@
 #' @param ra numeric; minimum relative abundance of a peak
 #' @param snr numeric; minimum signal-to-noise of a peak  peak within each file
 #' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.
+#' @param snmeth character; Method to calculate signal to noise ration (either median or mean)
 #'
 #' @examples
 #'

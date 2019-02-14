@@ -20,6 +20,8 @@
 \item{snr}{numeric; minimum signal-to-noise of a peak  peak within each file}
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
+
+\item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
 }
 \description{
 Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and
