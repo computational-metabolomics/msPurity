@@ -8,7 +8,7 @@
 \usage{
 \S4method{averageInterFragSpectra}{purityA}(pa, minfrac = 0.5,
   minnum = 1, ppm = 5, snr = 0, ra = 0, av = "median",
-  sum_i = TRUE, plim = 0.5, remove_peaks = FALSE, cores = 1)
+  sumi = TRUE, rmp = FALSE, cores = 1)
 }
 \arguments{
 \item{pa}{object; purityA object}
@@ -25,11 +25,9 @@
 
 \item{av}{character; type of averaging to use (median or mean)}
 
-\item{sum_i}{boolean; TRUE if the intensity for each peak is summed across averaged spectra}
+\item{sumi}{boolean; TRUE if the intensity for each peak is summed across averaged spectra}
 
-\item{plim}{numeric; min purity of precursor for fragmentation spectra scan to be included}
-
-\item{remove_peaks}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
+\item{rmp}{boolean; RUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
 
 \item{cores}{numeric; Number of cores for multiprocessing}
 }
