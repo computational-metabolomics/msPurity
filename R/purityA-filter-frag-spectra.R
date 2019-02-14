@@ -10,12 +10,11 @@
 #' This filtering occurs at the scan level (i.e. should be run prior to any averaging)
 #'
 #' @param pa object; purityA object
-#' @param cores numeric; Number of cores for multiprocessing
-#' @param ilim numeric; min intensity of a peak
-#' @param plim numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan
+#' @param i numeric; min intensity of a peak
+#' @param p numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan
 #' @param ra numeric; minimum relative abundance of a peak
 #' @param snr numeric; minimum signal-to-noise of a peak  peak within each file
-#' @param remove_peaks boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.
 #'
 #' @examples
 #'

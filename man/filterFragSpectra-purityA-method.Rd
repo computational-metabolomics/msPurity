@@ -11,17 +11,15 @@
 \arguments{
 \item{pa}{object; purityA object}
 
+\item{i}{numeric; min intensity of a peak}
+
+\item{p}{numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan}
+
 \item{ra}{numeric; minimum relative abundance of a peak}
 
 \item{snr}{numeric; minimum signal-to-noise of a peak  peak within each file}
 
-\item{cores}{numeric; Number of cores for multiprocessing}
-
-\item{ilim}{numeric; min intensity of a peak}
-
-\item{plim}{numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan}
-
-\item{remove_peaks}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
+\item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 }
 \description{
 Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and
