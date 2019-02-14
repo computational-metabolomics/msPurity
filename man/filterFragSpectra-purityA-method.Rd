@@ -3,6 +3,7 @@
 \docType{methods}
 \name{filterFragSpectra,purityA-method}
 \alias{filterFragSpectra,purityA-method}
+\alias{filterFragSpectra}
 \title{Filter fragmentations spectra associated with an XCMS feature}
 \usage{
 \S4method{filterFragSpectra}{purityA}(pa, ilim = 0, plim = 0.8,

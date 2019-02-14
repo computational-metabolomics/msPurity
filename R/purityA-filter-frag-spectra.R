@@ -1,5 +1,5 @@
 #' @title Filter fragmentations spectra associated with an XCMS feature
-#'
+#' @aliases filterFragSpectra
 #' @description
 #'
 #' Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and
