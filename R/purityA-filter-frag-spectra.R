@@ -29,6 +29,7 @@
 #' pa <- frag4feature(pa, xset)
 #' pa <- filterFragSpectra(pa)
 #'
+#' @return purityA object with additional columns for the fragmentation spectra in the grped_msms slot
 #'
 #' @export
 setMethod(f="filterFragSpectra", signature="purityA",

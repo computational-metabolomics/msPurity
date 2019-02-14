@@ -23,6 +23,9 @@
 
 \item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
 }
+\value{
+purityA object with additional columns for the fragmentation spectra in the grped_msms slot
+}
 \description{
 Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and
 precursor ion purity of precursor.
@@ -42,6 +45,5 @@ xset <- xcms::group(xset)
 pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset)
 pa <- filterFragSpectra(pa)
-
 
 }
