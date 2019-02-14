@@ -27,32 +27,38 @@
 #'
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#' pa <- filterFragSpectra(pa, xset)
-#' pa <- averageIntraFragSpectra(pa)
+#' pa <- filterFragSpectra(pa)
 #'
 #'
 #' @export
 setMethod(f="filterFragSpectra", signature="purityA",
-          definition = function(pa, i=0, p=0.8, ra=0, snr=3, cores=1, removePeaks=FALSE, snmeth='median'){
+          definition = function(pa, i=0, p=0.8, ra=0, snr=3, rmp=FALSE, snmeth='median'){
+
+            if ((!length(pa@filter_frag_params)==0) && (pa@filter_frag_params$rmp)){
+              message('Fragmentation peaks have been previously filtered and removed - function can\'t be performed')
+              return(pa)
+            }
+
             filter_frag_params = list()
             filter_frag_params$i = i
             filter_frag_params$p = p
             filter_frag_params$ra = ra
             filter_frag_params$snr = snr
             filter_frag_params$snmeth = snmeth
-            filter_frag_params$cores = cores
+            filter_frag_params$rmp = rmp
 
             pa@filter_frag_params <- filter_frag_params
+
+            # reset (incase filterFrag has already been run)
+            pa@grped_ms2 <- lapply(pa@grped_ms2, lapply, reset_grped_ms2)
 
             # Calculate and add flags to matrix
             # Add the purity flag
             pa@grped_df$purity_pass_flag <-  pa@grped_df$inPurity > p
-            pa@grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid, set_purity_spectra, pa@grped_ms2)
+            pa@grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid, set_purity_spectra, pa)
 
-
-            # calculate snr, ra and add first batch of flags
-            pa@grped_ms2 <- lapply(pa@grped_ms2, set_flag_spectra, filter_frag_params)
-
+            # calculate snr, ra and combine all flags
+            pa@grped_ms2 <- lapply(pa@grped_ms2, lapply, set_flag_matrix, filter_frag_params=filter_frag_params)
 
             # add to purityA object
 
@@ -61,41 +67,39 @@ setMethod(f="filterFragSpectra", signature="purityA",
           }
 )
 
+reset_grped_ms2 <- function(m){
+  m[,1:2, drop=FALSE]
+}
 
-set_purity_spectra <- function(x, grped_ms2){
+set_purity_spectra <- function(x, pa){
   grpid <- as.character(unique(x$grpid))
-  msms <- grped_ms2[grpid]
+
+  msms_l <- pa@grped_ms2[as.character(grpid)][[1]]
+
   purity_pass_flag <- x$purity_pass_flag
 
-  if (nrow(x)==1){
-    result <- list(grpid=cbind(msms[[1]][[1]], purity_pass_flag))
-  }else{
-    result <- mapply(set_purity_flag_matrix,purity_pass_flag=purity_pass_flag,msms=msms[[1]])
-  }
-
+  x$subsetid <- 1:nrow(x)
+  result <- plyr::dlply(x, ~subsetid, set_purity_flag_matrix, msms_l=msms_l)
+  result <- unname(result)
+  attr(result, "split_type") <- NULL
+  attr(result, "split_labels") <- NULL
   return(result)
 }
 
 
-set_purity_flag_matrix <- function(purity_pass_flag, msms){
 
-  m <- cbind(msms, purity_pass_flag)
-  #print(m)
+set_purity_flag_matrix <- function(grpinfo, msms_l){
+  m <- cbind(msms_l[[grpinfo$subsetid]], grpinfo$purity_pass_flag)
   return(m)
-
-
-}
-
-set_flag_spectra <- function(msms_l, filter_frag_params){
-  return(lapply(msms_l, set_flag_matrix, filter_frag_params))
 }
 
 set_flag_matrix <- function(x, filter_frag_params){
-  print(x)
+
   snmeth <- filter_frag_params$snmeth
   i_thre <- filter_frag_params$i
   ra_thre <- filter_frag_params$ra
   snr_thre <- filter_frag_params$snr
+  rmp <- filter_frag_params$rmp
 
   # Add colnames
 
@@ -114,19 +118,24 @@ set_flag_matrix <- function(x, filter_frag_params){
   x <- cbind(x, snr, ra, intensity_pass_flag, ra_pass_flag, snr_pass_flag)
 
 
-
   colnames(x) <- c('mz', 'i','purity_pass_flag', 'snr', 'ra', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag')
 
-  if (nrow(x==1)){
+  if (nrow(x)==1){
     pass_flag <- sum(x[,c('purity_pass_flag', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag')])==4
   }else{
     pass_flag <- rowSums(x[,c('purity_pass_flag', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag')])==4
   }
 
-
   x <- cbind(x, pass_flag)
   # reoder so it is easier to read
   col_order <- c('mz', 'i', 'snr', 'ra', 'purity_pass_flag', 'intensity_pass_flag', 'ra_pass_flag', 'snr_pass_flag', 'pass_flag')
+
+  if (rmp){
+    x <- x[x[,'pass_flag']==1,,drop=FALSE]
+    if (nrow(x)==0){
+      return(NULL)
+    }
+  }
 
   return(x[,col_order, drop=FALSE])
 }

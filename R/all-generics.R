@@ -78,6 +78,13 @@ setGeneric(name="averageAllFragSpectra",
 )
 
 
+setGeneric(name="filterFragSpectra",
+           def=function(pa, i=0, p=0.8, ra=0, snr=3, cores=1, rmp=FALSE, snmeth='median') {
+             standardGeneric("filterFragSpectra")
+           }
+)
+
+
 setGeneric(name="createMSP",
            def=function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
                         xcms_groupids=NULL, method="all", adduct_split=TRUE) {

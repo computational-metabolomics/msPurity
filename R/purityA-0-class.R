@@ -23,7 +23,8 @@ setClass(
     av_spectra = "list",
     av_intra_params = "list",
     av_inter_params = "list",
-    av_all_params = "list"
+    av_all_params = "list",
+    filter_frag_params = "list"
   )
 )
 

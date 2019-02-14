@@ -32,4 +32,20 @@ test_that("checking averaging functionality", {
 
   pa_no_peaks <- averageIntraFragSpectra(pa, minfrac=0.5, snr_pre = 100000, minnum = 1, ppm=5, plim = 0.8, remove_peaks = T)
   expect_equal(unlist(pa_no_peaks@av_spectra), NULL)
+
+  paf <- filterFragSpectra(pa, snr=100)
+  pafIntra <- averageIntraFragSpectra(paf)
+  pafInter <- averageInterFragSpectra(pafIntra)
+  pafAll <- averageAllFragSpectra(pafInter)
+
+  # only 1 peak passes
+  expect_equal(paf@grped_ms2$`375`[[2]][,'pass_flag'], c(0,0,1,0,0,0,0,0))
+  expect_equal(paf@grped_ms2$`375`[[1]][,'pass_flag'], c(0,0,0,0))
+
+  # only 1 should be available
+  expect_equal(nrow(pafIntra@av_spectra$`375`$av_intra$`2`), 1)
+  expect_equal(nrow(pafInter@av_spectra$`375`$av_inter), 1)
+  expect_equal(nrow(pafAll@av_spectra$`375`$av_all), 1)
+
+
 })

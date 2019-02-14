@@ -155,15 +155,11 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'
 #' @param pa object; purityA object
 #' @param cores numeric; Number of cores for multiprocessing
-#' @param plim numeric; min purity of precursor for fragmentation spectra scan to be included
 #' @param ppm numeric; ppm threshold to average across all scans (ignoring intra and inter relationships)
 #' @param minnum numeric; minimum number of times peak is present across all fragmentation spectra (ignoring intra and inter relationships)
 #' @param minfrac numeric;minimum ratio of the peak fraction (peak count / total peaks) across all (ignoring intra and inter relationships)
 #' @param ra numeric; minimum relative abundance of the peak fraction across all (ignoring intra and inter relationships)
 #' @param snr numeric;  minimum signal-to-noise of the peak across all (ignoring intra and inter relationships)
-#' @param snr_pre numeric;  minimum signal-to-noise prior to averaging
-#' @param ra_pre numeric;  minimum relative abundance prior to averaging
-#'
 #' @param av character; type of averaging to use (median or mean)
 #' @param sum_i boolean; TRUE if the intensity for each peak is summed across averaged spectra
 #' @param remove_peaks boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
@@ -178,12 +174,13 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'
 #' pa  <- purityA(msmsPths, interpol = "linear")
 #' pa <- frag4feature(pa, xset)
+#' pa <- filterFragSpectra(pa)
 #' pa <- averageAllFragSpectra(pa)
 #'
 #' @export
 setMethod(f="averageAllFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                                snr_pre=0, ra_pre=0, av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1
+                                 av='median', sum_i=TRUE, remove_peaks=FALSE, cores=1
           ){
 
             pa@av_all_params$minfrac = minfrac
@@ -194,11 +191,6 @@ setMethod(f="averageAllFragSpectra", signature="purityA",
 
             pa@av_all_params$av_type = av
             pa@av_all_params$sum_i = sum_i
-            pa@av_all_params$plim = plim
-
-            pa@av_all_params$ra_pre = ra_pre
-            pa@av_all_params$snr_pre = snr_pre
-
             pa@av_all_params$cores = cores
             pa@av_all_params$remove_peaks = remove_peaks
 
@@ -247,8 +239,13 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   grped_spectra <- plyr::llply(grped_spectra, data.frame)
   df <- data.frame(do.call("rbind", grped_spectra))
 
-  colnames(df) <- c('mz', 'i')
+  colnames(df)[1:2] <- c('mz', 'i')
   df$index <-   rep(seq_along(grped_spectra), sapply(grped_spectra, nrow))
+
+  if (!length(pa@filter_frag_params)==0){
+    # if prior filtering performed only use those that have passed
+    df<-df[df$pass_flag==1,]
+  }
 
   spectra_to_average <- merge(df, grped_info[, c('grpid', 'sample', 'cid', 'index', 'inPurity')], by = "index")
 
@@ -274,18 +271,10 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   }
 
   # filter out peaks below precursor ion purity thres
-  if (av_level=="intra"){
-    plim = pa@av_intra_params$plim
-  } else if (av_level=="inter"){
-    plim = pa@av_inter_params$plim
-  } else if (av_level=="all"){
-    plim = pa@av_all_params$plim
-  } else {
+  if (!(av_level %in% c("intra", "inter", "all"))){
     stop("Incorrect av_level for averaging fragmentation spectra; use intra, inter or all")
   }
 
-
-  spectra_to_average <- spectra_to_average[spectra_to_average$inPurity>plim, ]
 
   ##############################################################################
   # Performing averaging
