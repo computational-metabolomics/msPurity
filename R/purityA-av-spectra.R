@@ -384,20 +384,24 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sumi,
   spectra$cl <- clustering(mz, clustType = 'hc', cores = cores, ppm = ppm)
 
   averages <- plyr::ddply(spectra, ~ cl,
-                          averageCluster, av=av_type, minnum=minnum,
+                          averageCluster, av=av_type, minnum=1,
                           missingV="ignore", totalScans=length(unique(spectra[,indx])), normTIC=FALSE,
                           sumI=sumi)
 
-
+ 
+          
+          
   averages$frac <- averages$count/averages$total
 
   averages$snr_pass_flag <- averages$snr > snthr
-
-  averages$minfrac_pass_flag <- averages$frac > minfrac
+          
+  averages$minnum_pass_flag <- averages$count >= minnum
+  
+  averages$minfrac_pass_flag <- averages$frac >= minfrac
 
   averages$ra_pass_flag <- averages$ra > rathr
 
-  averages$pass_flag <- (averages$minfrac_pass_flag & averages$snr_pass_flag & averages$ra_pass_flag)
+  averages$pass_flag <- (averages$minfrac_pass_flag & averages$snr_pass_flag & averages$ra_pass_flag, averages$minnum_pass_flag)
 
   return(averages)
 }
