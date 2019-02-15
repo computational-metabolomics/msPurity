@@ -102,7 +102,7 @@ test_that("checking spectral matching functions with averaging", {
                                                    "Oxypurinol", "4-Coumaric acid", "alpha-Methyl-DL-histidine",
                                                    "Tyrosine", "Aspartame", "Doxazosin"))
   expect_equal(round(as.numeric(result$xcms_summary_df$best_median_score), 3),
-               c(1.000,0.929,0.988,0.949,0.797,0.615,0.922,0.774,0.718,0.975))
+               c(1.000,0.929,0.988,0.949,0.797,0.615,0.922,0.774,0.718,0.955))
 
 
 })

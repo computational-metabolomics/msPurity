@@ -22,7 +22,7 @@ test_that("checking averaging functionality", {
   expect_equal(nrow(paAll@av_spectra$`12`$av_intra$`1`), 4)
   expect_equal(round(paAll@av_spectra$`12`$av_intra$`1`$mz, 3), c(107.270, 116.017, 116.071, 116.107))
   expect_equal(round(paAll@av_spectra$`12`$av_intra$`1`$i, 3), c(1726.613, 7324.864, 2114202.398,   13797.101))
-  expect_equal(ncol(paAll@av_spectra$`12`$av_inter), 14)
+  expect_equal(ncol(paAll@av_spectra$`12`$av_inter), 15)
   expect_equal(nrow(paAll@av_spectra$`12`$av_inter), 3)
 
   expect_equal(round(paAll@av_spectra$`12`$av_inter$mz, 3), c(116.017, 116.071, 116.107))
