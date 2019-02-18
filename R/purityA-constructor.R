@@ -57,11 +57,29 @@ purityA <- function(fileList,
     message("no file list")
     return(NULL)
   }
+  #Keep only files containing MS/MS
+  correctedFileList <- NULL
+  for(x in 1:length(fileList)){
+    process <- MSnbase::readMSData(file=fileList[x],mode="onDisk")
+    if(length(unique(msLevel(process))) > 1) {
+      correctedFileList <- c(correctedFileList,fileList[x])
+    }else if(unique(msLevel(process)) == 2){
+      correctedFileList <- c(correctedFileList,fileList[x])
+    }else{
+      cat("Only MS1 data in",names(fileList[x]),"\n")
+    }
+  }
+  if(is.null(correctedFileList)){
+    error_message <- "No file with MS/MS datas"
+    print(error_message)
+    return(NULL)
+  }
+
   #Add a name for each file (name = filename and unname = galaxy name if galaxy)
-  if(!(names(fileList) > 1) & !(names(fileList) != "")){ names(fileList) <- basename(fileList) }
+  if(!(names(correctedFileList) > 1) & !(names(correctedFileList) != "")){ names(correctedFileList) <- basename(correctedFileList) }
 
   requireNamespace('foreach')
-  pa <- new("purityA", fileList = fileList, cores = cores, mzRback=mzRback)
+  pa <- new("purityA", fileList = correctedFileList, cores = cores, mzRback=mzRback)
 
   # Check cores and choose if parallel or not (do or dopar)
   if(pa@cores<=1){
@@ -80,6 +98,7 @@ purityA <- function(fileList,
                                   .packages = 'mzR'),
                                   assessPuritySingle(filepth = filesRun[i],
                                   nameFile = nameFiles[i],
+                                  fileid = i,
                                   mostIntense = mostIntense,
                                   nearest=nearest,
                                   offsets = offsets,
@@ -123,6 +142,7 @@ purityA <- function(fileList,
 #' will be outputed into a dataframe
 #'
 #' @param filepth character; mzML file path for MS/MS spectra
+#' @param nameFile character; mzML name of file
 #' @param fileid numeric; adds a fileid column (primarily for internal use for msPurity)
 #' @param mostIntense boolean; True if the most intense peak is used for calculation. False if the centered peak is used
 #' @param nearest boolean; True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used
@@ -589,7 +609,6 @@ getmrdf <- function(files, nameFile, backend='pwiz') {
     }
   }
 
-  #mrdfn$fileid <- rep(i,nrow(mrdfn))
   mrdfn$filename <- rep(basename(nameFile),nrow(mrdfn))
   mrdfn$precursorRT <- NA
   # precursorScanNum matches to the acquisitionNum, get row matching row number and relevant retntion time
