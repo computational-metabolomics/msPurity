@@ -31,7 +31,6 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
   ########################################################
   # Export the target data into sqlite database
   ########################################################
-  print("dans create_database")
 
   if (is.na(db_name)){
     db_name <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
@@ -46,9 +45,9 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
 
     grp_peaklist <- data.frame(cbind('grpid'=1:nrow(grp_peaklist), grp_peaklist))
   }
-print(head(grp_peaklist))
+
   message("Creating a database of fragmentation spectra and LC features")
-  target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, xsa, out_dir, db_name,grped_df, fileMS1, fileMS1)
+  target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, xsa, out_dir, db_name,grped_df, fileMS1, fileMS2)
 
   return(target_db_pth)
 
@@ -56,7 +55,6 @@ print(head(grp_peaklist))
 
 
 export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name, grped_df, fileMS1, fileMS2){
-print("dans export_2_sqlite")
 
   if(!is.null(xsa)){
     # if user has supplied camera object we use the xset that the camera object
@@ -68,12 +66,10 @@ print("dans export_2_sqlite")
 
   #if ((length(pa@fileList) > length(xset@filepaths)) && (pa@f4f_link_type=='group')){
   if(pa@f4f_link_type=='group'){  
-    print("group")
     # if more files in pa@filelist (can happen if some files were not processed with xcms because no MS1)
     # in this case we need to make sure any reference to a fileid is correct
     uneven_filelists = TRUE
   }else{
-    print("non group")
     uneven_filelists = FALSE
   }
 
@@ -98,6 +94,7 @@ print("dans export_2_sqlite")
   # Add File info
   ###############################################
   nm_save <- names(pa@fileList[fileMS2]) # this is for name tracking in Galaxy
+
   pa@fileList[fileMS2] <- unname(pa@fileList[fileMS2])
   MS1name <- paste(gsub("(^.+)\\..*$","\\1",basename(xset@filepaths[fileMS1])))
   MS2name <- paste(gsub("(^.+)\\..*$","\\1",basename(nm_save)))
@@ -109,7 +106,7 @@ print("dans export_2_sqlite")
                        filepth=fileList,
                        nm_save=nm_save,
                        fileid=seq(1, length(fileList)),
-                       class=xset@phenoData$class
+                       class=as.character(xset@phenoData[which(xset@phenoData[,"sample_name"]==MS2name),"class"])
                        )
 
   custom_dbWriteTable(name_pk = 'fileid', fks=NA, table_name = paste0('fileinfo_',MS1name,"_",MS2name), df=filedf, con=con)
@@ -139,7 +136,7 @@ print("dans export_2_sqlite")
     c_peaks <- c_peaks[,-which(ccn=='i')]
   }
   fks_fileid <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
-  custom_dbWriteTable(name_pk = 'cid', fks=fks_fileid, table_name = paste0('c_peaks',MS1name,"_",MS2name), df=c_peaks, con=con)
+  custom_dbWriteTable(name_pk = 'cid', fks=fks_fileid, table_name = paste0('c_peaks_',MS1name,"_",MS2name), df=c_peaks, con=con)
 
 
   ###############################################
@@ -149,7 +146,7 @@ print("dans export_2_sqlite")
     grp_peaklist <- data.frame(grp_peaklist)
   }
   colnames(grp_peaklist)[which(colnames(grp_peaklist)=='into')] <- '_into'
-  custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = paste0('c_peak_groups',MS1name,"_",MS2name), df=grp_peaklist, con=con)
+  custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = paste0('c_peak_groups_',MS1name,"_",MS2name), df=grp_peaklist, con=con)
 
   ###############################################
   # Add s_peak_meta (i.e. scan information)
@@ -157,7 +154,7 @@ print("dans export_2_sqlite")
   dropc <- c('filename')
   scan_info <- scan_info[,!colnames(scan_info) %in% dropc]
   scan_info <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scan_info)
-  custom_dbWriteTable(name_pk = 'pid', fks=fks_fileid, table_name = paste0('s_peak_meta',MS1name,"_",MS2name), df=scan_info, con=con)
+  custom_dbWriteTable(name_pk = 'pid', fks=fks_fileid, table_name = paste0('s_peak_meta_',MS1name,"_",MS2name), df=scan_info, con=con)
 
   ###############################################
   # Add s_peaks (i.e. the mz, i from each scan)
@@ -174,7 +171,7 @@ print("dans export_2_sqlite")
   fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
 
   custom_dbWriteTable(name_pk = 'sid', fks=append(fks_fileid, fks_pid),
-                      table_name = paste0('s_peaks',MS1name,"_",MS2name), df=scanpeaks_frag, con=con)
+                      table_name = paste0('s_peaks_',MS1name,"_",MS2name), df=scanpeaks_frag, con=con)
 
 
   ###############################################
@@ -187,7 +184,7 @@ print("dans export_2_sqlite")
                       )
 
   custom_dbWriteTable(name_pk = 'cXg_id', fks=fks_for_cxg,
-                      table_name = paste0('c_peak_X_c_peak_group',MS1name,"_",MS2name), df=c_peak_X_c_peak_group, con=con)
+                      table_name = paste0('c_peak_X_c_peak_group_',MS1name,"_",MS2name), df=c_peak_X_c_peak_group, con=con)
 
   if (pa@f4f_link_type=='individual'){
     ###############################################
@@ -201,7 +198,7 @@ print("dans export_2_sqlite")
                         'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
 
     custom_dbWriteTable(name_pk = 'cXp_id', fks=fks_for_cXs,
-                        table_name = paste0('c_peak_X_s_peak_meta',MS1name,"_",MS2name), df=c_peak_X_s_peak_meta, con=con)
+                        table_name = paste0('c_peak_X_s_peak_meta_',MS1name,"_",MS2name), df=c_peak_X_s_peak_meta, con=con)
   }else{
     ###############################################
     # Add MANY-to-MANY links for c_peak_group to s_peak_meta
@@ -212,12 +209,11 @@ print("dans export_2_sqlite")
     fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
                         'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'))
     custom_dbWriteTable(name_pk = 'gXp_id', fks=fks_for_cXs,
-                        table_name = paste0('c_peak_group_X_s_peak_meta',MS1name,"_",MS2name), df=c_peak_group_X_s_peak_meta, con=con)
+                        table_name = paste0('c_peak_group_X_s_peak_meta_',MS1name,"_",MS2name), df=c_peak_group_X_s_peak_meta, con=con)
 
   }
 
   if (length(pa@av_spectra)>0){
-print("taille pa@av_spectra sup 0")
     av_spectra <- plyr::ldply(pa@av_spectra, get_av_spectra_for_db)
 
     # for some reason the names are not being saved for the list as a column, so we just get them back
@@ -231,10 +227,8 @@ print("taille pa@av_spectra sup 0")
                                )
 
     custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
-                        table_name = paste0('av_peaks',MS1name,"_",MS2name), df=av_spectra, con=con)
+                        table_name = paste0('av_peaks_',MS1name,"_",MS2name), df=av_spectra, con=con)
 
-  }else{
-    print("taille pa@av_spectra inf 0")
   }
 
 
@@ -252,7 +246,7 @@ print("taille pa@av_spectra sup 0")
     }
     rules$rule_id <- 1:nrow(rules)
     custom_dbWriteTable(name_pk = 'rule_id', fks=NA,
-                        table_name = paste0('adduct_rules',MS1name,"_",MS2name), df=rules, con=con)
+                        table_name = paste0('adduct_rules_',MS1name,"_",MS2name), df=rules, con=con)
 
     ###############################################
     # Add neutral mass groups
@@ -260,7 +254,7 @@ print("taille pa@av_spectra sup 0")
     annoGrp <- data.frame(xsa@annoGrp)
     colnames(annoGrp)[1] <- 'nm_id'
     custom_dbWriteTable(name_pk = 'nm_id', fks=NA,
-                        table_name = paste0('neutral_masses',MS1name,"_",MS2name), df=annoGrp, con=con)
+                        table_name = paste0('neutral_masses_',MS1name,"_",MS2name), df=annoGrp, con=con)
 
     ###############################################
     # Add adduct annotations
@@ -275,7 +269,7 @@ print("taille pa@av_spectra sup 0")
                       )
 
     custom_dbWriteTable(name_pk = 'add_id', fks=fks_adduct,
-                        table_name = paste0('adduct_annotations',MS1name,"_",MS2name), df=annoID, con=con)
+                        table_name = paste0('adduct_annotations_',MS1name,"_",MS2name), df=annoID, con=con)
 
     ###############################################
     # Add isotope annotations
@@ -294,7 +288,7 @@ print("taille pa@av_spectra sup 0")
                         )
 
     custom_dbWriteTable(name_pk = 'iso_id', fks=fk_isotope,
-                        table_name = paste0('isotope_annotations',MS1name,"_",MS2name), df=isoID, con=con)
+                        table_name = paste0('isotope_annotations_',MS1name,"_",MS2name), df=isoID, con=con)
   }
 
 
@@ -417,8 +411,8 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 
 scan_peaks_4_db <- function(x){
-
   mr <- mzR::openMSfile(as.character(x$filepth))
+
   scanpeaks <- mzR::peaks(mr)
   scans <- mzR::header(mr)
   names(scanpeaks) <- seq(1, length(scanpeaks))
@@ -441,11 +435,11 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTE
   query <- get_create_query(pk=name_pk, fks=fks, table_name=table_name, df=df, pk_type=pk_type)
 
   sqr <- DBI::dbSendQuery(con, query)
-
   DBI::dbClearResult(sqr)
-
+  if(DBI::dbExistsTable(con,table_name)){
+    DBI::dbRemoveTable(con,table_name)
+  }
   DBI::dbWriteTable(con, name=table_name, value=df, row.names=FALSE, append=TRUE)
-
 }
 
 
