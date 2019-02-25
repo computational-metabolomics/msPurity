@@ -37,7 +37,7 @@ setMethod(f="createMSP", signature="purityA",
                             xcms_groupids, method, adduct_split)
 
           }
-#)
+)
 
 
 mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
