@@ -38,7 +38,6 @@ setMethod(f="createMSP", signature="purityA",
                                 xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE,
                                 msp_schema='massbank', intensity_ra='intensity_ra'){
 
-cat("Building your MSP file...\n")
             mspurity_to_msp(pa, msp_file_pth, metadata, metadata_cols,
                             xcms_groupids, method, adduct_split, filter, msp_schema,
                             intensity_ra)
@@ -59,6 +58,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   }
 
 print(paste("Methode :",method))
+
   if (is.null(msp_file_pth)){
     msp_file_pth <- paste('frag_spectra', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.msp', sep="")
   }
@@ -91,7 +91,7 @@ print(paste("Methode :",method))
         for(j in 1:length(group_id)){
 
           grpdj <- grpd[j,]
-          print(grpdj)
+
           if ('sample' %in% colnames(grpd)){
             fileid = grpdj$sample
           }else{
