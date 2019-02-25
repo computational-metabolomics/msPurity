@@ -55,7 +55,7 @@ purityA <- function(fileList,
                     isotopes=TRUE,
                     im=NULL){
 
-  if((is.null(fileList)) && (all(fileList == "" ))){
+  if((is.null(fileList)) || (all(fileList == "" ))){
     message("no file list")
     return(NULL)
   }
