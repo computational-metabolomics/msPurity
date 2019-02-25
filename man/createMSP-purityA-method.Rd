@@ -8,7 +8,8 @@
 \usage{
 \S4method{createMSP}{purityA}(pa, msp_file_pth = NULL, metadata = NULL,
   metadata_cols = c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-  xcms_groupids = NULL, method = "all", adduct_split = TRUE)
+  xcms_groupids = NULL, method = "all", adduct_split = TRUE,
+  filter = FALSE)
 }
 \arguments{
 \item{pa}{object;  purityA object}
@@ -27,6 +28,8 @@
 
 \item{adduct_split}{boolean; If either "adduct" or  MS$FOCUSED_ION: PRECURSOR_TYPE column is in metadata then each adduct will have it's own MSP spectra.
 (Useful, if the MSP file will be used for further annotation)}
+
+\item{filter}{boolean; TRUE if filtered peaks are to be removed}
 }
 \description{
 Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
