@@ -31,17 +31,17 @@
 #' @export
 setMethod(f="createMSP", signature="purityA",
           definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-                                xcms_groupids=NULL, method="all", adduct_split=TRUE){
+                                xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=FALSE){
 
             mspurity_to_msp(pa, msp_file_pth, metadata, metadata_cols,
-                            xcms_groupids, method, adduct_split)
+                            xcms_groupids, method, adduct_split, filter)
 
           }
 )
 
 
 mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-                             xcms_groupids=NULL, method="all", adduct_split){
+                             xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=FALSE){
 
   if (is.null(msp_file_pth)){
     msp_file_pth <- paste('frag_spectra', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.msp', sep="")
@@ -79,6 +79,10 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
           }
 
           spectrum <- spec[[j]]
+          if (filter){
+             spectrum <- spectrum[spectrum[,'pass_flag']==1,]
+          }
+          
           spectrum <- add_mzi_cols(spectrum)
 
 
@@ -101,7 +105,10 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         }
 
         spec_max<- add_mzi_cols(spec[[idx]])
-
+        if (filter){
+             spec_max <- spec_max[spec_max[,'pass_flag']==1,]
+        }
+                
         write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, spec_max, metadata, metadata_cols, of, method, adduct_split)
 
       }else if (method=="av_inter"){
@@ -115,6 +122,11 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
       }else if (method=="av_intra"){
         av_intra <- pa@av_spectra[[as.character(grpid)]]$av_intra
+        if (filter){
+           av_intra  <- av_intra[av_intra[,'pass_flag']==1,]
+        }
+                
+                
         if (!is.null(av_intra) && length(av_intra)==0){
           next
         }
@@ -132,6 +144,10 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
       }else if (method=="av_all"){
 
         av_all <- pa@av_spectra[[as.character(grpid)]]$av_all
+                
+        if (filter){
+           av_all  <- av_all[av_all[,'pass_flag']==1,]
+        }
 
         if (!is.null(av_all) && nrow(av_all)>0){
           write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of, method, adduct_split)
