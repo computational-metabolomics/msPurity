@@ -29,12 +29,10 @@
 #' pa <- averageAllFragSpectra(pa)
 #' createMSP(pa)
 #' @export
-#setMethod(f="createMSP", signature="purityA",
- #         definition = 
-          createMSP <- function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
+setMethod(f="createMSP", signature="purityA",
+          definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
                                 xcms_groupids=NULL, method="all", adduct_split=TRUE){
 
-cat("Building your MSP file...\n")
             mspurity_to_msp(pa, msp_file_pth, metadata, metadata_cols,
                             xcms_groupids, method, adduct_split)
 
@@ -44,7 +42,7 @@ cat("Building your MSP file...\n")
 
 mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
                              xcms_groupids=NULL, method="all", adduct_split){
-print(paste("Methode :",method))
+
   if (is.null(msp_file_pth)){
     msp_file_pth <- paste('frag_spectra', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.msp', sep="")
   }
@@ -77,7 +75,7 @@ print(paste("Methode :",method))
         for(j in 1:length(group_id)){
 
           grpdj <- grpd[j,]
-          print(grpdj)
+
           if ('sample' %in% colnames(grpd)){
             fileid = grpdj$sample
           }else{
