@@ -442,6 +442,8 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTE
   sqr <- DBI::dbSendQuery(con, query)
   DBI::dbClearResult(sqr)
 
+  head(df)
+
   DBI::dbWriteTable(con, name=table_name, value=df, row.names=FALSE, append=TRUE)
 
 
