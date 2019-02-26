@@ -15,18 +15,15 @@
 #'
 #' @param pa object; purityA object
 #' @param cores numeric; Number of cores for multiprocessing
-#' @param plim numeric; min purity of precursor for fragmentation spectra scan to be included
 #' @param ppm numeric; ppm threshold to average within each file
 #' @param minnum numeric; minimum number of times peak is present across fragmentation spectra within each file
 #' @param minfrac numeric; minimum ratio of the peak fraction (peak count / total peaks) within each file
 #' @param ra numeric; minimum relative abundance of the peak within each file
 #' @param snr numeric; minimum signal-to-noise of the peak within each file
-#' @param snr_pre numeric;  minimum signal-to-noise prior to averaging
-#' @param ra_pre numeric;  minimum relative abundance prior to averaging
 #'
 #' @param av character; type of averaging to use (median or mean)
-#' @param sum_i boolean; TRUE if the intensity for each peak is summed across averaged spectra
-#' @param remove_peaks boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
+#' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
 #'
 #' @examples
 #'
@@ -43,7 +40,7 @@
 #' @export
 setMethod(f="averageIntraFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                                snr_pre=0, ra_pre=0, av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1
+                               av='median', sumi=TRUE, rmp=FALSE, cores=1
                                 ){
 
             pa@av_intra_params$minfrac = minfrac
@@ -53,14 +50,11 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
             pa@av_intra_params$ra = ra
 
             pa@av_intra_params$av_type = av
-            pa@av_intra_params$sum_i = sum_i
-            pa@av_intra_params$plim = plim
+            pa@av_intra_params$sumi = sumi
 
-            pa@av_intra_params$ra_pre = ra_pre
-            pa@av_intra_params$snr_pre = snr_pre
 
             pa@av_intra_params$cores = cores
-            pa@av_intra_params$remove_peaks = remove_peaks
+            pa@av_intra_params$rmp = rmp
 
             return(average_xcms_grouped_msms(pa, "intra"))
 
@@ -85,7 +79,6 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #'
 #' @param pa object; purityA object
 #' @param cores numeric; Number of cores for multiprocessing
-#' @param plim numeric; min purity of precursor for fragmentation spectra scan to be included
 #' @param ppm numeric; ppm threshold to average across files
 #' @param minnum numeric; minimum number of times peak is present across fragmentation spectra across files
 #' @param minfrac numeric; minimum ratio of the peak fraction (peak count / total peaks) across files
@@ -93,8 +86,8 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #' @param snr numeric; minimum signal-to-noise of the peak across files
 #'
 #' @param av character; type of averaging to use (median or mean)
-#' @param sum_i boolean; TRUE if the intensity for each peak is summed across averaged spectra
-#' @param remove_peaks boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
+#' @param rmp boolean; RUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
 #'
 #' @examples
 #'
@@ -112,7 +105,7 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #' @export
 setMethod(f="averageInterFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                                av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1
+                                av='median', sumi=TRUE,  rmp=FALSE, cores=1
           ){
 
             pa@av_inter_params$minfrac = minfrac
@@ -122,11 +115,11 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
             pa@av_inter_params$ra = ra
 
             pa@av_inter_params$av_type = av
-            pa@av_inter_params$sum_i = sum_i
-            pa@av_inter_params$plim = plim
+            pa@av_inter_params$sumi = sumi
+
 
             pa@av_inter_params$cores = cores
-            pa@av_inter_params$remove_peaks = remove_peaks
+            pa@av_inter_params$rmp = rmp
 
             if (is.null(pa@av_spectra[[names(pa@grped_ms2)[1]]][["av_intra"]])){
               stop("Apply averageIntraFragSpectra first")
@@ -155,18 +148,14 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'
 #' @param pa object; purityA object
 #' @param cores numeric; Number of cores for multiprocessing
-#' @param plim numeric; min purity of precursor for fragmentation spectra scan to be included
 #' @param ppm numeric; ppm threshold to average across all scans (ignoring intra and inter relationships)
 #' @param minnum numeric; minimum number of times peak is present across all fragmentation spectra (ignoring intra and inter relationships)
 #' @param minfrac numeric;minimum ratio of the peak fraction (peak count / total peaks) across all (ignoring intra and inter relationships)
 #' @param ra numeric; minimum relative abundance of the peak fraction across all (ignoring intra and inter relationships)
 #' @param snr numeric;  minimum signal-to-noise of the peak across all (ignoring intra and inter relationships)
-#' @param snr_pre numeric;  minimum signal-to-noise prior to averaging
-#' @param ra_pre numeric;  minimum relative abundance prior to averaging
-#'
 #' @param av character; type of averaging to use (median or mean)
-#' @param sum_i boolean; TRUE if the intensity for each peak is summed across averaged spectra
-#' @param remove_peaks boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
+#' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
 #'
 #' @examples
 #'
@@ -178,12 +167,13 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'
 #' pa  <- purityA(msmsPths, interpol = "linear")
 #' pa <- frag4feature(pa, xset)
+#' pa <- filterFragSpectra(pa)
 #' pa <- averageAllFragSpectra(pa)
 #'
 #' @export
 setMethod(f="averageAllFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                                snr_pre=0, ra_pre=0, av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1
+                                 av='median', sumi=TRUE, rmp=FALSE, cores=1
           ){
 
             pa@av_all_params$minfrac = minfrac
@@ -193,14 +183,9 @@ setMethod(f="averageAllFragSpectra", signature="purityA",
             pa@av_all_params$ra = ra
 
             pa@av_all_params$av_type = av
-            pa@av_all_params$sum_i = sum_i
-            pa@av_all_params$plim = plim
-
-            pa@av_all_params$ra_pre = ra_pre
-            pa@av_all_params$snr_pre = snr_pre
-
+            pa@av_all_params$sumi = sumi
             pa@av_all_params$cores = cores
-            pa@av_all_params$remove_peaks = remove_peaks
+            pa@av_all_params$rmp = rmp
 
             return(average_xcms_grouped_msms(pa, "all"))
 
@@ -247,8 +232,13 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   grped_spectra <- plyr::llply(grped_spectra, data.frame)
   df <- data.frame(do.call("rbind", grped_spectra))
 
-  colnames(df) <- c('mz', 'i')
+  colnames(df)[1:2] <- c('mz', 'i')
   df$index <-   rep(seq_along(grped_spectra), sapply(grped_spectra, nrow))
+
+  if (!length(pa@filter_frag_params)==0){
+    # if prior filtering performed only use those that have passed
+    df<-df[df$pass_flag==1,]
+  }
 
   spectra_to_average <- merge(df, grped_info[, c('grpid', 'sample', 'cid', 'index', 'inPurity')], by = "index")
 
@@ -274,18 +264,10 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   }
 
   # filter out peaks below precursor ion purity thres
-  if (av_level=="intra"){
-    plim = pa@av_intra_params$plim
-  } else if (av_level=="inter"){
-    plim = pa@av_inter_params$plim
-  } else if (av_level=="all"){
-    plim = pa@av_all_params$plim
-  } else {
+  if (!(av_level %in% c("intra", "inter", "all"))){
     stop("Incorrect av_level for averaging fragmentation spectra; use intra, inter or all")
   }
 
-
-  spectra_to_average <- spectra_to_average[spectra_to_average$inPurity>plim, ]
 
   ##############################################################################
   # Performing averaging
@@ -300,7 +282,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                             cores=1,
                                             ppm=pa@av_intra_params$ppm,
                                             minnum=pa@av_intra_params$minnum,
-                                            sum_i=pa@av_intra_params$sum_i,
+                                            sumi=pa@av_intra_params$sumi,
                                             minfrac=pa@av_intra_params$minfrac,
                                             snthr=pa@av_intra_params$snr,
                                             rathr=pa@av_intra_params$ra,
@@ -308,7 +290,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                             snrthr_pre= pa@av_intra_params$snr_pre,
                                             av_type=pa@av_intra_params$av_type)
 
-    if (pa@av_intra_params$remove_peaks){
+    if (pa@av_intra_params$rmp){
       av_intra  <- plyr::llply(av_intra , function(x){x[x$pass_flag,]})
     }
 
@@ -322,14 +304,14 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                  cores=1,
                                  ppm=pa@av_inter_params$ppm,
                                  minnum=pa@av_inter_params$minnum,
-                                 sum_i=pa@av_inter_params$sum_i,
+                                 sumi=pa@av_inter_params$sumi,
                                  minfrac=pa@av_inter_params$minfrac,
                                  snthr=pa@av_inter_params$snr,
                                  rathr=pa@av_inter_params$ra,
                                  av_type=pa@av_inter_params$av_type
                                )
 
-    if (pa@av_inter_params$remove_peaks){
+    if (pa@av_inter_params$rmp){
       av_inter <- av_inter[av_inter$pass_flag,]
     }
 
@@ -341,14 +323,14 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                 cores=1,
                                 ppm=pa@av_all_params$ppm,
                                 minnum=pa@av_all_params$minnum,
-                                sum_i=pa@av_all_params$sum_i,
+                                sumi=pa@av_all_params$sumi,
                                 minfrac=pa@av_all_params$minfrac,
                                 snthr=pa@av_all_params$snr,
                                 rathr=pa@av_all_params$ra,
                                 rathr_pre= pa@av_all_params$ra_pre,
                                 snrthr_pre= pa@av_all_params$snr_pre,
                                 av_type=pa@av_all_params$av_type)
-    if (pa@av_all_params$remove_peaks){
+    if (pa@av_all_params$rmp){
       av_all <- av_all[av_all$pass_flag,]
     }
   } else {
@@ -362,7 +344,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
 
 
 
-average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
+average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sumi,
                             minfrac, snthr, snmeth='median', rathr, rathr_pre=NULL, snrthr_pre=NULL, av_type='median'){
   if (nrow(spectra)==0){
     return(NULL)
@@ -372,7 +354,11 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
   if (indx=='index'){
     # calculate metrics per scan (if using inter, the index will be sample and the snr and ra will
     # have already have been calculated
-    spectra <- ddply(spectra, indx, get_snr_ra)
+    # these will have already been calculated if filterFragSpectra has already been applied
+    if ((!'snr' %in% colnames(spectra)) & (!'ra' %in% colnames(spectra))){
+      spectra <- ddply(spectra, indx, set_snr_ra)
+    }
+
   }
 
 
@@ -398,26 +384,31 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
   spectra$cl <- clustering(mz, clustType = 'hc', cores = cores, ppm = ppm)
 
   averages <- plyr::ddply(spectra, ~ cl,
-                          averageCluster, av=av_type, minnum=minnum,
+                          averageCluster, av=av_type, minnum=1,
                           missingV="ignore", totalScans=length(unique(spectra[,indx])), normTIC=FALSE,
-                          sumI=sum_i)
+                          sumI=sumi)
+
+
 
 
   averages$frac <- averages$count/averages$total
 
   averages$snr_pass_flag <- averages$snr > snthr
 
-  averages$minfrac_pass_flag <- averages$frac > minfrac
+  averages$minnum_pass_flag <- averages$count >= minnum
+
+  averages$minfrac_pass_flag <- averages$frac >= minfrac
 
   averages$ra_pass_flag <- averages$ra > rathr
 
-  averages$pass_flag <- (averages$minfrac_pass_flag & averages$snr_pass_flag & averages$ra_pass_flag)
+  averages$pass_flag <- (averages$minfrac_pass_flag & averages$snr_pass_flag & averages$ra_pass_flag & averages$minnum_pass_flag)
 
   return(averages)
 }
 
 
-get_snr_ra <- function(x, snmeth='median'){
+set_snr_ra <- function(x, snmeth='median'){
+
   if (snmeth=="median"){
     x$snr <- x$i/median(x$i)
   }else if(snmeth=="mean"){

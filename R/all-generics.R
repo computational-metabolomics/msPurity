@@ -58,29 +58,36 @@ setGeneric(name="frag4feature",
 
 setGeneric(name="averageIntraFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        snr_pre=0, ra_pre=0, av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1) {
+                        av='median', sumi=TRUE, rmp=FALSE, cores=1) {
              standardGeneric("averageIntraFragSpectra")
            }
 )
 
 setGeneric(name="averageInterFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1) {
+                        av='median', sumi=TRUE, rmp=FALSE, cores=1) {
              standardGeneric("averageInterFragSpectra")
            }
 )
 
 setGeneric(name="averageAllFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        snr_pre=0, ra_pre=0, av='median', sum_i=TRUE,  plim=0.5, remove_peaks=FALSE, cores=1) {
+                        av='median', sumi=TRUE,  rmp=FALSE, cores=1) {
              standardGeneric("averageAllFragSpectra")
+           }
+)
+
+
+setGeneric(name="filterFragSpectra",
+           def=function(pa, ilim=0, plim=0.8, ra=0, snr=3, cores=1, rmp=FALSE, snmeth='median') {
+             standardGeneric("filterFragSpectra")
            }
 )
 
 
 setGeneric(name="createMSP",
            def=function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-                        xcms_groupids=NULL, method="all", adduct_split=TRUE) {
+                        xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=FALSE) {
              standardGeneric("createMSP")
            }
 )
