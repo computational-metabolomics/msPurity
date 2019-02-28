@@ -42,7 +42,7 @@ We first need to run XCMS so that we can later link the spectral matching result
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 library(msPurity)
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+xset <- xcms::xcmsSet(msmsPths)
 xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
@@ -60,7 +60,7 @@ pa <- frag4feature(pa, xset, create_db=TRUE)
 
 The spectral matching is then run on all fragmentation scans collected in all files using the `spectral_matching` function. The function updates the query database with the spectral matching annotations.
 
-As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the annotations for the XCMS grouped peaks is provided in the output. The scan_ids parameter can be omitted if all scans are to be used for spectral matching (recommended)
+As we have all the connections between fragmentation scans and XCMS features we can now see which XCMS feature has been annotated. A summary of the annotations for the XCMS grouped peaks is provided in the output. The scan_ids parameter can be omitted if all scans are to be used for spectral matching (recommended).
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 result <- spectral_matching(pa@db_path,  scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))

@@ -91,6 +91,6 @@ xset <- xcms::group(xset)
 pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset)
 pa <- averageAllFragSpectra(pa)
-db_path <- create_database(pa, xset)
-result <- spectral_matching(db_path, spectra_type_q="av_all")
+db_pth <- create_database(pa, xset)
+result <- spectral_matching(db_pth, spectra_type_q="av_all")
 }

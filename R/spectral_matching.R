@@ -50,8 +50,8 @@
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
 #' pa <- averageAllFragSpectra(pa)
-#' db_path <- create_database(pa, xset)
-#' result <- spectral_matching(db_path, spectra_type_q="av_all")
+#' db_pth <- create_database(pa, xset)
+#' result <- spectral_matching(db_pth, spectra_type_q="av_all")
 #' @export
 spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,
@@ -371,15 +371,16 @@ match_2_library <- function(query_db_pth, library_db_pth, instrument_types=NA, m
 
     colnames(library_meta_f)[which(colnames(library_meta_f)=='id')] = 'lid'
 
-    # get all compound details as well
-    compound_details <- DBI::dbGetQuery(conL, sprintf('SELECT  DISTINCT c.* FROM library_spectra_meta AS m
+    if(DBI::dbExistsTable(conL, 'metab_compound')){
+      # get all compound details as well
+      compound_details <- DBI::dbGetQuery(conL, sprintf('SELECT  DISTINCT c.* FROM library_spectra_meta AS m
                                                LEFT JOIN metab_compound AS
                                                c on c.inchikey_id=m.inchikey_id
                                                WHERE m.id IN (%s)', paste(unique(allmatches$lid), collapse=",")) )
-    compound_details <- data.frame(lapply(compound_details, as.character), stringsAsFactors=FALSE)
-    custom_dbWriteTable(name_pk = 'inchikey_id', fks = NA,
-                        df=compound_details, table_name = 'metab_compound', con = conQ, pk_type='TEXT')
-
+      compound_details <- data.frame(lapply(compound_details, as.character), stringsAsFactors=FALSE)
+      custom_dbWriteTable(name_pk = 'inchikey_id', fks = NA,
+                          df=compound_details, table_name = 'metab_compound', con = conQ, pk_type='TEXT')
+    }
 
 
     fk_l = list('inchikey_id'=list('new_name'='inchikey_id', 'ref_name'='inchikey_id', 'ref_table'='library_spectra_meta'))
