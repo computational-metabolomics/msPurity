@@ -13,16 +13,13 @@
 #'
 #' @examples
 #' metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
-#' sirius_csi_resultPth <- system.file("extdata", "external_annotations", "sirus_csifingerid.tsv", package="msPurity")
-#' probmetab_resultPth <- system.file("extdata", "external_annotations", "probmetab.tsv", package="msPurity")
-#' sm_resultPth <- system.file("extdata", "sm_result.sqlite", package="msPurity")
 #'
 #' # run the standard spectral matching workflow to get the sm_resultPth
 #' td <- tempdir()
 #' sm_resultPthCopy <- file.path(td, 'sm_result_tmp.sqlite')
 #' file.copy(sm_resultPth, sm_resultPthCopy)
 #'
-#' combined <- combineAnnotations(sm_resultPthCopy, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
+#' combined <- combineAnnotations(sm_resultPthCopy, metfrag_resultPth)
 #' @return purityA object with slots for fragmentation-XCMS links
 #' @export
 combineAnnotations <- function(sqlitePth,
@@ -114,8 +111,8 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   # get sirius data
   grpid <- unique(c_peak_group$grpid)
-
-  sirius <- DBI::dbGetQuery(con, 'SELECT
+  if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
+    sirius <- DBI::dbGetQuery(con, 'SELECT
                             s.rowid AS sirius_id,
                             s.bounded_score AS sirius_score,
                             mc.inchikey
@@ -123,14 +120,20 @@ combineScoresGrp <- function(c_peak_group, weights, con){
                             LEFT JOIN
                             sirius_csifingerid_results AS s
                             ON s.InChIkey2D = mc.inchikey1 WHERE s.grpid= :grpid', params=list('grpid'=grpid))
-  # can have multiple hits for each inchikey (e.g. multiple scans)
-  sirius <- plyr::ddply(sirius, ~inchikey, getBestScore, 'sirius_score')
+    # can have multiple hits for each inchikey (e.g. multiple scans)
+    sirius <- plyr::ddply(sirius, ~inchikey, getBestScore, 'sirius_score')
 
 
-  sirius$sirius_wscore <- as.numeric(sirius$sirius_score)*weights$sirius_csifingerid
+    sirius$sirius_wscore <- as.numeric(sirius$sirius_score)*weights$sirius_csifingerid
 
-  # get metfrag
-  metfrag <- DBI::dbGetQuery(con, 'SELECT
+  }else{
+    sirius <- data.frame(inchikey=NA, sirius_score=NA, sirius_wscore=NA)
+  }
+
+
+  if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
+    # get metfrag
+    metfrag <- DBI::dbGetQuery(con, 'SELECT
                              m.rowid as metfrag_id,
                              m.Score AS metfrag_score,
                              mc.inchikey
@@ -138,10 +141,16 @@ combineScoresGrp <- function(c_peak_group, weights, con){
                              LEFT JOIN
                              metfrag_results AS m
                              ON m.InChIKey = mc.inchikey WHERE m.grpid=:grpid', params=list('grpid'=grpid))
-  # can have multiple hits for each inchikey (e.g. multiple scans)
-  metfrag <- plyr::ddply(metfrag, ~inchikey, getBestScore, 'metfrag_score')
+    # can have multiple hits for each inchikey (e.g. multiple scans)
+    metfrag <- plyr::ddply(metfrag, ~inchikey, getBestScore, 'metfrag_score')
 
-  metfrag$metfrag_wscore <- as.numeric(metfrag$metfrag_score)*weights$metfrag
+    metfrag$metfrag_wscore <- as.numeric(metfrag$metfrag_score)*weights$metfrag
+
+  }else{
+    metfrag <- data.frame(inchikey=NA, metfrag_score=NA, metfrag_wscore=NA)
+
+  }
+
 
   # get spectral matching
   sm <- DBI::dbGetQuery(con, 'SELECT sm.lid AS sm_lid,
@@ -162,7 +171,8 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
 
   # get probmetab
-  probmetab <- DBI::dbGetQuery(con, paste('SELECT p.rowid as probmetab_id,
+  if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
+    probmetab <- DBI::dbGetQuery(con, paste('SELECT p.rowid as probmetab_id,
                                           p.proba AS probmetab_score,
                                           mc.inchikey
                                           FROM metab_compound AS mc
@@ -171,18 +181,25 @@ combineScoresGrp <- function(c_peak_group, weights, con){
                                           LEFT JOIN
                                           probmetab_results AS p ON p.mpc = k.kegg_id
                                           WHERE p.grpid= ', grpid, sep=' '))
-  # can have multiple hits for each inchikey (e.g. multiple scans)
-  probmetab <- plyr::ddply(probmetab, ~inchikey, getBestScore, 'probmetab_score')
+    # can have multiple hits for each inchikey (e.g. multiple scans)
+    probmetab <- plyr::ddply(probmetab, ~inchikey, getBestScore, 'probmetab_score')
+    probmetab$probmetab_wscore <- as.numeric(probmetab$probmetab_score)*weights$probmetab
+  }else{
+    probmetab <- data.frame(inchikey=NA, probmetab_score=NA, probmetab_wscore=NA)
+  }
 
-  probmetab$probmetab_wscore <- as.numeric(probmetab$probmetab_score)*weights$probmetab
+
+
 
   score_list <- list(sirius, metfrag, sm, probmetab)
 
-  # combine al
+  # combine all
   combined_df <- Reduce(function(d1, d2, d3, d4) merge(d1, d2, by = "inchikey", all = TRUE), score_list)
 
+  combined_df <- combined_df[!is.na(combined_df$inchikey),]
   combined_df[is.na(combined_df)] <- 0
   combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'metfrag_wscore', 'sm_wscore', 'probmetab_wscore')])
+
 
   # add rank
   combined_df <- combined_df[order(combined_df$wscore, decreasing=TRUE),]
@@ -291,7 +308,7 @@ addKeggToMetabCompound <- function(metab_compounds, con, silentRestErrors){
 
 addMetFragResults <- function(metfrag_resultPth, con){
   # Add metfrag details
-  if (!is.na(metfrag_resultPth) & file.exists(metfrag_resultPth)){
+  if (!is.na(metfrag_resultPth) && file.exists(metfrag_resultPth)){
     DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=T)
     #  any new inchikeys
     DBI::dbExecute(con,
@@ -307,7 +324,7 @@ addMetFragResults <- function(metfrag_resultPth, con){
 
 addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors){
   # Add sirius details
-  if (!is.na(sirius_csi_resultPth) & file.exists(sirius_csi_resultPth)){
+  if (!is.na(sirius_csi_resultPth) && file.exists(sirius_csi_resultPth)){
     DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
 
     # Fetch in chunks
@@ -380,7 +397,7 @@ negMinMax <- function(x){
 
 }
 addProbmetabResults <- function(probmetab_resultPth, con, silentRestErrors){
-  if (!is.na(probmetab_resultPth) & file.exists(probmetab_resultPth)){
+  if (!is.na(probmetab_resultPth) && file.exists(probmetab_resultPth)){
     addProbmetab(probmetab_resultPth, con)
 
     # Fetch in chunks
