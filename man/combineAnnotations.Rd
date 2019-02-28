@@ -5,7 +5,7 @@
 \title{Combine Annotations}
 \usage{
 combineAnnotations(sqlitePth, metfrag_resultPth = NA,
-  sirius_csi_resultPth = NA, probmetab_resultPth = NA, xset,
+  sirius_csi_resultPth = NA, probmetab_resultPth = NA,
   weights = list(sm = 0.4, metfrag = 0.2, sirius_csifingerid = 0.2,
   probmetab = 0.1), silentRestErrors = FALSE)
 }
@@ -17,8 +17,6 @@ combineAnnotations(sqlitePth, metfrag_resultPth = NA,
 \item{sirius_csi_resultPth}{character;}
 
 \item{probmetab_resultPth}{character;}
-
-\item{xset}{xcmsSet object;}
 
 \item{weights}{list;}
 
@@ -39,8 +37,7 @@ probmetab_resultPth <- system.file("extdata", "external_annotations", "probmetab
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 xset <- xcms::xcmsSet(msmsPths)
 xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+
 pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xset)
 pa <- averageAllFragSpectra(pa)
