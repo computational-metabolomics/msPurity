@@ -8,7 +8,6 @@
 #' @param metfrag_resultPth character;
 #' @param sirius_csi_resultPth character;
 #' @param probmetab_resultPth character;
-#' @param xset xcmsSet object;
 #' @param weights list;
 #' @param silentRestErrors boolean;
 #'
@@ -34,7 +33,6 @@ combineAnnotations <- function(sqlitePth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
                                probmetab_resultPth=NA,
-                               xset,
                                weights=list('sm'=0.4,'metfrag'=0.2,'sirius_csifingerid'= 0.2,
                                             'probmetab'=0.1
                                ),
@@ -387,7 +385,7 @@ negMinMax <- function(x){
 }
 addProbmetabResults <- function(probmetab_resultPth, con, silentRestErrors){
   if (!is.na(probmetab_resultPth) & file.exists(probmetab_resultPth)){
-    addProbmetab(probmetab_resultPth, xset,  con)
+    addProbmetab(probmetab_resultPth, con)
 
     # Fetch in chunks
     kegg_cids <- DBI::dbGetQuery(con, "SELECT DISTINCT mpc FROM probmetab_results")
@@ -546,11 +544,17 @@ getKeggFromInchi <- function(inchikey, silentRestErrors){
   }
 }
 
-addProbmetab <- function(pth, xset, con){
+addProbmetab <- function(pth, con){
   if (!is.null(pth)){
 
     df <- read.table(pth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "")
-    df$grpid <- match(df$name, xcms::groupnames(xset))
+
+    nmap <- DBI::dbGetQuery(con, 'SELECT grpid, grp_name FROM c_peak_groups')
+
+
+    df$grpid <- nmap$grpid[match(df$name, nmap$grp_name)]
+
+
     start <- T
     for (i in 1:nrow(df)){
 

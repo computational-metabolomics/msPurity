@@ -142,6 +142,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     grp_peaklist <- data.frame(grp_peaklist)
   }
   colnames(grp_peaklist)[which(colnames(grp_peaklist)=='into')] <- '_into'
+  grp_peaklist$grp_name <- xcms::groupnames(xset)
   custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grp_peaklist, con=con)
 
   ###############################################
