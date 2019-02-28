@@ -24,27 +24,23 @@ test_that("checking lcms based functions", {
 
 
   combined <- combineAnnotations(sm_resultPthCopy, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
-  #combined$sirius_score <- round(as.numeric(combined$sirius_score), 2)
-  #combined <- data.frame(lapply(combined , as.character), stringsAsFactors=FALSE)
+
   #write.table(combined ,'inst/extdata/external_annotations/combined.tsv', sep='\t', row.names = FALSE, col.names = TRUE )
 
 
   combinedOLD <- read.table(system.file("extdata", "external_annotations", "combined.tsv", package="msPurity"),
                             header = TRUE, stringsAsFactors = FALSE)
-  combinedOLD <- data.frame(lapply(combinedOLD , as.character), stringsAsFactors=FALSE)
-  combined <- data.frame(lapply(combined , as.character), stringsAsFactors=FALSE)
-  combinedOLD <- data.frame(lapply(combinedOLD , as.character), stringsAsFactors=FALSE)
-  expect_equal(combined$grpid, combinedOLD$grpid)
-  expect_equal(combined$sirius_id, combinedOLD$sirius_id)
-  expect_equal(combined$sirius_score, combinedOLD$sirius_score)
-  expect_equal(combined$sirius_wscore, combinedOLD$sirius_wscore)
-  expect_equal(combined$metfrag_id, combinedOLD$metfrag_id)
-  expect_equal(combined$metfrag_score, combinedOLD$metfrag_score)
-  expect_equal(combined$metfrag_wscore, combinedOLD$metfrag_wscore)
-  expect_equal(combined$sm_score, combinedOLD$sm_score)
-  expect_equal(combined$metfrag_wscore, combinedOLD$metfrag_wscore)
-  expect_equal(combined$wscore, combinedOLD$wscore)
-  expect_equal(combined$probmetab_wscore, combinedOLD$probmetab_wscore)
+  expect_equal(as.numeric(combined$grpid), as.numeric(combinedOLD$grpid))
+  expect_equal(as.numeric(combined$sirius_id), as.numeric(combinedOLD$sirius_id))
+  expect_equal(as.numeric(combined$sirius_score), as.numeric(combinedOLD$sirius_score))
+  expect_equal(as.numeric(combined$sirius_wscore), as.numeric(combinedOLD$sirius_wscore))
+  expect_equal(as.numeric(combined$metfrag_id), as.numeric(combinedOLD$metfrag_id))
+  expect_equal(as.numeric(combined$metfrag_score), as.numeric(combinedOLD$metfrag_score))
+  expect_equal(as.numeric(combined$metfrag_wscore), as.numeric(combinedOLD$metfrag_wscore))
+  expect_equal(as.numeric(combined$sm_score), as.numeric(combinedOLD$sm_score))
+  expect_equal(as.numeric(combined$metfrag_wscore), as.numeric(combinedOLD$metfrag_wscore))
+  expect_equal(as.numeric(combined$wscore), as.numeric(combinedOLD$wscore))
+  expect_equal(as.numeric(combined$probmetab_wscore), as.numeric(combinedOLD$probmetab_wscore))
 
 })
 
