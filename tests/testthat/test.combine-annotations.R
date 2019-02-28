@@ -17,7 +17,7 @@ test_that("checking lcms based functions", {
   td <- tempdir()
   db_path <- create_database(pa, xset = xset, out_dir = td)
   result <- spectral_matching(db_path, spectra_type_q="av_all")
-  combined <- combineAnnotations(db_path, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
+  combined <- combineAnnotations(db_path, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth, xset=xset)
   #combined$sirius_score <- round(as.numeric(combined$sirius_score), 2)
   #combined <- data.frame(lapply(combined , as.character), stringsAsFactors=FALSE)
   #write.table(combined ,'inst/extdata/external_annotations/combined.tsv', sep='\t', row.names = FALSE, col.names = TRUE )
