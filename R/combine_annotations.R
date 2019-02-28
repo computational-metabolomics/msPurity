@@ -13,7 +13,7 @@
 #'
 #' @examples
 #' metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
-#'
+#' sm_resultPth <- system.file("extdata", "sm_result.sqlite", package="msPurity")
 #' # run the standard spectral matching workflow to get the sm_resultPth
 #' td <- tempdir()
 #' sm_resultPthCopy <- file.path(td, 'sm_result_tmp.sqlite')
