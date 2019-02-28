@@ -5,7 +5,7 @@ grpid 8
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Sulfamethizole 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 2
 PK$PEAK: m/z int. rel.int.
 112.050880432129	565117.25	100
@@ -18,7 +18,7 @@ grpid 8
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Sulfamethizole 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 112.050888061523	440629.6875	100
@@ -30,7 +30,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
 107.270111083984	1726.61291503906	1.71
@@ -45,7 +45,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
 107.270111083984	1726.61291503906	1.71
@@ -60,7 +60,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 116.070892333984	1847702.625	100
@@ -72,7 +72,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 116.070892333984	1847702.625	100
@@ -84,7 +84,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
 116.016609191895	4434.369140625	2.68
@@ -98,7 +98,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
 116.016609191895	4434.369140625	2.68
@@ -112,7 +112,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
 116.016784667969	3725.93701171875	3.82
@@ -126,7 +126,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
 116.016784667969	3725.93701171875	3.82
@@ -140,7 +140,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
 103.129020690918	4419.71240234375	0.25
@@ -155,7 +155,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
 103.129020690918	4419.71240234375	0.25
@@ -170,7 +170,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
 116.016830444336	14364.7841796875	9.61
@@ -184,7 +184,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
 116.016830444336	14364.7841796875	9.61

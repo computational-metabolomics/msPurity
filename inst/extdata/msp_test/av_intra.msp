@@ -1,4 +1,18 @@
-CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:1
+CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:cl
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:mz
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:i
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:snr
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:rsd
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:count
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:total
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:inPurity
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:ra
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:frac
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:snr_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:minnum_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:minfrac_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:ra_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:pass_flag
 MS$FOCUSED_ION: PRECURSOR_M/Z 112.05085569128
 AC$CHROMATOGRAPHY: RETENTION_TIME 67.634034
 grpid 8 
@@ -11,7 +25,21 @@ PK$PEAK: m/z int. rel.int.
 112.050880432129	565117.25	100
 126.53768157959	2499.31469726562	0.44
 
-CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:2
+CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:cl
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:mz
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:i
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:snr
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:rsd
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:count
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:total
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:inPurity
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:ra
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:frac
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:snr_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:minnum_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:minfrac_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:ra_pass_flag
+ CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0509 | RT:67.6 | XCMS_group:8 | file:pass_flag
 MS$FOCUSED_ION: PRECURSOR_M/Z 112.05085569128
 AC$CHROMATOGRAPHY: RETENTION_TIME 67.634034
 grpid 8 
@@ -23,7 +51,21 @@ PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 112.050888061523	440629.6875	100
 
-CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:1
+CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:cl
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:mz
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:i
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:rsd
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:count
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:total
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:inPurity
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:frac
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minnum_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minfrac_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:pass_flag
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 grpid 12 
@@ -38,7 +80,21 @@ PK$PEAK: m/z int. rel.int.
 116.070892333984	2114202.3984375	100
 116.107261657715	13797.1013183594	0.65
 
-CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:1
+CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:cl
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:mz
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:i
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:rsd
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:count
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:total
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:inPurity
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:frac
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minnum_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minfrac_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:pass_flag
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 grpid 12 
@@ -53,7 +109,21 @@ PK$PEAK: m/z int. rel.int.
 116.070892333984	2114202.3984375	100
 116.107261657715	13797.1013183594	0.65
 
-CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:2
+CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:cl
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:mz
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:i
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:rsd
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:count
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:total
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:inPurity
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:frac
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minnum_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minfrac_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra_pass_flag
+ CH$NAME: Unknown | [M+H]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:pass_flag
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 grpid 12 
@@ -69,7 +139,21 @@ PK$PEAK: m/z int. rel.int.
 116.10725402832	12305.2299804688	0.61
 130.027648925781	4081.13793945312	0.2
 
-CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:2
+CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:cl
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:mz
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:i
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:rsd
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:count
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:total
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:inPurity
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:frac
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:snr_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minnum_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:minfrac_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:ra_pass_flag
+ CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0706 | RT:47.8 | XCMS_group:12 | file:pass_flag
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 grpid 12 

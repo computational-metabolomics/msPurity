@@ -5,7 +5,7 @@ grpid 8
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Sulfamethizole 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'max' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'max' msPurity version:1.9.8 
 PK$NUM_PEAK: 2
 PK$PEAK: m/z int. rel.int.
 112.050880432129	565117.25	100
@@ -18,7 +18,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'max' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'max' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 116.070892333984	1847702.625	100
@@ -30,7 +30,7 @@ grpid 12
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
 CH$NAME Unknown 
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'max' msPurity version:1.9.2 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'max' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 116.070892333984	1847702.625	100
