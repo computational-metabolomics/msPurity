@@ -15,7 +15,7 @@
 #' metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
 #' sirius_csi_resultPth <- system.file("extdata", "external_annotations", "sirus_csifingerid.tsv", package="msPurity")
 #' probmetab_resultPth <- system.file("extdata", "external_annotations", "probmetab.tsv", package="msPurity")
-#' sm_resultPth <- system.file("extdata", "sm_results.sqlite", package="msPurity")
+#' sm_resultPth <- system.file("extdata", "sm_result.sqlite", package="msPurity")
 #'
 #' # run the standard spectral matching workflow to get the sm_resultPth
 #' td <- tempdir()

@@ -9,7 +9,7 @@
 \S4method{createMSP}{purityA}(pa, msp_file_pth = NULL, metadata = NULL,
   metadata_cols = c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
   xcms_groupids = NULL, method = "all", adduct_split = TRUE,
-  filter = FALSE)
+  filter = TRUE)
 }
 \arguments{
 \item{pa}{object;  purityA object}
