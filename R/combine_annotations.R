@@ -22,7 +22,7 @@
 #'
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#' pa <- averageAllFragSpectra(pa)
+#' pa <- averageAllFragSpectra(pa, minfrac = 1)
 #' dbpth <- create_database(pa, xset)
 #' result <- spectral_matching(dbpth, spectra_type_q="av_all")
 #' combineAnnotations(dbpth, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)

@@ -26,7 +26,19 @@ test_that("checking lcms based functions", {
   combinedOLD <- read.table(system.file("extdata", "external_annotations", "combined.tsv", package="msPurity"),
                             header = TRUE, stringsAsFactors = FALSE)
   combinedOLD <- data.frame(lapply(combinedOLD , as.character), stringsAsFactors=FALSE)
-  expect_equal(combined, combinedOLD)
+  combined <- data.frame(lapply(combined , as.character), stringsAsFactors=FALSE)
+  combinedOLD <- data.frame(lapply(combinedOLD , as.character), stringsAsFactors=FALSE)
+  expect_equal(combined$grpid, combinedOLD$grpid)
+  expect_equal(combined$sirius_id, combinedOLD$sirius_id)
+  expect_equal(combined$sirius_score, combinedOLD$sirius_score)
+  expect_equal(combined$sirius_wscore, combinedOLD$sirius_wscore)
+  expect_equal(combined$metfrag_id, combinedOLD$metfrag_id)
+  expect_equal(combined$metfrag_score, combinedOLD$metfrag_score)
+  expect_equal(combined$metfrag_wscore, combinedOLD$metfrag_wscore)
+  expect_equal(combined$sm_score, combinedOLD$sm_score)
+  expect_equal(combined$metfrag_wscore, combinedOLD$metfrag_wscore)
+  expect_equal(combined$wscore, combinedOLD$wscore)
+  expect_equal(combined$probmetab_wscore, combinedOLD$probmetab_wscore)
 
 })
 
