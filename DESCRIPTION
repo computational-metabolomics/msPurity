@@ -27,7 +27,10 @@ Imports:
     fastcluster,
     ggplot2,
     DBI,
-    RSQLite
+    RSQLite,
+    uuid,
+    jsonlite,
+    KEGGREST
 Suggests:
     testthat,
     xcms,

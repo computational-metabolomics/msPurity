@@ -89,7 +89,7 @@ test_that("checking spectral matching functions with averaging", {
   pa <- frag4feature(pa, xset)
   pa  <- averageAllFragSpectra(pa)
   td <- tempdir()
-  db_path <- create_database(pa, xset = xset, out_dir = ".")
+  db_path <- create_database(pa, xset = xset, out_dir = td)
 
   result <- spectral_matching(db_path, spectra_type_q = 'av_all', match_alg = 'dpc')
 

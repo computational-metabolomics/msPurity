@@ -4,6 +4,14 @@
 #'  Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID and probmetab
 #'  based on weighted scores for each technique aligning each annotation by inchikey and XCMS grouped feature.
 #'
+#' @param sqlitePth character;
+#' @param metfrag_resultPth character;
+#' @param sirius_csi_resultPth character;
+#' @param probmetab_resultPth character;
+#' @param xset xcmsSet object;
+#' @param weights list;
+#' @param silentRestErrors boolean;
+#'
 #' @examples
 #' metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
 #' sirius_csi_resultPth <- system.file("extdata", "external_annotations", "sirus_csifingerid.tsv", package="msPurity")
@@ -20,24 +28,21 @@
 #' dbpth <- create_database(pa, xset)
 #' result <- spectral_matching(dbpth, spectra_type_q="av_all")
 #' combineAnnotations(dbpth, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
+#' @return purityA object with slots for fragmentation-XCMS links
 #' @export
 combineAnnotations <- function(sqlitePth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
                                probmetab_resultPth=NA,
-                               lipidsearch_resultPth=NA,
-                               mzcloud_resultPth=NA,
                                xset,
-                               weights=list('sm'=0.2,'metfrag'=0.1,'sirius_csifingerid'= 0.1,
-                                            'probmetab'=0.1, 'biosim'=0.1
+                               weights=list('sm'=0.4,'metfrag'=0.2,'sirius_csifingerid'= 0.2,
+                                            'probmetab'=0.1
                                ),
                                silentRestErrors=FALSE
                                ){
 
-
   # sm, metfrag, sirius, probmetab, lipidsearch, mzcloud, bs
   con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
-
 
   #############################################
   # Add all the annotation results
@@ -85,10 +90,10 @@ combineAnnotations <- function(sqlitePth,
   # Takes too long
   #aw_pesticide <- webchem::aw_query(metab_compounds_m$name , type='commonname')
 
-  message('Create biological similarity')
+  #message('Create biological similarity')
   # Calculate compound "biological" similarity score TODO
-  metab_compounds_m$biological_similarity <- 0
-  metab_compounds_m$biological_similarity_top_match <- NA
+  #metab_compounds_m$biological_similarity <- 0
+  #metab_compounds_m$biological_similarity_top_match <- NA
 
   # addd New database with all the new information
   inchisplit <- data.frame(stringr::str_split_fixed(metab_compounds_m$inchikey, '-', 3))

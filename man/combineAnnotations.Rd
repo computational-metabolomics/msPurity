@@ -5,10 +5,27 @@
 \title{Combine Annotations}
 \usage{
 combineAnnotations(sqlitePth, metfrag_resultPth = NA,
-  sirius_csi_resultPth = NA, probmetab_resultPth = NA,
-  lipidsearch_resultPth = NA, mzcloud_resultPth = NA, xset,
-  weights = list(sm = 0.2, metfrag = 0.1, sirius_csifingerid = 0.1,
-  probmetab = 0.1, biosim = 0.1), silentRestErrors = FALSE)
+  sirius_csi_resultPth = NA, probmetab_resultPth = NA, xset,
+  weights = list(sm = 0.4, metfrag = 0.2, sirius_csifingerid = 0.2,
+  probmetab = 0.1), silentRestErrors = FALSE)
+}
+\arguments{
+\item{sqlitePth}{character;}
+
+\item{metfrag_resultPth}{character;}
+
+\item{sirius_csi_resultPth}{character;}
+
+\item{probmetab_resultPth}{character;}
+
+\item{xset}{xcmsSet object;}
+
+\item{weights}{list;}
+
+\item{silentRestErrors}{boolean;}
+}
+\value{
+purityA object with slots for fragmentation-XCMS links
 }
 \description{
 Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID and probmetab
