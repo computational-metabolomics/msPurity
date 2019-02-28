@@ -143,9 +143,9 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
         for (j in 1:length(av_intra)){
-          av_intra_j <- av_intra[j][[1]]
-          fileid <- names(av_intra_j)
-
+          av_intra_j_l <- av_intra[j]
+          fileid <- names(av_intra_j_l)
+          av_intra_j <- av_intra_j_l[[1]]
           if (filter){
             av_intra_j  <- av_intra_j[av_intra_j[,'pass_flag']==1,]
           }
