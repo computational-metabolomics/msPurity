@@ -71,8 +71,8 @@ print(paste("Methode :",method))
   if (is.null(xcms_groupids)){
     xcms_groupids <- as.numeric(names(pa@grped_ms2))
   }
-
   for(grpid in xcms_groupids){
+
 
     group_id <- which(grped_df$grpid==grpid)
 
@@ -88,10 +88,10 @@ print(paste("Methode :",method))
       grpd <- grped_df[group_id,]
 
       if (method=="all"){
+
         for(j in 1:length(group_id)){
 
           grpdj <- grpd[j,]
-
           if ('sample' %in% colnames(grpd)){
             fileid = grpdj$sample
           }else{
@@ -156,7 +156,6 @@ print(paste("Methode :",method))
 
 
       }else if (method=="av_intra"){
-
         av_intra <- pa@av_spectra[[as.character(grpid)]]$av_intra
 
 
@@ -241,13 +240,11 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
       }
 
     }else{
-
       # adduct set to split but adduct column not available
       write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
     }
 
   }else{
-
     # Ignore adduct splitting
     write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
   }
