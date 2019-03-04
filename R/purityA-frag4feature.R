@@ -36,14 +36,13 @@
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
+          definition = function(pa, xdata, CSVfile, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA){
 
   #Verify if there is an assess-purity input
   if(is.null(pa)){
     message("no pa files")
     return(NULL)
-
   }
   #Verify that there is a xset group input
   if(is.null(xdata)){
@@ -203,11 +202,6 @@ setMethod(f="frag4feature", signature="purityA",
       }    
     }
 
-    # Filter out any precursor below purity threshold
-    if (!is.na(plim) && plim>0){
-      grpm <- grpm[grpm$inPurity>plim,]
-    }
-
     #Output if no peaks matched
     if(nrow(grpedp) == 0) {
       message("/!\\ No peaks matched /!\\")
@@ -234,14 +228,16 @@ setMethod(f="frag4feature", signature="purityA",
       grped_ms2 <- c(grped_ms2,getMS2scans(grpm, pathfileMS2, mzRback = pa@mzRback))
     }
 
-    if (create_db) {
-      pa@db_path <- create_database(pa = pa, xset = xset, out_dir = out_dir, db_name = db_name, grp_peaklist = grp_peaklist, grped_df = grpall, fileMS1 = numberofMS1file, fileMS2 = numberofMS2file)
+    if (create_db){
+      pa@db_path <- create_database(pa = pa, xset = xset, out_dir = out_dir, 
+                                    db_name = db_name, grp_peaklist = grp_peaklist, grped_df = grpall, 
+                                    fileMS1 = numberofMS1file, fileMS2 = numberofMS2file)
     }
   }
 
   #Save data in pa object
   if(is.null(grpall)){
-    error_message <- "/!\\ Nothing found for grped_df /!\\"
+    error_message <- "/!\\ No peaks found in your datas /!\\"
     print(error_message)
     stop(error_message)
   } else {
@@ -257,10 +253,15 @@ setMethod(f="frag4feature", signature="purityA",
 
   cat("===================================================================================================\n")
   return(pa)
+
+
+
+
 })
 
-fsub1  <- function(prod, allpeaks, intense, ppm) {
-  # go through all the MS/MS files from the each file
+
+fsub1  <- function(prod, allpeaks, intense, ppm){
+  # go through all the MS/MS files from each file
   allpeakfile <- allpeaks[allpeaks$filename==unique(prod$filename),]
 
   grpdFile <- plyr::ddply(prod, ~ seqNum,
@@ -270,39 +271,40 @@ fsub1  <- function(prod, allpeaks, intense, ppm) {
                           ppm = ppm)
 }
 
-fsub2  <- function(pro, allpeaks, intense, ppm, fullp = FALSE, use_grped=FALSE) {
-
-  # check for each MS/MS scan if there is an associated feature found in that region for that file
-  if(intense) {
+fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
+  # check for each MS/MS scan if there is an associated feature
+  #found in that region for that file
+  if(intense){
     mz1 <- pro$iMz
-  } else {
-    if (is.na(pro$aMz)) {
+  }else{
+    if (is.na(pro$aMz)){
       mz1 <- pro$precursorMZ
-    } else {
+    }else{
       mz1 <- pro$aMz
     }
+
   }
 
-  if(is.na(mz1) | is.null(mz1)) {
+
+  if(is.na(mz1) | is.null(mz1)){
     return(NULL)
   }
 
   prt <- pro$precursorRT
-
-  if(is.na(prt)) {
+  if (is.na(prt)){
     prt <- pro$retentionTime
   }
 
-  if(fullp) {
-    mtchRT <- allpeaks[prt >= allpeaks$rtmin_full & prt <= allpeaks$rtmax_full, ]
-  } else {
-    mtchRT <- allpeaks[prt >= allpeaks$rtmin & prt <= allpeaks$rtmax, ]
+  if (fullp){
+    mtchRT <- allpeaks[prt>=allpeaks$rtmin_full & prt<=allpeaks$rtmax_full, ]
+  }else{
+    mtchRT <- allpeaks[prt>=allpeaks$rtmin & prt<=allpeaks$rtmax, ]
   }
 
-  if(nrow(mtchRT)==0) {
+
+  if(nrow(mtchRT)==0){
     return(NULL)
   }
-
   if (use_grped){
     # can only use fullp when using the grouped peaklist
     mtchMZ <- plyr::ddply(mtchRT, ~ grpid, mzmatching, mz1=mz1, ppm=ppm, pro=pro)
@@ -311,15 +313,16 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp = FALSE, use_grped=FALSE) 
   }
 
   return(mtchMZ)
+
 }
 
 
 
-check_ppm <- function(mz1, mz2) { return(abs(1e6*(mz1-mz2)/mz2)) }
+check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
 
-getMS2scans  <- function(grpm, filepths, mzRback) {
-
+getMS2scans  <- function(grpm, filepths, mzRback){
   # Get all MS2 scans
+
   scans <- getscans(filepths, mzRback)
 
   if(length(filepths)==1){
@@ -335,12 +338,12 @@ getMS2scans  <- function(grpm, filepths, mzRback) {
 
 
 mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
-
   if ('mzmed' %in% colnames(mtchRow)){
     mz2 <- mtchRow$mzmed
   }else{
     mz2 <- mtchRow$mz
   }
+
 
   ppmerror <- check_ppm(mz1, mz2)
 
@@ -355,6 +358,7 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
     mtchRow$precurMtchPPM <- ppmerror
     mtchRow$retentionTime <- pro$retentionTime
     mtchRow$fileid <- pro$fileid
+
     mtchRow$seqNum <- pro$seqNum
     return(mtchRow)
   }else{
@@ -370,7 +374,6 @@ getScanLoop <- function(peaks, scans){
   }else{
     idx_nm = 'fileid'
   }
-
   for(i in 1:nrow(peaks)){
     x <- peaks[i,]
     grpl[[i]] <- scans[[1]][[x$precurMtchID]]
@@ -393,7 +396,9 @@ convert2Raw <- function(x, xset){
   x$rtmin <- xset@rt$raw[[sid]][match(x$rtmin, xset@rt$corrected[[sid]])]
   x$rtmax <- xset@rt$raw[[sid]][match(x$rtmax, xset@rt$corrected[[sid]])]
   return(x)
+
 }
+
 
 # This function retrieve a xset like object
 #@author Gildas Le Corguille lecorguille@sb-roscoff.fr

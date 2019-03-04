@@ -435,13 +435,12 @@ remove_spectra <- function(xset, peaklist, rclass, rm_peak_out=FALSE){
 }
 
 get_full_peak_width <- function(peaklist, xsa){
-
   ###########################################
   # Get full peak width
   ###########################################
   # Args:
   #   peaklist: the peak list generated from either XCMS or CAMERA.
-  #              Use the CAMERA peak list for this pipelin
+  #              Use the CAMERA peak list for this piplein
   #   xsa: The CAMERA annotation object
   #
   # Returns:
@@ -463,18 +462,19 @@ get_full_peak_width <- function(peaklist, xsa){
     obj = xsa
   }
 
+
   rt.min = xcms::groupval(obj, method = "medret", value = "rtmin", intensity = "into")
   rt.min = apply(rt.min, 1, min, na.rm = TRUE)
-  
+
   rt.max = xcms::groupval(obj, method = "medret", value = "rtmax", intensity = "into")
   rt.max = apply(rt.max, 1, min, na.rm = TRUE)
-  
+
   mz.min = xcms::groupval(obj, method = "medret", value = "mzmin", intensity = "into")
   mz.min = apply(mz.min, 1, min, na.rm = TRUE)
-  
+
   mz.max = xcms::groupval(obj, method = "medret", value = "mzmax", intensity = "into")
   mz.max = apply(mz.max, 1, min, na.rm = TRUE)
-  
+
   peaklist_full = cbind(peaklist, "mzmin_full" = mz.min, "mzmax_full" = mz.max, "rtmin_full" = rt.min, "rtmax_full" = rt.max)
   return(peaklist_full)
 
@@ -509,3 +509,5 @@ getpeaks <- function(row,peaks) {
   return(c(mzmin = min(fullpeak[,"mzmin"]), mzmax = max(fullpeak[,"mzmax"]),
     rtmin = min(fullpeak[,"rtmin"]), rtmax = max(fullpeak[,"rtmax"])))
 }
+
+

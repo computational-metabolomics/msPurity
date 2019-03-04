@@ -310,7 +310,6 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
 
     if (pa@av_intra_params$remove_peaks){
       av_intra  <- plyr::llply(av_intra , function(x){x[x$pass_flag,]})
-
     }
 
   } else if (av_level=="inter") {
@@ -349,7 +348,6 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
                                 rathr_pre= pa@av_all_params$ra_pre,
                                 snrthr_pre= pa@av_all_params$snr_pre,
                                 av_type=pa@av_all_params$av_type)
-
     if (pa@av_all_params$remove_peaks){
       av_all <- av_all[av_all$pass_flag,]
     }
@@ -366,16 +364,17 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
 
 average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sum_i,
                             minfrac, snthr, snmeth='median', rathr, rathr_pre=NULL, snrthr_pre=NULL, av_type='median'){
-
   if (nrow(spectra)==0){
     return(NULL)
   }
+
 
   if (indx=='index'){
     # calculate metrics per scan (if using inter, the index will be sample and the snr and ra will
     # have already have been calculated
     spectra <- ddply(spectra, indx, get_snr_ra)
   }
+
 
   if (!is.null(rathr_pre)){
     spectra <- spectra[spectra$ra>rathr_pre, ]
@@ -428,3 +427,4 @@ get_snr_ra <- function(x, snmeth='median'){
 
    return(x)
 }
+

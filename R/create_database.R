@@ -31,7 +31,6 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
   ########################################################
   # Export the target data into sqlite database
   ########################################################
-
   if (is.na(db_name)){
     db_name <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
   }
@@ -64,7 +63,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name, grped
   }
 
 
-  #if ((length(pa@fileList) > length(xset@filepaths)) && (pa@f4f_link_type=='group')){
   if(pa@f4f_link_type=='group'){  
     # if more files in pa@filelist (can happen if some files were not processed with xcms because no MS1)
     # in this case we need to make sure any reference to a fileid is correct
@@ -72,17 +70,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name, grped
   }else{
     uneven_filelists = FALSE
   }
-
-  # if they are the same length, we check to make sure they are in the same order (only matters when
-  # the f4f linking was for individual peaks)
-  #if(!all(basename(pa@fileList)==basename(xset@filepaths)) && (pa@f4f_link_type=='individual')){
-  #    if(!all(names(pa@fileList)==basename(xset@filepaths))){
-  #      message('FILELISTS DO NOT MATCH')
-  #      return(NULL)
-  #    }else{
-  #      xset@filepaths <- unname(pa@fileList)
-  #    }
-  #  }
 
 
 
@@ -131,7 +118,6 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name, grped
 
   colnames(c_peaks)[which(ccn=='sample')] <- 'fileid'
   colnames(c_peaks)[which(ccn=='into')] <- '_into'
-
   if ('i' %in% colnames(c_peaks)){
     c_peaks <- c_peaks[,-which(ccn=='i')]
   }
@@ -206,14 +192,18 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name, grped
     grpdf <- grped_df
     c_peak_group_X_s_peak_meta <- unique(grpdf[ ,c('pid', 'grpid')])
     c_peak_group_X_s_peak_meta <- cbind('gXp_id'=1:nrow(c_peak_group_X_s_peak_meta), c_peak_group_X_s_peak_meta)
+
     fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
                         'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'))
+
     custom_dbWriteTable(name_pk = 'gXp_id', fks=fks_for_cXs,
                         table_name = paste0('c_peak_group_X_s_peak_meta_',MS1name,"_",MS2name), df=c_peak_group_X_s_peak_meta, con=con)
+
 
   }
 
   if (length(pa@av_spectra)>0){
+
     av_spectra <- plyr::ldply(pa@av_spectra, get_av_spectra_for_db)
 
     # for some reason the names are not being saved for the list as a column, so we just get them back
@@ -311,7 +301,6 @@ get_av_spectra_for_db <- function(x){
 
   }else{
     av_intra_df <- NULL
-
   }
 
   if ((is.null(x$av_inter)) || (nrow(x$av_inter)==0)){
@@ -411,8 +400,8 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 
 scan_peaks_4_db <- function(x){
-  mr <- mzR::openMSfile(as.character(x$filepth))
 
+  mr <- mzR::openMSfile(as.character(x$filepth))
   scanpeaks <- mzR::peaks(mr)
   scans <- mzR::header(mr)
   names(scanpeaks) <- seq(1, length(scanpeaks))
@@ -436,10 +425,13 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTE
 
   sqr <- DBI::dbSendQuery(con, query)
   DBI::dbClearResult(sqr)
+
   if(DBI::dbExistsTable(con,table_name)){
     DBI::dbRemoveTable(con,table_name)
   }
   DBI::dbWriteTable(con, name=table_name, value=df, row.names=FALSE, append=TRUE)
+
+
 }
 
 
