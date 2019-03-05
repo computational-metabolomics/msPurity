@@ -26,7 +26,9 @@ combineAnnotations <- function(sqlitePth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
                                probmetab_resultPth=NA,
-                               weights=list('sm'=0.4,'metfrag'=0.2,'sirius_csifingerid'= 0.2,
+                               weights=list('sm'=0.4,
+                                            'metfrag'=0.25,
+                                            'sirius_csifingerid'= 0.25,
                                             'probmetab'=0.1
                                ),
                                silentRestErrors=FALSE
@@ -101,16 +103,71 @@ combineAnnotations <- function(sqlitePth,
 
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
 
-  return(combined_scores)
-
+  return(getAnnotationSummary(con))
 
 
 }
+
+getAnnotationSummary <- function(con){
+  sql_stmt <- '
+  SELECT
+    cpg.grp_name,
+    cpg.mz,
+    cpg.rt,
+    GROUP_CONCAT(DISTINCT(cast(spm.acquisitionNum  as INTEGER) )) AS fragmentation_acquistion_num,
+    ROUND(AVG(spm.inPurity),3) AS mean_precursor_ion_purity,
+    mc.name,
+    mc.exact_mass,
+    mc.molecular_formula,
+    GROUP_CONCAT(DISTINCT(pc.cid)) AS pubchem_cids,
+    GROUP_CONCAT(DISTINCT(k.kegg_id)) AS kegg_ids,
+    mc.drug AS kegg_drug,
+    mc.brite1 AS kegg_brite1,
+    mc.brite2 AS kegg_brite2,
+    l.lid,
+    l.accession,
+    ca.*
+    FROM combined_annotations AS ca
+      LEFT JOIN
+        metab_compound AS mc ON ca.inchikey = mc.inchikey
+      LEFT JOIN
+        pubchem AS pc ON pc.inchikey = mc.inchikey
+      LEFT JOIN
+        kegg AS k ON k.inchikey = mc.inchikey
+      LEFT JOIN
+        library_spectra_meta AS l ON l.lid = ca.sm_lid
+      LEFT JOIN
+        c_peak_groups AS cpg ON cpg.grpid = ca.grpid
+      LEFT JOIN
+        c_peak_X_c_peak_group AS cpXcpg ON cpXcpg.grpid = cpg.grpid
+      LEFT JOIN
+        c_peaks AS cp ON cp.cid = cpXcpg.cid
+      LEFT JOIN
+        c_peak_X_s_peak_meta AS cpXspm ON cpXspm.cid = cp.cid
+      LEFT JOIN
+        s_peak_meta AS spm ON spm.pid = cpXspm.pid
+      GROUP BY ca.grpid, ca.inchikey
+      ORDER BY ca.grpid, ca.rank
+  '
+
+
+
+  annotations <- DBI::dbGetQuery(conn=con, sql_stmt)
+
+  cols <- colnames(annotations)
+  cols_order <- c("grpid", "inchikey", cols[!cols %in% c("grpid", "inchikey")])
+
+  return(annotations[,cols_order])
+
+
+}
+
 
 combineScoresGrp <- function(c_peak_group, weights, con){
 
   # get sirius data
   grpid <- unique(c_peak_group$grpid)
+
   if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
     sirius <- DBI::dbGetQuery(con, 'SELECT
                             s.rowid AS sirius_id,
@@ -131,7 +188,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   }
 
 
-  if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
+  if(DBI::dbExistsTable(con, 'metfrag_results')){
     # get metfrag
     metfrag <- DBI::dbGetQuery(con, 'SELECT
                              m.rowid as metfrag_id,
@@ -198,13 +255,17 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   combined_df <- combined_df[!is.na(combined_df$inchikey),]
   combined_df[is.na(combined_df)] <- 0
-  combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'metfrag_wscore', 'sm_wscore', 'probmetab_wscore')])
+  combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'sm_wscore', 'probmetab_wscore')])
 
 
   # add rank
   combined_df <- combined_df[order(combined_df$wscore, decreasing=TRUE),]
 
-  combined_df$rank[order(combined_df$wscore, decreasing = FALSE)]
+  if (nrow(combined_df)==0){
+    return(NULL)
+  }else{
+    combined_df$rank <- 1:nrow(combined_df)
+  }
 
   return(combined_df)
 }
@@ -371,9 +432,11 @@ addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors){
     # caculate minmax normalised value (save)
     # Add new column
     DBI::dbExecute(con, "ALTER TABLE sirius_csifingerid_results ADD COLUMN bounded_score text")
+    bounded_score$bounded_score <- as.numeric(bounded_score$bounded_score)
+    bounded_score <- bounded_score[,c('rowid', 'bounded_score')]
 
     DBI::dbExecute(con, "UPDATE sirius_csifingerid_results SET bounded_score = :bounded_score  WHERE rowid = :rowid",
-                   params=bounded_score[,c('rowid', 'bounded_score')])
+                   params=bounded_score)
 
   }
 }
