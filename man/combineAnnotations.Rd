@@ -6,7 +6,7 @@
 \usage{
 combineAnnotations(sqlitePth, metfrag_resultPth = NA,
   sirius_csi_resultPth = NA, probmetab_resultPth = NA,
-  weights = list(sm = 0.4, metfrag = 0.2, sirius_csifingerid = 0.2,
+  weights = list(sm = 0.4, metfrag = 0.25, sirius_csifingerid = 0.25,
   probmetab = 0.1), silentRestErrors = FALSE)
 }
 \arguments{
