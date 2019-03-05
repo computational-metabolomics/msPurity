@@ -111,8 +111,6 @@ combineAnnotations <- function(sqlitePth,
 getAnnotationSummary <- function(con){
   sql_stmt <- '
   SELECT
-    ca.grpid,
-    mc.inchikey,
     cpg.grp_name,
     cpg.mz,
     cpg.rt,
@@ -128,16 +126,7 @@ getAnnotationSummary <- function(con){
     mc.brite2 AS kegg_brite2,
     l.lid,
     l.accession,
-    ca.metfrag_id,
-    ca.sm_mid,
-    ca.probmetab_id,
-    ca.sirius_id,
-    ca.metfrag_wscore,
-    ca.sm_wscore,
-    ca.probmetab_wscore,
-    ca.sirius_wscore,
-    ca.wscore,
-    ca.rank
+    ca.*
     FROM combined_annotations AS ca
       LEFT JOIN
         metab_compound AS mc ON ca.inchikey = mc.inchikey
@@ -162,7 +151,15 @@ getAnnotationSummary <- function(con){
   '
 
 
-  return(DBI::dbGetQuery(conn=con, sql_stmt))
+
+  annotations <- DBI::dbGetQuery(conn=con, sql_stmt)
+
+  cols <- colnames(annotations)
+  cols_order <- c("grpid", "inchikey", cols[!cols %in% c("grpid", "inchikey")])
+
+  return(annotations[,cols_order])
+
+
 }
 
 
@@ -191,7 +188,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   }
 
 
-  if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
+  if(DBI::dbExistsTable(con, 'metfrag_results')){
     # get metfrag
     metfrag <- DBI::dbGetQuery(con, 'SELECT
                              m.rowid as metfrag_id,
