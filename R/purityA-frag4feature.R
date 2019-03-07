@@ -142,6 +142,8 @@ setMethod(f="frag4feature", signature="purityA",
     para = FALSE
 
     if(use_group) {
+      #Have to cut the name and the extension
+      fileMS1 <- strsplit(fileMS1,"\\.")[[1]][1]
       #Select groups which contain peaks in the same class as file class
       for(x in 1:nrow(xset@phenoData)) {
         if(basename(rownames(xset@phenoData)[x]) == fileMS1) {
