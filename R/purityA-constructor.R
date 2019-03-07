@@ -59,12 +59,15 @@ purityA <- function(fileList,
   }
   #Keep only files containing MS/MS
   correctedFileList <- NULL
+  namesCorrectedFileList <- NULL
   for(x in 1:length(fileList)){
     process <- MSnbase::readMSData(file=fileList[x],mode="onDisk")
     if(length(unique(msLevel(process))) > 1) {
       correctedFileList <- c(correctedFileList,fileList[x])
+      namesCorrectedFileList <- c(namesCorrectedFileList,basename(fileList[x]))
     }else if(unique(msLevel(process)) == 2){
       correctedFileList <- c(correctedFileList,fileList[x])
+      namesCorrectedFileList <- c(namesCorrectedFileList,basename(fileList[x]))
     }else{
       cat("Only MS1 data in",names(fileList[x]),"\n")
     }
@@ -74,9 +77,16 @@ purityA <- function(fileList,
     print(error_message)
     return(NULL)
   }
+  if(is.null(namesCorrectedFileList)){
+    error_message <- "No names for files"
+    print(error_message)
+    return(NULL)
+  }
 
-  #Add a name for each file (name = filename and unname = galaxy name if galaxy)
-  if(!(names(correctedFileList) > 1) & !(names(correctedFileList) != "")){ names(correctedFileList) <- basename(correctedFileList) }
+  #Add a name for each file if it doesn't already have it (name = filename and unname = galaxy name if galaxy or filepath if R from computer)
+  if(is.null(names(correctedFileList))){
+    names(correctedFileList) <- namesCorrectedFileList
+  }
 
   requireNamespace('foreach')
   pa <- new("purityA", fileList = correctedFileList, cores = cores, mzRback=mzRback)

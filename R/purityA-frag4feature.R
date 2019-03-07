@@ -49,6 +49,12 @@ setMethod(f="frag4feature", signature="purityA",
     message("no xdata files")
     return(NULL)
   }
+  #Pass xdata into xset object
+  if(class(xdata) == "XCMSnExp"){
+    xset <- getxcmsSetObject(xdata)
+  }else{
+    xset <- xdata
+  }
   #Verify that there is a CSV file input to match files each one with each other
   if(is.null(CSVfile)){
     message("no CSV file")
@@ -60,7 +66,7 @@ setMethod(f="frag4feature", signature="purityA",
   }
 
   cat("\n===================================================================================================\n")
-  cat("Processing",length(fileNames(xdata)),"xdata file(s) and",length(pa@fileList),"pa file(s)...\n")
+  cat("Processing",length(filepaths(xset)),"xset file(s) and",length(pa@fileList),"pa file(s)...\n")
 
   #Run process one couple of files by one couple
   grped_ms2 <- NULL
@@ -84,8 +90,8 @@ setMethod(f="frag4feature", signature="purityA",
 
     #Matching the good MS file
     numberofMS1file <- 0
-    for(l in 1:nrow(xdata@phenoData@data)){
-      if(rownames(xdata@phenoData@data[l,]) == paste0("./",fileMS1)){
+    for(l in 1:length(xset@filepaths)){
+      if(basename(xset@filepaths[l]) == fileMS1){
         numberofMS1file <- l
       }
     }
@@ -95,13 +101,6 @@ setMethod(f="frag4feature", signature="purityA",
       error_message <- paste("/!\\ We can't find",fileMS1,"or",fileMS2,"/!\\")
       print(error_message)
       next
-    }
-
-    #Pass xdata into xset object
-    if(class(xdata) == "XCMSnExp"){
-      xset <- getxcmsSetObject(xdata)
-    }else{
-      xset <- xdata
     }
 
     #Verify if xset and pa comes from the same file or not
