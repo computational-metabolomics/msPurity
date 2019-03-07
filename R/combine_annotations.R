@@ -228,7 +228,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
 
   # get probmetab
-  if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
+  if(DBI::dbExistsTable(con, 'probmetab_results')){
     probmetab <- DBI::dbGetQuery(con, paste('SELECT p.rowid as probmetab_id,
                                           p.proba AS probmetab_score,
                                           mc.inchikey
@@ -264,7 +264,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   if (nrow(combined_df)==0){
     return(NULL)
   }else{
-    combined_df$rank <- 1:nrow(combined_df)
+    combined_df$rank <- as.numeric(factor(rank(combined_df$wscore)))
   }
 
   return(combined_df)
