@@ -267,7 +267,8 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
 
 
   if (!is.null(metadata)){
-    metadata_to_write <- metadata[ , !(names(metadata) %in%  c("NAME: ","CH$NAME: ", "grpid"))]
+    metadata_to_write <- metadata[ , !(names(metadata) %in%  c('NAME:','CH$NAME:', 'grpid', 'PRECURSORMZ:', 'RETENTIONTIME:',
+                                                               'MS$FOCUSED_ION: PRECURSOR_M/Z', 'AC$CHROMATOGRAPHY: RETENTION_TIME'))]
 
     cat(paste(as.character(names(metadata_to_write)), ' ', as.character(unlist(metadata_to_write)), line_end, sep='', collapse=''), file = ofile)
   }

@@ -3,7 +3,6 @@ MS$FOCUSED_ION: PRECURSOR_M/Z 112.05085569128
 AC$CHROMATOGRAPHY: RETENTION_TIME 67.634034
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
-CH$NAME: Sulfamethizole
 XCMS groupid (grpid): 8
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 2
@@ -16,7 +15,6 @@ MS$FOCUSED_ION: PRECURSOR_M/Z 112.05085569128
 AC$CHROMATOGRAPHY: RETENTION_TIME 67.634034
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
-CH$NAME: Sulfamethizole
 XCMS groupid (grpid): 8
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
@@ -28,7 +26,6 @@ MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
-CH$NAME: Unknown
 XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
@@ -43,7 +40,6 @@ MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
-CH$NAME: Unknown
 XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
@@ -58,7 +54,6 @@ MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
-CH$NAME: Unknown
 XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 5
@@ -74,7 +69,6 @@ MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
-CH$NAME: Unknown
 XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_intra' msPurity version:1.9.8 
 PK$NUM_PEAK: 5
