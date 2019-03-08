@@ -1,10 +1,10 @@
 CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0507 | RT:67.6 | XCMS_group:8 | file:1
 MS$FOCUSED_ION: PRECURSOR_M/Z 112.050743103027
 AC$CHROMATOGRAPHY: RETENTION_TIME 67.634034
-grpid 8 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Sulfamethizole 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Sulfamethizole
+XCMS groupid (grpid): 8
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 2
 PK$PEAK: m/z int. rel.int.
@@ -14,10 +14,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Sulfamethizole | [M+H]+ |  MZ:112.0507 | RT:67.5 | XCMS_group:8 | file:2
 MS$FOCUSED_ION: PRECURSOR_M/Z 112.050704956055
 AC$CHROMATOGRAPHY: RETENTION_TIME 67.47903
-grpid 8 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Sulfamethizole 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Sulfamethizole
+XCMS groupid (grpid): 8
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
@@ -26,10 +26,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H]+ |  MZ:116.0708 | RT:47.8 | XCMS_group:12 | file:1
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070816040039
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
@@ -41,10 +41,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0708 | RT:47.8 | XCMS_group:12 | file:1
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070816040039
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
@@ -56,10 +56,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H]+ |  MZ:116.0708 | RT:47.8 | XCMS_group:12 | file:1
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070823669434
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
@@ -68,10 +68,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0708 | RT:47.8 | XCMS_group:12 | file:1
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070823669434
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
@@ -80,10 +80,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H]+ |  MZ:116.0708 | RT:47.8 | XCMS_group:12 | file:1
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070785522461
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
@@ -94,10 +94,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0708 | RT:47.8 | XCMS_group:12 | file:1
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070785522461
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
@@ -108,10 +108,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H]+ |  MZ:116.0708 | RT:47.7 | XCMS_group:12 | file:2
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070838928223
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.662548
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
@@ -122,10 +122,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0708 | RT:47.7 | XCMS_group:12 | file:2
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070838928223
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.662548
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
@@ -136,10 +136,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H]+ |  MZ:116.0708 | RT:47.7 | XCMS_group:12 | file:2
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070831298828
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.662548
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
@@ -151,10 +151,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0708 | RT:47.7 | XCMS_group:12 | file:2
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070831298828
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.662548
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 4
 PK$PEAK: m/z int. rel.int.
@@ -166,10 +166,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H]+ |  MZ:116.0708 | RT:47.7 | XCMS_group:12 | file:2
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070770263672
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.662548
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
@@ -180,10 +180,10 @@ PK$PEAK: m/z int. rel.int.
 CH$NAME: Unknown | [M+H+NH3]+ |  MZ:116.0708 | RT:47.7 | XCMS_group:12 | file:2
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070770263672
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.662548
-grpid 12 
-MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+ 
-AC$MASS_SPECTROMETRY: ION_MODE POSITIVE 
-CH$NAME Unknown 
+MS$FOCUSED_ION: PRECURSOR_TYPE [M+H+NH3]+
+AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Unknown
+XCMS groupid (grpid): 12
 COMMENT: Exported from msPurity purityA object using function createMSP, using method 'all' msPurity version:1.9.8 
 PK$NUM_PEAK: 3
 PK$PEAK: m/z int. rel.int.
