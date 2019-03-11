@@ -195,15 +195,18 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, adduct_split, msp_schema, intensity_ra){
 
+  if (msp_schema=='mona'){
+    precursor_name <- 'PRECURSOR_TYPE:'
+  }else{
+    precursor_name <- 'MS$FOCUSED_ION: PRECURSOR_TYPE'
+  }
+
   if (is.null(metadata_cols)){
     if (msp_schema=='mona'){
       metadata_cols <- c("NAME:", "PRECURSOR_TYPE:")
-      precursor_name <- 'PRECURSOR_TYPE:'
     }else{
       metadata_cols <- c("CH$NAME:", "MS$FOCUSED_ION: PRECURSOR_TYPE")
-      precursor_name <- 'MS$FOCUSED_ION: PRECURSOR_TYPE'
     }
-
   }
 
   if (adduct_split & sum(metadata$grpid==grpid) > 0){
