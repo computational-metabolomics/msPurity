@@ -264,6 +264,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   if (nrow(combined_df)==0){
     return(NULL)
   }else{
+
     combined_df$rank <- as.numeric(factor(rank(combined_df$wscore)))
   }
 

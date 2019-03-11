@@ -86,8 +86,9 @@ setGeneric(name="filterFragSpectra",
 
 
 setGeneric(name="createMSP",
-           def=function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-                        xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE) {
+           def=function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,
+                        xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE,
+                        msp_schema='massbank', intensity_ra='intensity_ra') {
              standardGeneric("createMSP")
            }
 )

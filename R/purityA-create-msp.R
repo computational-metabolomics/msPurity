@@ -17,6 +17,9 @@
 #' @param adduct_split boolean; If either "adduct" or  MS$FOCUSED_ION: PRECURSOR_TYPE column is in metadata then each adduct will have it's own MSP spectra.
 #'                     (Useful, if the MSP file will be used for further annotation)
 #' @param filter boolean; TRUE if filtered peaks are to be removed
+#' @param msp_schema character; Either MassBank (Europe) or MoNA style of MSP file format to be used ('massbank' or 'mona')
+#' @param intensity_ra character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
+#'                             to the MSP file
 #' @examples
 #'
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
@@ -31,18 +34,29 @@
 #' createMSP(pa)
 #' @export
 setMethod(f="createMSP", signature="purityA",
-          definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-                                xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE){
+          definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,
+                                xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE,
+                                msp_schema='massbank', intensity_ra='intensity_ra'){
 
             mspurity_to_msp(pa, msp_file_pth, metadata, metadata_cols,
-                            xcms_groupids, method, adduct_split, filter)
+                            xcms_groupids, method, adduct_split, filter, msp_schema,
+                            intensity_ra)
 
           }
 )
 
 
-mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-                             xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE){
+mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,
+                             xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE, msp_schema='massbank', intensity_ra='intensity_ra'){
+
+  if (!msp_schema %in% c('massbank', 'mona')){
+    stop('msp_schema should either be "massbank" or "mona"')
+  }
+
+  if (!intensity_ra %in% c('intensity', 'ra', 'intensity_ra')){
+    stop('intensity_ra should either be "intensity", "ra" or "intensity_ra"')
+  }
+
 
   if (is.null(msp_file_pth)){
     msp_file_pth <- paste('frag_spectra', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.msp', sep="")
@@ -88,7 +102,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
           spectrum <- add_mzi_cols(spectrum)
 
 
-          write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split)
+          write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
 
 
         }
@@ -113,7 +127,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         specmax<- add_mzi_cols(specmax)
 
 
-        write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, specmax, metadata, metadata_cols, of, method, adduct_split)
+        write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, specmax, metadata, metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
 
       }else if (method=="av_inter"){
 
@@ -129,7 +143,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
         if (!is.null(av_inter) && nrow(av_inter)>0){
-          write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_inter, metadata, metadata_cols, of, method, adduct_split)
+          write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_inter, metadata, metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
         }
 
 
@@ -152,7 +166,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
           if (!is.null(av_intra_j) && nrow(av_intra_j)>0){
-            write.msp(grpd$mz[1], grpd$rt[1], grpid, fileid, av_intra_j, metadata, metadata_cols, of, method, adduct_split)
+            write.msp(grpd$mz[1], grpd$rt[1], grpid, fileid, av_intra_j, metadata, metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
           }
 
         }
@@ -166,7 +180,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         }
 
         if (!is.null(av_all) && nrow(av_all)>0){
-          write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of, method, adduct_split)
+          write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
         }
 
 
@@ -179,42 +193,57 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
 
-write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, adduct_split){
+write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, adduct_split, msp_schema, intensity_ra){
+
+  if (msp_schema=='mona'){
+    precursor_name <- 'PRECURSOR_TYPE:'
+  }else{
+    precursor_name <- 'MS$FOCUSED_ION: PRECURSOR_TYPE'
+  }
+
+  if (is.null(metadata_cols)){
+    if (msp_schema=='mona'){
+      metadata_cols <- c("NAME:", "PRECURSOR_TYPE:")
+    }else{
+      metadata_cols <- c("CH$NAME:", "MS$FOCUSED_ION: PRECURSOR_TYPE")
+    }
+  }
 
   if (adduct_split & sum(metadata$grpid==grpid) > 0){
     # To keep the naming consisten we stick with the massbank naming convention
+
     if ('adduct' %in% names(metadata)){
-      names(metadata)[names(metadata)=='adduct'] <- 'MS$FOCUSED_ION: PRECURSOR_TYPE'
+      names(metadata)[names(metadata)=='adduct'] <- precursor_name
     }
 
     # check if in the precursor_type is in the columns
-    if ('MS$FOCUSED_ION: PRECURSOR_TYPE' %in% names(metadata)){
+    if (precursor_name %in% names(metadata)){
 
       # extract the text, expecting to be in CAMERA format, e.g. "[M-H]- 88.016 [M-H-NH3]- 105.042"
-      adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadata[metadata$grpid==grpid,'MS$FOCUSED_ION: PRECURSOR_TYPE'])
+      adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadata[metadata$grpid==grpid,precursor_name])
       # get a vector of the adducts
 
       adducts <- strsplit(adduct_text, ' ')[[1]]
       # loop through the adducts creating an appropiate MSP for each
       for (i in 1:length(adducts)){
         adduct <- adducts[i]
-        metadata[metadata$grpid==grpid,'MS$FOCUSED_ION: PRECURSOR_TYPE'] = adduct
-        write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method)
+        metadata[metadata$grpid==grpid,precursor_name] = adduct
+        write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
       }
 
     }else{
       # adduct set to split but adduct column not available
-      write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method)
+      write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
     }
 
   }else{
     # Ignore adduct splitting
-    write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method)
+    write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
   }
 
 }
 
-write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema='massbank'){
+write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema='massbank', intensity_ra='intensity_ra'){
   name <- concat_name(precmz, rtmed, grpid, fileid, metadata, metadata_cols)
 
   if (!is.null(metadata) && nrow(metadata[metadata$grpid==grpid,])>0){
@@ -226,30 +255,62 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
   } else {
     line_end = "\r\n"
   }
-  if (!msp_schema=='massbank'){
-    cat(paste("NAME: ", name, line_end, sep = ""), file = ofile)
-    cat(paste("PRECURSORMZ: ", precmz , line_end, sep = ""), file = ofile)
+
+  if (msp_schema=='mona'){
+    cat(paste0("NAME: ", name, line_end), file = ofile)
+    cat(paste0("PRECURSORMZ: ", precmz , line_end), file = ofile)
+    cat(paste0("RETENTIONTIME: ", rtmed, line_end), file = ofile)
+  }else{
+    cat(paste0("CH$NAME: ", name, line_end), file = ofile)
+    cat(paste0("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end), file = ofile)
+    cat(paste0("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end), file = ofile)
   }
 
-  cat(paste("CH$NAME: ", name, line_end, sep = ""), file = ofile)
-  cat(paste("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end, sep = ""), file = ofile)
-  cat(paste("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end, sep = ""), file = ofile)
+
+
 
   if (!is.null(metadata)){
-    cat(paste(names(metadata), unlist(metadata), line_end), sep="", file = ofile)
+    metadata_to_write <- metadata[ , !(names(metadata) %in%  c('NAME:','CH$NAME:', 'grpid', 'PRECURSORMZ:', 'RETENTIONTIME:',
+                                                               'MS$FOCUSED_ION: PRECURSOR_M/Z', 'AC$CHROMATOGRAPHY: RETENTION_TIME'))]
+
+    cat(paste(as.character(names(metadata_to_write)), ' ', as.character(unlist(metadata_to_write)), line_end, sep='', collapse=''), file = ofile)
   }
 
 
-
-  cat(paste("COMMENT: Exported from msPurity purityA object using function createMSP, using method '",
-            method, "' msPurity version:", packageVersion("msPurity"), sep=''),
+  cat(paste0("XCMS groupid (grpid): ", grpid, line_end), file = ofile)
+  cat(paste0("COMMENT: Exported from msPurity purityA object using function createMSP, using method '",
+            method, "' msPurity version:", packageVersion("msPurity")),
       line_end,file = ofile)
 
-  cat(paste("PK$NUM_PEAK: ", nrow(spectra), line_end, sep = ""), file = ofile)
-  cat(paste("PK$PEAK: m/z int. rel.int.", line_end, sep = ""), file = ofile)
+  if (msp_schema=='mona'){
+    cat(paste0("Num Peaks: ", nrow(spectra), line_end), file = ofile)
+  }else{
+    cat(paste0("PK$NUM_PEAK: ", nrow(spectra), line_end), file = ofile)
 
-  cat(paste(paste(spectra$mz, spectra$i,  round(spectra$i/max(spectra$i)*100,2), sep = "\t"), sep = line_end),
-      sep = line_end, file = ofile)
+  }
+
+  if (intensity_ra=='intensity_ra'){
+    if(msp_schema=='massbank'){
+      cat(paste0("PK$PEAK: m/z int. rel.int.", line_end), file = ofile)
+    }
+    cat(paste(paste(spectra$mz, spectra$i,  round(spectra$i/max(spectra$i)*100,2), sep = "\t"), sep = line_end),
+        sep = line_end, file = ofile)
+  }else if (intensity_ra == 'ra'){
+    if(msp_schema=='massbank'){
+      cat(paste0("PK$PEAK: m/z rel.int.", line_end), file = ofile)
+    }
+
+    cat(paste(paste(spectra$mz, round(spectra$i/max(spectra$i)*100,2), sep = "\t"), sep = line_end),
+        sep = line_end, file = ofile)
+  }else{
+    if(msp_schema=='massbank'){
+      cat(paste0("PK$PEAK: m/z int.", line_end), file = ofile)
+    }
+
+    cat(paste(paste(spectra$mz, spectra$i, sep = "\t"), sep = line_end),
+        sep = line_end, file = ofile)
+  }
+
 
   cat(line_end, file = ofile)
 

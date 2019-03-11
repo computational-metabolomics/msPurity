@@ -7,9 +7,9 @@
 \title{Create MSP file from purityA object}
 \usage{
 \S4method{createMSP}{purityA}(pa, msp_file_pth = NULL, metadata = NULL,
-  metadata_cols = c("CH$NAME", "MS$FOCUSED_ION: PRECURSOR_TYPE"),
-  xcms_groupids = NULL, method = "all", adduct_split = TRUE,
-  filter = TRUE)
+  metadata_cols = NULL, xcms_groupids = NULL, method = "all",
+  adduct_split = TRUE, filter = TRUE, msp_schema = "massbank",
+  intensity_ra = "intensity_ra")
 }
 \arguments{
 \item{pa}{object;  purityA object}
@@ -30,6 +30,11 @@
 (Useful, if the MSP file will be used for further annotation)}
 
 \item{filter}{boolean; TRUE if filtered peaks are to be removed}
+
+\item{msp_schema}{character; Either MassBank (Europe) or MoNA style of MSP file format to be used ('massbank' or 'mona')}
+
+\item{intensity_ra}{character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
+to the MSP file}
 }
 \description{
 Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
