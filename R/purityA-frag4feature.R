@@ -50,11 +50,8 @@ setMethod(f="frag4feature", signature="purityA",
     return(NULL)
   }
   #Pass xdata into xset object
-  if(class(xdata) == "XCMSnExp"){
-    xset <- getxcmsSetObject(xdata)
-  }else{
-    xset <- xdata
-  }
+  xset <- getxcmsSetObject(xdata)
+  
   #Verify that there is a CSV file input to match files each one with each other
   if(is.null(CSVfile)){
     message("no CSV file")
