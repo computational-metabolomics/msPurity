@@ -36,7 +36,7 @@
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xdata, CSVfile, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
+          definition = function(pa, xset, CSVfile, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA){
 
   #Verify if there is an assess-purity input
@@ -45,12 +45,12 @@ setMethod(f="frag4feature", signature="purityA",
     return(NULL)
   }
   #Verify that there is a xset group input
-  if(is.null(xdata)){
-    message("no xdata files")
+  if(is.null(xset)){
+    message("no xset files")
     return(NULL)
   }
   #Pass xdata into xset object
-  xset <- getxcmsSetObject(xdata)
+  xset <- getxcmsSetObject(xset)
   
   #Verify that there is a CSV file input to match files each one with each other
   if(is.null(CSVfile)){
