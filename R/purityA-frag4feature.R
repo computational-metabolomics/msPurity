@@ -11,7 +11,7 @@
 #'
 #' @param pa object; purityA object
 #' @param xset object; XCMS object derived from the same files as the puritydf
-#' @param CSVfile character; file to be able to match MS files with their MSMS files
+#' @param matchingTable data frame; data frame to be able to match MS files with their MSMS files
 #' @param ppm numeric; ppm tolerance between precursor mz and feature mz
 #' @param plim numeric; min purity of precursor to be included
 #' @param intense boolean; If the most intense precursor or the centered precursor is used
@@ -32,11 +32,11 @@
 #' xset <- xcms::group(xset)
 #'
 #' pa  <- purityA(msmsPths, interpol = "linear")
-#' pa <- frag4feature(pa, xset, CSVfile)
+#' pa <- frag4feature(pa, xset)
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, CSVfile, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
+          definition = function(pa, xset, matchingTable=NULL, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA){
 
   #Verify if there is an assess-purity input
@@ -52,14 +52,15 @@ setMethod(f="frag4feature", signature="purityA",
   #Pass xdata into xset object
   xset <- getxcmsSetObject(xset)
   
-  #Verify that there is a CSV file input to match files each one with each other
-  if(is.null(CSVfile)){
-    message("no CSV file")
-    return(NULL)
+  #Verify that there is a data frame input to match files each one with each other
+  if(is.null(matchingTable)){
+    cat("No matching table\n")
+    cat("MS/MS files will be process with themselves\n")
+    matchingTable <- data.frame("MS1"=names(pa@fileList),"MS2"=names(pa@fileList))
   }else{
-    #Have the data frame of the CSVfile
-    fileMatch <- read.csv2(file=CSVfile, header=FALSE)
-    names(fileMatch) <- c("MS1","MS2")
+    #Add names if not in the data frame of the matchingTable
+    matchingTable <- data.frame(matchingTable)
+    names(matchingTable) <- c("MS1","MS2")
   }
 
   cat("\n===================================================================================================\n")
@@ -69,10 +70,10 @@ setMethod(f="frag4feature", signature="purityA",
   grped_ms2 <- NULL
   grpall <- NULL
   use_group = FALSE
-  for(i in 1:nrow(fileMatch)) {
+  for(i in 1:nrow(matchingTable)) {
 
-    fileMS1 <- as.character(fileMatch[i,1])
-    fileMS2 <- as.character(fileMatch[i,2])
+    fileMS1 <- as.character(matchingTable[i,1])
+    fileMS2 <- as.character(matchingTable[i,2])
     cat("\n====== Running",fileMS1,"with",fileMS2,"=====\n")
 
     #Matching the good MS/MS file
@@ -96,7 +97,7 @@ setMethod(f="frag4feature", signature="purityA",
     #Verify that we have each file
     if(numberofMS1file == 0 || numberofMS2file == 0){
       error_message <- paste("/!\\ We can't find",fileMS1,"or",fileMS2,"/!\\")
-      print(error_message)
+      cat(error_message)
       next
     }
 
@@ -104,8 +105,8 @@ setMethod(f="frag4feature", signature="purityA",
     if(fileMS1 != fileMS2){
       #Carreful if use_group = FALSE and if it is not the first couple of file !!
       if(i > 1 && use_group == FALSE) {
-        error_message <- "/!\\ You already match with peaks and want now match group /!\\ \n\tEx not to do : LCMSMS1;LCMSMS1 first then now LCMS1;LCMSMS1"
-        print(error_message)
+        error_message <- "/!\\ You already match with peaks and want now match group /!\\ \n\tEx not to do : LCMSMS1;LCMSMS1 first then now LCMS1;LCMSMS1\n"
+        cat(error_message)
         stop(error_message)
       } else {
         use_group = TRUE
@@ -114,8 +115,8 @@ setMethod(f="frag4feature", signature="purityA",
     }else{
       #Carreful if use_group = TRUE already !!
       if(use_group == TRUE){
-        error_message <- "/!\\ You already match with group peaks and want now match only on peaks /!\\ \n\tEx not to do : LCMS1;LCMSMS1 first and then now LCMSMS1;LCMSMS1 "
-        print(error_message)
+        error_message <- "/!\\ You already match with group peaks and want now match only on peaks /!\\ \n\tEx not to do : LCMS1;LCMSMS1 first and then now LCMSMS1;LCMSMS1\n"
+        cat(error_message)
         stop(error_message)
       }
       use_group = FALSE
@@ -236,14 +237,14 @@ setMethod(f="frag4feature", signature="purityA",
   #Save data in pa object
   if(is.null(grpall)){
     error_message <- "/!\\ No peaks found in your datas /!\\"
-    print(error_message)
+    cat(error_message)
     stop(error_message)
   } else {
     pa@grped_df <- grpall
   }
   if(is.null(grped_ms2)){
     error_message <- "/!\\ Nothing found for grped_ms2 /!\\"
-    print(error_message)
+    cat(error_message)
     stop(error_message)
   } else {
     pa@grped_ms2 <- grped_ms2
