@@ -38,6 +38,9 @@ setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA, use_group=FALSE){
 
+  #Be sure we have a xset object
+  xset <- getxcmsSetObject(xset)
+  
   # Makes sure the same files are being used
   if (!use_group){
     pa@f4f_link_type = 'individual'
@@ -280,4 +283,19 @@ convert2Raw <- function(x, xset){
 
 }
 
-
+# This function retrieve a xset like object
+getxcmsSetObject <- function(xobject) {
+    # XCMS 1.x
+    if (class(xobject) == "xcmsSet")
+        return (xobject)
+    # XCMS 3.x
+    if (class(xobject) == "XCMSnExp") {
+        # Get the legacy xcmsSet object
+        suppressWarnings(xset <- as(xobject, 'xcmsSet'))
+        if (!is.null(xset@phenoData$sample_group))
+            sampclass(xset) <- xset@phenoData$sample_group
+        else
+            sampclass(xset) <- "."
+        return (xset)
+    }
+}
