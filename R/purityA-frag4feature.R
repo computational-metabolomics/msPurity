@@ -11,7 +11,11 @@
 #'
 #' @param pa object; purityA object
 #' @param xset object; XCMS object derived from the same files as the puritydf
+<<<<<<< HEAD
 #' @param matchingTable data frame; data frame to be able to match MS files with their MSMS files
+=======
+#' @param CSVfile character; file to be able to match MS files with their MSMS files
+>>>>>>> 3c43f2aabb159255dbe0fc62b3bd373ec19f8d09
 #' @param ppm numeric; ppm tolerance between precursor mz and feature mz
 #' @param plim numeric; min purity of precursor to be included
 #' @param intense boolean; If the most intense precursor or the centered precursor is used
@@ -32,11 +36,11 @@
 #' xset <- xcms::group(xset)
 #'
 #' pa  <- purityA(msmsPths, interpol = "linear")
-#' pa <- frag4feature(pa, xset)
+#' pa <- frag4feature(pa, xset, CSVfile)
 #'
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, matchingTable=NULL, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
+          definition = function(pa, xdata, CSVfile, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
                                 out_dir='.', db_name=NA, grp_peaklist=NA){
 
   #Verify if there is an assess-purity input
