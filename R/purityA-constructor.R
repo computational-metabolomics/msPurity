@@ -177,7 +177,7 @@ purityA <- function(fileList,
 #' @seealso \code{\link{purityA}}
 #' @export
 assessPuritySingle <- function(filepth,
-                               nameFile,
+                               nameFile=NA,
                                fileid=NA,
                                mostIntense=FALSE,
                                nearest=TRUE,
@@ -195,6 +195,9 @@ assessPuritySingle <- function(filepth,
   #=================================
   # Load in files and initial setup
   #=================================
+  if(is.na(nameFile)){
+    nameFile <- basename(filepth)
+  }
   # Get the mzR dataframes
   mrdf <- getmrdf(filepth, nameFile, mzRback)
   if(is.null(mrdf)){

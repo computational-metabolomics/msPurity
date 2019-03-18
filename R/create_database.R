@@ -12,6 +12,9 @@
 #' @param db_name character [optional]; Name of the result database
 #' @param grp_peaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
 #' @param out_dir character; Out directory for the SQLite result database
+#' @param grped_df dataframe : grepd_df for only these two files together
+#' @param fileMS1 character : name of MS file
+#' @param fileMS2 character : name of MS/MS file
 #' @return path to SQLite database and database name
 #'
 #' @examples
