@@ -1,4 +1,7 @@
+context ("checking filterFragSpectra purityA")
+
 test_that("checking filterFragSpectra purityA", {
+  print ("\n")
   print("########################################################")
   print("## Checking functions for filtering frag spectra      ##")
   print("########################################################")

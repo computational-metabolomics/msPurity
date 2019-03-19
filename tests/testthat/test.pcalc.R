@@ -1,6 +1,7 @@
-
+context ("checking pcalc functions")
 
 test_that("checking pcalc functions", {
+  print ("\n")
   print("########################################################")
   print("## Checking pcalc functions                           ##")
   print("########################################################")

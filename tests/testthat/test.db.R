@@ -1,4 +1,7 @@
+context ("checking database functions")
+
 test_that("checking database functions", {
+  print ("\n")
   print("########################################################")
   print("## Checking database handles lcms and msms            ##")
   print("########################################################")

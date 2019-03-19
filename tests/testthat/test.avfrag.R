@@ -1,4 +1,7 @@
+context ("checking averaging functionality")
+
 test_that("checking averaging functionality", {
+  print ("\n")
   print("########################################################")
   print("## Checking averaging                                ##")
   print("########################################################")

@@ -1,4 +1,7 @@
+context ("Checking file list function")
+
 test_that("Checking file list function", {
+  print ("\n")
   print("########################################################")
   print("## Checking file list function                        ##")
   print("########################################################")
