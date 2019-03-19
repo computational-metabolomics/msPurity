@@ -1,3 +1,5 @@
+context ("checking spectral matching functions with averaging")
+
 # test_that("checking spectral matching functions (massbank)", {
 #  too time consuming to run on bioconductor
 #   print("########################################################")
@@ -74,6 +76,7 @@
 
 
 test_that("checking spectral matching functions with averaging", {
+  print ("\n")
   print("########################################################")
   print("## Spectral matching functions                        ##")
   print("########################################################")

@@ -1,4 +1,7 @@
-test_that("checking lcms based functions", {
+context ("checking combine annotations based functions")
+
+test_that("checking combine annotations based functions", {
+  print ("\n")
   print("########################################################")
   print("## Checking LCMS based class and functions            ##")
   print("########################################################")

@@ -1,6 +1,9 @@
-test_that("checking lcms based functions", {
+context ("checking msp based functions")
+
+test_that("checking msp based functions", {
+  print ("\n")
   print("########################################################")
-  print("## Checking LCMS based class and functions            ##")
+  print("## Checking msp based class and functions            ##")
   print("########################################################")
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")

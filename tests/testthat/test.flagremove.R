@@ -1,4 +1,7 @@
+context ("checking flag and remove peaks")
+
 test_that("checking flag and remove peaks", {
+  print ("\n")
   print("########################################################")
   print("## checking flag and remove (lc-ms)                   ##")
   print("########################################################")
