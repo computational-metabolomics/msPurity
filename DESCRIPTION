@@ -72,3 +72,4 @@ Collate:
     'spectral-complexity.R'
     'spectral_matching.R'
     'splinepurity.R'
+    'targeted-match-ions.R'
