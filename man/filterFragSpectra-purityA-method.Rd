@@ -7,7 +7,8 @@
 \title{Filter fragmentations spectra associated with an XCMS feature}
 \usage{
 \S4method{filterFragSpectra}{purityA}(pa, ilim = 0, plim = 0.8,
-  ra = 0, snr = 3, rmp = FALSE, snmeth = "median")
+  ra = 0, snr = 3, rmp = FALSE, snmeth = "median",
+  allfrag = FALSE)
 }
 \arguments{
 \item{pa}{object; purityA object}
@@ -23,6 +24,8 @@
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 
 \item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
+
+\item{allfrag}{boolean; Whether to filter on all fragmentation spectra or or just the fragmentation spectra grouped to XCMS feature}
 }
 \value{
 purityA object with additional columns for the fragmentation spectra in the grped_msms slot

@@ -169,6 +169,66 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
          "retention_index", "retention_time", "inchikey_id")
   scaninfo[xx] <- NA
 
+
+
+  scaninfo$retention_time <- scaninfo$retentionTime
+  scaninfo$precursor_mz <- scaninfo$precursorMZ
+  scaninfo$spectrum_type <- 'scan'
+  scaninfo <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scaninfo)
+
+
+
+  ###############################################
+  # Add s_peaks (all fragmentation spectra either scans or averged)
+  ###############################################
+  # get all the fragmentation from the scans
+  if(pa@filter_frag_params$allfrag){
+    speaks <- pa@all_frag_scans
+  }else{
+    speaks <- getScanPeaks(pa)
+  }
+
+  if (length(pa@av_spectra)>0){
+    av_spectra <- plyr::ldply(pa@av_spectra, getAvSpectraForGrp)
+    colnames(av_spectra)[1] <- 'grpid'
+    av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
+    colnames(av_spectra)[2] <- 'fileid'
+
+    colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
+    av_spectra$sid <- (max(speaks$sid)+1):(max(speaks$sid)+nrow(av_spectra))
+
+    prePid  <- paste(av_spectra$grpid, av_spectra$fileid, av_spectra$type)
+    newPids <- max(scaninfo$pid)+as.numeric(factor(prePid, levels=unique(prePid)))
+
+    # add new scaninfo details (with just pid for now)
+    av_spectra$pid <- newPids
+
+    topnav <- plyr::ddply(av_spectra, ~pid, getXcmsGrpDetails, grpPeaklist)
+
+
+    grpidx <- which(grpPeaklist$grpid %in% topnav$grpid)
+
+
+    scaninfo <- plyr::rbind.fill(scaninfo, data.frame(pid=topnav$pid,
+                                          fileid=topnav$fileid,
+                                          spectrum_type=topnav$type,
+                                          precursor_mz=topnav$precusor_mz,
+                                          retention_time=topnav$retention_time,
+                                          inPurity=topnav$inPurity,
+                                          grpid=topnav$grpid))
+
+    speaks <- merge(speaks, av_spectra, all = TRUE)
+
+    colOrder = c("sid", "pid", "grpid", "mz",  "i",  "snr",  "ra", "rsd", "inPurity", "count", "frac", "type",
+                 "purity_pass_flag", "ra_pass_flag", "snr_pass_flag", "intensity_pass_flag", "minnum_pass_flag",
+                 "minfrac_pass_flag", "pass_flag")
+
+    speaks <- speaks[,colOrder, drop=FALSE]
+    speaks[is.na(speaks)] <- NA
+
+  }
+
+
   if (!anyNA(metadata)){
     if(!is.null(metadata$polarity)){
       scaninfo$polarity <- metadata$polarity
@@ -181,21 +241,19 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     if(!is.null(metadata$instrument)){
       scaninfo$instrument <- metadata$instrument
     }
-
-
   }
 
-  scaninfo <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scaninfo)
+
+  fks4speaks <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
+                     'pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
 
 
-  # precursorMZ to precursor_mz
-
-  # retentionTime to retention_time
+  fks4smeta <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
 
 
+  custom_dbWriteTable(name_pk = 'pid', fks=fks4smeta, table_name = 's_peak_meta', df=scaninfo, con=con)
+  custom_dbWriteTable(name_pk = 'sid', fks=fks4speaks, table_name ='s_peaks', df=speaks , con=con)
 
-
-  custom_dbWriteTable(name_pk = 'pid', fks=fks_fileid, table_name = 's_peak_meta', df=scaninfo, con=con)
 
 
   if (pa@f4f_link_type=='individual'){
@@ -228,53 +286,10 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 
   }
 
-  ###############################################
-  # Add s_peaks (all fragmentation spectra either scans or averged)
-  ###############################################
-  # get all the fragmentation from the scans
-  if(pa@filter_frag_params$allfrag){
-    speaks <- pa@all_frag_scans
-  }else{
-    speaks <- getScanPeaks(pa)
-  }
-
-
-  if (length(pa@av_spectra)>0){
-
-    av_spectra <- plyr::ldply(pa@av_spectra, getAvSpectraForDb)
-
-    if (nrow(av_spectra)==0){
-      message('No average spectra to use for database')
-    }else{
-      # for some reason the names are not being saved for the list as a column, so we just get them back
-      colnames(av_spectra)[1] <- 'grpid'
-      av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
-      colnames(av_spectra)[2] <- 'fileid'
-
-      colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
-      av_spectra$sid <- (max(speaks$sid)+1):(max(speaks$sid)+nrow(av_spectra))
-
-      allspeaks <- merge(speaks, av_spectra, all = TRUE)
-
-      colOrder = c("sid", "pid", "grpid", "mz",  "i",  "snr",  "ra", "rsd", "inPurity", "count", "frac", "type",
-                   "purity_pass_flag", "ra_pass_flag", "snr_pass_flag", "intensity_pass_flag", "minnum_pass_flag",
-                   "minfrac_pass_flag", "pass_flag")
-
-      allspeaks <- allspeaks[,colOrder, drop=FALSE]
-      allspeaks[is.na(allspeaks)] <- NA
-
-      #av_spectra$avid <- 1:nrow(av_spectra)
-      fks4speaks <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
-                         'pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
-
-
-      custom_dbWriteTable(name_pk = 'sid', fks=fks4speaks,
-                          table_name ='s_peaks', df=allspeaks , con=con)
-    }
 
 
 
-  }
+
 
   if (!is.null(xsa)){
     ###############################################
@@ -342,7 +357,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 }
 
 
-getAvSpectraForDb <- function(x){
+getAvSpectraForGrp <- function(x){
 
   if (length(x$av_intra)>0){
     av_intra_df <- plyr::ldply(x$av_intra)
@@ -377,6 +392,15 @@ getAvSpectraForDb <- function(x){
 
 }
 
+getXcmsGrpDetails <- function(x, grpPeaklist){
+  x <- x[1,]
+
+  grpPeaklisti <- grpPeaklist[grpPeaklist$grpid==x$grpid,]
+
+  x$retention_time <- grpPeaklisti$rt
+  x$precusor_mz <- grpPeaklisti$mz
+  return(x)
+}
 
 real_or_rest <- function(x){
   if(is.numeric(x)){
