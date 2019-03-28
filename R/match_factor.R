@@ -1,4 +1,4 @@
-match_factor <- function(L, Q){
+compositeDotProduct <- function(L, Q){
 
   # Should only used the matching peaks for profile comparison
   remv_idx = c(which(L==0), which(Q==0))
@@ -27,7 +27,6 @@ match_factor <- function(L, Q){
 
       prof <- abundance_ratio1^n * abundance_ratio2^-n
 
-      print(paste(abundance_ratio1, abundance_ratio2, n, abundance_ratio1^n, abundance_ratio2^-n, prof))
       profile_diff[c] <- prof
 
       c=c+1

@@ -9,8 +9,8 @@
 #'                          from the xset object nested with the CAMERA xsa object. Adduct and isotope information
 #'                          will be included into the database when using this parameter. The underlying xset object must
 #'                          be the one used for the frag4feature function
-#' @param db_name character [optional]; Name of the result database
-#' @param grp_peaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
+#' @param dbName character [optional]; Name of the result database
+#' @param grpPeaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
 #' @param out_dir character; Out directory for the SQLite result database
 #' @return path to SQLite database and database name
 #'
@@ -24,36 +24,37 @@
 #'
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
+#' pa <- filterFragSpectra(pa, allfrag=TRUE)
 #' pa <- averageAllFragSpectra(pa)
-#' db_pth <- create_database(pa, xset)
+#' dbPth <- createDatabase(pa, xset, metadata=list('polarity'='positive', 'instrument'='Q-Exactive'))
 #' @export
-create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, db_name=NA){
+createDatabase <-  function(pa, xset, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA){
   ########################################################
   # Export the target data into sqlite database
   ########################################################
-  if (is.na(db_name)){
-    db_name <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
+  if (is.na(dbName)){
+    dbName <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
   }
 
-  if (!is.data.frame(grp_peaklist)){
+  if (!is.data.frame(grpPeaklist)){
     if (is.null(xsa)){
-      grp_peaklist <- xcms::peakTable(xset)
+      grpPeaklist <- xcms::peakTable(xset)
     }else{
-      grp_peaklist <- CAMERA::getPeaklist(xsa)
+      grpPeaklist <- CAMERA::getPeaklist(xsa)
     }
 
-    grp_peaklist <- data.frame(cbind('grpid'=1:nrow(grp_peaklist), grp_peaklist))
+    grpPeaklist <- data.frame(cbind('grpid'=1:nrow(grpPeaklist), grpPeaklist))
   }
 
   message("Creating a database of fragmentation spectra and LC features")
-  target_db_pth <- export_2_sqlite(pa, grp_peaklist, xset, xsa, out_dir, db_name)
+  targetDBpth <- export2sqlite(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata)
 
-  return(target_db_pth)
+  return(targetDBpth)
 
 }
 
 
-export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
+export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 
   if(!is.null(xsa)){
     # if user has supplied camera object we use the xset that the camera object
@@ -66,9 +67,9 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   if ((length(pa@fileList) > length(xset@filepaths)) && (pa@f4f_link_type=='group')){
     # if more files in pa@filelist (can happen if some files were not processed with xcms because no MS1)
     # in this case we need to make sure any reference to a fileid is correct
-    uneven_filelists = TRUE
+    unevenFilelists = TRUE
   }else{
-    uneven_filelists = FALSE
+    unevenFilelists = FALSE
   }
 
 
@@ -85,23 +86,24 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
 
 
-  db_pth <- file.path(out_dir, db_name)
+  dbPth <- file.path(outDir, dbName)
 
-  con <- DBI::dbConnect(RSQLite::SQLite(),db_pth)
+  con <- DBI::dbConnect(RSQLite::SQLite(),dbPth)
 
   ###############################################
   # Add File info
   ###############################################
-  nm_save <- names(pa@fileList) # this is for name tracking in Galaxy
+  nmsave <- names(pa@fileList) # this is for name tracking in Galaxy
+
   pa@fileList <- unname(pa@fileList)
 
-  scan_info <- pa@puritydf
+  scaninfo <- pa@puritydf
   fileList <- pa@fileList
 
 
   filedf <- data.frame(filename=basename(fileList),
                        filepth=fileList,
-                       nm_save=nm_save,
+                       nm_save=nmsave,
                        fileid=seq(1, length(fileList)),
                        class=xset@phenoData$class
                        )
@@ -113,13 +115,12 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   ###############################################
   # Add c_peaks (i.e. XCMS individual peaks)
   ###############################################
-
   c_peaks <- xset@peaks
 
   # Normally we expect the filelists to always be the same size, but there can be times when
   # MS/MS is collected without any full scan, or for some reasons it is not processed with xcms,
   # in these cases we need to ensure that fileids are correct
-  if (uneven_filelists){
+  if (unevenFilelists){
     c_peaks[,'sample'] <- match(basename(xset@filepaths[c_peaks[,'sample']]), filedf$filename)
   }
 
@@ -138,50 +139,64 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   ###############################################
   # Add c_peak_groups (i.e. XCMS grouped peaks)
   ###############################################
-  if (is.matrix(grp_peaklist)){
-    grp_peaklist <- data.frame(grp_peaklist)
+  if (is.matrix(grpPeaklist)){
+    grpPeaklist <- data.frame(grpPeaklist)
   }
-  colnames(grp_peaklist)[which(colnames(grp_peaklist)=='into')] <- '_into'
-  grp_peaklist$grp_name <- xcms::groupnames(xset)
-  custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grp_peaklist, con=con)
-
-  ###############################################
-  # Add s_peak_meta (i.e. scan information)
-  ###############################################
-  dropc <- c('filename')
-  scan_info <- scan_info[,!colnames(scan_info) %in% dropc]
-  scan_info <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scan_info)
-  custom_dbWriteTable(name_pk = 'pid', fks=fks_fileid, table_name = 's_peak_meta', df=scan_info, con=con)
-
-  ###############################################
-  # Add s_peaks (i.e. the mz, i from each scan)
-  ###############################################
-  # ensure the filedf is in the same order as the scan_info file
-  # other wise the s_peak_meta ids might not match up (should be fixed from previous matching)
-  # filedf <- filedf[as.numeric(unique(scan_info$fileid)),]
-
-  scanpeaks_frag <- plyr::ddply(filedf, ~ fileid, scan_peaks_4_db)
-
-  comb <- paste(scanpeaks_frag[,1], scanpeaks_frag[,2], sep=' ')
-  scanpeaks_frag <- cbind(1:nrow(scanpeaks_frag), cumsum(!duplicated(comb)), scanpeaks_frag)
-  colnames(scanpeaks_frag) <- c('sid','pid', 'fileid', 'scan', 'mz', 'i')
-  fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
-
-  custom_dbWriteTable(name_pk = 'sid', fks=append(fks_fileid, fks_pid),
-                      table_name = 's_peaks', df=scanpeaks_frag, con=con)
-
+  colnames(grpPeaklist)[which(colnames(grpPeaklist)=='into')] <- '_into'
+  grpPeaklist$grp_name <- xcms::groupnames(xset)
+  custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grpPeaklist, con=con)
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to c_peak_group
   ###############################################
-  c_peak_X_c_peak_group <- get_group_peak_link(xset)
+  c_peak_X_c_peak_group <- getGroupPeakLink(xset)
 
   fks_for_cxg <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
                       'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks')
-                      )
+  )
 
   custom_dbWriteTable(name_pk = 'cXg_id', fks=fks_for_cxg,
                       table_name ='c_peak_X_c_peak_group', df=c_peak_X_c_peak_group, con=con)
+
+  ###############################################
+  # Add s_peak_meta (i.e. scan information)
+  ###############################################
+  dropc <- c('filename', 'id')
+  scaninfo <- scaninfo[,!colnames(scaninfo) %in% dropc]
+  xx = c("name", "collision_energy", "ms_level", "accession", "resolution", "polarity",
+         "fragmentation_type", "precursor_type", "instrument_type", "instrument",
+         "copyright", "column", "mass_accuracy", "mass_error", "origin", "splash",
+         "retention_index", "retention_time", "inchikey_id")
+  scaninfo[xx] <- NA
+
+  if (!anyNA(metadata)){
+    if(!is.null(metadata$polarity)){
+      scaninfo$polarity <- metadata$polarity
+    }
+
+    if(!is.null(metadata$instrument_type)){
+      scaninfo$instrument_type <- metadata$instrument_type
+    }
+
+    if(!is.null(metadata$instrument)){
+      scaninfo$instrument <- metadata$instrument
+    }
+
+
+  }
+
+  scaninfo <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scaninfo)
+
+
+  # precursorMZ to precursor_mz
+
+  # retentionTime to retention_time
+
+
+
+
+  custom_dbWriteTable(name_pk = 'pid', fks=fks_fileid, table_name = 's_peak_meta', df=scaninfo, con=con)
+
 
   if (pa@f4f_link_type=='individual'){
     ###############################################
@@ -213,9 +228,20 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   }
 
+  ###############################################
+  # Add s_peaks (all fragmentation spectra either scans or averged)
+  ###############################################
+  # get all the fragmentation from the scans
+  if(pa@filter_frag_params$allfrag){
+    speaks <- pa@all_frag_scans
+  }else{
+    speaks <- getScanPeaks(pa)
+  }
+
+
   if (length(pa@av_spectra)>0){
 
-    av_spectra <- plyr::ldply(pa@av_spectra, get_av_spectra_for_db)
+    av_spectra <- plyr::ldply(pa@av_spectra, getAvSpectraForDb)
 
     if (nrow(av_spectra)==0){
       message('No average spectra to use for database')
@@ -223,21 +249,32 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
       # for some reason the names are not being saved for the list as a column, so we just get them back
       colnames(av_spectra)[1] <- 'grpid'
       av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
-
       colnames(av_spectra)[2] <- 'fileid'
-      av_spectra$avid <- 1:nrow(av_spectra)
-      fks_for_av_spectra <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
-                                 'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups')
-      )
 
-      custom_dbWriteTable(name_pk = 'avid', fks=fks_for_av_spectra,
-                          table_name ='av_peaks', df=av_spectra, con=con)
+      colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
+      av_spectra$sid <- (max(speaks$sid)+1):(max(speaks$sid)+nrow(av_spectra))
+
+      allspeaks <- merge(speaks, av_spectra, all = TRUE)
+
+      colOrder = c("sid", "pid", "grpid", "mz",  "i",  "snr",  "ra", "rsd", "inPurity", "count", "frac", "type",
+                   "purity_pass_flag", "ra_pass_flag", "snr_pass_flag", "intensity_pass_flag", "minnum_pass_flag",
+                   "minfrac_pass_flag", "pass_flag")
+
+      allspeaks <- allspeaks[,colOrder, drop=FALSE]
+      allspeaks[is.na(allspeaks)] <- NA
+
+      #av_spectra$avid <- 1:nrow(av_spectra)
+      fks4speaks <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
+                         'pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
+
+
+      custom_dbWriteTable(name_pk = 'sid', fks=fks4speaks,
+                          table_name ='s_peaks', df=allspeaks , con=con)
     }
 
 
 
   }
-
 
   if (!is.null(xsa)){
     ###############################################
@@ -300,12 +337,12 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
 
   DBI::dbDisconnect(con)
-  return(db_pth)
+  return(dbPth)
 
 }
 
 
-get_av_spectra_for_db <- function(x){
+getAvSpectraForDb <- function(x){
 
   if (length(x$av_intra)>0){
     av_intra_df <- plyr::ldply(x$av_intra)
@@ -416,7 +453,7 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 
 
-scan_peaks_4_db <- function(x){
+scanPeaks4db <- function(x, pa){
 
   mr <- mzR::openMSfile(as.character(x$filepth))
   scanpeaks <- mzR::peaks(mr)
@@ -452,7 +489,7 @@ custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTE
 
 
 
-get_group_peak_link <- function(xset, method='medret'){
+getGroupPeakLink <- function(xset, method='medret'){
 
   gidx <- xset@groupidx
   bestpeaks <- xcms::groupval(xset, method=method)

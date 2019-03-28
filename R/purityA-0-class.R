@@ -24,7 +24,8 @@ setClass(
     av_intra_params = "list",
     av_inter_params = "list",
     av_all_params = "list",
-    filter_frag_params = "list"
+    filter_frag_params = "list",
+    all_frag_scans = "data.frame"
   )
 )
 

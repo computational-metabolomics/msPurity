@@ -47,6 +47,7 @@ Collate:
     'averaging.R'
     'combine_annotations.R'
     'create_database.R'
+    'createDatabase.R'
     'flag-filter-remove.R'
     'iw-norm.R'
     'match_factor.R'
@@ -71,4 +72,5 @@ Collate:
     'purityX-constructor.R'
     'spectral-complexity.R'
     'spectral_matching.R'
+    'spectralMatching.R'
     'splinepurity.R'
