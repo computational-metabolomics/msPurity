@@ -14,10 +14,12 @@
 #'
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#' pa <- filterFragSpectra(xset, allfrag=TRUE)
+#' pa <- filterFragSpectra(pa, allfrag=TRUE)
 #' pa <- averageAllFragSpectra(pa)
 #' q_dbPth <- createDatabase(pa, xset)
 #' result <- spectralMatching(q_dbPth)
+#' @importFrom magrittr %>%
+#' @name %>%
 #' @export
 spectralMatching <- function(
                              q_dbPth,
@@ -60,8 +62,14 @@ spectralMatching <- function(
                              match_alg='dpc',
                              cores=1,
                              out_dir='.',
-                             copy=FALSE){
+                             createNew=FALSE){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
+  if(createNew){
+    nfn <- file.path(out_dir,paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), 'spectral_matching_result.sqlite', sep="-"))
+    file.copy(from = q_dbPth, to=nfn)
+    q_dbPth <- nfn
+  }
+
 
   if (is.na(l_dbPth)){
     l_dbPth <- system.file("extdata", "library_spectra", "library_spectra.db", package="msPurityData")
@@ -81,7 +89,9 @@ spectralMatching <- function(
               sources = q_sources,
               pids = q_pids,
               rtrange = q_rtrange,
-              con = q_con)
+              con = q_con,
+              xcmsGroups = q_xcmsGroups,
+              spectraType = q_spectraType)
 
   q_speaks <- getScanPeaksSqlite(q_con, q_spectraFilter)
 
@@ -99,7 +109,9 @@ spectralMatching <- function(
                              sources = l_sources,
                              pids = l_pids,
                              rtrange = l_rtrange,
-                             con = l_con)
+                             con = l_con,
+                             xcmsGroups = l_xcmsGroups,
+                             spectraType = l_spectraType)
 
   l_speaks <- getScanPeaksSqlite(l_con, l_spectraFilter)
 
@@ -108,7 +120,7 @@ spectralMatching <- function(
   # against the library spectra
   ########################################################
   # can't parallize dpylr without non cran package
-  # Go back t using good old plyr
+  # Go back to using good old plyr
   q_fpids <- dplyr::pull(q_speakmeta, pid)
 
 
@@ -129,26 +141,36 @@ spectralMatching <- function(
                                       q_ppmPrec=q_ppmPrec,
                                       q_ppmProd=q_ppmProd,
                                       l_ppmPrec=l_ppmPrec,
-                                      l_ppmProd=l_ppmProd
-                                      )
-  colnames(matched)[1] <- 'qpid'
+                                      l_ppmProd=l_ppmProd,
+                         .progress="text")
 
-  return(matched)
+  if (nrow(matched)==0){
+    message('No matches found')
+    return(NULL)
+  }
+
+  print(matched)
+
+  matched$mid <- 1:nrow(matched)
+  custom_dbWriteTable(name_pk = 'mid', df=matched, fks=NA, table_name = 'sm_matches', con = q_con)
+
+  ########################################################
+  # Create a summary table for xcms grouped objects
+  ########################################################
+  if (DBI::dbExistsTable(q_con, "c_peak_groups")){
+    # check if the query is from an XCMS object
+    message("Summarising LC features annotations")
+
+    xcmsMatchedResults <- getXcmsSmSummary(q_con, matched,spectraType=q_spectraType)
+  }else{
+    xcmsMatchedResults <- NA
+  }
+
+  DBI::dbDisconnect(q_con)
+  DBI::dbDisconnect(l_con)
 
 
-  # ########################################################
-  # # Create a summary table for xcms grouped objects
-  # ########################################################
-  # if (matched){
-  #   # check if the query is from an XCMS object
-  #   # if xxx
-  #   message("Summarising LC features annotations")
-  #   xcms_summary_df <- get_xcms_sm_summary(query_db_pth, topn=topn, score_f=score_thres,spectra_type_q=spectra_type_q)
-  # }else{
-  #   xcms_summary_df <- NA
-  # }
-  #
-  # return(list('result_db_pth' = query_db_pth, 'xcms_summary_df' = xcms_summary_df))
+  return(list('q_dbPth' = q_dbPth, 'xcmsMatchedResults' = xcmsMatchedResults))
 }
 
 getScanPeaksSqlite <- function(con, spectraFilter, spectraType){
@@ -162,17 +184,51 @@ getScanPeaksSqlite <- function(con, spectraFilter, spectraType){
   }
 
   if (!is.na(spectraFilter)){
-    return(speaks %>% filter(pass_flag==TRUE))
+    return(speaks %>% dplyr::filter(pass_flag==TRUE))
   }else{
     return(speaks)
   }
 
   if (spectraType){
-    return(speaks %>% filter(type==spectraType))
+    return(speaks %>% dplyr::filter(type==spectraType))
   }else{
     return(speaks)
   }
 
+
+
+}
+
+getXcmsSmSummary <- function(con, matched, scoreF=0, fragNmF=1, spectraType='scans'){
+
+  if (spectraType=='scans'){
+    sqlStmt <- sprintf("SELECT * FROM c_peak_groups
+                           LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.grpid=c_peak_groups.grpid
+                           LEFT JOIN c_peaks on c_peaks.cid=cXg.cid
+                           LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
+                           LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
+                           WHERE s_peak_meta.pid in (%s)", paste(unique(matched$qpid), collapse=','))
+
+  }else{
+    sqlStmt <- sprintf("SELECT cpg.*, spm.pid FROM c_peak_groups AS cpg
+                           LEFT JOIN s_peak_meta AS spm ON cpg.grpid=spm.grpid
+                           WHERE spm.pid in (%s)", paste(unique(matched$qpid), collapse=','))
+
+  }
+  xcmsGroupedPeaks <- DBI::dbGetQuery(con, sqlStmt)
+  xcmsMatchedResults <- merge(xcmsGroupedPeaks, matched, by.x='pid', by.y='qpid')
+  if(nrow(xcmsMatchedResults)==0){
+    message('NO MATCHES FOR XCMS')
+    DBI::dbDisconnect(q_con)
+    return(0)
+  }
+
+  xcmsMatchedResults <- xcmsMatchedResults[order(xcmsMatchedResults$grpid, -as.numeric(xcmsMatchedResults$dpc)),]
+
+
+  DBI::dbWriteTable(con, name='xcms_match', value=xcmsMatchedResults, row.names=F, append=T)
+
+  return(xcmsMatchedResults)
 
 
 }
@@ -183,9 +239,10 @@ filterSMeta <- function(purity=NA,
                         instrumentTypes=NA,
                         instrument=NA,
                         sources=NA,
-
+                        xcmsGroups=NA,
                         pids=NA,
                         rtrange=c(NA, NA),
+                        spectraType=NA,
                         con){
 
   if (DBI::dbExistsTable(con, "s_peak_meta")){
@@ -209,15 +266,17 @@ filterSMeta <- function(purity=NA,
     speakmeta <- speakmeta %>% dplyr::filter(instrument %in% instrument)
   }
 
-  if(!anyNA(sources)){
-    speakmeta <- speakmeta %>% dplyr::filter(sources %in% sources)
+  if(!anyNA(sources) & DBI::dbExistsTable(con, "library_spectra_source")){
+    sourcetbl <- con %>% dplyr::tbl("library_spectra_source")
+    speakmeta <- speakmeta %>% dplyr::left_join(sourcetbl,  by=c('library_spectra_source_id'='id'),suffix = c("", ".y")) %>%
+              dplyr::filter(name.y %in% sources)
   }
 
   if(!is.na(purity)){
     speakmeta <- speakmeta %>% dplyr::filter(inPurity > purity)
   }
   if(!anyNA(pids)){
-    if ("pid" %in% names(speakmeta %>% collect())){
+    if ("pid" %in% names(speakmeta %>% dplyr::collect())){
       speakmeta <- speakmeta %>% dplyr::filter(pid %in% pids)
     }else{
       speakmeta <- speakmeta %>% dplyr::filter(id %in% pids)
@@ -227,6 +286,26 @@ filterSMeta <- function(purity=NA,
 
   if(!anyNA(rtrange)){
     speakmeta <- speakmeta %>% dplyr::filter(retention_time > rtrange[1] && retention_time < rtrange[2])
+  }
+
+  if (!anyNA(xcmsGroups) & DBI::dbExistsTable(con, "c_peak_groups")){
+
+    XLI <- DBI::dbGetQuery(con, paste0('SELECT cpg.grpid, spm.pid FROM s_peak_meta AS spm
+                           LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.pid=spm.pid
+                           LEFT JOIN c_peaks AS cp on cp.cid=cXs.cid
+                           LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.cid=cp.cid
+                           LEFT JOIN c_peak_groups AS cpg ON cXg.grpid=cpg.grpid
+                           WHERE cpg.grpid in (', paste(xcmsGroups, collapse = ','), ')'))
+
+    speakmeta <- speakmeta %>% dplyr::filter(grpid %in% xcmsGroups || pid %in% XLI$pid)
+
+  }
+
+  if (!is.na(spectraType)){
+    if (spectraType=='av_all'){
+      spectraType = 'all'
+    }
+    speakmeta <- speakmeta %>% dplyr::filter(spectrum_type == spectraType)
   }
 
 
@@ -249,9 +328,11 @@ queryVlibrary <- function(q_pid, q_speakmeta, q_speaks, l_speakmeta, l_speaks,
 
   # filter precursors
   # get meta and peaks assoicated with pid
-  q_speakmetai <- q_speakmeta %>% dplyr::filter(pid==q_pid) %>% collect()
-  q_precMZ <- q_speakmetai$precursorMZ
-  q_speaksi <- q_speaks %>% dplyr::filter(pid==q_pid)  %>% collect()
+
+  q_speakmetai <- q_speakmeta %>% dplyr::filter(pid==q_pid) %>% dplyr::collect()
+  q_precMZ <- q_speakmetai$precursor_mz
+  q_speaksi <- q_speaks %>% dplyr::filter(pid==q_pid)  %>% dplyr::collect()
+
 
   if (nrow(q_speaksi)==0){
     return(NULL)
@@ -268,7 +349,7 @@ queryVlibrary <- function(q_pid, q_speakmeta, q_speaks, l_speakmeta, l_speaks,
                     &
                     (precursor_mz + ((precursor_mz*0.000001)*l_ppmPrec) >= q_precMZlo)) %>%
                     #summarise(id)  %>% # need to change pid
-                    collect()
+                    dplyr::collect()
 
   if(nrow(l_fspeakmeta)==0){
     return(NULL)
@@ -288,9 +369,11 @@ queryVlibrary <- function(q_pid, q_speakmeta, q_speaks, l_speakmeta, l_speaks,
                             l_speaks=l_speaks,
                             q_ppmProd=q_ppmProd,
                             l_ppmProd=l_ppmProd
+
               )
 
   colnames(searched)[1] <- 'lpid'
+  searched$qpid <- q_pid
 
 
 
@@ -306,14 +389,12 @@ queryVlibrary <- function(q_pid, q_speakmeta, q_speaks, l_speakmeta, l_speaks,
 queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmProd, l_ppmProd){
 
   if ('pid' %in% colnames(l_speaks)){
-    l_speaksi <- l_speaks %>% dplyr::filter(pid==l_pid) %>% collect() # need to change to pid
-    l_speakmetai <- data.frame(l_speakmeta %>% filter(pid==l_pid) %>% collect())
+    l_speaksi <- l_speaks %>% dplyr::filter(pid==l_pid) %>% dplyr::collect() # need to change to pid
+    l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(pid==l_pid) %>% dplyr::collect())
   }else{
-    l_speaksi <- l_speaks %>% dplyr::filter(library_spectra_meta_id==l_pid) %>% collect()
-    l_speakmetai <- data.frame(l_speakmeta %>% filter(id==l_pid) %>% collect())
+    l_speaksi <- l_speaks %>% dplyr::filter(library_spectra_meta_id==l_pid) %>% dplyr::collect()
+    l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(id==l_pid) %>% dplyr::collect())
   }
-
-
 
   # ensure we have the relative abundance
   l_speaksi$ra <- (l_speaksi$i/max(l_speaksi$i))*100
@@ -322,7 +403,7 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
   am <- alignAndMatch(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd)
 
   return(c(am, 'accession'=l_speakmetai$accession,
-    'name'=l_speakmetai$name))
+               'name'=l_speakmetai$name))
 }
 
 
@@ -330,6 +411,7 @@ alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd){
   ###################
   # Align
   ###################
+
   q_speaksi$w <- (q_speaksi$mz^2) * (q_speaksi$ra^0.5)
   l_speaksi$w <- (l_speaksi$mz^2) * (l_speaksi$ra^0.5)
   q_speaksi <- data.frame(q_speaksi)
@@ -340,15 +422,15 @@ alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd){
   ##################
   # Match
   ##################
-  ndpc <- CosSim(aligned$q, aligned$l)
+  dpcOut <- dpc(aligned$q, aligned$l)
 
   rl <- aligned$l[!aligned$q==0]
   rq <- aligned$q[!aligned$q==0]
-  rdpc <- CosSim(rq, rl)
+  rdpcOut <- dpc(rq, rl)
 
-  cdpc <- compositeDotProduct(aligned$q, aligned$l)
+  cdpcOut <- cdpc(aligned$q, aligned$l)
 
-  return(c('ndpc'=ndpc, 'rdpc'=rdpc, 'cdpc'=cdpc,
+  return(c('dpc'=dpcOut, 'rdpc'=rdpcOut, 'cdpc'=cdpcOut,
            'mcount'=aligned$mcount, 'allcount'=aligned$total,
            'mpercent'=aligned$percMatchAll))
 
@@ -471,9 +553,6 @@ align <-function(q_speaksi,l_speaksi, l_ppmProd=100, q_ppmProd=100, raDiffThres=
 
 
 
-CosSim <- function(A,B) {
-  return( sum(A*B)/sqrt(sum(A^2)*sum(B^2)) )
-}
 
 
 

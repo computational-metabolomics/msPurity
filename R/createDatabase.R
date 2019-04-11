@@ -179,7 +179,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 
 
   ###############################################
-  # Add s_peaks (all fragmentation spectra either scans or averged)
+  # Add s_peaks (all fragmentation spectra either scans or averaged)
   ###############################################
   # get all the fragmentation from the scans
   if(pa@filter_frag_params$allfrag){
@@ -192,7 +192,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     av_spectra <- plyr::ldply(pa@av_spectra, getAvSpectraForGrp)
     colnames(av_spectra)[1] <- 'grpid'
     av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
-    colnames(av_spectra)[2] <- 'fileid'
+    colnames(av_spectra)[colnames(av_spectra)=='sample'] <- 'fileid'
 
     colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
     av_spectra$sid <- (max(speaks$sid)+1):(max(speaks$sid)+nrow(av_spectra))
@@ -285,9 +285,6 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 
 
   }
-
-
-
 
 
 

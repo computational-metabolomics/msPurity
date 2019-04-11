@@ -157,9 +157,4 @@ subtractMZ <- function(mz1, mz2, i1, i2, ppm = 5, s2bthres = 10){
 
 }
 
-overlap <- function(start1, end1, start2, end2){
-  #Does the range (start1, end1) overlap with (start2, end2)? (returns boolean)
-  #based on "De Morgan's laws", see http://nedbatchelder.com/blog/201310/range_overlap_in_two_compares.html
-  return((end1 >= start2) & (end2 >= start1))
 
-}

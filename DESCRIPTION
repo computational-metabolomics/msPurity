@@ -18,6 +18,9 @@ Depends:
     Rcpp
 Imports:
     plyr,
+    dplyr,
+    dbplyr,
+    magrittr,
     foreach,
     parallel,
     doSNOW,
@@ -45,12 +48,12 @@ biocViews: MassSpectrometry, Metabolomics, Software
 Collate: 
     'all-generics.R'
     'averaging.R'
-    'combine_annotations.R'
+    'combineAnnotations.R'
     'createDatabase.R'
-    'create_database.R'
+    'create-database.R'
     'flag-filter-remove.R'
     'iw-norm.R'
-    'match_factor.R'
+    'matching-algs.R'
     'meta_extract.R'
     'pcalc.R'
     'purityA-0-class.R'
@@ -70,7 +73,6 @@ Collate:
     'purityD-writeOut.R'
     'purityX-class.R'
     'purityX-constructor.R'
-    'spectral-complexity.R'
     'spectralMatching.R'
-    'spectral_matching.R'
+    'spectral-matching.R'
     'splinepurity.R'
