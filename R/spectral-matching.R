@@ -1,7 +1,9 @@
-#' @title Spectral matching
+#' @title Spectral matching [deprecated]
 #'
 #' @description
 #' Perform spectral matching to spectral libraries using dot product cosine on a LC-MS/MS dataset and link to XCMS features.
+#'
+#' msPurity::spectral_matching is deprecated - please use msPurity::spectralMatching for future use
 #'
 #' @param query_db_pth character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
 #'                       either from frag4feature or from create_database functions.

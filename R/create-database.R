@@ -1,7 +1,9 @@
-#' @title Create database
+#' @title Create database [deprecated]
 #'
 #' @description
 #' Create and SQLite database of an LC-MS(/MS) experiment
+#'
+#' msPurity::create_database is deprecated. Please use msPurity::createDatabase for future use
 #'
 #' @param pa purityA object; Needs to be the same used for frag4feature function
 #' @param xset xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)
