@@ -5,14 +5,15 @@
 \title{Spectral matching}
 \usage{
 spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
-  q_ppmProd = 10, q_ppmPrec = 5, q_raThres = 0, q_pol = "positive",
-  q_instrumentTypes = NA, q_instrument = NA, q_sources = NA,
-  q_spectraType = "av_all", q_pids = NA, q_rtrange = c(NA, NA),
-  q_spectraFilter = TRUE, q_xcmsGroups = NA, l_purity = NA,
-  l_ppmProd = 10, l_ppmPrec = 5, l_raThres = 0, l_pol = "positive",
-  l_instrumentTypes = NA, l_instrument = NA, l_sources = NA,
-  l_spectraType = NA, l_pids = NA, l_rtrange = c(NA, NA),
-  l_spectraFilter = NA, l_xcmsGroups = NA, usePrecursors = TRUE,
+  q_ppmProd = 10, q_ppmPrec = 5, q_raThres = NA,
+  q_pol = "positive", q_instrumentTypes = NA, q_instrument = NA,
+  q_sources = NA, q_spectraTypes = "av_all", q_pids = NA,
+  q_rtrange = c(NA, NA), q_spectraFilter = TRUE, q_xcmsGroups = NA,
+  q_accessions = NA, l_purity = NA, l_ppmProd = 10, l_ppmPrec = 5,
+  l_raThres = NA, l_pol = "positive", l_instrumentTypes = NA,
+  l_instrument = NA, l_sources = NA, l_spectraTypes = NA,
+  l_pids = NA, l_rtrange = c(NA, NA), l_spectraFilter = FALSE,
+  l_xcmsGroups = NA, l_accessions = NA, usePrecursors = TRUE,
   raW = 0.5, mzW = 2, rttol = NA, cores = 1, updateDb = FALSE,
   copyDb = FALSE, outDir = ".")
 }
@@ -35,7 +36,7 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 
 \item{q_sources}{vector; Sources of query spectra (e.g. massbank, hmdb).}
 
-\item{q_spectraType}{character; Spectra type of query spectra to perfrom spectral matching with ['scans', 'av_all', 'intra', 'inter']}
+\item{q_spectraTypes}{character; Spectra types of query spectra to perfrom spectral matching e.g. ('scans', 'av_all', 'intra', 'inter')}
 
 \item{q_pids}{vector; pids for query spectra (correspond to column 'pid; in s_peak_meta)}
 
@@ -44,6 +45,8 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 \item{q_spectraFilter}{boolean; For query spectra, if prior filtering performed with msPurity, flag peaks will be removed from spectral matching}
 
 \item{q_xcmsGroups}{vector; XCMS group ids for query spectra}
+
+\item{q_accessions}{vector; accession ids to filter query spectra}
 
 \item{l_purity}{character; Precursor ion purity threshold for the library spectra (uses interpolated purity - inPurity)}
 
@@ -59,7 +62,7 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 
 \item{l_sources}{vector; Sources of library spectra (e.g. massbank, hmdb).}
 
-\item{l_spectraType}{character; Spectra type of library spectra to perfrom spectral matching with ['scans', 'av_all', 'intra', 'inter']}
+\item{l_spectraTypes}{vector; Spectra type of library spectra to perfrom spectral matching with e.g. ('scans', 'av_all', 'intra', 'inter')}
 
 \item{l_pids}{vector; pids for library spectra (correspond to column 'pid; in s_peak_meta)}
 
@@ -68,6 +71,8 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 \item{l_spectraFilter}{boolean; For library spectra, if prior filtering performed with msPurity, flag peaks will be removed from spectral matching}
 
 \item{l_xcmsGroups}{vector; XCMS group ids for library spectra}
+
+\item{l_accessions}{vector; accession ids to filter library spectra}
 
 \item{usePrecursors}{boolean; If TRUE spectra will be filtered by similarity of precursors based on ppm range defined by l_ppmPrec and q_ppmPrec}
 
@@ -98,17 +103,18 @@ list of database details and dataframe summarising the results for the xcms feat
 Perform spectral matching to spectral libraries on SQLite database of query and library spectra
 }
 \examples{
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#xset <- xcms::xcmsSet(msmsPths)
+#xset <- xcms::group(xset)
+#xset <- xcms::retcor(xset)
+#xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
-pa <- filterFragSpectra(pa, allfrag=TRUE)
-pa <- averageAllFragSpectra(pa)
-q_dbPth <- createDatabase(pa, xset)
-result <- spectralMatching(q_dbPth)
+#pa  <- purityA(msmsPths)
+#pa <- frag4feature(pa, xset)
+#pa <- filterFragSpectra(pa, allfrag=TRUE)
+#pa <- averageAllFragSpectra(pa)
+#q_dbPth <- createDatabase(pa, xset)
+q_dbPth <- system.file("extdata", "createDatabase_example.sqlite", package="msPurity")
+result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 
 }

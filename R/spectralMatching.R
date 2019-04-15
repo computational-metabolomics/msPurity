@@ -64,7 +64,7 @@
 #' @param copyDb boolean; If updating the database - perform on a copy rather thatn the original query database
 #' @param outDir character; If copying the database - the directory to copy the database to
 #'
-#'
+#' @importFrom rlang .data
 #' @importFrom magrittr %>%
 #' @export
 spectralMatching <- function(
@@ -295,11 +295,11 @@ spectralMatching <- function(
 filterPid <- function(sp, pids){
   nms <- names(sp %>% dplyr::collect())
   if ("library_spectra_meta_id" %in% nms){
-    sp <- sp %>% dplyr::filter(library_spectra_meta_id %in% pids)
+    sp <- sp %>% dplyr::filter(.data$library_spectra_meta_id %in% pids)
   }else if ("pid" %in% nms){
-    sp <- sp %>% dplyr::filter(pid %in% pids)
+    sp <- sp %>% dplyr::filter(.data$pid %in% pids)
   }else{
-    sp <- sp %>% dplyr::filter(id %in% pids)
+    sp <- sp %>% dplyr::filter(.data$id %in% pids)
   }
   return(sp)
 }
@@ -319,15 +319,15 @@ getScanPeaksSqlite <- function(con, spectraFilter=TRUE, spectraTypes=NA, raThres
   }
 
   if (spectraFilter){
-     speaks <- speaks %>% dplyr::filter(pass_flag==TRUE)
+     speaks <- speaks %>% dplyr::filter(.data$pass_flag==TRUE)
   }
 
   if (!anyNA(spectraTypes)){
-    speaks <- speaks %>% dplyr::filter(type %in% spectraType)
+    speaks <- speaks %>% dplyr::filter(.data$type %in% spectraType)
   }
 
   if (!is.na(raThres)){
-    speaks <- speaks %>% dplyr::filter(ra>raThres)
+    speaks <- speaks %>% dplyr::filter(.data$ra>raThres)
   }
 
   return(speaks)
@@ -385,19 +385,19 @@ filterSMeta <- function(purity=NA,
   speakmeta <- getSmeta(con)
 
   if(!anyNA(accessions)){
-    speakmeta <- speakmeta %>% dplyr::filter(accession %in% accessions)
+    speakmeta <- speakmeta %>% dplyr::filter(.data$accession %in% accessions)
   }
   #print('accession')
   #print(speakmeta)
 
   if(!is.na(purity)){
-    speakmeta <- speakmeta %>% dplyr::filter(inPurity > purity)
+    speakmeta <- speakmeta %>% dplyr::filter(.data$inPurity > purity)
   }
   #print('purity')
   #print(speakmeta)
 
   if (!is.na(pol)){
-    speakmeta <- speakmeta %>% dplyr::filter(lower(polarity) == lower(pol))
+    speakmeta <- speakmeta %>% dplyr::filter(lower(.data$polarity) == lower(pol))
   }
 
   #print('polarity')
@@ -405,11 +405,11 @@ filterSMeta <- function(purity=NA,
 
 
   if (!anyNA(instrumentTypes)  && !is.na(instrumentTypes)){
-    speakmeta <- speakmeta %>% dplyr::filter(instrument_type %in% instrumentTypes || instrument_type %in% instrumentTypes)
+    speakmeta <- speakmeta %>% dplyr::filter(.data$instrument_type %in% instrumentTypes || .data$instrument_type %in% instrumentTypes)
   }else if (!anyNA(instrumentTypes)){
-    speakmeta <- speakmeta %>% dplyr::filter(instrument_type %in% instrumentTypes)
+    speakmeta <- speakmeta %>% dplyr::filter(.data$instrument_type %in% instrumentTypes)
   }else if (!anyNA(instrument)){
-    speakmeta <- speakmeta %>% dplyr::filter(instrument %in% instrument)
+    speakmeta <- speakmeta %>% dplyr::filter(.data$instrument %in% instrument)
   }
 
   #print('instruments')
@@ -419,7 +419,7 @@ filterSMeta <- function(purity=NA,
   if(!anyNA(sources) && DBI::dbExistsTable(con, "library_spectra_source")){
     sourcetbl <- con %>% dplyr::tbl("library_spectra_source")
     speakmeta <- speakmeta %>% dplyr::left_join(sourcetbl,  by=c('library_spectra_source_id'='id'),suffix = c("", ".y")) %>%
-              dplyr::filter(name.y %in% sources)
+              dplyr::filter(.data$name.y %in% sources)
   }
 
   #print('sources')
@@ -434,7 +434,7 @@ filterSMeta <- function(purity=NA,
 
 
   if(!anyNA(rtrange)){
-    speakmeta <- speakmeta %>% dplyr::filter(retention_time >= rtrange[1] & retention_time <= rtrange[2])
+    speakmeta <- speakmeta %>% dplyr::filter(.data$retention_time >= rtrange[1] & .data$retention_time <= rtrange[2])
   }
 
   #print('rtrange')
@@ -451,7 +451,7 @@ filterSMeta <- function(purity=NA,
                            WHERE cpg.grpid in (', paste(xcmsGroups, collapse = ','), ')'))
 
     xcmsGroups <- as.character(xcmsGroups)
-    speakmeta <- speakmeta %>% dplyr::filter(grpid %in% xcmsGroups || pid %in% XLI$pid)
+    speakmeta <- speakmeta %>% dplyr::filter(.data$grpid %in% xcmsGroups || .data$pid %in% XLI$pid)
 
   }
 
@@ -464,7 +464,7 @@ filterSMeta <- function(purity=NA,
       spectraTypes[spectraTypes=='av_all'] = 'all'
     }
 
-    speakmeta <- speakmeta %>% dplyr::filter(spectrum_type %in% spectraTypes)
+    speakmeta <- speakmeta %>% dplyr::filter(.data$spectrum_type %in% spectraTypes)
   }
 
   #print('spectra types')
@@ -505,7 +505,7 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
   # get meta
   q_speakmeta <- getSmeta(q_con)
-  q_speakmetai <- q_speakmeta %>% dplyr::filter(pid==q_pid) %>% dplyr::collect()
+  q_speakmetai <- q_speakmeta %>% dplyr::filter(.data$pid==q_pid) %>% dplyr::collect()
 
   l_speakmeta <- getSmeta(l_con)
   l_speakmeta <- filterPid(l_speakmeta, l_pids) %>% dplyr::collect() # get only meta for the chosen pids for library
@@ -530,9 +530,9 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
     # Search against the range for the library
     l_fspeakmeta <- l_speakmeta %>%
-      dplyr::filter( (q_precMZhi >= precursor_mz - ((precursor_mz*0.000001)*l_ppmPrec))
+      dplyr::filter( (q_precMZhi >= .data$precursor_mz - ((.data$precursor_mz*0.000001)*l_ppmPrec))
                      &
-                       (precursor_mz + ((precursor_mz*0.000001)*l_ppmPrec) >= q_precMZlo)) %>%
+                       (.data$precursor_mz + ((.data$precursor_mz*0.000001)*l_ppmPrec) >= q_precMZlo)) %>%
       #summarise(id)  %>% # need to change pid
       dplyr::collect()
   }else{
@@ -541,7 +541,7 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
 
   if(!is.na(rttol)){
-    l_fspeakmeta <- l_fspeakmeta %>% dplyr::filter(abs(retention_time-q_speakmetai)<rttol)
+    l_fspeakmeta <- l_fspeakmeta %>% dplyr::filter(abs(.data$retention_time-q_speakmetai)<rttol)
   }
 
   if(nrow(l_fspeakmeta)==0){
@@ -587,11 +587,11 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
   #print(l_pid)
 
   if ('pid' %in% colnames(l_speaks)){
-    l_speaksi <- l_speaks %>% dplyr::filter(pid==l_pid) %>% dplyr::collect()
-    l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(pid==l_pid) %>% dplyr::collect())
+    l_speaksi <- l_speaks %>% dplyr::filter(.data$pid==l_pid) %>% dplyr::collect()
+    l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(.data$pid==l_pid) %>% dplyr::collect())
   }else{
-    l_speaksi <- l_speaks %>% dplyr::filter(library_spectra_meta_id==l_pid) %>% dplyr::collect()
-    l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(id==l_pid) %>% dplyr::collect())
+    l_speaksi <- l_speaks %>% dplyr::filter(l.data$ibrary_spectra_meta_id==l_pid) %>% dplyr::collect()
+    l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(.data$id==l_pid) %>% dplyr::collect())
   }
 
 

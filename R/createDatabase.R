@@ -11,7 +11,8 @@
 #'                          be the one used for the frag4feature function
 #' @param dbName character [optional]; Name of the result database
 #' @param grpPeaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
-#' @param out_dir character; Out directory for the SQLite result database
+#' @param outDir character; Out directory for the SQLite result database
+#' @param metadata list; A list of metadata to add to the s_peak_meta table
 #' @return path to SQLite database and database name
 #'
 #' @examples
@@ -207,10 +208,14 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 
 
     grpidx <- which(grpPeaklist$grpid %in% topnav$grpid)
-
+    if (is.null(topnav$fileid)){
+      topnvfileids <- NA
+    }else{
+      topnvfileids <- topnav$fileid
+    }
 
     scaninfo <- plyr::rbind.fill(scaninfo, data.frame(pid=topnav$pid,
-                                          fileid=topnav$fileid,
+                                          fileid=topnvfileids,
                                           spectrum_type=topnav$type,
                                           precursor_mz=topnav$precusor_mz,
                                           retention_time=topnav$retention_time,
@@ -293,8 +298,8 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     # Add CAMERA ruleset
     ###############################################
     if(is.null(xsa@ruleset)){
-      rules_pos <- read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = T)
-      rules_neg <- read.csv(system.file(file.path('rules', 'extended_adducts_neg.csv') , package = "CAMERA"))
+      rules_pos <- utils::read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = T)
+      rules_neg <- utils::read.csv(system.file(file.path('rules', 'extended_adducts_neg.csv') , package = "CAMERA"))
       rules <- rbind(rules_pos, rules_neg)
 
     }else{

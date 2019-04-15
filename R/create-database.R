@@ -246,8 +246,8 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     # Add CAMERA ruleset
     ###############################################
     if(is.null(xsa@ruleset)){
-      rules_pos <- read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = T)
-      rules_neg <- read.csv(system.file(file.path('rules', 'extended_adducts_neg.csv') , package = "CAMERA"))
+      rules_pos <- utils::read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = T)
+      rules_neg <- utils::read.csv(system.file(file.path('rules', 'extended_adducts_neg.csv') , package = "CAMERA"))
       rules <- rbind(rules_pos, rules_neg)
 
     }else{

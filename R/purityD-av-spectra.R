@@ -176,7 +176,7 @@ averageSpectraSingle <- function(filePth,
   }
 
   # get normalised TIC intensity
-  peaklist <- plyr::ddply( peaklist, .(scanid), function(x){
+  peaklist <- plyr::ddply( peaklist, ~ scanid, function(x){
     x$inorm = x$i/sum(x$i)
     return(x)
     })
