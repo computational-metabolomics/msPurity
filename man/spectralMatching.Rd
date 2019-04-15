@@ -15,7 +15,7 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
   l_pids = NA, l_rtrange = c(NA, NA), l_spectraFilter = FALSE,
   l_xcmsGroups = NA, l_accessions = NA, usePrecursors = TRUE,
   raW = 0.5, mzW = 2, rttol = NA, cores = 1, updateDb = FALSE,
-  copyDb = FALSE, outDir = ".")
+  copyDb = FALSE, outPth = "sm_result.sqlite")
 }
 \arguments{
 \item{q_dbPth}{character; Path of the database of queries that will be searched against the library spectra. Generated from createDatabase}
@@ -88,7 +88,7 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 
 \item{copyDb}{boolean; If updating the database - perform on a copy rather thatn the original query database}
 
-\item{outDir}{character; If copying the database - the directory to copy the database to}
+\item{outPth}{character; If copying the database - the path of the new database file}
 
 \item{q_instruments}{vector; Instruments for query spectra (note that this is used in combination with q_instrumentTypes - any
 spectra matching either q_instrumentTypes or q_instruments will be used).}

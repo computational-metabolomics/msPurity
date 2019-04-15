@@ -33,7 +33,7 @@ test_that("checking purityX (grouped)", {
 test_that("checking purityX (single file)", {
   print ("\n")
   print("########################################################")
-  print("## Checking purityX (single file)                         ##")
+  print("## Checking purityX (single file)                     ##")
   print("########################################################")
 
   #msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")

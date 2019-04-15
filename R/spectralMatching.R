@@ -164,13 +164,13 @@ spectralMatching <- function(
   ########################################################
   # can't parallize dpylr without non cran package
   # Go back to using good old plyr
-  #print(q_speakmeta)
-
-  q_fpids <- dplyr::pull(q_speakmeta, pid)
-  l_fpids <- dplyr::pull(l_speakmeta, id)
 
 
-  message('align and match')
+  q_fpids <- pullPid(q_speakmeta)
+  l_fpids <- pullPid(l_speakmeta)
+
+
+  message('aligning and matching')
 
 
   # Check cores and choose if parallel or not (do or dopar)
@@ -199,9 +199,6 @@ spectralMatching <- function(
                                                     raW=raW,
                                                     rttol=rttol,
                           .parallel=parallel)
-
-
-
 
   # run parallel (or not) using foreach
   # matched <- operator(foreach::foreach(i = 1:2,
@@ -236,13 +233,17 @@ spectralMatching <- function(
 
   # remove the plyr id column
   matched <- matched[,!names(matched)=='X1']
+  matched$mid <- 1:nrow(matched)
+
+  nmCols <- c("dpc","rdpc","cdpc","mcount", "allcount", "mpercent", "lpid", "qpid", "mid")
+  matched[,nmCols] <- as.numeric(as.character(unlist(matched[,nmCols])))
 
 
   if (updateDb){
-    matched$mid <- 1:nrow(matched)
+
     custom_dbWriteTable(name_pk = 'mid', df=matched, fks=NA, table_name = 'sm_matches', con = q_con)
 
-    if (DBI::dbExistsTable(l_con, "metab_compound")){
+    if (DBI::dbExistsTable(l_con, "metab_compound") && !DBI::dbExistsTable(q_con, "metab_compound") ){
       # Schema needs to be updated to be more generic
       compound_details <- DBI::dbGetQuery(l_con, sprintf('SELECT  DISTINCT c.* FROM library_spectra_meta AS m
                                                           LEFT JOIN metab_compound AS
@@ -287,22 +288,35 @@ spectralMatching <- function(
   DBI::dbDisconnect(l_con)
 
 
-  return(list('q_dbPth' = q_dbPth, 'xcmsMatchedResults' = xcmsMatchedResults))
+  return(list('q_dbPth' = q_dbPth, 'matchedResults' = matched,
+              'xcmsMatchedResults' = xcmsMatchedResults))
 }
 
-filterPid <- function(sp, pids){
+# filterPid <- function(sp, pids){
+#   nms <- names(sp %>% dplyr::collect())
+#   if ("library_spectra_meta_id" %in% nms){
+#     sp <- sp %>% dplyr::filter(library_spectra_meta_id %in% pids)
+#   }else if ("pid" %in% nms){
+#     sp <- sp %>% dplyr::filter(pid %in% pids)
+#   }else{
+#     sp <- sp %>% dplyr::filter(id %in% pids)
+#   }
+#   return(sp)
+# }
+
+pullPid <- function(sp, pids){
   nms <- names(sp %>% dplyr::collect())
-  if ("library_spectra_meta_id" %in% nms){
-    sp <- sp %>% dplyr::filter(library_spectra_meta_id %in% pids)
-  }else if ("pid" %in% nms){
-    sp <- sp %>% dplyr::filter(pid %in% pids)
+  if ("pid" %in% nms){
+    return(dplyr::pull(sp, pid))
   }else{
-    sp <- sp %>% dplyr::filter(id %in% pids)
+    return(dplyr::pull(sp, id))
   }
   return(sp)
 }
 
 getScanPeaksSqlite <- function(con, spectraFilter=TRUE, spectraTypes=NA, raThres=NA, pids=NA){
+
+
   if (DBI::dbExistsTable(con, "s_peaks")){
     speaks <- con %>% dplyr::tbl("s_peaks")
   }else if (DBI::dbExistsTable(con, "library_spectra")) {
@@ -312,19 +326,23 @@ getScanPeaksSqlite <- function(con, spectraFilter=TRUE, spectraTypes=NA, raThres
     stop('No spectra available')
   }
 
-  if (!anyNA(pids)){
-    speaks <- filterPid(speaks, pids)
+  cn <- getPeakCols(con)
+
+  if ('pid' %in% cn$name  && !anyNA(pids)){
+    speaks <- speaks %>% dplyr::filter(pid %in% pids)
+  }else if("library_spectra_meta_id" %in% cn$name  && !anyNA(pids)){
+    speaks <- speaks %>% dplyr::filter(library_spectra_meta_id %in% pids)
   }
 
-  if (spectraFilter){
+  if ('pass_flag' %in% cn$name && spectraFilter ){
      speaks <- speaks %>% dplyr::filter(pass_flag==TRUE)
   }
 
-  if (!anyNA(spectraTypes)){
+  if ('type' %in% cn$name && !anyNA(spectraTypes)){
     speaks <- speaks %>% dplyr::filter(type %in% spectraType)
   }
 
-  if (!is.na(raThres)){
+  if ('ra' %in% cn$name && !is.na(raThres)){
     speaks <- speaks %>% dplyr::filter(ra>raThres)
   }
 
@@ -380,23 +398,25 @@ filterSMeta <- function(purity=NA,
                         accessions=NA,
                         con){
 
-  speakmeta <- getSmeta(con)
+  # get column names
+  # PRAGMA table_info();
+  meta_cn <- getMetaCols(con)
 
-  #speakmeta <- speakmeta %>% dplyr::tally()
+  speakmeta <- getSmeta(con, pids)
 
-  if(!anyNA(accessions)){
+  if('accession' %in% meta_cn$name && !anyNA(accessions)){
     speakmeta <- speakmeta %>% dplyr::filter(accession %in% accessions)
   }
   #print('accession')
   #print(speakmeta)
 
-  if(!is.na(purity)){
+  if('inPurity' %in% meta_cn$name &&  !is.na(purity)){
     speakmeta <- speakmeta %>% dplyr::filter(inPurity > purity)
   }
   #print('purity')
   #print(speakmeta)
 
-  if (!is.na(pol)){
+  if ('polarity' %in% meta_cn$name && !is.na(pol)){
     speakmeta <- speakmeta %>% dplyr::filter(lower(polarity) == lower(pol))
   }
 
@@ -404,11 +424,11 @@ filterSMeta <- function(purity=NA,
   #print(speakmeta)
 
 
-  if (!anyNA(instrumentTypes)  && !is.na(instrumentTypes)){
+  if ('instrument_type' %in% meta_cn$name &&  !anyNA(instrumentTypes)  && !is.na(instrumentTypes)){
     speakmeta <- speakmeta %>% dplyr::filter(instrument_type %in% instrumentTypes || instrument_type %in% instrumentTypes)
-  }else if (!anyNA(instrumentTypes)){
+  }else if ('instrument' %in% meta_cn$name && 'instrument_type' %in% meta_cn$name && !anyNA(instrumentTypes)){
     speakmeta <- speakmeta %>% dplyr::filter(instrument_type %in% instrumentTypes)
-  }else if (!anyNA(instrument)){
+  }else if ('instrument' %in% meta_cn$name && !anyNA(instrument)){
     speakmeta <- speakmeta %>% dplyr::filter(instrument %in% instrument)
   }
 
@@ -425,15 +445,9 @@ filterSMeta <- function(purity=NA,
   #print('sources')
   #print(speakmeta)
 
-  if(!anyNA(pids)){
-    speakmeta <- filterPid(speakmeta, pids)
-  }
-
-  #print('pids')
-  #print(speakmeta)
 
 
-  if(!anyNA(rtrange)){
+  if('retention_time' %in% meta_cn$name && !anyNA(rtrange)){
     speakmeta <- speakmeta %>% dplyr::filter(retention_time >= rtrange[1] & retention_time <= rtrange[2])
   }
 
@@ -441,7 +455,7 @@ filterSMeta <- function(purity=NA,
   #print(speakmeta)
 
 
-  if (!anyNA(xcmsGroups) && DBI::dbExistsTable(con, "c_peak_groups")){
+  if ( !anyNA(xcmsGroups) && DBI::dbExistsTable(con, "c_peak_groups")){
 
     XLI <- DBI::dbGetQuery(con, paste0('SELECT cpg.grpid, spm.pid FROM s_peak_meta AS spm
                            LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.pid=spm.pid
@@ -451,7 +465,7 @@ filterSMeta <- function(purity=NA,
                            WHERE cpg.grpid in (', paste(xcmsGroups, collapse = ','), ')'))
 
     xcmsGroups <- as.character(xcmsGroups)
-    print(XLI$pid)
+
     speakmeta <- speakmeta %>% dplyr::filter(grpid %in% xcmsGroups | pid %in% XLI$pid)
 
   }
@@ -460,10 +474,12 @@ filterSMeta <- function(purity=NA,
   #print(speakmeta)
 
 
-  if (!is.na(spectraTypes)){
+  if ('spectrum_type' %in% meta_cn$name && !is.na(spectraTypes)){
     if ('av_all' %in% spectraTypes){
       spectraTypes[spectraTypes=='av_all'] = 'all'
     }
+
+
 
     speakmeta <- speakmeta %>% dplyr::filter(spectrum_type %in% spectraTypes)
   }
@@ -483,16 +499,43 @@ filterPrecursors <- function(q_pid, q_speakmeta, l_speakmeta, q_ppmPrec, l_ppmPr
 
 }
 
-getSmeta <- function(con){
+getSmeta <- function(con, pids=NA){
   if (DBI::dbExistsTable(con, "s_peak_meta")){
     speakmeta <- con %>% dplyr::tbl("s_peak_meta")
+    if (!anyNA(pids)){
+      speakmeta <- speakmeta  %>%  dplyr::filter(pid %in% pids)
+    }
+
   }else if (DBI::dbExistsTable(con, "library_spectra_meta")) {
     # old sqlite format
     speakmeta <- con %>% dplyr::tbl("library_spectra_meta")
+    if (!anyNA(pids)){
+
+      speakmeta <- speakmeta  %>% dplyr::filter(id %in% pids)
+    }
+
   }else{
     stop('No meta data for spectra available')
   }
   return(speakmeta)
+}
+
+getMetaCols <- function(con){
+  if(DBI::dbExistsTable(con, "s_peak_meta")){
+    meta_cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(s_peak_meta)')
+  }else{
+    meta_cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(library_spectra_meta)')
+  }
+  return(meta_cn)
+}
+
+getPeakCols <- function(con){
+  if(DBI::dbExistsTable(con, "s_peak_meta")){
+    cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(s_peaks)')
+  }else{
+    cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(library_spectra)')
+  }
+  return(cn)
 }
 
 queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd, l_ppmPrec, l_ppmProd,
@@ -501,12 +544,8 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
   q_con <- DBI::dbConnect(RSQLite::SQLite(), q_dbPth)
   l_con <- DBI::dbConnect(RSQLite::SQLite(), l_dbPth)
 
-  # get meta
-  q_speakmeta <- getSmeta(q_con)
-  q_speakmetai <- q_speakmeta %>% dplyr::filter(pid==q_pid) %>% dplyr::collect()
 
-  l_speakmeta <- getSmeta(l_con)
-  l_speakmeta <- filterPid(l_speakmeta, l_pids) %>% dplyr::collect() # get only meta for the chosen pids for library
+  q_speakmetai <- getSmeta(q_con, q_pid) %>% dplyr::collect()
 
   q_speaksi <- getScanPeaksSqlite(q_con, spectraFilter=q_spectraFilter, pids=q_pid) %>% dplyr::collect()
 
@@ -516,10 +555,12 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
   }
 
 
+  l_speakmeta <- getSmeta(q_con, l_pids) %>% dplyr::collect()
   l_speaks <- getScanPeaksSqlite(l_con, spectraFilter=l_spectraFilter, pids=l_pids) %>% dplyr::collect()
 
 
   if(usePrecursors){
+
     q_precMZ <- q_speakmetai$precursor_mz
     # Check if precursors are within tolerance
     # We have ppm tolerances for both the library and the query
@@ -539,6 +580,7 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
 
   if(!is.na(rttol)){
+
     l_fspeakmeta <- l_fspeakmeta %>% dplyr::filter(abs(retention_time-q_speakmetai)<rttol)
   }
 
@@ -564,7 +606,7 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
               )
 
-  colnames(searched)[1] <- 'lpid'
+
   searched$qpid <- q_pid
 
 
@@ -581,8 +623,9 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
 
 queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmProd, l_ppmProd, raW, mzW){
-  #print(q_speaksi)
-  #print(l_pid)
+
+
+
 
   if ('pid' %in% colnames(l_speaks)){
     l_speaksi <- l_speaks %>% dplyr::filter(pid==l_pid) %>% dplyr::collect()
@@ -599,9 +642,16 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
 
   am <- alignAndMatch(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW)
 
+  if ('pid' %in% colnames(l_speakmetai)){
+    lpids <- l_speakmetai$pid
+  }else{
+    lpids <- l_speakmetai$id
+  }
+
   return(c(am, 'accession'=l_speakmetai$accession,
                'name'=l_speakmetai$name,
-               'inchikey'=l_speakmetai$inchikey_id
+               'inchikey'=l_speakmetai$inchikey_id,
+               'lpid'=lpids
            ))
 }
 
@@ -615,6 +665,8 @@ alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW){
   l_speaksi$w <- (l_speaksi$mz^2) * (l_speaksi$ra^0.5)
   q_speaksi <- data.frame(q_speaksi)
   l_speaksi <- data.frame(l_speaksi)
+
+
 
   aligned <-align(q_speaksi, l_speaksi, l_ppmProd, q_ppmProd, raDiffThres=10)
 

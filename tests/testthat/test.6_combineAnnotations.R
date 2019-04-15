@@ -8,7 +8,7 @@ test_that("checking combine annotations based functions", {
   metfrag_resultPth <- system.file("extdata", "tests", "external_annotations", "metfrag.tsv", package="msPurity")
   sirius_csi_resultPth <- system.file("extdata","tests", "external_annotations", "sirus_csifingerid.tsv", package="msPurity")
   probmetab_resultPth <- system.file("extdata","tests", "external_annotations", "probmetab.tsv", package="msPurity")
-  sm_resultPth <- system.file("extdata","tests", "sm", "sm_result.sqlite", package="msPurity")
+  sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
 
   td <- tempdir()
   sm_resultPthCopy <- file.path(td, 'sm_result_tmp.sqlite')
@@ -28,10 +28,10 @@ test_that("checking combine annotations based functions", {
 
   combined <- combineAnnotations(sm_resultPthCopy, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
 
-  #write.table(combined ,'inst/extdata/external_annotations/combined.tsv', sep='\t', row.names = FALSE, col.names = TRUE )
+  #write.table(combined ,'inst/extdata/tests/external_annotations/combined.tsv', sep='\t', row.names = FALSE, col.names = TRUE )
 
 
-  combinedOLD <- read.table(system.file("extdata", "external_annotations", "combined.tsv", package="msPurity"),
+  combinedOLD <- read.table(system.file("extdata", "tests", "external_annotations", "combined.tsv", package="msPurity"),
                             header = TRUE, stringsAsFactors = FALSE)
   expect_equal(as.numeric(combined$grpid), as.numeric(combinedOLD$grpid))
   expect_equal(as.numeric(combined$sirius_id), as.numeric(combinedOLD$sirius_id))
