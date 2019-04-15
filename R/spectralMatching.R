@@ -5,18 +5,19 @@
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
-#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' xset <- xcms::xcmsSet(msmsPths)
-#' xset <- xcms::group(xset)
-#' xset <- xcms::retcor(xset)
-#' xset <- xcms::group(xset)
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #xset <- xcms::xcmsSet(msmsPths)
+#' #xset <- xcms::group(xset)
+#' #xset <- xcms::retcor(xset)
+#' #xset <- xcms::group(xset)
 #'
-#' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa, xset)
-#' pa <- filterFragSpectra(pa, allfrag=TRUE)
-#' pa <- averageAllFragSpectra(pa)
-#' q_dbPth <- createDatabase(pa, xset)
-#' result <- spectralMatching(q_dbPth)
+#' #pa  <- purityA(msmsPths)
+#' #pa <- frag4feature(pa, xset)
+#' #pa <- filterFragSpectra(pa, allfrag=TRUE)
+#' #pa <- averageAllFragSpectra(pa)
+#' #q_dbPth <- createDatabase(pa, xset)
+#' q_dbPth <- system.file("extdata", "createDatabase_example.sqlite", package="msPurity")
+#' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 #'
 #' @param q_dbPth character; Path of the database of queries that will be searched against the library spectra. Generated from createDatabase
 #' @param l_dbPth character; path to library spectral SQLite database. Defaults to msPurityData package data.
@@ -35,6 +36,7 @@
 #' @param q_rtrange vector; retention time range (in secs) of query spectra, first value mininum time and second value max e.g. c(0, 10) is between 0 and 10 seconds
 #' @param q_spectraFilter boolean; For query spectra, if prior filtering performed with msPurity, flag peaks will be removed from spectral matching
 #' @param q_xcmsGroups vector; XCMS group ids for query spectra
+#' @param q_accessions vector; accession ids to filter query spectra
 #'
 #' @param l_purity character; Precursor ion purity threshold for the library spectra (uses interpolated purity - inPurity)
 #' @param l_ppmProd numeric; ppm tolerance for library product
@@ -50,6 +52,7 @@
 #' @param l_rtrange vector; retention time range (in secs) of library spectra, first value mininum time and second value max e.g. c(0, 10) is between 0 and 10 seconds
 #' @param l_spectraFilter boolean; For library spectra, if prior filtering performed with msPurity, flag peaks will be removed from spectral matching
 #' @param l_xcmsGroups vector; XCMS group ids for library spectra
+#' @param l_accessions vector; accession ids to filter library spectra
 #'
 #' @param usePrecursors boolean; If TRUE spectra will be filtered by similarity of precursors based on ppm range defined by l_ppmPrec and q_ppmPrec
 #' @param raW numeric; Relative abundance weight for spectra (default to 0.5 as determined by massbank for ESI data)
@@ -81,6 +84,7 @@ spectralMatching <- function(
                              q_rtrange=c(NA, NA),
                              q_spectraFilter=TRUE,
                              q_xcmsGroups=NA,
+                             q_accessions=NA,
 
                              l_purity=NA,
                              l_ppmProd=10,
@@ -95,6 +99,7 @@ spectralMatching <- function(
                              l_rtrange=c(NA, NA),
                              l_spectraFilter=FALSE,
                              l_xcmsGroups=NA,
+                             l_accessions=NA,
                              usePrecursors=TRUE,
                              raW=0.5,
                              mzW=2,
@@ -131,7 +136,8 @@ spectralMatching <- function(
               rtrange = q_rtrange,
               con = q_con,
               xcmsGroups = q_xcmsGroups,
-              spectraTypes = q_spectraTypes)
+              spectraTypes = q_spectraTypes,
+              accessions = q_accessions)
 
   ########################################################
   # Filter the library dataset
@@ -149,7 +155,8 @@ spectralMatching <- function(
                              rtrange = l_rtrange,
                              con = l_con,
                              xcmsGroups = l_xcmsGroups,
-                             spectraTypes = l_spectraTypes)
+                             spectraTypes = l_spectraTypes,
+                             accessions = l_accessions)
 
 
 
@@ -372,12 +379,19 @@ filterSMeta <- function(purity=NA,
                         pids=NA,
                         rtrange=c(NA, NA),
                         spectraTypes=NA,
+                        accessions=NA,
                         con){
 
   speakmeta <- getSmeta(con)
 
+  if(!anyNA(accessions)){
+    speakmeta <- speakmeta %>% dplyr::filter(accession %in% accessions)
+  }
+  #print('accession')
+  #print(speakmeta)
+
   if(!is.na(purity)){
-    speakmeta <- speakmeta %>% dplyr::filter(lower(inPurity) > purity)
+    speakmeta <- speakmeta %>% dplyr::filter(inPurity > purity)
   }
   #print('purity')
   #print(speakmeta)
@@ -556,6 +570,8 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
   searched$qpid <- q_pid
 
 
+  DBI::dbDisconnect(q_con)
+  DBI::dbDisconnect(l_con)
 
 
 
@@ -567,6 +583,8 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
 
 queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmProd, l_ppmProd, raW, mzW){
+  #print(q_speaksi)
+  #print(l_pid)
 
   if ('pid' %in% colnames(l_speaks)){
     l_speaksi <- l_speaks %>% dplyr::filter(pid==l_pid) %>% dplyr::collect()

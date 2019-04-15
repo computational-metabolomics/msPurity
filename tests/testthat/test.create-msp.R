@@ -33,7 +33,7 @@ test_that("checking msp based functions", {
 
 
   metadata <- data.frame('grpid'=c(8, 12), 'MS$FOCUSED_ION: PRECURSOR_TYPE'=c('[M+H]+', '[M+H]+ 88.0158 [M+H+NH3]+ 105.042'),
-                         'AC$MASS_SPECTROMETRY: ION_MODE'=c("POSITIVE","POSITIVE"), 'CH$NAME:'=c('Sulfamethizole', 'Unknown'),
+                         'AC$MASS_SPECTROMETRY: ION_MODE'=c("POSITIVE","POSITIVE"), 'RECORD_TITLE:'=c('Sulfamethizole', 'Unknown'),
                          check.names = FALSE, stringsAsFactors = FALSE)
 
   tmp_dir <- tempdir()

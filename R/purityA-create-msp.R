@@ -205,7 +205,7 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
     if (msp_schema=='mona'){
       metadata_cols <- c("NAME:", "PRECURSOR_TYPE:")
     }else{
-      metadata_cols <- c("CH$NAME:", "MS$FOCUSED_ION: PRECURSOR_TYPE")
+      metadata_cols <- c("RECORD_TITLE:", "MS$FOCUSED_ION: PRECURSOR_TYPE")
     }
   }
 
@@ -261,7 +261,7 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
     cat(paste0("PRECURSORMZ: ", precmz , line_end), file = ofile)
     cat(paste0("RETENTIONTIME: ", rtmed, line_end), file = ofile)
   }else{
-    cat(paste0("CH$NAME: ", name, line_end), file = ofile)
+    cat(paste0("RECORD_TITLE: ", name, line_end), file = ofile)
     cat(paste0("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end), file = ofile)
     cat(paste0("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end), file = ofile)
   }
@@ -270,7 +270,7 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
 
 
   if (!is.null(metadata)){
-    metadata_to_write <- metadata[ , !(names(metadata) %in%  c('NAME:','CH$NAME:', 'grpid', 'PRECURSORMZ:', 'RETENTIONTIME:',
+    metadata_to_write <- metadata[ , !(names(metadata) %in%  c('NAME:','RECORD_TITLE:', 'grpid', 'PRECURSORMZ:', 'RETENTIONTIME:',
                                                                'MS$FOCUSED_ION: PRECURSOR_M/Z', 'AC$CHROMATOGRAPHY: RETENTION_TIME'))]
 
     cat(paste(as.character(names(metadata_to_write)), ' ', as.character(unlist(metadata_to_write)), line_end, sep='', collapse=''), file = ofile)
@@ -318,7 +318,7 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
 
 concat_name <- function(mz, rtmed, grpid, fileid=NA, metadata, metadata_cols){
 
-  name <- paste(" MZ:" ,round(mz, 4)," | RT:" ,round(rtmed,1),  " | XCMS_group:" ,grpid, " | file:" ,fileid, sep='')
+  name <- paste(" MZ:" ,round(mz, 4)," | RT:" ,round(rtmed,1),  " | grpid:" ,grpid, " | file:" ,fileid, sep='')
 
   if (!is.null(metadata) && nrow(metadata[metadata$grpid==grpid,])>0){
 
