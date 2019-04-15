@@ -96,13 +96,13 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
           spectrum <- spec[[j]]
 
           if ((filter)  & ('pass_flag' %in% colnames(spectrum))){
-             spectrum <- spectrum[spectrum[,'pass_flag']==1,]
+             spectrum <- spectrum[spectrum[,'pass_flag']==1,,drop=FALSE]
           }
 
-          spectrum <- add_mzi_cols(spectrum)
-
-
-          write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
+          if (nrow(spectrum)>0){
+            spectrum <- add_mzi_cols(spectrum)
+            write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
+          }
 
 
         }
@@ -331,6 +331,7 @@ concat_name <- function(mz, rtmed, grpid, fileid=NA, metadata, metadata_cols){
 }
 
 add_mzi_cols <- function(x){
+
   x <- data.frame(x)
   colnames(x) <- c('mz', 'i')
   return(x)

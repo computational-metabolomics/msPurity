@@ -17,11 +17,13 @@ from the xset object nested with the CAMERA xsa object. Adduct and isotope infor
 will be included into the database when using this parameter. The underlying xset object must
 be the one used for the frag4feature function}
 
+\item{outDir}{character; Out directory for the SQLite result database}
+
 \item{grpPeaklist}{dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though}
 
 \item{dbName}{character [optional]; Name of the result database}
 
-\item{out_dir}{character; Out directory for the SQLite result database}
+\item{metadata}{list; A list of metadata to add to the s_peak_meta table}
 }
 \value{
 path to SQLite database and database name

@@ -19,11 +19,11 @@ test_that("checking flag and remove peaks", {
 
   xset@phenoData[,1] <- c('blank', 'blank', 'sample', 'sample')
 
-  print(xset@phenoData)
+  #print(xset@phenoData)
   xset <- xcms::group(xset)
   fr = msPurity::flag_remove(xset)
 
-  print(head(fr$grp_peaklist))
+  #print(head(fr$grp_peaklist))
   expect_equal(nrow(fr$grp_peaklist), 14) # passing on testthat but failng on check (not sure why)
 
   # testthat::expect_equal(nrow(fr[[2]]), 14)

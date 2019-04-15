@@ -624,7 +624,7 @@ getKeggFromInchi <- function(inchikey, silentRestErrors){
 addProbmetab <- function(pth, con){
   if (!is.null(pth)){
 
-    df <- read.table(pth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "")
+    df <- utils::read.table(pth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "")
 
     nmap <- DBI::dbGetQuery(con, 'SELECT grpid, grp_name FROM c_peak_groups')
 

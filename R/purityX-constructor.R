@@ -196,7 +196,7 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 
   }
 
-  print(nrow(grouplist))
+  #print(nrow(grouplist))
 
   # Trn into dataframe for ease of use with plyr
   grouplist <- data.frame(grouplist)
