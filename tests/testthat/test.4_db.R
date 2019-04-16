@@ -9,10 +9,11 @@ test_that("checking create_database functions (old schema)", {
   pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
   xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
 
+  msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
   pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
   pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-  xset@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-  xset@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+  xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+  xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 
 
   td <- tempdir()

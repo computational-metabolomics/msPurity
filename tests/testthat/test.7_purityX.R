@@ -13,8 +13,8 @@ test_that("checking purityX (grouped)", {
 
   xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset.rds", package="msPurity"))
 
-  xset@fileList[1] <- msPths[basename(msPths)=="LCMSMS_1.mzML"]
-  xset@fileList[2] <- msPths[basename(msPths)=="LCMSMS_2.mzML"]
+  xset@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
+  xset@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
 
 
   px <- purityX(xset, cores = 1, xgroups = c(1, 2), ilim=0)

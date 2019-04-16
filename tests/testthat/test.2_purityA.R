@@ -39,8 +39,8 @@ test_that("checking frag4feature", {
   xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
   pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
   pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-  xset@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-  xset@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+  xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+  xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 
 
   pa <- frag4feature(pa, xset, create_db=FALSE)
@@ -141,7 +141,7 @@ test_that("checking averageIntraFragSpectra (no filter) purityA", {
 test_that("checking averageInterFragSpectra (no filter) purityA", {
   print ("\n")
   print("########################################################")
-  print("## Checking averageIntraFragSpectra                   ##")
+  print("## Checking averageInterFragSpectra                   ##")
   print("########################################################")
 
   pa <- readRDS(system.file("extdata", "tests", "purityA", "4_averageIntraFragSpectra_no_filter_pa.rds", package="msPurity"))
@@ -163,7 +163,7 @@ test_that("checking averageInterFragSpectra (no filter) purityA", {
 test_that("checking averageAllFragSpectra (no filter) purityA", {
   print ("\n")
   print("########################################################")
-  print("## Checking averageIntraFragSpectra                   ##")
+  print("## Checking averageAllFragSpectra                   ##")
   print("########################################################")
 
   pa <- readRDS(system.file("extdata", "tests", "purityA", "5_averageInterFragSpectra_no_filter_pa.rds", package="msPurity"))
@@ -210,7 +210,7 @@ test_that("checking averageIntraFragSpectra (with filter) purityA", {
 test_that("checking averageInterFragSpectra (with filter) purityA", {
   print ("\n")
   print("########################################################")
-  print("## Checking averageIntraFragSpectra (with filter)     ##")
+  print("## Checking averageInterFragSpectra (with filter)     ##")
   print("########################################################")
 
   pa <- readRDS(system.file("extdata", "tests", "purityA", "7_averageIntraFragSpectra_with_filter_pa.rds", package="msPurity"))
@@ -228,7 +228,7 @@ test_that("checking averageInterFragSpectra (with filter) purityA", {
 test_that("checking averageAllFragSpectra (with filter) purityA", {
   print ("\n")
   print("########################################################")
-  print("## Checking averageIntraFragSpectra  (with filter)    ##")
+  print("## Checking averageAllFragSpectra  (with filter)    ##")
   print("########################################################")
 
   pa <- readRDS(system.file("extdata", "tests", "purityA", "8_averageInterFragSpectra_with_filter_pa.rds", package="msPurity"))

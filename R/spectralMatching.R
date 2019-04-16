@@ -484,9 +484,6 @@ filterSMeta <- function(purity=NA,
     speakmeta <- speakmeta %>% dplyr::filter(spectrum_type %in% spectraTypes)
   }
 
-  #print('spectra types')
-  #print(speakmeta)
-
 
   return(speakmeta)
 
@@ -555,9 +552,9 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
   }
 
 
-  l_speakmeta <- getSmeta(q_con, l_pids) %>% dplyr::collect()
-  l_speaks <- getScanPeaksSqlite(l_con, spectraFilter=l_spectraFilter, pids=l_pids) %>% dplyr::collect()
 
+  l_speakmeta <- getSmeta(l_con, l_pids) %>% dplyr::collect()
+  l_speaks <- getScanPeaksSqlite(l_con, spectraFilter=l_spectraFilter, pids=l_pids) %>% dplyr::collect()
 
   if(usePrecursors){
 
@@ -594,6 +591,7 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
   }else{
     l_fpids <- l_fspeakmeta$id
   }
+
 
   searched <- plyr::adply(l_fpids , 1, queryVlibrarySingle,
                             q_speaksi=q_speaksi,
@@ -639,6 +637,7 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
   # ensure we have the relative abundance
   l_speaksi$ra <- (l_speaksi$i/max(l_speaksi$i))*100
   q_speaksi$ra <- (q_speaksi$i/max(q_speaksi$i))*100
+
 
   am <- alignAndMatch(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW)
 
