@@ -243,23 +243,55 @@ spectralMatching <- function(
 
     custom_dbWriteTable(name_pk = 'mid', df=matched, fks=NA, table_name = 'sm_matches', con = q_con)
 
-    if (DBI::dbExistsTable(l_con, "metab_compound") && !DBI::dbExistsTable(q_con, "metab_compound") ){
+    if (DBI::dbExistsTable(l_con, "metab_compound") ){
       # Schema needs to be updated to be more generic
-      compound_details <- DBI::dbGetQuery(l_con, sprintf('SELECT  DISTINCT c.* FROM library_spectra_meta AS m
+
+      if (DBI::dbExistsTable(l_con, "library_spectra_meta") ){
+        l_compounds <- DBI::dbGetQuery(l_con, sprintf('SELECT  DISTINCT c.* FROM library_spectra_meta AS m
                                                           LEFT JOIN metab_compound AS
                                                           c on c.inchikey_id=m.inchikey_id
                                                           WHERE m.id IN (%s)', paste(unique(matched$lpid), collapse=",")) )
-      compound_details <- data.frame(lapply(compound_details, as.character), stringsAsFactors=FALSE)
-      custom_dbWriteTable(name_pk = 'inchikey_id', fks = NA,
-                          df=compound_details, table_name = 'metab_compound', con = q_con, pk_type='TEXT')
+      }else{
+        l_compounds <- DBI::dbGetQuery(l_con, sprintf('SELECT  DISTINCT c.* FROM s_peak_meta AS m
+                                                          LEFT JOIN metab_compound AS
+                                                          c on c.inchikey_id=m.inchikey_id
+                                                          WHERE m.pid IN (%s)', paste(unique(matched$lpid), collapse=",")) )
 
+      }
 
-      library_spectra_meta <- DBI::dbGetQuery(l_con, sprintf('SELECT  * FROM library_spectra_meta AS m
+      if(nrow(l_compounds)>0){
+        l_compounds <- data.frame(lapply(l_compounds, as.character), stringsAsFactors=FALSE)
+
+        if(DBI::dbExistsTable(q_con, "metab_compound")){
+          q_compounds <- q_con %>% dplyr::tbl("metab_compound")
+          q_compounds <- q_compounds %>% dplyr::collect()
+          q_inchi <- q_compounds$inchikey_id
+          if(length(q_inchi)>0){
+            l_compounds <- l_compounds[!l_compounds$inchikey_id %in%  q_inchi,]
+          }
+          if(length(l_compounds$inchikey_id[!is.na(l_compounds$inchikey_id)])>0){
+            DBI::dbWriteTable(q_con, name="metab_compound", value=l_compounds, row.names=FALSE, append=TRUE)
+          }
+        }else{
+          custom_dbWriteTable(name_pk = 'inchikey_id', fks = NA,
+                              df=l_compounds, table_name = 'metab_compound', con = q_con, pk_type='TEXT')
+        }
+      }
+
+      if (DBI::dbExistsTable(l_con, "library_spectra_meta") ){
+        library_spectra_meta <- DBI::dbGetQuery(l_con, sprintf('SELECT  * FROM library_spectra_meta AS m
                                                           WHERE m.id IN (%s)', paste(unique(matched$lpid), collapse=",")) )
-      fk_l = list('inchikey_id'=list('new_name'='inchikey_id', 'ref_name'='inchikey_id', 'ref_table'='metab_compound'))
+        pk = 'id'
+      }else{
+        library_spectra_meta <- DBI::dbGetQuery(l_con, sprintf('SELECT  * FROM s_peak_meta AS m
+                                                          WHERE m.pid IN (%s)', paste(unique(matched$lpid), collapse=",")) )
+        pk = 'pid'
+      }
 
-      custom_dbWriteTable(name_pk = 'id', fks = fk_l,
-                          df=library_spectra_meta, table_name = 'library_spectra_meta', con = q_con)
+      #fk_l = list('inchikey_id'=list('new_name'='inchikey_id', 'ref_name'='inchikey_id', 'ref_table'='metab_compound'))
+
+      custom_dbWriteTable(name_pk = pk, fks = NA,
+                          df=library_spectra_meta, table_name = 'l_s_peak_meta', con = q_con)
 
     }
 
@@ -436,10 +468,17 @@ filterSMeta <- function(purity=NA,
   #print(speakmeta)
 
 
-  if(!anyNA(sources) && DBI::dbExistsTable(con, "library_spectra_source")){
-    sourcetbl <- con %>% dplyr::tbl("library_spectra_source")
-    speakmeta <- speakmeta %>% dplyr::left_join(sourcetbl,  by=c('library_spectra_source_id'='id'),suffix = c("", ".y")) %>%
-              dplyr::filter(name.y %in% sources)
+  if(!anyNA(sources)){
+    if (DBI::dbExistsTable(con, "library_spectra_source")){
+      sourcetbl <- con %>% dplyr::tbl("library_spectra_source")
+      speakmeta <- speakmeta %>% dplyr::left_join(sourcetbl,  by=c('library_spectra_source_id'='id'),suffix = c("", ".y")) %>%
+        dplyr::filter(name.y %in% sources)
+
+    }else if (DBI::dbExistsTable(con, "source")){
+      sourcetbl <- con %>% dplyr::tbl("source")
+      speakmeta <- speakmeta %>% dplyr::left_join(sourcetbl,  by=c('sourceid'='id'),suffix = c("", ".y")) %>%
+        dplyr::filter(name.y %in% sources)
+    }
   }
 
   #print('sources')

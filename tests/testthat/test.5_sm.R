@@ -55,6 +55,8 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
   # pa <- averageInterFragSpectra(pa)
   # pa <- averageAllFragSpectra(pa)
   # q_dbPth <- createDatabase(pa, xset, metadata=list('polarity'='positive', 'instrument'='Q-Exactive'))
+  #
+
   td <- tempdir()
   q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
 
@@ -63,7 +65,7 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
 
   result <- spectralMatching(q_dbPth,
                              q_xcmsGroups = c(12, 27),
-                             cores=1,
+                             cores = 1,
                              q_pol = NA,
                              l_accessions=c('CCMSLIB00000577898', 'CE000616'),
                              l_pol='positive',

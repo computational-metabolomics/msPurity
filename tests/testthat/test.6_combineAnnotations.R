@@ -11,22 +11,11 @@ test_that("checking combine annotations based functions", {
   sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
 
   td <- tempdir()
-  sm_resultPthCopy <- file.path(td, 'sm_result_tmp.sqlite')
+  sm_resultPthCopy <- file.path(td, 'sm_result_tmp5.sqlite')
   file.copy(sm_resultPth, sm_resultPthCopy)
-  #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  #xset <- xcms::xcmsSet(msmsPths)
-  #xset <- xcms::group(xset)
-  #xset <- xcms::retcor(xset)
-  #xset <- xcms::group(xset)
-  #pa  <- purityA(msmsPths)
-  #pa <- frag4feature(pa, xset)
-  #pa <- averageAllFragSpectra(pa)
 
-  #db_path <- create_database(pa, xset = xset, out_dir = td)
-  #result <- spectral_matching(db_path, spectra_type_q="av_all")
-
-
-  combined <- combineAnnotations(sm_resultPthCopy, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
+  sqlitePth <- sm_resultPthCopy
+  combined <- combineAnnotations(sqlitePth, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
 
   #write.table(combined ,'inst/extdata/tests/external_annotations/combined.tsv', sep='\t', row.names = FALSE, col.names = TRUE )
 

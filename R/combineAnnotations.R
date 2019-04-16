@@ -110,7 +110,13 @@ combineAnnotations <- function(sqlitePth,
 }
 
 getAnnotationSummary <- function(con){
-  sql_stmt <- '
+  meta_cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(l_s_peak_meta)')
+  if ("pid" %in% meta_cn){
+    pid_id <- 'pid'
+  }else{
+    pid_id <- 'id'
+  }
+  sql_stmt <- sprintf('
   SELECT
     cpg.grp_name,
     cpg.mz,
@@ -125,7 +131,7 @@ getAnnotationSummary <- function(con){
     mc.drug AS kegg_drug,
     mc.brite1 AS kegg_brite1,
     mc.brite2 AS kegg_brite2,
-    l.lid,
+    l.%s,
     l.accession,
     ca.*
     FROM combined_annotations AS ca
@@ -136,7 +142,7 @@ getAnnotationSummary <- function(con){
       LEFT JOIN
         kegg AS k ON k.inchikey = mc.inchikey
       LEFT JOIN
-        library_spectra_meta AS l ON l.lid = ca.sm_lid
+        l_s_peak_meta AS l ON l.%s = ca.sm_lpid
       LEFT JOIN
         c_peak_groups AS cpg ON cpg.grpid = ca.grpid
       LEFT JOIN
@@ -149,7 +155,7 @@ getAnnotationSummary <- function(con){
         s_peak_meta AS spm ON spm.pid = cpXspm.pid
       GROUP BY ca.grpid, ca.inchikey
       ORDER BY ca.grpid, ca.rank
-  '
+  ', pid_id, pid_id)
 
 
 
@@ -209,18 +215,24 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   }
 
+  meta_cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(l_s_peak_meta)')
+  if ("pid" %in% meta_cn){
+    pid_id <- 'pid'
+  }else{
+    pid_id <- 'id'
+  }
 
   # get spectral matching
-  sm <- DBI::dbGetQuery(con, 'SELECT sm.lid AS sm_lid,
+  sm <- DBI::dbGetQuery(con, sprintf('SELECT sm.lpid AS sm_lpid,
                         sm.mid AS sm_mid,
-                        sm.score AS sm_score,
+                        sm.dpc AS sm_score,
                         mc.inchikey
                         FROM metab_compound AS mc
                         LEFT JOIN
-                        library_spectra_meta AS l ON l.inchikey_id = mc.inchikey
+                        l_s_peak_meta AS l ON l.inchikey_id = mc.inchikey
                         LEFT JOIN
-                        matches AS sm ON l.lid = sm.lid
-                        WHERE sm.grpid = :grpid', params=list('grpid'=grpid))
+                        xcms_match AS sm ON l.%s = sm.lpid
+                        WHERE sm.grpid = :grpid', pid_id), params=list('grpid'=grpid))
 
   # can have multiple hits for each inchikey (e.g. multiple scans and library spectra for each inchikey)
   # we just take the best hit

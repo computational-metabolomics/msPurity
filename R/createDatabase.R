@@ -92,6 +92,36 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
   con <- DBI::dbConnect(RSQLite::SQLite(),dbPth)
 
   ###############################################
+  # Add source
+  ###############################################
+  source <- data.frame(id=1,
+                       name=paste('msPurity-database',  format(Sys.time(), "%Y-%m-%d-%I%M%S"), sep='-'),
+                       parsing_software=paste('msPurity::createDatabase', packageVersion("msPurity")))
+
+  custom_dbWriteTable(name_pk = 'id',
+                      table_name ='source', fks=NA, df=source, con=con)
+
+
+  ###############################################
+  # Add metab_compound (blank for time being)
+  ###############################################
+  metab_compound <- data.frame(inchikey_id=character(),
+                               name=character(),
+                               pubchem_id=character(),
+                               chemspider_id=character(),
+                               other_names=character(),
+                               exact_mass=character(),
+                               molecular_formula=character(),
+                               molecular_weight=character(),
+                               compound_class=character(),
+                               smiles=character(),
+                               created_at=character(),
+                               updated_at=character())
+  custom_dbWriteTable(name_pk = 'inchikey_id', fks=NA,pk_type='TEXT',
+                      table_name ='metab_compound', df=metab_compound, con=con)
+
+
+  ###############################################
   # Add File info
   ###############################################
   nmsave <- names(pa@fileList) # this is for name tracking in Galaxy
@@ -170,7 +200,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
          "retention_index", "retention_time", "inchikey_id")
   scaninfo[xx] <- NA
 
-
+  scaninfo$souceid <- 1
 
   scaninfo$retention_time <- scaninfo$retentionTime
   scaninfo$precursor_mz <- scaninfo$precursorMZ
@@ -224,11 +254,11 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 
     speaks <- merge(speaks, av_spectra, all = TRUE)
 
-    colOrder = c("sid", "pid", "grpid", "mz",  "i",  "snr",  "ra", "rsd", "inPurity", "count", "frac", "type",
-                 "purity_pass_flag", "ra_pass_flag", "snr_pass_flag", "intensity_pass_flag", "minnum_pass_flag",
-                 "minfrac_pass_flag", "pass_flag")
-
-    speaks <- speaks[,colOrder, drop=FALSE]
+    #colOrder = c("sid", "pid", "grpid", "mz",  "i",  "snr",  "ra", "rsd", "inPurity", "count", "frac", "type",
+    #             "purity_pass_flag", "ra_pass_flag", "snr_pass_flag", "intensity_pass_flag", "minnum_pass_flag",
+    #             "minfrac_pass_flag", "pass_flag")
+    #print(colnames(speaks))
+    #speaks <- speaks[,colOrder, drop=FALSE]
     speaks[is.na(speaks)] <- NA
 
   }
@@ -253,9 +283,11 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
                      'pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
 
 
+  fks4smeta <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
+                    'id'=list('new_name'='sourceid', 'ref_name'='id', 'ref_table'='source'),
+                    'inchikey_id'=list('new_name'='inchikey_id', 'ref_name'='inchikey_id', 'ref_table'='metab_compound'))
+
   fks4smeta <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
-
-
   custom_dbWriteTable(name_pk = 'pid', fks=fks4smeta, table_name = 's_peak_meta', df=scaninfo, con=con)
   custom_dbWriteTable(name_pk = 'sid', fks=fks4speaks, table_name ='s_peaks', df=speaks , con=con)
 
