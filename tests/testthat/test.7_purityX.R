@@ -6,14 +6,21 @@ test_that("checking purityX (grouped)", {
   print("## Checking purityX (grouped)                         ##")
   print("########################################################")
 
-  #msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+  msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
   #xset <- xcmsSet(msPths)
   #xset <- group(xset)
   #saveRDS(xset, file.path("inst", "extdata", "tests", "xcms", "ms_only_xset.rds"))
 
   xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset.rds", package="msPurity"))
 
+  xset@fileList[1] <- msPths[basename(msPths)=="LCMSMS_1.mzML"]
+  xset@fileList[2] <- msPths[basename(msPths)=="LCMSMS_2.mzML"]
+
+
   px <- purityX(xset, cores = 1, xgroups = c(1, 2), ilim=0)
+
+
+
 
   #saveRDS(px, file.path("inst", "extdata", "tests", "purityX", "1_purityX_grouped_px.rds"))
 

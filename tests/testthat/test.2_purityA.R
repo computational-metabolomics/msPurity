@@ -33,9 +33,15 @@ test_that("checking frag4feature", {
   #pa  <- purityA(msmsPths)
   #xset <- xcmsSet(msmsPths)
   #xset <- group(xset)
+  msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 
-  pa <- readRDS(system.file("extdata","tests", "purityA", "1_purityA_pa.rds", package="msPurity"))
+  pa <- readRDS(system.file("extdata", "tests", "purityA", "1_purityA_pa.rds", package="msPurity"))
   xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
+  pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+  pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+  xset@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+  xset@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+
 
   pa <- frag4feature(pa, xset, create_db=FALSE)
 
