@@ -18,7 +18,7 @@ test_that("checking purityA", {
   expect_equal(round(pa@puritydf$aMz[[1]],4),  391.2838)
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "1_purityA_pa.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_equal(pa$puritydf, pa_saved$puritydf)
 
 })
 
@@ -53,7 +53,8 @@ test_that("checking frag4feature", {
   expect_equal(round(pa@grped_ms2[[1]][[1]][1],4), 112.0509)
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_equal(pa$grped_ms2, pa_saved$grped_ms2)
+  expect_equal(pa$grped_df, pa_saved$grped_df)
 
 
 })
