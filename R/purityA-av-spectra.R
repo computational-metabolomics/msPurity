@@ -9,10 +9,32 @@
 #'
 #' The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac and ra)
 #'
-#' The output is a purityA object with the following slots now with data
 #'
-#' * @@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$`1`$av_intra$`1`" would give the average spectra for grouped feature 1 and for file 1.
-#' * @@av_intra_params: The parameters used are recorded here
+#' **Example LC-MS/MS processing workflow**
+#'
+#'  * Purity assessments
+#'    +  (mzML files) -> purityA -> (pa)
+#'  * XCMS processing
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'  * Fragmentation processing
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> **averageIntraFragSpectra** -> averageIntraFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+#'
+#'
+#' @param pa object; purityA object
+#' @param ppm numeric; ppm threshold to average within each file
+#' @param minnum numeric; minimum number of times peak is present across fragmentation spectra within each file
+#' @param minfrac numeric; minimum ratio of the peak fraction (peak count / total peaks) within each file
+#' @param ra numeric; minimum relative abundance of the peak within each file
+#' @param snr numeric; minimum signal-to-noise of the peak within each file
+#' @param av character; type of averaging to use (median or mean)
+#' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
+#' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#' @param cores numeric; Number of cores for multiprocessing
+#'
+#' @return Returns a purityA object (pa) with the following slots now with data
+#'
+#' * pa@@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$`1`$av_intra$`1`" would give the average spectra for grouped feature 1 and for file 1.
+#' * pa@@av_intra_params: The parameters used are recorded here
 #'
 #' Each spectra in the av_spectra list contains the following columns:
 #'
@@ -30,29 +52,6 @@
 #' * minfrac_pass_flag: TRUE if minfrac threshold criteria
 #' * ra_pass_flag: TRUE if ra threshold criteria met
 #' * pass_flag: TRUE if all threshold criteria met
-#'
-#' **Example LC-MS/MS processing workflow**
-#'
-#'  * Purity assessments
-#'    +  (mzML files) -> purityA -> (pa)
-#'  * XCMS processing
-#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
-#'  * Fragmentation processing
-#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> **averageIntraFragSpectra** -> averageIntraFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
-#'
-#'
-#'
-#'
-#' @param pa object; purityA object
-#' @param ppm numeric; ppm threshold to average within each file
-#' @param minnum numeric; minimum number of times peak is present across fragmentation spectra within each file
-#' @param minfrac numeric; minimum ratio of the peak fraction (peak count / total peaks) within each file
-#' @param ra numeric; minimum relative abundance of the peak within each file
-#' @param snr numeric; minimum signal-to-noise of the peak within each file
-#' @param av character; type of averaging to use (median or mean)
-#' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
-#' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
-#' @param cores numeric; Number of cores for multiprocessing
 #'
 #' @examples
 #'
@@ -104,27 +103,6 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #'
 #' The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac and ra)
 #'
-#' The output is a purityA object with the following slots now with data
-#'
-#' * @@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@@av_spectra$`1`$av_inter" would give the average spectra for grouped feature 1
-#' * @@av_intra_params: The parameters used are recorded here
-#'
-#' Each spectra in the av_spectra list contains the following columns:
-#' *
-#' * cl: id of clustered (averaged) peak
-#' * mz: average m/z
-#' * i: average intensity
-#' * snr: average signal to noise ratio
-#' * rsd: relative standard deviation
-#' * count: number of clustered peaks
-#' * total: total number of potential scans to be used for averaging
-#' * inPurity: average precursor ion purity
-#' * ra: average relative abundance
-#' * frac: the fraction of clustered peaks (e.g. the count/total)
-#' * snr_pass_flag: TRUE if snr threshold criteria met
-#' * minfrac_pass_flag: TRUE if minfrac threshold criteria
-#' * ra_pass_flag: TRUE if ra threshold criteria met
-#' * pass_flag: TRUE if all threshold criteria met
 #'
 #' **Example LC-MS/MS processing workflow**
 #'
@@ -148,6 +126,28 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #' @param av character; type of averaging to use (median or mean)
 #' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
 #' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#'
+#' @return Returns a purityA object (pa) with the following slots now with data
+#'
+#' * pa@@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@@av_spectra$`1`$av_inter" would give the average spectra for grouped feature 1
+#' * pa@@av_intra_params: The parameters used are recorded here
+#'
+#' Each spectra in the av_spectra list contains the following columns:
+#' *
+#' * cl: id of clustered (averaged) peak
+#' * mz: average m/z
+#' * i: average intensity
+#' * snr: average signal to noise ratio
+#' * rsd: relative standard deviation
+#' * count: number of clustered peaks
+#' * total: total number of potential scans to be used for averaging
+#' * inPurity: average precursor ion purity
+#' * ra: average relative abundance
+#' * frac: the fraction of clustered peaks (e.g. the count/total)
+#' * snr_pass_flag: TRUE if snr threshold criteria met
+#' * minfrac_pass_flag: TRUE if minfrac threshold criteria
+#' * ra_pass_flag: TRUE if ra threshold criteria met
+#' * pass_flag: TRUE if all threshold criteria met
 #'
 #' @examples
 #'
@@ -203,28 +203,6 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'
 #' The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac, ra)
 #'
-#' The output is a purityA object with the following slots now with data
-#'
-#' * @@av_spectra: the average spectra is recorded here stored as a list. E.g. pa@@av_spectra$`1`$av_all would give the average spectra for grouped feature 1.
-#' * @@av_all_params: The parameters used are recorded here
-#'
-#' Each spectra in the av_spectra list contains the following columns:
-#'
-#' * cl: id of clustered (averaged) peak
-#' * mz: average m/z
-#' * i: average intensity
-#' * snr: average signal to noise ratio
-#' * rsd: relative standard deviation
-#' * count: number of clustered peaks
-#' * total: total number of potential scans to be used for averaging
-#' * inPurity: average precursor ion purity
-#' * ra: average relative abundance
-#' * frac: the fraction of clustered peaks (e.g. the count/total)
-#' * snr_pass_flag: TRUE if snr threshold criteria met
-#' * minfrac_pass_flag: TRUE if minfrac threshold criteria
-#' * ra_pass_flag: TRUE if ra threshold criteria met
-#' * pass_flag: TRUE if all threshold criteria met
-#'
 #' **Example LC-MS/MS processing workflow**
 #'
 #'  * Purity assessments
@@ -245,6 +223,29 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #' @param av character; type of averaging to use (median or mean)
 #' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
 #' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
+#'
+#' @return Returns a purityA object (pa) with the following slots now with data
+#'
+#' * pa@@av_spectra: the average spectra is recorded here stored as a list. E.g. pa@@av_spectra$`1`$av_all would give the average spectra for grouped feature 1.
+#' * pa@@av_all_params: The parameters used are recorded here
+#'
+#' Each spectra in the av_spectra list contains the following columns:
+#'
+#' * cl: id of clustered (averaged) peak
+#' * mz: average m/z
+#' * i: average intensity
+#' * snr: average signal to noise ratio
+#' * rsd: relative standard deviation
+#' * count: number of clustered peaks
+#' * total: total number of potential scans to be used for averaging
+#' * inPurity: average precursor ion purity
+#' * ra: average relative abundance
+#' * frac: the fraction of clustered peaks (e.g. the count/total)
+#' * snr_pass_flag: TRUE if snr threshold criteria met
+#' * minfrac_pass_flag: TRUE if minfrac threshold criteria
+#' * ra_pass_flag: TRUE if ra threshold criteria met
+#' * pass_flag: TRUE if all threshold criteria met
+#'
 #'
 #' @examples
 #'

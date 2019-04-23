@@ -37,7 +37,12 @@
 \item{use_group}{boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)}
 }
 \value{
-purityA object with slots for fragmentation-XCMS links
+Returns a purityA object (pa) with the following slots populated:
+\itemize{
+\item pa@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
+\item pa@grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+\item pa@f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
+}
 }
 \description{
 \strong{General}
@@ -61,13 +66,6 @@ MS/MS has very limited MS1 data and so individual chromatographic peaks might no
 MS/MS data. However, it should be noted this may lead to potential inaccurate linking.
 \itemize{
 \item grouped XCMS peaks &ast---&ast MS/MS spectra
-}
-
-The output is an updated purityA object with the following slots being populated.
-\itemize{
-\item @grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
-\item @grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
-\item @f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
 }
 
 \strong{Example LC-MS/MS processing workflow}

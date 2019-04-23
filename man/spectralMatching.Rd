@@ -98,14 +98,66 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features
+
+Returns a list containing the following elements
+\strong{q_dbPth}
+
+Path of the query database (this will have been updated with the annotation results if updateDb argument used)
+
+\strong{matchedResults}
+
+All matched results from the query spectra to the library spectra. Contains the following columns
+\itemize{
+\item dpc - dot product cosine of the match
+\item rdpc - reverse dot product cosine of the match
+\item cdpc - composite dot product cosine of the match
+\item mcount - number of matching peaks
+\item allcount - total number of peaks across both query and library spectra
+\item mpercent - percentage of matching peaks across both query and library spectra
+\item accession -  accession of library match
+\item name - name of library match
+\item inchikey - inchikey of library match
+\item lpid - pid in database of library match
+\item qpid - pid in database of query match
+\item mid - id of the match
+}
+
+\strong{xcmsMatchedResults}
+
+If the qeury spectra had XCMS based chromotographic peaks tables (e.g c_peak_groups, c_peaks) in the sqlite database - it will
+be possible to summarise the matches for each XCMS grouped feature. The dataframe contains the following columns
+\itemize{
+\item pid - pid in database of query match
+\item grpid - grpid of the XCMS grouped feature for query match
+\item mz - derived from XCMS grouped feature
+\item mzmin - derived from XCMS grouped feature
+\item mzmax - derived from XCMS grouped feature
+\item rt - derived from XCMS grouped feature
+\item rtmin - derived from XCMS grouped feature
+\item rtmax - derived from XCMS grouped feature
+\item npeaks - derived from XCMS grouped feature
+\item grp_name - derived from XCMS grouped feature
+\item dpc - dot product cosine of the match
+\item rdpc - reverse dot product cosine of the match
+\item cdpc - composite dot product cosine of the match
+\item mcount - number of matching peaks
+\item allcount - total number of peaks across both query and library spectra
+\item mpercent - percentage of matching peaks across both query and library spectra
+\item accession -  accession of library match
+\item name - name of library match
+\item inchikey - inchikey of library match
+\item lpid - pid in database of library match
+\item mid - id of the match
+}
 }
 \description{
 \strong{General}
+
 Perform spectral matching to spectral libraries for an LC-MS/MS dataset.
 
 The spectral matching is performed from a \strong{Query} SQLite spectral-database against a \strong{Library} SQLite spectral-database.
 
-The SQLite schema of the spectral database can be detailed here.
+The SQLite schema of the spectral database can be detailed \href{todo}{here}.
 
 The query spectral-database in most cases should contain be the "unknown" spectra database generated the msPurity
 function createDatabase as part of a msPurity-XCMS data processing workflow.
@@ -127,18 +179,22 @@ the library source, instrument, retention time, precursor PPM tolerance etc).
 The spectral alignment stage involves aligning the query peaks to the library peaks. The approach used is similar
 to modified pMatch algorithm described in Zhou et al 2015.
 
-The spectral matching of the aligned spectra is performed against a combined intensity and m/z weighted vector of the query and
-library spectra. See below:
+The spectral matching of the aligned spectra is performed against a combined intensity and m/z weighted vector - created for both
+the query and library spectra (wq and wl). See below:
 
 \deqn{w=intensity^x * mz^y}
 
 Where x and y represent weight factors, defaults to \emph{x}=0.5 and \emph{y}=2 as per MassBank. These can be adjusted by
 the user though.
 
-The aligned weighted vectors are then matched using dot product cosine, reverse dot product cosine (the same as eq xx but any peaks not matching in
-the query are omitted from the calculation) and the composite dot product eq xx.
+The aligned weighted vectors are then matched using dot product cosine, reverse dot product cosine and the composite dot product.
+See below for dot product cosine equation.
 
-\deqn{dpc =  w_Q * w_L / \sqrt{\sum w_Q^2} * \sqrt{\sum w_L^2}}
+\deqn{dpc =  wq * wl / \sqrt{\sum wq^2} * \sqrt{\sum wl^2}}
+
+See the vigenttes for more details regarding matching algorithms used.
+
+\strong{Intepreting output}
 }
 \examples{
 #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")

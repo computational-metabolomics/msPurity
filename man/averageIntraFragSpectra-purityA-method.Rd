@@ -31,19 +31,11 @@
 
 \item{cores}{numeric; Number of cores for multiprocessing}
 }
-\description{
-\strong{General}
-
-Average and filter fragmentation spectra for each XCMS feature within a MS data file.
-
-The averaging is performed using hierarchical clustering of the m/z values of each peaks, where m/z values within a set ppm tolerance will be clustered. The clustered peaks are then averaged (or summed).
-
-The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac and ra)
-
-The output is a purityA object with the following slots now with data
+\value{
+Returns a purityA object (pa) with the following slots now with data
 \itemize{
-\item @av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$\code{1}$av_intra$\code{1}" would give the average spectra for grouped feature 1 and for file 1.
-\item @av_intra_params: The parameters used are recorded here
+\item pa@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$\code{1}$av_intra$\code{1}" would give the average spectra for grouped feature 1 and for file 1.
+\item pa@av_intra_params: The parameters used are recorded here
 }
 
 Each spectra in the av_spectra list contains the following columns:
@@ -63,6 +55,15 @@ Each spectra in the av_spectra list contains the following columns:
 \item ra_pass_flag: TRUE if ra threshold criteria met
 \item pass_flag: TRUE if all threshold criteria met
 }
+}
+\description{
+\strong{General}
+
+Average and filter fragmentation spectra for each XCMS feature within a MS data file.
+
+The averaging is performed using hierarchical clustering of the m/z values of each peaks, where m/z values within a set ppm tolerance will be clustered. The clustered peaks are then averaged (or summed).
+
+The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac and ra)
 
 \strong{Example LC-MS/MS processing workflow}
 \itemize{

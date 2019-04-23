@@ -40,32 +40,7 @@ linear should be used for all standard cases, isotope removal is also not availa
 \item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
 }
 \value{
-a dataframe of the purity score of the ms/ms spectra
-}
-\description{
-\strong{General}
-
-Given a vector of LC-MS/MS or DI-MS/MS mzML file paths calculate the precursor ion purity of
-each MS/MS scan.
-
-The precursor ion purity represents the measure of the contribution of a selected precursor
-peak in an isolation window used for fragmentation and can be used as away of assessing the
-spectral quality and level of "contamination" of fragmentation spectra.
-
-The calculation involves dividing the intensity of the selected precursor peak by the total
-intensity of the isolation window and is performed before and after the MS/MS scan of
-interest and interpolated at the recorded time of the MS/MS acquisition.
-
-Additionally, isotopic peaks are annotated and omitted from the calculation,
-low abundance peaks are removed that are thought to have minor contribution to the
-resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be
-used to normalise the intensities used for the calculation.
-
-The output is a purityA S4 class object (referred to as pa for convenience throughout
-the manual). The object contains a slot (pa@puritydf) where the details of the purity
-assessments for each MS/MS scan. The purityA object can then be used for further processing
-including linking the fragmentation spectra to XCMS features, averaging fragmentation,
-database creation and spectral matching (from the created database).
+Returns a purityA object (pa) with the pa@puritydf slot updated
 
 The purity dataframe (\strong{pa@puritydf}) consists of the following columns:
 \itemize{
@@ -103,6 +78,31 @@ The remaining slots for purityA class include
 \item pa@av_all_params: If averageAllFragSpectra has been performed, the parameters are recorded here
 \item pa@db_path: If create_database has been performed, the resulting path to the database is recorded here
 }
+}
+\description{
+\strong{General}
+
+Given a vector of LC-MS/MS or DI-MS/MS mzML file paths calculate the precursor ion purity of
+each MS/MS scan.
+
+The precursor ion purity represents the measure of the contribution of a selected precursor
+peak in an isolation window used for fragmentation and can be used as away of assessing the
+spectral quality and level of "contamination" of fragmentation spectra.
+
+The calculation involves dividing the intensity of the selected precursor peak by the total
+intensity of the isolation window and is performed before and after the MS/MS scan of
+interest and interpolated at the recorded time of the MS/MS acquisition.
+
+Additionally, isotopic peaks are annotated and omitted from the calculation,
+low abundance peaks are removed that are thought to have minor contribution to the
+resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be
+used to normalise the intensities used for the calculation.
+
+The output is a purityA S4 class object (referred to as pa for convenience throughout
+the manual). The object contains a slot (pa@puritydf) where the details of the purity
+assessments for each MS/MS scan. The purityA object can then be used for further processing
+including linking the fragmentation spectra to XCMS features, averaging fragmentation,
+database creation and spectral matching (from the created database).
 
 \strong{Example LC-MS/MS processing workflow}
 

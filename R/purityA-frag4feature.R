@@ -22,11 +22,6 @@
 #'
 #' * grouped XCMS peaks &ast---&ast MS/MS spectra
 #'
-#' The output is an updated purityA object with the following slots being populated.
-#'
-#' * @@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
-#' * @@grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
-#' * @@f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
 #'
 #' **Example LC-MS/MS processing workflow**
 #'
@@ -61,7 +56,12 @@
 #' @param out_dir character; (Deprecated, to be removed - use createDatabase function) Path where database will be created
 #' @param grp_peaklist dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @param use_group boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)
-#' @return purityA object with slots for fragmentation-XCMS links
+#' @return Returns a purityA object (pa) with the following slots populated:
+#'
+#' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
+#' * pa@@grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+#' * pa@@f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
+#'
 #'
 #' @examples
 #'

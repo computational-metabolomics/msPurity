@@ -11,7 +11,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2018-12-03" />
+<meta name="date" content="2019-04-23" />
 
 <title>Using msPurity for Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics</title>
 
@@ -73,9 +73,7 @@ h6 {
 
 <link href="data:text/css;charset=utf-8,body%20%7B%0Amargin%3A%200px%20auto%3B%0Amax%2Dwidth%3A%201134px%3B%0Afont%2Dfamily%3A%20sans%2Dserif%3B%0Afont%2Dsize%3A%2010pt%3B%0A%7D%0A%0Adiv%23TOC%20ul%20%7B%0Apadding%3A%200px%200px%200px%2045px%3B%0Alist%2Dstyle%3A%20none%3B%0Abackground%2Dimage%3A%20none%3B%0Abackground%2Drepeat%3A%20none%3B%0Abackground%2Dposition%3A%200%3B%0Afont%2Dsize%3A%2010pt%3B%0Afont%2Dfamily%3A%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0A%7D%0Adiv%23TOC%20%3E%20ul%20%7B%0Apadding%3A%200px%20150px%200px%2065px%3B%0Afont%2Dsize%3A%2012pt%3B%0A%7D%0Adiv%23TOC%20%3E%20ul%20%3E%20li%20%7B%0Apadding%3A%205px%200px%200px%200px%3B%0A%7D%0Adiv%23TOC%20ul%20ul%20%7B%0Afont%2Dsize%3A%2011pt%3B%0A%7D%0Adiv%23TOC%2Etocify%20ul%20%7B%0Apadding%3A%200px%3B%0Afont%2Dsize%3A%20inherit%3B%0Afont%2Dfamily%3A%20inherit%3B%0A%7D%0Adiv%23TOC%2Etocify%20li%20%7B%0Apadding%3A%205px%3B%0Afont%2Dsize%3A%20inherit%3B%0Afont%2Dfamily%3A%20inherit%3B%0A%7D%0Ap%2C%20dl%20%7B%0Apadding%3A%200px%20150px%200px%2065px%3B%0Atext%2Dalign%3A%20justify%3B%0A%7D%0A%0Ap%2C%20img%2C%20table%20%7B%0Amargin%2Dtop%3A%2010px%3B%0Amargin%2Dbottom%3A%2010px%3B%0A%7D%0A%0Aol%2C%20ul%20%7B%0Apadding%3A%200px%20150px%200px%20100px%3B%0Alist%2Dstyle%3A%20square%3B%0A%7D%0Ali%20ol%2C%20li%20ul%20%7B%0Apadding%3A%200px%200px%200px%2035px%3B%0A%7D%0Ali%20p%20%7B%0Apadding%3A%200%3B%0A%7D%0Apre%20%7B%0Amargin%3A%200em%20150px%200%2E5em%200em%3B%0Apadding%3A%200px%200px%200px%2065px%3B%0Aborder%3A%200px%20none%3B%0Abackground%2Dcolor%3A%20%23f0f0f0%3B%0Awhite%2Dspace%3A%20pre%3B%0Aoverflow%2Dx%3A%20auto%3B%0Afont%2Dsize%3A%2090%25%3B%0A%7D%0Ali%20pre%20%7B%0Amargin%3A%200em%200px%200%2E5em%20%2D65px%3B%0Apadding%3A%200px%200px%200px%2065px%3B%0A%7D%0Apre%20code%20%7B%0Abackground%2Dcolor%3A%20inherit%3B%0Adisplay%3A%20block%3B%0Apadding%3A%2010px%2010px%2010px%200px%3B%0Aoverflow%2Dx%3A%20inherit%3B%0Afont%2Dsize%3A%20100%25%3B%0A%7D%0A%0Apre%20code%5Bclass%5D%20%7B%0Abackground%2Dcolor%3A%20inherit%3B%0A%7D%0A%0Apre%5Bclass%5D%20code%20%7B%0Abackground%2Dcolor%3A%20inherit%3B%0A%7D%0Att%2C%20code%2C%20pre%20%7B%0Afont%2Dfamily%3A%20%27DejaVu%20Sans%20Mono%27%2C%20%27Droid%20Sans%20Mono%27%2C%20%27Lucida%20Console%27%2C%20Consolas%2C%20Monaco%2C%20monospace%3B%0A%7D%0Ah1%2C%20h2%2C%20h3%2C%20h4%2C%20h5%2C%20h6%20%7B%20font%2Dfamily%3A%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Amargin%3A%201%2E2em%20150px%200%2E6em%200em%3B%0A%0Apadding%2Dleft%3A%2065px%3B%0Atext%2Dindent%3A%20%2D65px%3B%0A%7D%0Ah1%2Etitle%20%7B%0Acolor%3A%20%2387b13f%3B%0Aline%2Dheight%3A%201%2E1em%3B%0Amargin%2Dtop%3A%2025px%3B%0Aborder%2Dbottom%3A%200px%3B%0A%7D%0Ah1%20%7B%0Aline%2Dheight%3A%201%2E4em%3B%0Aborder%2Dbottom%3A%201px%20%231a81c2%20solid%3B%0A%7D%0Ah1%2C%20h2%2C%20h3%20%7B%0Acolor%3A%20%231a81c2%3B%0A%7D%0Ah1%20%7B%0Afont%2Dsize%3A%2018%2E0pt%3B%0A%7D%0Ah2%20%7B%0Afont%2Dsize%3A%2014%2E5pt%3B%0A%7D%0Ah3%2C%20h4%20%7B%0Afont%2Dsize%3A%2012pt%3B%0A%7D%0Aspan%2Eheader%2Dsection%2Dnumber%20%7B%0Afloat%3A%20left%3B%0Awidth%3A%2065px%3B%0A%7D%0A%0Ap%2Eauthor%2Dname%20%7B%0Afont%2Dsize%3A%2014%2E5pt%3B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dstyle%3A%20italic%3B%0Atext%2Dalign%3A%20left%3B%0A%7D%0A%2Edate%20%7B%0Atext%2Dindent%3A%200px%3B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0A%2Eabstract%2C%20%2Epackage%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0A%0Acode%20%7B%20background%2Dcolor%3A%20%23f0f0f0%3B%0Acolor%3A%20%23404040%3B%0Afont%2Dsize%3A%2090%25%3B%0A%7D%0A%0A%2Efigure%20%7B%20margin%3A%200em%200px%200%2E5em%3B%0A%7D%0Aimg%20%7B%0Amax%2Dwidth%3A%20100%25%3B%0Adisplay%3A%20block%3B%0Apadding%3A%200px%20150px%200px%20130px%3B%0A%7D%0Ap%20%3E%20img%20%7B%0Apadding%2Dleft%3A%2065px%3B%0Apadding%2Dright%3A%200px%3B%0A%7D%0Aimg%2Esmallfigure%20%7B%0Apadding%2Dleft%3A%20195px%3B%0Apadding%2Dright%3A%20280px%3B%0A%7D%0Ap%20%3E%20img%2Esmallfigure%20%7B%0Apadding%2Dleft%3A%20130px%3B%0Apadding%2Dright%3A%20130px%3B%0A%7D%0Aimg%2Ewidefigure%20%7B%0Apadding%2Dleft%3A%2065px%3B%0Apadding%2Dright%3A%2085px%3B%0Amargin%2Dright%3A%20%2D65px%3B%0A%7D%0Ap%20%3E%20img%2Ewidefigure%20%7B%0Apadding%2Dleft%3A%200px%3B%0Apadding%2Dright%3A%200px%3B%0Amargin%2Dright%3A%20%2D65px%3B%0A%7D%0Ap%2Ecaption%2C%20caption%20%7B%0Acolor%3A%20inherit%3B%0Afont%2Dsize%3A%208pt%3B%0A%7D%0Ap%2Ecaption%20%7B%0Apadding%2Dleft%3A%20130px%3B%0Apadding%2Dright%3A%2085px%3B%0Amargin%2Dbottom%3A%2020px%3B%0A%7D%0Acaption%20%7B%0Apadding%3A%200px%3B%0Amargin%2Dbottom%3A%2010px%3B%0Amin%2Dwidth%3A%20583%3B%0A%7D%0Aspan%2Ecaption%2Dtitle%20%7B%0Acolor%3A%20%231a81c2%3B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aspan%2Ecaption%2Dlabel%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0A%0Atable%20%7B%0Amargin%2Dleft%3A%20130px%3B%0Amargin%2Dright%3A%2085px%3B%0A%7D%0A%2Etable%20%7B%0Amax%2Dwidth%3A%20518px%3B%0A%7D%0A%0Add%20%7B%0Amargin%2Dleft%3A%2065px%3B%0Amargin%2Dbottom%3A%2010px%3B%0A%7D%0A%0A%2Ecode%2Dfolding%2Dbtn%20%7B%0Aposition%3A%20relative%3B%0Amargin%2Dtop%3A%20%2D26px%3B%0Atop%3A%2026px%3B%0A%7D%0A%2Ecol%2Dmd%2D12%20%7B%0Amin%2Dheight%3A%200px%3B%0A%7D%0A%0A%2Esidenote%20%7B%0Afloat%3A%20right%3B%0Aclear%3A%20right%3B%0Amargin%2Dright%3A%20%2D150px%3B%0Awidth%3A%20130px%3B%0Amargin%2Dtop%3A%200%3B%0Amargin%2Dbottom%3A%201rem%3B%0Afont%2Dsize%3A%208pt%3B%0Aline%2Dheight%3A%201%2E3%3B%0Avertical%2Dalign%3A%20baseline%3B%0Aposition%3A%20relative%3B%0Atext%2Dalign%3A%20left%3B%0A%7D%0A%2Esidenote%2Dnumber%2C%20%2Eaffil%2Dmark%20%7B%0Aposition%3A%20relative%3B%0Avertical%2Dalign%3A%20super%3B%0Afont%2Dsize%3A%207%2E5pt%3B%0Afont%2Dweight%3A%20normal%3B%0Afont%2Dstyle%3A%20normal%3B%0Aline%2Dheight%3A%20normal%3B%0A%7D%0Ainput%2Emargin%2Dtoggle%20%7B%20display%3A%20none%3B%20%7D%0Alabel%2Esidenote%2Dnumber%20%7B%20display%3A%20inline%3B%20%7D%0Alabel%2Emargin%2Dtoggle%3Anot%28%2Esidenote%2Dnumber%29%20%7B%20display%3A%20none%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23E07020%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23404040%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%23D02070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23D02070%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%2340A040%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%2340A040%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23808080%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%232020F0%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23E07020%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23FF0000%3B%20%7D%20%0Acode%20%3E%20span%2Eidentifier%20%7B%20color%3A%20%23404040%3B%20%7D%0Acode%20%3E%20span%2Enumber%20%7B%20color%3A%20%23D02070%3B%20%7D%0Acode%20%3E%20span%2Estring%20%7B%20color%3A%20%2340A040%3B%20%7D%0Acode%20%3E%20span%2Ecomment%20%7B%20color%3A%20%23808080%3B%20font%2Dstyle%3A%20italic%3B%20%7D%0Acode%20%3E%20span%2Ekeyword%20%7B%20color%3A%20%232020F0%3B%20%7D%0Acode%20%3E%20span%2Eliteral%20%7B%20color%3A%20%232020F0%3B%20%7D%0Acode%20%3E%20span%2Eoperator%20%7B%20color%3A%20%23000000%3B%7D%0Acode%20%3E%20span%2Eparen%20%7B%20color%3A%20%23000000%3B%7D%0A%0A%2Ejs%2Dplotly%2Dplot%20%2Eplotly%20%7B%0Apadding%2Dleft%3A%2065px%3B%0A%7D%0A" rel="stylesheet" type="text/css" />
 
-</head>
 
-<body>
 
 <style type="text/css">
 .main-container {
@@ -97,21 +95,82 @@ img {
 button.code-folding-btn:focus {
   outline: none;
 }
+summary {
+  display: list-item;
+}
 </style>
 
 
 
-<div class="container-fluid main-container">
-
 <!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
 <script>
 $(document).ready(function () {
   window.buildTabsets("TOC");
 });
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
 </script>
 
 <!-- code folding -->
-
 
 
 
@@ -197,6 +256,16 @@ div.tocify {
 
 </style>
 
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
 <!-- setup 3col/9col grid for toc_float and main content  -->
 <div class="row-fluid">
 <div class="col-xs-12 col-sm-4 col-md-3">
@@ -215,50 +284,48 @@ div.tocify {
 
 <h1 class="title toc-ignore">Using msPurity for Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics</h1>
 <p class="author-name">Thomas N. Lawson</p>
-<h4 class="date"><em>2018-12-03</em></h4>
+<h4 class="date">2019-04-23</h4>
 
 </div>
 
 
-<div id="introduction" class="section level1">
-<h1><span class="header-section-number">1</span> Introduction</h1>
-<p>The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. See associated paper <span class="citation">(Lawson et al. 2017)</span>.</p>
-<p>What we call “Precursor purity” is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is very similar to the “Precursor Ion Fraction” (PIF) metric described by <span class="citation">(Michalski, Cox, and Mann 2011)</span> for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer</p>
-<p>There are two main use cases for the package</p>
-<ol style="list-style-type: decimal">
-<li>Assessing precursor purity of previously acquired MS2 spectra: A user has acquired either LC-MS2 or DIMS2 spectra and an assessment is made of the precursor purity for each MS2 scan. <code>purityA</code></li>
-<li>Assessing precursor purity of anticipated isolation windows for MS2 spectra: A user has acquired either LC-MS (<code>purityX</code>) or DIMS (<code>purityD</code>) full scan (MS1) data and an assessment is to be made of the precursor purity of detected features using anticipated or theoretical isolation windows. This information can then be used to guide further targeted MS2 experiments.</li>
-</ol>
-<p>The package has been developed to be used with DI-MS or LC-MS data and has been checked to work with the following vendor files after conversion to mzML: Thermo, Agilent and AB Sciex.</p>
+<div id="assessing-precursor-ion-purity-and-general-functionality" class="section level1">
+<h1><span class="header-section-number">1</span> Assessing precursor ion purity (and general functionality)</h1>
+<div id="introduction" class="section level2">
+<h2><span class="header-section-number">1.1</span> Introduction</h2>
+<p>Th R was originally developed to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor ion purity”. See associated paper <span class="citation">(Lawson et al. 2017)</span>.</p>
+<p>What we call “Precursor ion purity”&quot; is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is similar to the “Precursor Ion Fraction”&quot; (PIF) metric described by <span class="citation">(Michalski, Cox, and Mann 2011)</span> for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and the isolation efficiency of the mass spectrometer can be used to normalise the contributing ions to metric.</p>
+<p>The precursor ion purity can be calculated in two use cases 1. Assessing precursor purity of previously acquired MS2 spectra: A user has acquired either LC-MS2 or DIMS2 spectra and an assessment is made of the precursor purity for each MS2 scan. purityA 2. Assessing precursor purity of anticipated isolation windows for MS2 spectra: A user has acquired either LC-MS (purityX) or DIMS (purityD) full scan (MS1) data and an assessment is to be made of the precursor purity of detected features using anticipated or theoretical isolation windows. This information can then be used to guide further targeted MS2 experiments. The package has been developed to be used with DI-MS or LC-MS data and has been checked to work with the following vendor files after conversion to mzML: Thermo, Agilent and AB Sciex.</p>
 </div>
-<div id="assessing-precursor-purity-of-previously-acquired-ms2-spectra" class="section level1">
-<h1><span class="header-section-number">2</span> Assessing precursor purity of previously acquired MS2 spectra</h1>
-<div id="puritya" class="section level2">
-<h2><span class="header-section-number">2.1</span> purityA</h2>
-<p>Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function <code>purityA</code> will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (<code>@puritydf</code>).</p>
-<p>The isolation widths will be determined automatically from the mzML file. For some mzML files this is not recorded and in these cases the offsets can be given as a parameter.</p>
-<p>In the case of Agilent only the “narrow” isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da (this can be overwritten with the <code>offsets</code> argument)</p>
+<div id="assessing-precursor-purity-of-previously-acquired-ms2-spectra" class="section level2">
+<h2><span class="header-section-number">1.2</span> Assessing precursor purity of previously acquired MS2 spectra</h2>
+<div id="puritya" class="section level3">
+<h3><span class="header-section-number">1.2.1</span> purityA</h3>
+<p>Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the precursor ion purity of each MS/MS scan can be calculated and stored in the purityA S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (<code>pa@puritydf</code>).</p>
+<p>The calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window and is performed before and after the MS2 scan of interest and interpolated at the recorded time of the MS2 acquisition.</p>
+<p>Additionally, isotopic peaks can estimated and omitted from the calculation, low abundance peaks are removed that are thought to have limited contribution to the resulting MS2 spectra and the isolation efficiency of the mass spectrometer can be used to normalise the intensities used for the calculation.</p>
 <p>The purity dataframe (<code>pa@puritydf</code>) consists of the following columns:</p>
 <ul>
-<li><strong>pid</strong>: unique id for MS/MS scan</li>
-<li><strong>fileid</strong>: unqiue id for file</li>
-<li><strong>seqNum</strong>: scan number</li>
-<li><strong>precursorIntensity</strong>: precursor intensity value as defined from mzML file</li>
-<li><strong>precursorMZ</strong>: precursor m/z value as defined from mzML file</li>
-<li><strong>precursorRT</strong>: precursor RT value as defined from mzML file</li>
-<li><strong>precursorScanNum</strong>: precursor scan number value as defined from mzML file</li>
-<li><strong>id</strong>: unique id (redundant)</li>
-<li><strong>filename</strong>: mzML filename</li>
-<li><strong>precursorNearest</strong>: MS1 scan nearest to this MS/MS scan</li>
-<li><strong>aMz</strong>: The <em>m/z</em> value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file</li>
-<li><strong>aPurity</strong>: The purity score for <strong>aMz</strong></li>
-<li><strong>apkNm</strong>: The number of peaks in the isolation window for <strong>aMz</strong></li>
-<li><strong>iMz</strong>: The <em>m/z</em> value in the precursorNearest scan that is the most intense within the isolation window.</li>
-<li><strong>iPurity</strong>: The purity score for <strong>iMz</strong></li>
-<li><strong>ipkNm</strong>: The number of peaks in the isolation window for <strong>iMz</strong></li>
-<li><strong>inPurity</strong>: The interpolated purity score</li>
-<li><strong>inpkNm</strong>: The interpolated number of peaks in the isolation window</li>
+<li>pid: unique id for MS/MS scan</li>
+<li>fileid: unique id for file</li>
+<li>seqNum: scan number</li>
+<li>precursorIntensity: precursor intensity value as defined from mzML file</li>
+<li>precursorMZ: precursor m/z value as defined from mzML file</li>
+<li>precursorRT: precursor RT value as defined from mzML file</li>
+<li>precursorScanNum: precursor scan number value as defined from mzML file</li>
+<li>id: unique id (redundant)</li>
+<li>filename: mzML filename</li>
+<li>precursorNearest: MS1 scan nearest to this MS/MS scan</li>
+<li>aMz: The m/z value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file</li>
+<li>aPurity: The purity score for aMz</li>
+<li>apkNm: The number of peaks in the isolation window for aMz</li>
+<li>iMz: The m/z value in the precursorNearest scan that is the most intense within the isolation window.</li>
+<li>iPurity: The purity score for iMz</li>
+<li>ipkNm: The number of peaks in the isolation window for iMz</li>
+<li>inPurity: The interpolated purity score</li>
+<li>inpkNm: The interpolated number of peaks in the isolation window</li>
 </ul>
+<p>The remaining slots for purityA class include * <span class="citation">(<span class="citeproc-not-found" data-reference-id="cores"><strong>???</strong></span>)</span>: The number of CPUs to be used for any further processing with this purityA object * <span class="citation">(<span class="citeproc-not-found" data-reference-id="fileList"><strong>???</strong></span>)</span>: list of the files that have been processed * <span class="citation">(<span class="citeproc-not-found" data-reference-id="mzRback"><strong>???</strong></span>)</span>: The backend library used by mzR to extract information from the mzML file (e.g. pwiz) * <span class="citation">(<span class="citeproc-not-found" data-reference-id="grped_df"><strong>???</strong></span>)</span>: If frag4feature has been performed, a dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor * details is recorded here * <span class="citation">(<span class="citeproc-not-found" data-reference-id="grped_ms2"><strong>???</strong></span>)</span>: If frag4feature has been performed, a list of fragmentation spectra assoicated with each grouped XCMS feature is recorded here * <span class="citation">(<span class="citeproc-not-found" data-reference-id="f4f_link_type"><strong>???</strong></span>)</span>: If frag4feature has been performed, the linking method is recorded here * <span class="citation">(<span class="citeproc-not-found" data-reference-id="av_spectra"><strong>???</strong></span>)</span>: if averageIntraFragSpectra, averageInterFragSpectra, or averageAllFragSpectra have been performed, the average spectra is recorded here * <span class="citation">(<span class="citeproc-not-found" data-reference-id="av_intra_params"><strong>???</strong></span>)</span>: If averageIntraFragSpectra has been performed, the parameters are recorded here * <span class="citation">(<span class="citeproc-not-found" data-reference-id="av_inter_params"><strong>???</strong></span>)</span>: if averageInterFragSpectra has been performed, the parameters are recorded here * <span class="citation">(<span class="citeproc-not-found" data-reference-id="av_all_params"><strong>???</strong></span>)</span>: If averageAllFragSpectra has been performed, the parameters are recorded here * <span class="citation">(<span class="citeproc-not-found" data-reference-id="db_path"><strong>???</strong></span>)</span>: If create_database has been performed, the resulting database path is recorded here</p>
 <pre class="r"><code>library(msPurity)
 msmsPths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE, pattern = &quot;MSMS&quot;)
 msPths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE, pattern = &quot;LCMS_&quot;)</code></pre>
@@ -281,8 +348,9 @@ print(pa@puritydf[1:3,])</code></pre>
 ## 2 0.8475240
 ## 3 0.7558731</code></pre>
 </div>
+</div>
 <div id="mapping-xcms-features-to-fragmentation-spectra" class="section level2">
-<h2><span class="header-section-number">2.2</span> Mapping XCMS features to fragmentation spectra</h2>
+<h2><span class="header-section-number">1.3</span> Mapping XCMS features to fragmentation spectra</h2>
 <p>The MS/MS spectra can be assigned to an XCMS grouped feature using the <code>frag4feature</code> function.</p>
 <p>First an xcmsSet object of the same files is required</p>
 <pre class="r"><code>library(xcms)
@@ -362,9 +430,9 @@ xset &lt;- xcms::group(xset)</code></pre>
 </div>
 </div>
 <div id="assessing-precursor-purity-of-anticipated-isolation-windows-for-ms2-spectra" class="section level1">
-<h1><span class="header-section-number">3</span> Assessing precursor purity of anticipated isolation windows for MS2 spectra</h1>
+<h1><span class="header-section-number">2</span> Assessing precursor purity of anticipated isolation windows for MS2 spectra</h1>
 <div id="purityx-assessing-anticipated-purity-of-xcms-features-from-an-lc-ms-run" class="section level2">
-<h2><span class="header-section-number">3.1</span> purityX: Assessing anticipated purity of XCMS features from an LC-MS run</h2>
+<h2><span class="header-section-number">2.1</span> purityX: Assessing anticipated purity of XCMS features from an LC-MS run</h2>
 <p>NOTE ON TERMINOLOGY: The term ‘anticipated purity’ and ‘predicted purity’ are used interchangeably</p>
 <p>A processed xcmsSet object is required to determine the anticipated (predicted) precursor purity score from an LC-MS dataset. The offsets chosen in the parameters should reflect what settings would be used in a hypothetical fragmentation experiment.</p>
 <p>The slot <code>predictions</code> provides the anticipated (predicted) purity scores for each feature. The dataframe contains the following columns:</p>
@@ -385,16 +453,16 @@ xset &lt;- xcms::group(xset)
 xset &lt;- xcms::retcor(xset)
 xset &lt;- xcms::group(xset)</code></pre>
 <p><em>Perform purity calculations</em></p>
-<pre class="r"><code>ppLCMS &lt;- purityX(xset, offsets=c(0.5, 0.5), xgroups = c(1, 2))</code></pre>
-<pre><code>## [1] 4</code></pre>
-<pre class="r"><code>print(ppLCMS@predictions[1:3,])</code></pre>
+<pre class="r"><code>ppLCMS &lt;- purityX(xset, offsets=c(0.5, 0.5), xgroups = c(1, 2))
+
+print(ppLCMS@predictions[1:3,])</code></pre>
 <pre><code>##    grpid mean median sd stde RSD pknm        i       mz
 ## 1      1    1      1  0    0   0    1 61925043 102.0916
 ## 2      2    1      1  0    0   0    1 25719001 103.0544
 ## NA    NA   NA     NA NA   NA  NA   NA       NA       NA</code></pre>
 </div>
 <div id="purityd-assessing-anticipated-purity-from-a-di-ms-run" class="section level2">
-<h2><span class="header-section-number">3.2</span> purityD: Assessing anticipated purity from a DI-MS run</h2>
+<h2><span class="header-section-number">2.2</span> purityD: Assessing anticipated purity from a DI-MS run</h2>
 <p>The anticipated/predicted purity for a DI-MS experiment can be performed on any DI-MS dataset consisting of multiple MS1 scans of the same mass range, i.e. it has <strong>not</strong> been developed to be used with any SIM stitching approach.</p>
 <p>A number of simple data processing steps are performed on the mzML files to provide a DI-MS peak list (features) to perform the purity predictions on.</p>
 <p>These data processing steps consist of:</p>
@@ -443,7 +511,7 @@ print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))</code></pre>
 ## 17    0.8123950  0.8229505 0.04384595 5.327896 0.019608505             2</code></pre>
 </div>
 <div id="calculating-the-anticipated-predicted-purity-from-a-known-mz-target-list-for-di-ms" class="section level2">
-<h2><span class="header-section-number">3.3</span> Calculating the anticipated (predicted) purity from a known <em>m/z</em> target list for DI-MS</h2>
+<h2><span class="header-section-number">2.3</span> Calculating the anticipated (predicted) purity from a known <em>m/z</em> target list for DI-MS</h2>
 <p>The data processing steps carried out through purityPD can be bypassed if the peaks (<em>m/z</em> values) of interest are already known. The function <code>dimsPredictPuritySingle()</code> can be used to predict the purity of a list of <em>m/z</em> values in a chosen mzML file.</p>
 <pre class="r"><code>mzpth &lt;- system.file(&quot;extdata&quot;, &quot;dims&quot;, &quot;mzML&quot;, &quot;B02_Daph_TEST_pos.mzML&quot;, package=&quot;msPurityData&quot;)
 predicted &lt;- dimsPredictPuritySingle(filepth = mzpth, mztargets = c(111.0436, 113.1069))

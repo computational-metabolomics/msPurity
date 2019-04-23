@@ -27,38 +27,6 @@ NULL
 #' including linking the fragmentation spectra to XCMS features, averaging fragmentation,
 #' database creation and spectral matching (from the created database).
 #'
-#' The purity dataframe (**pa@@puritydf**) consists of the following columns:
-#' * pid: unique id for MS/MS scan
-#' * fileid: unique id for mzML file
-#' * seqNum: scan number
-#' * precursorIntensity: precursor intensity value as defined in the mzML file
-#' * precursorMZ: precursor m/z value as defined in the mzML file
-#' * precursorRT: precursor RT value as defined in the mzML file
-#' * precursorScanNum: precursor scan number value as defined in mzML file
-#' * id: unique id (redundant)
-#' * filename: mzML filename
-#' * precursorNearest: MS1 scan nearest to the MS/MS scan
-#' * aMz: The m/z value in the "precursorNearest" MS1 scan which most closely matches the precursorMZ value provided from the mzML file
-#' * aPurity: The purity score for aMz
-#' * apkNm: The number of peaks in the isolation window for aMz
-#' * iMz: The m/z value in the precursorNearest MS1 scan that is the most intense within the isolation window.
-#' * iPurity: The purity score for iMz
-#' * ipkNm: The number of peaks in the isolation window for iMz
-#' * inPurity: The interpolated purity score (the purity score is calculated at neighbouring MS1 scans and interpolated at the point of the MS/MS acquisition)
-#' * inpkNm: The interpolated number of peaks in the isolation window
-#'
-#' The remaining slots for purityA class include
-#' * pa@@cores: The number of CPUs to be used for any further processing with this purityA object
-#' * pa@@fileList: list of the mzML files that have been processed
-#' * pa@@mzRback: The backend library used by mzR to extract information from the mzML file (e.g. pwiz)
-#' * pa@@grped_df: If frag4feature has been performed, a dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
-#' * pa@@grped_ms2:  If frag4feature has been performed, a list of fragmentation spectra associated with each grouped XCMS feature is recorded here
-#' * pa@@f4f_link_type: If frag4feature has been performed, the 'linking method' is recorded here, e.g. 'group' or 'individual'. Default is 'individual', see frag4feature documentation for more details
-#' * pa@@av_spectra: if averageIntraFragSpectra, averageInterFragSpectra,  or averageAllFragSpectra have been performed, the average spectra is recorded here
-#' * pa@@av_intra_params:  If averageIntraFragSpectra has been performed, the parameters are recorded here
-#' * pa@@av_inter_params: if averageInterFragSpectra has been performed, the  parameters are recorded here]
-#' * pa@@av_all_params: If averageAllFragSpectra has been performed, the parameters are recorded here
-#' * pa@@db_path: If create_database has been performed, the resulting path to the database is recorded here
 #'
 #' **Example LC-MS/MS processing workflow**
 #'
@@ -102,7 +70,40 @@ NULL
 #' @param mzRback character; backend to use for mzR parsing
 #' @param cores numeric; Number of cores to use
 #'
-#' @return a dataframe of the purity score of the ms/ms spectra
+#' @return Returns a purityA object (pa) with the pa@@puritydf slot updated
+#'
+#' The purity dataframe (**pa@@puritydf**) consists of the following columns:
+#' * pid: unique id for MS/MS scan
+#' * fileid: unique id for mzML file
+#' * seqNum: scan number
+#' * precursorIntensity: precursor intensity value as defined in the mzML file
+#' * precursorMZ: precursor m/z value as defined in the mzML file
+#' * precursorRT: precursor RT value as defined in the mzML file
+#' * precursorScanNum: precursor scan number value as defined in mzML file
+#' * id: unique id (redundant)
+#' * filename: mzML filename
+#' * precursorNearest: MS1 scan nearest to the MS/MS scan
+#' * aMz: The m/z value in the "precursorNearest" MS1 scan which most closely matches the precursorMZ value provided from the mzML file
+#' * aPurity: The purity score for aMz
+#' * apkNm: The number of peaks in the isolation window for aMz
+#' * iMz: The m/z value in the precursorNearest MS1 scan that is the most intense within the isolation window.
+#' * iPurity: The purity score for iMz
+#' * ipkNm: The number of peaks in the isolation window for iMz
+#' * inPurity: The interpolated purity score (the purity score is calculated at neighbouring MS1 scans and interpolated at the point of the MS/MS acquisition)
+#' * inpkNm: The interpolated number of peaks in the isolation window
+#'
+#' The remaining slots for purityA class include
+#' * pa@@cores: The number of CPUs to be used for any further processing with this purityA object
+#' * pa@@fileList: list of the mzML files that have been processed
+#' * pa@@mzRback: The backend library used by mzR to extract information from the mzML file (e.g. pwiz)
+#' * pa@@grped_df: If frag4feature has been performed, a dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
+#' * pa@@grped_ms2:  If frag4feature has been performed, a list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+#' * pa@@f4f_link_type: If frag4feature has been performed, the 'linking method' is recorded here, e.g. 'group' or 'individual'. Default is 'individual', see frag4feature documentation for more details
+#' * pa@@av_spectra: if averageIntraFragSpectra, averageInterFragSpectra,  or averageAllFragSpectra have been performed, the average spectra is recorded here
+#' * pa@@av_intra_params:  If averageIntraFragSpectra has been performed, the parameters are recorded here
+#' * pa@@av_inter_params: if averageInterFragSpectra has been performed, the  parameters are recorded here]
+#' * pa@@av_all_params: If averageAllFragSpectra has been performed, the parameters are recorded here
+#' * pa@@db_path: If create_database has been performed, the resulting path to the database is recorded here
 #'
 #' @examples
 #' filepths <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")

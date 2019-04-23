@@ -4,15 +4,6 @@
 #' **General**
 #' Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
 #'
-#' The pa@@grped_msms spectra matrices are updated with the following columns
-#'
-#' * snr: Signal to noise ratio (calculated at scan level)
-#' * ra: Relative abundance (calculated at scan level)
-#' * purity_pass_flag: Precursor ion purity flag (1 pass, 0 fail)
-#' * intensity_pass_flag: Intensity flag (1 pass, 0 fail)
-#' * snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
-#' * ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
-#' * pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
 #'
 #' **Example LC-MS/MS processing workflow**
 #'
@@ -47,7 +38,15 @@
 #' pa <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
 #' pa <- filterFragSpectra(pa)
 #'
-#' @return purityA object with additional columns for the fragmentation spectra in the grped_msms slot
+#' @return Returns a purityA object with the pa@@grped_msms spectra matrices are updated with the following columns
+#'
+#' * snr: Signal to noise ratio (calculated at scan level)
+#' * ra: Relative abundance (calculated at scan level)
+#' * purity_pass_flag: Precursor ion purity flag (1 pass, 0 fail)
+#' * intensity_pass_flag: Intensity flag (1 pass, 0 fail)
+#' * snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
+#' * ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
+#' * pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
 #'
 #' @export
 setMethod(f="filterFragSpectra", signature="purityA",

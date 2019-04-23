@@ -36,6 +36,9 @@
 \item{intensity_ra}{character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
 to the MSP file}
 }
+\value{
+Returns a MSP file with the selected spectra and metadata
+}
 \description{
 **General**
 

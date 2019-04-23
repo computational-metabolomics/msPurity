@@ -16,34 +16,36 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Introduction
+# Assessing precursor ion purity (and general functionality)
 
-The function of this R package is to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called “precursor purity”. See associated paper [@Lawson2017]. 
+## Introduction
 
-What we call "Precursor purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is very similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and can optionally take into account the isolation efficiency of the mass spectrometer
+Th R was originally developed to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called "precursor ion purity". See associated paper  [@Lawson2017].
 
-There are two main use cases for the package
+What we call "Precursor ion purity"" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is  similar to the "Precursor Ion Fraction"" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS2 spectra and the isolation efficiency of the mass spectrometer can be used to normalise the contributing ions to metric.
 
-1.	Assessing precursor purity of previously acquired MS2 spectra: A user has acquired either LC-MS2 or DIMS2 spectra and an assessment is made of the precursor purity for each MS2 scan. `purityA`
-2.	Assessing precursor purity of anticipated isolation windows for MS2 spectra: A user has acquired either LC-MS (`purityX`) or DIMS (`purityD`) full scan (MS1) data and an assessment is to be made of the precursor purity of detected features using anticipated or theoretical isolation windows. This information can then be used to guide further targeted MS2 experiments. 
-
+The precursor ion purity can be calculated in two use cases
+1.  Assessing precursor purity of previously acquired MS2 spectra: A user has acquired either LC-MS2 or DIMS2 spectra and an assessment is made of the precursor purity for each MS2 scan. purityA
+2. Assessing precursor purity of anticipated isolation windows for MS2 spectra: A user has acquired either LC-MS (purityX) or DIMS (purityD) full scan (MS1) data and an assessment is to be made of the precursor purity of detected features using anticipated or theoretical isolation windows. This information can then be used to guide further targeted MS2 experiments.
 The package has been developed to be used with DI-MS or LC-MS data and has been checked to work with the following vendor files after conversion to mzML: Thermo, Agilent and AB Sciex.
 
-# Assessing precursor purity of previously acquired MS2 spectra
 
-## purityA 
+## Assessing precursor purity of previously acquired MS2 spectra
 
-Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the function `purityA` will calculate the precursor purity of each MS/MS scan. The output is a S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (`@puritydf`).
+### purityA 
 
-The isolation widths will be determined automatically from the mzML file. For some mzML files this is not recorded and in these cases the offsets can be given as a parameter.
+#### General
 
+Given a vector of LC-MS/MS or DI-MS/MS mzML file paths the precursor ion purity of each MS/MS scan can be calculated and stored in the purityA S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (`pa@puritydf`).
 
-In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da (this can be overwritten with the `offsets` argument)
+The calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window and is performed before and after the MS2 scan of interest and interpolated at the recorded time of the MS2 acquisition.
+
+Additionally, isotopic peaks can estimated and omitted from the calculation, low abundance peaks are removed that are thought to have limited contribution to the resulting MS2 spectra and the isolation efficiency of the mass spectrometer can be used to normalise the intensities used for the calculation.
 
 The purity dataframe (`pa@puritydf`) consists of the following columns:
 
 * __pid__: unique id for MS/MS scan
-* __fileid__: unqiue id for file
+* __fileid__: unique id for file
 * __seqNum__: scan number
 * __precursorIntensity__: precursor intensity value as defined from mzML file
 * __precursorMZ__: precursor m/z value as defined from mzML file
@@ -52,14 +54,28 @@ The purity dataframe (`pa@puritydf`) consists of the following columns:
 * __id__: unique id (redundant)
 * __filename__: mzML filename
 * __precursorNearest__: MS1 scan nearest to this MS/MS scan
-* __aMz__: The _m/z_ value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file
-* __aPurity__: The purity score for __aMz__ 
-* __apkNm__: The number of peaks in the isolation window for __aMz__ 
-* __iMz__: The _m/z_ value in the precursorNearest scan that is the most intense within the isolation window.
-* __iPurity__: The purity score for __iMz__ 
-* __ipkNm__: The number of peaks in the isolation window for __iMz__ 
+* __aMz__: The m/z value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file
+* __aPurity__: The purity score for __aMz__
+* __apkNm__: The number of peaks in the isolation window for __aMz__
+* __iMz__: The m/z value in the precursorNearest scan that is the most intense within the isolation window.
+* __iPurity__: The purity score for __iMz__
+* __ipkNm__: The number of peaks in the isolation window for __iMz__
 * __inPurity__: The interpolated purity score
 * __inpkNm__: The interpolated number of peaks in the isolation window
+
+The remaining slots for purityA class include
+* __@cores__: The number of CPUs to be used for any further processing with this purityA object
+* __@fileList__: list of the files that have been processed
+* __@mzRback__: The backend library used by mzR to extract information from the mzML file (e.g. pwiz)
+* __@grped_df__: If frag4feature has been performed, a dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor * details is recorded here
+* __@grped_ms2__:  If frag4feature has been performed, a list of fragmentation spectra assoicated with each grouped XCMS feature is recorded here
+* __@f4f_link_type__: If frag4feature has been performed, the linking method is recorded here
+* __@av_spectra__: if averageIntraFragSpectra, averageInterFragSpectra,  or averageAllFragSpectra have been performed, the average spectra is recorded here
+* __@av_intra_params__:  If averageIntraFragSpectra has been performed, the parameters are recorded here
+* __@av_inter_params__: if averageInterFragSpectra has been performed, the  parameters are recorded here
+* __@av_all_params__: If averageAllFragSpectra has been performed, the parameters are recorded here
+* __@db_path__: If create_database has been performed, the resulting database path is recorded here
+
 
 
 
@@ -74,6 +90,24 @@ pa <- purityA(msmsPths)
 print(pa@puritydf[1:3,])
 ```
 
+#### Isolation efficiency
+
+We define here "isolation efficiency"" as the effect of the position of an ion within an isolation window on its relative intensity in corresponding fragmentation spectra. When the isolation efficiency of an instrument is known, the peak intensities within an isolation window can be normalised for the precursor purity calculation. In the example in figure 2, an R-Cosine isolation efficiency curve is used, the red peak (the targeted precursor ion peak) would not change following normalisation -  as the contribution is at 1 (i.e. 100%) - however the the black peak (a contaminating ion) would be normalised by approximately 0.1 (i.e. 10%) and the normalised intensity would be calculated as 1000 (i.e. original intensity of 10000 x 0.1)
+
+The isolation efficiency can be estimated by looking at a single precursor with a sliding window. See figure 3 from the msPurity paper. This has been performed for a Thermo Fisher Q-Exactive Mass spectrometer using 0.5 Da windows and can be set within msPurity by using msPurity::iwNormQE.5() as the input to the iwNormFunc argument. 
+
+Other available options are to use gaussian isolation window msPurity::iwNormGauss(minOff=-0.5, maxOff = 0.5) or a R-Cosine window msPurity::iwNormRCosine(minOff=-0.5, maxOff=0.5). Where the minOff and maxOff can be changed depending on the isolation window. 
+
+A user can also create their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
+
+Se below for example of using one of the default provided normalisation functions. 
+
+```{r}
+pa <- purityA(msmsPths, iwNorm=TRUE, iwNormFun=iwNormGauss(-0.5, 0.5))
+```
+
+If the isolation efficiency of the instrument is not known, by default iwNorm is set to FALSE and no normalisation will occur.
+
 
 ## Mapping XCMS features to fragmentation spectra
 The MS/MS spectra can be assigned to an XCMS grouped feature using the `frag4feature` function. 
@@ -81,7 +115,7 @@ The MS/MS spectra can be assigned to an XCMS grouped feature using the `frag4fea
 First an xcmsSet object of the same files is required
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 
-library(xcms)
+suppressPackageStartupMessages(library(xcms))
 
 xset <- xcms::xcmsSet(msmsPths)
 xset <- xcms::group(xset)

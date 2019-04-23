@@ -28,13 +28,7 @@
 \item{allfrag}{boolean; Whether to filter on all fragmentation spectra or or just the fragmentation spectra grouped to XCMS feature}
 }
 \value{
-purityA object with additional columns for the fragmentation spectra in the grped_msms slot
-}
-\description{
-**General**
-Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
-
-The pa@grped_msms spectra matrices are updated with the following columns
+Returns a purityA object with the pa@grped_msms spectra matrices are updated with the following columns
 
 * snr: Signal to noise ratio (calculated at scan level)
 * ra: Relative abundance (calculated at scan level)
@@ -43,6 +37,11 @@ The pa@grped_msms spectra matrices are updated with the following columns
 * snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
 * ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
 * pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
+}
+\description{
+**General**
+Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
+
 
 **Example LC-MS/MS processing workflow**
 

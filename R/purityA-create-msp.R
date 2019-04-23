@@ -34,6 +34,8 @@
 #' @param msp_schema character; Either MassBank (Europe) or MoNA style of MSP file format to be used ('massbank' or 'mona')
 #' @param intensity_ra character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
 #'                             to the MSP file
+#'
+#' @return Returns a MSP file with the selected spectra and metadata
 #' @examples
 #'
 #' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
