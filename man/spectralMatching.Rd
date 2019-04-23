@@ -59,7 +59,7 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 
 \item{l_raThres}{numeric; Relative abundance threshold for library spectra}
 
-\item{l_pol}{character; Polarity of library spectra \link{'positive', 'negative', NA}.}
+\item{l_pol}{character; Polarity of library spectra ('positive', 'negative', NA)}
 
 \item{l_instrumentTypes}{vector; Instrument types for library spectra.}
 
@@ -128,9 +128,17 @@ The spectral alignment stage involves aligning the query peaks to the library pe
 to modified pMatch algorithm described in Zhou et al 2015.
 
 The spectral matching of the aligned spectra is performed against a combined intensity and m/z weighted vector of the query and
-library spectra.
-See equation xx, where x and y represent weight factors, defaults to x=0.5 and y=2 as per MassBank.
-#' These can be adjust by the user though
+library spectra. See below:
+
+\deqn{w=intensity^x * mz^y}
+
+Where x and y represent weight factors, defaults to \emph{x}=0.5 and \emph{y}=2 as per MassBank. These can be adjusted by
+the user though.
+
+The aligned weighted vectors are then matched using dot product cosine, reverse dot product cosine (the same as eq xx but any peaks not matching in
+the query are omitted from the calculation) and the composite dot product eq xx.
+
+\deqn{dpc =  w_Q * w_L / \sqrt{\sum w_Q^2} * \sqrt{\sum w_L^2}}
 }
 \examples{
 #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")

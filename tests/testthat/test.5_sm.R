@@ -19,7 +19,7 @@ test_that("checking spectral matching functions (spectral_matching)", {
 
   #q_copyDbPth <- create_database(pa, xset = xset, out_dir = td)
   q_dbPth <- system.file("extdata", "tests", "db", "create_database_example.sqlite", package="msPurity")
-  q_copyDbPth <- file.path(td, paste0(format(Sys.time(), "%Y-%m-%d-%I%M%S"), 'copy.sqlite'))
+  q_copyDbPth <- file.path(td, paste0(format(Sys.time(), "%Y-%m-%d-%I%M%S"), 'copy_spectral_matching.sqlite'))
   file.copy(from = q_dbPth, to=q_copyDbPth)
 
   result <- spectral_matching(q_copyDbPth, spectra_type_q = 'av_all', match_alg = 'dpc')
