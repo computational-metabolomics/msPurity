@@ -7,16 +7,18 @@ msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityDat
 pa <- purityA(msmsPths)
 print(pa@puritydf[1:3,])
 
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+pa_norm <- purityA(msmsPths, iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=+0.5))
+
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
 
-library(xcms)
+suppressPackageStartupMessages(library(xcms))
 
 xset <- xcms::xcmsSet(msmsPths)
 xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)
 xset <- xcms::group(xset)
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 pa <- frag4feature(pa, xset)
 
 ## --------------------------------------------------------------------------
