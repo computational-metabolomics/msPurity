@@ -1,8 +1,22 @@
-#' @title Create MSP file from purityA object
+#' @title Using a purityA object, create an MSP file of fragmentation spectra
 #'
 #' @description
+#' **General**
 #'
-#' Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
+#' Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature.
+#' Can export all the associated scans individually or the averaged fragmentation spectra can be exported.
+#'
+#' Additional metadata can be included in a dataframe (each column will be added to metadata of the MSP spectra).
+#' The dataframe must contain the column "grpid" corresponding to the XCMS grouped feature.
+#'
+#' **Example LC-MS/MS processing workflow**
+#'
+#'  * Purity assessments
+#'    +  (mzML files) -> purityA -> (pa)
+#'  * XCMS processing
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'  * Fragmentation processing
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> **averageIntraFragSpectra** -> **createMSP** -> (MSP file)
 #'
 #' @aliases createMSP
 #
@@ -22,15 +36,16 @@
 #'                             to the MSP file
 #' @examples
 #'
-#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-#' xset <- xcms::group(xset)
-#' xset <- xcms::retcor(xset)
-#' xset <- xcms::group(xset)
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#' #xset <- xcms::group(xset)
+#' #xset <- xcms::retcor(xset)
+#' #xset <- xcms::group(xset)
 #'
-#' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa, xset)
-#' pa <- averageAllFragSpectra(pa)
+#' #pa  <- purityA(msmsPths)
+#' #pa <- frag4feature(pa, xset)
+#' #pa <- averageAllFragSpectra(pa)
+#' pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
 #' createMSP(pa)
 #' @export
 setMethod(f="createMSP", signature="purityA",

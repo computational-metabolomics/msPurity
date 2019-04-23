@@ -43,17 +43,18 @@
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
-#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' xset <- xcms::xcmsSet(msmsPths)
-#' xset <- xcms::group(xset)
-#' xset <- xcms::retcor(xset)
-#' xset <- xcms::group(xset)
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #xset <- xcms::xcmsSet(msmsPths)
+#' #xset <- xcms::group(xset)
+#' #xset <- xcms::retcor(xset)
+#' #xset <- xcms::group(xset)
 #'
-#' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa, xset)
-#' pa <- averageAllFragSpectra(pa)
-#' db_pth <- create_database(pa, xset)
-#' result <- spectral_matching(db_pth, spectra_type_q="av_all")
+#' #pa  <- purityA(msmsPths)
+#' #pa <- frag4feature(pa, xset)
+#' #pa <- averageAllFragSpectra(pa)
+#' #db_pth <- create_database(pa, xset)
+#' q_dbPth <- system.file("extdata", "tests", "db", "create_database_example.sqlite", package="msPurity")
+#' result <- spectral_matching(q_dbPth, spectra_type_q="av_all")
 #' @export
 spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
                                      score_thres=0.6, topn=NA,  db_name=NA, library_db_pth=NA,

@@ -4,13 +4,13 @@
 \alias{combineAnnotations}
 \title{Combine Annotations}
 \usage{
-combineAnnotations(sqlitePth, metfrag_resultPth = NA,
+combineAnnotations(sm_resultPth, metfrag_resultPth = NA,
   sirius_csi_resultPth = NA, probmetab_resultPth = NA,
   weights = list(sm = 0.4, metfrag = 0.25, sirius_csifingerid = 0.25,
-  probmetab = 0.1), silentRestErrors = FALSE)
+  probmetab = 0.1), outPth = NA, silentRestErrors = FALSE)
 }
 \arguments{
-\item{sqlitePth}{character;}
+\item{sm_resultPth}{character;}
 
 \item{metfrag_resultPth}{character;}
 
@@ -19,6 +19,8 @@ combineAnnotations(sqlitePth, metfrag_resultPth = NA,
 \item{probmetab_resultPth}{character;}
 
 \item{weights}{list;}
+
+\item{outPth}{character;}
 
 \item{silentRestErrors}{boolean;}
 }
@@ -31,12 +33,8 @@ Combine the annotation results from msPurity spectral matching, MetFrag, Sirius 
 }
 \examples{
 metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
-sm_resultPth <- system.file("extdata", "sm_result.sqlite", package="msPurity")
 # run the standard spectral matching workflow to get the sm_resultPth
 sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
-td <- tempdir()
-sm_resultPthCopy <- file.path(td, 'sm_result_tmp.sqlite')
-file.copy(sm_resultPth, sm_resultPthCopy)
 
-combined <- combineAnnotations(sm_resultPthCopy, metfrag_resultPth)
+combined <- combineAnnotations(sm_resultPth, metfrag_resultPth, outPth=file.path(tempdir(), 'combined.sqlite'))
 }

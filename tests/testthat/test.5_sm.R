@@ -7,19 +7,18 @@ test_that("checking spectral matching functions (spectral_matching)", {
   print("########################################################")
   td <- tempdir()
 
-  # msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  # xset <- xcms::xcmsSet(msmsPths)
-  # xset <- xcms::group(xset)
-  # xset <- xcms::retcor(xset)
-  # xset <- xcms::group(xset)
-  #
-  # pa  <- purityA(msmsPths)
-  # pa <- frag4feature(pa, xset)
-  # pa  <- averageAllFragSpectra(pa)
+  #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+  #xset <- xcms::xcmsSet(msmsPths)
+  #xset <- xcms::group(xset)
+  #xset <- xcms::retcor(xset)
+  #xset <- xcms::group(xset)
 
-  # db_path <- create_database(pa, xset = xset, out_dir = td)
+  #pa  <- purityA(msmsPths)
+  #pa <- frag4feature(pa, xset)
+  #pa  <- averageAllFragSpectra(pa)
+
+  #q_copyDbPth <- create_database(pa, xset = xset, out_dir = td)
   q_dbPth <- system.file("extdata", "tests", "db", "create_database_example.sqlite", package="msPurity")
-
   q_copyDbPth <- file.path(td, paste0(format(Sys.time(), "%Y-%m-%d-%I%M%S"), 'copy.sqlite'))
   file.copy(from = q_dbPth, to=q_copyDbPth)
 

@@ -2,16 +2,16 @@
 % Please edit documentation in R/spectralMatching.R
 \name{spectralMatching}
 \alias{spectralMatching}
-\title{Spectral matching}
+\title{Spectral matching for LC-MS/MS datasets}
 \usage{
 spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
   q_ppmProd = 10, q_ppmPrec = 5, q_raThres = NA,
-  q_pol = "positive", q_instrumentTypes = NA, q_instrument = NA,
+  q_pol = "positive", q_instrumentTypes = NA, q_instruments = NA,
   q_sources = NA, q_spectraTypes = "av_all", q_pids = NA,
   q_rtrange = c(NA, NA), q_spectraFilter = TRUE, q_xcmsGroups = NA,
   q_accessions = NA, l_purity = NA, l_ppmProd = 10, l_ppmPrec = 5,
   l_raThres = NA, l_pol = "positive", l_instrumentTypes = NA,
-  l_instrument = NA, l_sources = NA, l_spectraTypes = NA,
+  l_instruments = NA, l_sources = NA, l_spectraTypes = NA,
   l_pids = NA, l_rtrange = c(NA, NA), l_spectraFilter = FALSE,
   l_xcmsGroups = NA, l_accessions = NA, usePrecursors = TRUE,
   raW = 0.5, mzW = 2, rttol = NA, cores = 1, updateDb = FALSE,
@@ -30,9 +30,12 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 
 \item{q_raThres}{numeric; Relative abundance threshold for query spectra}
 
-\item{q_pol}{character; Polarity of query spectra ['positive', 'negative', NA].}
+\item{q_pol}{character; Polarity of query spectra ('positive', 'negative', NA).}
 
 \item{q_instrumentTypes}{vector; Instrument types for query spectra.}
+
+\item{q_instruments}{vector; Instruments for query spectra (note that this is used in combination with q_instrumentTypes - any
+spectra matching either q_instrumentTypes or q_instruments will be used).}
 
 \item{q_sources}{vector; Sources of query spectra (e.g. massbank, hmdb).}
 
@@ -56,9 +59,12 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 
 \item{l_raThres}{numeric; Relative abundance threshold for library spectra}
 
-\item{l_pol}{character; Polarity of library spectra ['positive', 'negative', NA].}
+\item{l_pol}{character; Polarity of library spectra \link{'positive', 'negative', NA}.}
 
 \item{l_instrumentTypes}{vector; Instrument types for library spectra.}
+
+\item{l_instruments}{vector; Instruments for library spectra (note that this is used in combination with q_instrumentTypes - any
+spectra matching either q_instrumentTypes or q_instruments will be used).}
 
 \item{l_sources}{vector; Sources of library spectra (e.g. massbank, hmdb).}
 
@@ -89,18 +95,42 @@ spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
 \item{copyDb}{boolean; If updating the database - perform on a copy rather thatn the original query database}
 
 \item{outPth}{character; If copying the database - the path of the new database file}
-
-\item{q_instruments}{vector; Instruments for query spectra (note that this is used in combination with q_instrumentTypes - any
-spectra matching either q_instrumentTypes or q_instruments will be used).}
-
-\item{l_instruments}{vector; Instruments for library spectra (note that this is used in combination with q_instrumentTypes - any
-spectra matching either q_instrumentTypes or q_instruments will be used).}
 }
 \value{
 list of database details and dataframe summarising the results for the xcms features
 }
 \description{
-Perform spectral matching to spectral libraries on SQLite database of query and library spectra
+\strong{General}
+Perform spectral matching to spectral libraries for an LC-MS/MS dataset.
+
+The spectral matching is performed from a \strong{Query} SQLite spectral-database against a \strong{Library} SQLite spectral-database.
+
+The SQLite schema of the spectral database can be detailed here.
+
+The query spectral-database in most cases should contain be the "unknown" spectra database generated the msPurity
+function createDatabase as part of a msPurity-XCMS data processing workflow.
+
+The library spectral-database in most cases should contain the "known" spectra from either public or user generated resources.
+The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS.
+A larger database can be downloaded from \href{https://github.com/computational-metabolomics/msp2db/releases}{here}.
+To create a user generated library SQLite database the following tool can be used to generate a SQLite database
+from a collection of MSP files: \href{https://github.com/computational-metabolomics/msp2db/releases}{msp2db}.
+It should be noted though, that as long as the schema of the spectral-database is as described here, then any database can be used
+for either the library or query -  even allowing for the same database to be used.
+
+The spectral matching functionality has four main components, spectral filtering, spectral alignment, spectral matching,
+and summarising the results.
+
+Spectral filtering is simply filtering both the library and query spectra to be search against (e.g. choosing
+the library source, instrument, retention time, precursor PPM tolerance etc).
+
+The spectral alignment stage involves aligning the query peaks to the library peaks. The approach used is similar
+to modified pMatch algorithm described in Zhou et al 2015.
+
+The spectral matching of the aligned spectra is performed against a combined intensity and m/z weighted vector of the query and
+library spectra.
+See equation xx, where x and y represent weight factors, defaults to x=0.5 and y=2 as per MassBank.
+#' These can be adjust by the user though
 }
 \examples{
 #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
@@ -114,7 +144,7 @@ Perform spectral matching to spectral libraries on SQLite database of query and 
 #pa <- filterFragSpectra(pa, allfrag=TRUE)
 #pa <- averageAllFragSpectra(pa)
 #q_dbPth <- createDatabase(pa, xset)
-q_dbPth <- system.file("extdata", "createDatabase_example.sqlite", package="msPurity")
+q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
 result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 
 }

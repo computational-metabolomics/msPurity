@@ -31,23 +31,41 @@
 purityA object with additional columns for the fragmentation spectra in the grped_msms slot
 }
 \description{
-Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and
-precursor ion purity of precursor.
+**General**
+Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
 
-The grp_spectra slot to add the columns snr, ra, snr_flag, ra_flag, purity_flag, intensity_flag pass_flag
+The pa@grped_msms spectra matrices are updated with the following columns
 
-This filtering occurs at the scan level (i.e. should be run prior to any averaging)
+* snr: Signal to noise ratio (calculated at scan level)
+* ra: Relative abundance (calculated at scan level)
+* purity_pass_flag: Precursor ion purity flag (1 pass, 0 fail)
+* intensity_pass_flag: Intensity flag (1 pass, 0 fail)
+* snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
+* ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
+* pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
+
+**Example LC-MS/MS processing workflow**
+
+The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
+
+ * Purity assessments
+   +  (mzML files) -> purityA -> (pa)
+ * XCMS processing
+   +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+ * Fragmentation processing
+   + (xset, pa) -> frag4feature -> **filterFragSpectra** -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 \examples{
 
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#xset <- xcms::xcmsSet(msmsPths)
+#xset <- xcms::group(xset)
+#xset <- xcms::retcor(xset)
+#xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
+#pa  <- purityA(msmsPths)
+#pa <- frag4feature(pa, xset)
+pa <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
 pa <- filterFragSpectra(pa)
 
 }

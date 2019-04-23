@@ -2,7 +2,7 @@
 % Please edit documentation in R/purityA-constructor.R
 \name{purityA}
 \alias{purityA}
-\title{Assess the purity of multiple LC-MS/MS or DI-MS/MS files (constructor)}
+\title{Assess the acquired precursor ion purity of MS/MS spectra (constructor)}
 \usage{
 purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
   offsets = NA, plotP = FALSE, plotdir = NULL, interpol = "linear",
@@ -10,15 +10,15 @@ purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
   isotopes = TRUE, im = NULL)
 }
 \arguments{
-\item{fileList}{vector; mzML file paths for MS/MS spectra}
+\item{fileList}{vector; mzML file paths}
 
 \item{cores}{numeric; Number of cores to use}
 
-\item{mostIntense}{boolean; True if the most intense peak is used for calculation. False if the centered peak is used}
+\item{mostIntense}{boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.}
 
 \item{nearest}{boolean; True if the peak selected is from either the preceding scan or the nearest.}
 
-\item{offsets}{vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)}
+\item{offsets}{vector; Override the isolation offsets found in the mzML file e.g. c(0.5, 0.5)}
 
 \item{plotP}{boolean; If TRUE a plot of the purity is to be saved}
 
@@ -110,15 +110,15 @@ The purityA object can be used for further processing including linking the frag
 \itemize{
 \item Purity assessments
 \itemize{
-\item { mzML files} -> purityA -> {pa}
+\item (mzML files) -> \strong{purityA} -> (pa)
 }
 \item XCMS processing
 \itemize{
-\item {mzML files} -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> {xset}
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
 }
 \item Fragmentation processing
 \itemize{
-\item {xset, pa} -> frag4feature -> averageAllFragSpectra -> create_database -> spectral_matching
+\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 

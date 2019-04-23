@@ -4,26 +4,23 @@
 #'  Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID and probmetab
 #'  based on weighted scores for each technique aligning each annotation by inchikey and XCMS grouped feature.
 #'
-#' @param sqlitePth character;
+#' @param sm_resultPth character;
 #' @param metfrag_resultPth character;
 #' @param sirius_csi_resultPth character;
 #' @param probmetab_resultPth character;
 #' @param weights list;
 #' @param silentRestErrors boolean;
+#' @param outPth character;
 #'
 #' @examples
 #' metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
-#' sm_resultPth <- system.file("extdata", "sm_result.sqlite", package="msPurity")
 #' # run the standard spectral matching workflow to get the sm_resultPth
 #' sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
-#' td <- tempdir()
-#' sm_resultPthCopy <- file.path(td, 'sm_result_tmp.sqlite')
-#' file.copy(sm_resultPth, sm_resultPthCopy)
 #'
-#' combined <- combineAnnotations(sm_resultPthCopy, metfrag_resultPth)
+#' combined <- combineAnnotations(sm_resultPth, metfrag_resultPth, outPth=file.path(tempdir(), 'combined.sqlite'))
 #' @return purityA object with slots for fragmentation-XCMS links
 #' @export
-combineAnnotations <- function(sqlitePth,
+combineAnnotations <- function(sm_resultPth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
                                probmetab_resultPth=NA,
@@ -32,8 +29,16 @@ combineAnnotations <- function(sqlitePth,
                                             'sirius_csifingerid'= 0.25,
                                             'probmetab'=0.1
                                ),
+                               outPth=NA,
                                silentRestErrors=FALSE
                                ){
+
+  if(!is.na(outPth)){
+    file.copy(sm_resultPth, outPth)
+    sqlitePth <- outPth
+  }else{
+    sqlitePth <- sm_resultPth
+  }
 
   # sm, metfrag, sirius, probmetab, lipidsearch, mzcloud, bs
   con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
@@ -67,6 +72,8 @@ combineAnnotations <- function(sqlitePth,
 
   # KEGG
   metab_compounds_m <- addKeggToMetabCompound(metab_compounds_m, con, silentRestErrors=silentRestErrors)
+
+
 
   # LipidMaps
   # Takes too long
@@ -340,7 +347,12 @@ addKeggToMetabCompound <- function(metab_compounds, con, silentRestErrors){
 
 
   DBI::dbWriteTable(con, name='kegg', value=keggids[,c('inchikey', 'kegg_id')], row.names=FALSE)
-  #
+
+  if(nrow(keggids)==0){
+    newcols <- c('drug', 'brite1', 'brite2', 'kegg_name', 'kegg_other_names')
+    metab_compounds[,newcols] <- NA
+    return(metab_compounds)
+  }
 
 
   kegg_details <- plyr::ddply(keggids, ~inchikey, function(x){
@@ -355,6 +367,9 @@ addKeggToMetabCompound <- function(metab_compounds, con, silentRestErrors){
 
   })
 
+
+
+
   # we don't want to include the drug details
   kegg_details <- kegg_details[is.na(kegg_details$kegg_did),]
 
@@ -364,6 +379,8 @@ addKeggToMetabCompound <- function(metab_compounds, con, silentRestErrors){
 
   colnames(kegg_details)[colnames(kegg_details)=='name'] = 'kegg_name'
   colnames(kegg_details)[colnames(kegg_details)=='other_names'] = 'kegg_other_names'
+
+
 
   metab_compounds_m <- merge(metab_compounds, kegg_details[,c('inchikey','drug', 'brite1', 'brite2', 'kegg_name', 'kegg_other_names')],
                              by= "inchikey", all = TRUE)

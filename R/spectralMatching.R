@@ -1,7 +1,39 @@
-#' @title Spectral matching
-#'
+#' @title Spectral matching for LC-MS/MS datasets
+#' @aliases spectralMatching
 #' @description
-#' Perform spectral matching to spectral libraries on SQLite database of query and library spectra
+#' **General**
+#' Perform spectral matching to spectral libraries for an LC-MS/MS dataset.
+#'
+#' The spectral matching is performed from a **Query** SQLite spectral-database against a **Library** SQLite spectral-database.
+#'
+#' The SQLite schema of the spectral database can be detailed here.
+#'
+#' The query spectral-database in most cases should contain be the "unknown" spectra database generated the msPurity
+#' function createDatabase as part of a msPurity-XCMS data processing workflow.
+#'
+#' The library spectral-database in most cases should contain the "known" spectra from either public or user generated resources.
+#' The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS.
+#' A larger database can be downloaded from [here](https://github.com/computational-metabolomics/msp2db/releases).
+#' To create a user generated library SQLite database the following tool can be used to generate a SQLite database
+#' from a collection of MSP files: [msp2db](https://github.com/computational-metabolomics/msp2db/releases).
+#' It should be noted though, that as long as the schema of the spectral-database is as described here, then any database can be used
+#' for either the library or query -  even allowing for the same database to be used.
+#'
+#' The spectral matching functionality has four main components, spectral filtering, spectral alignment, spectral matching,
+#' and summarising the results.
+#'
+#' Spectral filtering is simply filtering both the library and query spectra to be search against (e.g. choosing
+#' the library source, instrument, retention time, precursor PPM tolerance etc).
+#'
+#' The spectral alignment stage involves aligning the query peaks to the library peaks. The approach used is similar
+#' to modified pMatch algorithm described in Zhou et al 2015.
+#'
+#' The spectral matching of the aligned spectra is performed against a combined intensity and m/z weighted vector of the query and
+#' library spectra.
+#' See equation xx, where x and y represent weight factors, defaults to x=0.5 and y=2 as per MassBank.
+#' #' These can be adjust by the user though
+#'
+#'
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples
@@ -16,7 +48,7 @@
 #' #pa <- filterFragSpectra(pa, allfrag=TRUE)
 #' #pa <- averageAllFragSpectra(pa)
 #' #q_dbPth <- createDatabase(pa, xset)
-#' q_dbPth <- system.file("extdata", "createDatabase_example.sqlite", package="msPurity")
+#' q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
 #' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 #'
 #' @param q_dbPth character; Path of the database of queries that will be searched against the library spectra. Generated from createDatabase
@@ -26,7 +58,7 @@
 #' @param q_ppmProd numeric; ppm tolerance for query product
 #' @param q_ppmPrec numeric; ppm tolerance for query precursor
 #' @param q_raThres numeric; Relative abundance threshold for query spectra
-#' @param q_pol character; Polarity of query spectra ['positive', 'negative', NA].
+#' @param q_pol character; Polarity of query spectra ('positive', 'negative', NA).
 #' @param q_instrumentTypes vector; Instrument types for query spectra.
 #' @param q_instruments vector; Instruments for query spectra (note that this is used in combination with q_instrumentTypes - any
 #'                              spectra matching either q_instrumentTypes or q_instruments will be used).
@@ -65,6 +97,7 @@
 #' @param outPth character; If copying the database - the path of the new database file
 #'
 #' @importFrom magrittr %>%
+#' @md
 #' @export
 spectralMatching <- function(
                              q_dbPth,
@@ -76,7 +109,7 @@ spectralMatching <- function(
                              q_raThres=NA,
                              q_pol='positive',
                              q_instrumentTypes=NA,
-                             q_instrument=NA,
+                             q_instruments=NA,
                              q_sources=NA,
                              q_spectraTypes='av_all',
                              q_pids=NA,
@@ -91,7 +124,7 @@ spectralMatching <- function(
                              l_raThres=NA,
                              l_pol='positive',
                              l_instrumentTypes=NA,
-                             l_instrument=NA,
+                             l_instruments=NA,
                              l_sources=NA,
                              l_spectraTypes=NA,
                              l_pids=NA,
@@ -128,7 +161,7 @@ spectralMatching <- function(
   q_speakmeta <- filterSMeta(purity =q_purity,
               pol = q_pol,
               instrumentTypes = q_instrumentTypes,
-              instrument = q_instrument,
+              instruments = q_instruments,
               sources = q_sources,
               pids = q_pids,
               rtrange = q_rtrange,
@@ -147,7 +180,7 @@ spectralMatching <- function(
                              raThres = l_raThres,
                              pol = l_pol,
                              instrumentTypes = l_instrumentTypes,
-                             instrument = l_instrument,
+                             instruments = l_instruments,
                              sources = l_sources,
                              pids = l_pids,
                              rtrange = l_rtrange,
@@ -421,7 +454,7 @@ filterSMeta <- function(purity=NA,
                         raThres=0,
                         pol='positive',
                         instrumentTypes=NA,
-                        instrument=NA,
+                        instruments=NA,
                         sources=NA,
                         xcmsGroups=NA,
                         pids=NA,
@@ -456,12 +489,12 @@ filterSMeta <- function(purity=NA,
   #print(speakmeta)
 
 
-  if ('instrument_type' %in% meta_cn$name &&  !anyNA(instrumentTypes)  && !is.na(instrumentTypes)){
-    speakmeta <- speakmeta %>% dplyr::filter(instrument_type %in% instrumentTypes || instrument_type %in% instrumentTypes)
-  }else if ('instrument' %in% meta_cn$name && 'instrument_type' %in% meta_cn$name && !anyNA(instrumentTypes)){
+  if ('instrument_type' %in% meta_cn$name &&  'instrument' %in% meta_cn$name &&  !anyNA(instrumentTypes)  && !anyNA(instruments)){
+    speakmeta <- speakmeta %>% dplyr::filter(instrument_type %in% instrumentTypes || instrument %in% instruments)
+  }else if ('instrument_type' %in% meta_cn$name && !anyNA(instrumentTypes)){
     speakmeta <- speakmeta %>% dplyr::filter(instrument_type %in% instrumentTypes)
-  }else if ('instrument' %in% meta_cn$name && !anyNA(instrument)){
-    speakmeta <- speakmeta %>% dplyr::filter(instrument %in% instrument)
+  }else if ('instrument' %in% meta_cn$name && !anyNA(instruments)){
+    speakmeta <- speakmeta %>% dplyr::filter(instrument %in% instruments)
   }
 
   #print('instruments')
