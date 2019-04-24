@@ -29,7 +29,18 @@ be the one used for the frag4feature function}
 path to SQLite database and database name
 }
 \description{
-Create and SQLite database of an LC-MS(/MS) experiment
+** General **
+
+Create and SQLite database of an LC-MS(/MS) experiment (replaces the create_database function)
+
+**Example LC-MS/MS processing workflow**
+
+ * Purity assessments
+   +  (mzML files) -> purityA -> (pa)
+ * XCMS processing
+   +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+ * Fragmentation processing
+   + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> **createDatabase** -> spectralMatching -> (sqlite spectral database)
 }
 \examples{
 

@@ -162,7 +162,7 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #' #pa <- averageIntraFragSpectra(pa)
 #' pa <- readRDS(system.file("extdata", "tests", "purityA", "4_averageIntraFragSpectra_no_filter_pa.rds", package="msPurity"))
 #' pa <- averageInterFragSpectra(pa)
-#'
+#' @md
 #' @export
 setMethod(f="averageInterFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
@@ -260,7 +260,7 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #' #pa <- filterFragSpectra(pa)
 #' pa <- readRDS(system.file("extdata", "tests", "purityA", "3_filterFragSpectra_pa.rds", package="msPurity"))
 #' pa <- averageAllFragSpectra(pa)
-#'
+#' @md
 #' @export
 setMethod(f="averageAllFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,

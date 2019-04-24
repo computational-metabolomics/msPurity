@@ -1,23 +1,31 @@
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 library(msPurity)
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
+mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+xset <- xcms::xcmsSet(mzMLpths)
 xset <- xcms::group(xset)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset, create_db=TRUE)
+pa  <- purityA(mzMLpths)
+pa <- frag4feature(pa, xset)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
-result <- spectral_matching(pa@db_path,  scan_ids = c(1120,  366, 1190, 601,  404,1281, 1323, 1289))
+pa <- filterFragSpectra(pa)
 
-## ---- echo=FALSE-----------------------------------------------------------
-htmltools::includeHTML("query_sqlite_schema.html")
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+pa <- averageIntraFragSpectra(pa) # use parameters specific to intra spectra 
+pa <- averageInterFragSpectra(pa) # use parameters specific to inter spectra
 
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+pa <- averageAllFragSpectra(pa) 
 
-## ---- echo=FALSE-----------------------------------------------------------
-htmltools::includeHTML("library_sqlite_schema.html")
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+q_dbPth <- createDatabase(pa, xset)
 
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+q_xcmsGroups = c(17, 41) # only search chosen xcms groups
+q_spectraTypes = 'av_all' # only search spectra averaged using averageAllFragSpectra 
+l_accessions=c('CCMSLIB00000577898', 'CE000616') # only search against these 2 accessions based from MoNA
+result <- spectralMatching(q_dbPth, q_xcmsGroups = q_xcmsGroups, q_spectraTypes = q_spectraTypes,
+                             cores = 1, q_pol = NA, l_accessions = l_accessions,
+                             l_pol = 'positive', updateDb = FALSE)
 

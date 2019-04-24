@@ -2,6 +2,7 @@
 #' @aliases filterFragSpectra
 #' @description
 #' **General**
+#'
 #' Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
 #'
 #'
@@ -47,7 +48,7 @@
 #' * snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
 #' * ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
 #' * pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
-#'
+#' @md
 #' @export
 setMethod(f="filterFragSpectra", signature="purityA",
           definition = function(pa, ilim=0, plim=0.8, ra=0, snr=3, rmp=FALSE, snmeth='median', allfrag=FALSE){

@@ -16,7 +16,7 @@
 #'  * XCMS processing
 #'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
 #'  * Fragmentation processing
-#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> **averageIntraFragSpectra** -> **createMSP** -> (MSP file)
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> averageIntraFragSpectra -> **createMSP** -> (MSP file)
 #'
 #' @aliases createMSP
 #
@@ -49,6 +49,7 @@
 #' #pa <- averageAllFragSpectra(pa)
 #' pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
 #' createMSP(pa)
+#' @md
 #' @export
 setMethod(f="createMSP", signature="purityA",
           definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,

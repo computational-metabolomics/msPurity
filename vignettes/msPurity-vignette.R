@@ -1,33 +1,60 @@
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 library(msPurity)
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 
 ## --------------------------------------------------------------------------
-pa <- purityA(msmsPths)
+pa <- purityA(mzMLpths)
 print(pa@puritydf[1:3,])
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
-pa_norm <- purityA(msmsPths, iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=+0.5))
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+pa_norm <- purityA(msmsPths[1], iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=0.5))
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
 
 suppressPackageStartupMessages(library(xcms))
 
-xset <- xcms::xcmsSet(msmsPths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
+xset <- xcms::xcmsSet(mzMLpths)
 xset <- xcms::group(xset)
 
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
 pa <- frag4feature(pa, xset)
 
 ## --------------------------------------------------------------------------
 print(head(pa@grped_df[1:3]))
 
 ## --------------------------------------------------------------------------
-print(pa@grped_ms2[2])
+print(pa@grped_ms2[[1]])  # fragmentation associated with the first XCMS grouped feature (i.e. xset@groups[1,])
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
+pa <- filterFragSpectra(pa)
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
+pa <- averageAllFragSpectra(pa)
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
+pa <- averageIntraFragSpectra(pa)
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
+pa <- averageInterFragSpectra(pa)
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
+createMSP(pa)
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
+td <- tempdir()
+q_dbPth <- createDatabase(pa, xset, outDir = td)
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
+q_xcmsGroups = c(17, 41) # only search chosen xcms groups
+q_spectraTypes = 'av_all' # only search spectra averaged using averageAllFragSpectra 
+l_accessions=c('CCMSLIB00000577898', 'CE000616') # only search against these 2 accessions based from MoNA
+result <- spectralMatching(q_dbPth, q_xcmsGroups = q_xcmsGroups, q_spectraTypes = q_spectraTypes,
+                             cores = 1, q_pol = NA, l_accessions = l_accessions,
+                             l_pol = 'positive', updateDb = FALSE)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
 xset <- xcms::xcmsSet(msPths)
 xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)

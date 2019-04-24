@@ -44,7 +44,14 @@
 #'
 #' See the vigenttes for more details regarding matching algorithms used.
 #'
-#' **Intepreting output**
+#' **Example LC-MS/MS processing workflow**
+#'
+#'  * Purity assessments
+#'    +  (mzML files) -> purityA -> (pa)
+#'  * XCMS processing
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'  * Fragmentation processing
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> **spectralMatching** -> (sqlite spectral database)
 #'
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
@@ -109,6 +116,7 @@
 #' @param outPth character; If copying the database - the path of the new database file
 #'
 #' @return Returns a list containing the following elements
+#'
 #' **q_dbPth**
 #'
 #' Path of the query database (this will have been updated with the annotation results if updateDb argument used)

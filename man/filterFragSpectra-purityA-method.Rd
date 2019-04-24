@@ -29,30 +29,38 @@
 }
 \value{
 Returns a purityA object with the pa@grped_msms spectra matrices are updated with the following columns
-
-* snr: Signal to noise ratio (calculated at scan level)
-* ra: Relative abundance (calculated at scan level)
-* purity_pass_flag: Precursor ion purity flag (1 pass, 0 fail)
-* intensity_pass_flag: Intensity flag (1 pass, 0 fail)
-* snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
-* ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
-* pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
+\itemize{
+\item snr: Signal to noise ratio (calculated at scan level)
+\item ra: Relative abundance (calculated at scan level)
+\item purity_pass_flag: Precursor ion purity flag (1 pass, 0 fail)
+\item intensity_pass_flag: Intensity flag (1 pass, 0 fail)
+\item snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
+\item ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
+\item pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
+}
 }
 \description{
-**General**
+\strong{General}
+
 Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
 
-
-**Example LC-MS/MS processing workflow**
+\strong{Example LC-MS/MS processing workflow}
 
 The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
-
- * Purity assessments
-   +  (mzML files) -> purityA -> (pa)
- * XCMS processing
-   +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
- * Fragmentation processing
-   + (xset, pa) -> frag4feature -> **filterFragSpectra** -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\itemize{
+\item Purity assessments
+\itemize{
+\item (mzML files) -> purityA -> (pa)
+}
+\item XCMS processing
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+}
+\item Fragmentation processing
+\itemize{
+\item (xset, pa) -> frag4feature -> \strong{filterFragSpectra} -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+}
+}
 }
 \examples{
 

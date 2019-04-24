@@ -33,29 +33,32 @@
 }
 \value{
 Returns a purityA object (pa) with the following slots now with data
-
-* pa@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$`1`$av_inter" would give the average spectra for grouped feature 1
-* pa@av_intra_params: The parameters used are recorded here
+\itemize{
+\item pa@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$\code{1}$av_inter" would give the average spectra for grouped feature 1
+\item pa@av_intra_params: The parameters used are recorded here
+}
 
 Each spectra in the av_spectra list contains the following columns:
 *
-* cl: id of clustered (averaged) peak
-* mz: average m/z
-* i: average intensity
-* snr: average signal to noise ratio
-* rsd: relative standard deviation
-* count: number of clustered peaks
-* total: total number of potential scans to be used for averaging
-* inPurity: average precursor ion purity
-* ra: average relative abundance
-* frac: the fraction of clustered peaks (e.g. the count/total)
-* snr_pass_flag: TRUE if snr threshold criteria met
-* minfrac_pass_flag: TRUE if minfrac threshold criteria
-* ra_pass_flag: TRUE if ra threshold criteria met
-* pass_flag: TRUE if all threshold criteria met
+\itemize{
+\item cl: id of clustered (averaged) peak
+\item mz: average m/z
+\item i: average intensity
+\item snr: average signal to noise ratio
+\item rsd: relative standard deviation
+\item count: number of clustered peaks
+\item total: total number of potential scans to be used for averaging
+\item inPurity: average precursor ion purity
+\item ra: average relative abundance
+\item frac: the fraction of clustered peaks (e.g. the count/total)
+\item snr_pass_flag: TRUE if snr threshold criteria met
+\item minfrac_pass_flag: TRUE if minfrac threshold criteria
+\item ra_pass_flag: TRUE if ra threshold criteria met
+\item pass_flag: TRUE if all threshold criteria met
+}
 }
 \description{
-**General**
+\strong{General}
 
 Average and filter fragmentation spectra for each XCMS feature across MS data files. This can only be run after averageIntraFragSpectra has been used.
 
@@ -63,15 +66,21 @@ The averaging is performed using hierarchical clustering of the m/z values of ea
 
 The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac and ra)
 
-
-**Example LC-MS/MS processing workflow**
-
- * Purity assessments
-   +  (mzML files) -> purityA -> (pa)
- * XCMS processing
-   +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
- * Fragmentation processing
-   + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> **averageIntraFragSpectra** -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\strong{Example LC-MS/MS processing workflow}
+\itemize{
+\item Purity assessments
+\itemize{
+\item (mzML files) -> purityA -> (pa)
+}
+\item XCMS processing
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+}
+\item Fragmentation processing
+\itemize{
+\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> \strong{averageIntraFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
+}
+}
 }
 \examples{
 
@@ -86,5 +95,4 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 #pa <- averageIntraFragSpectra(pa)
 pa <- readRDS(system.file("extdata", "tests", "purityA", "4_averageIntraFragSpectra_no_filter_pa.rds", package="msPurity"))
 pa <- averageInterFragSpectra(pa)
-
 }

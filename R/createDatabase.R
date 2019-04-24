@@ -1,7 +1,19 @@
 #' @title Create database
 #'
 #' @description
-#' Create and SQLite database of an LC-MS(/MS) experiment
+#'
+#' ** General **
+#'
+#' Create and SQLite database of an LC-MS(/MS) experiment (replaces the create_database function)
+#'
+#' **Example LC-MS/MS processing workflow**
+#'
+#'  * Purity assessments
+#'    +  (mzML files) -> purityA -> (pa)
+#'  * XCMS processing
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'  * Fragmentation processing
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> **createDatabase** -> spectralMatching -> (sqlite spectral database)
 #'
 #' @param pa purityA object; Needs to be the same used for frag4feature function
 #' @param xset xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)

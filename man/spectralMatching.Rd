@@ -100,6 +100,7 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 list of database details and dataframe summarising the results for the xcms features
 
 Returns a list containing the following elements
+
 \strong{q_dbPth}
 
 Path of the query database (this will have been updated with the annotation results if updateDb argument used)
@@ -194,7 +195,21 @@ See below for dot product cosine equation.
 
 See the vigenttes for more details regarding matching algorithms used.
 
-\strong{Intepreting output}
+\strong{Example LC-MS/MS processing workflow}
+\itemize{
+\item Purity assessments
+\itemize{
+\item (mzML files) -> purityA -> (pa)
+}
+\item XCMS processing
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+}
+\item Fragmentation processing
+\itemize{
+\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> \strong{spectralMatching} -> (sqlite spectral database)
+}
+}
 }
 \examples{
 #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
