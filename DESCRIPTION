@@ -19,6 +19,7 @@ Description: msPurity R package and associated Galaxy tools were developed to:
     low abundance peaks are removed that are thought to have limited contribution to the 
     resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be used 
     to normalise the intensities used for the calculation.
+Encoding: UTF-8
 License: GPL (>= 2)
 LazyData: TRUE
 Depends:
