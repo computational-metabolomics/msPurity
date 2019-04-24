@@ -45,7 +45,7 @@ createMSP(pa, msp_file_pth = file.path(td, 'out.msp'))
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
 q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'test-mspurity-vignette.sqlite')
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+## --------------------------------------------------------------------------
 result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
