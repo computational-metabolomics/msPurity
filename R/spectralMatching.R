@@ -447,9 +447,9 @@ pullPid <- function(sp, pids){
   nms <- colnames(tble)
 
   if ("pid" %in% nms){
-    pids <- sp %>% dplyr::pull(pid)
+    pids <- tble$pid
   }else{
-    pids <- sp %>% dplyr::pull(id)
+    pids <- tble$id
   }
 
   return(pids)
