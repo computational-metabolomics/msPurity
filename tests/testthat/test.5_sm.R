@@ -56,7 +56,7 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
   # q_dbPth <- createDatabase(pa, xset, metadata=list('polarity'='positive', 'instrument'='Q-Exactive'))
   #
 
-  td <- tempdir()
+  td <- '.'
   q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
 
   rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
@@ -121,7 +121,7 @@ test_that("checking spectral matching functions (spectralMatching) library vs li
   # copyDb = TRUE
   # outPth = sm_out_pth
 
-  td <- tempdir()
+  td <- '.'
 
   rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
   sm_out_pth <- file.path(td, rid)
@@ -162,7 +162,7 @@ test_that("checking spectral matching functions (spectralMatching) query vs quer
   print("########################################################")
   print("## Testing spectral matching (spectralMatching)   qvq ##")
   print("########################################################")
-  td <- tempdir()
+  td <- '.'
 
   q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
   l_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
