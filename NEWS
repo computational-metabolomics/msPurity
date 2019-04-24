@@ -4,6 +4,7 @@ CHANGES IN VERSION 1.9.9
     + Updated version of create_database that uses an updated schema
 * NEW FUNCTION: spectralMatching
     + Updated version spectral_matching that allows for more flexibility
+* Vigenettes and documentation update
 
 
 CHANGES IN VERSION 1.9.8

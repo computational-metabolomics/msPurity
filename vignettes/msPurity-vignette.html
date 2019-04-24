@@ -491,16 +491,16 @@ xset &lt;- xcms::group(xset)</code></pre>
 </div>
 <div id="createdatabase---create-a-spectral-database" class="section level2">
 <h2><span class="header-section-number">2.9</span> createDatabase - create a spectral database</h2>
-<p>A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found xxx. This replaces the old schema used by the deprecated function spectral_matching.</p>
+<p>A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found <a href="https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html">here</a>. This replaces the old schema used by the deprecated function spectral_matching.</p>
 <pre class="r"><code>td &lt;- tempdir()
 q_dbPth &lt;- createDatabase(pa, xset, outDir = td)</code></pre>
 </div>
 <div id="spectralmatching---perfroming-spectral-matching-to-a-spectral-library" class="section level2">
 <h2><span class="header-section-number">2.10</span> spectralMatching - perfroming spectral matching to a spectral library</h2>
 <p>A query SQLite database can be matched against a library SQLite database with the spectralMatching function. The library spectral-database in most cases should contain the “known” spectra from either public or user generated resources. The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS. A larger database can be downloaded from <a href="https://github.com/computational-metabolomics/msp2db/releases">here</a>.</p>
-<pre class="r"><code>q_xcmsGroups = c(17, 41) # only search chosen xcms groups
-q_spectraTypes = 'av_all' # only search spectra averaged using averageAllFragSpectra 
-l_accessions=c('CCMSLIB00000577898', 'CE000616') # only search against these 2 accessions based from MoNA
+<pre class="r"><code>q_xcmsGroups = c(17, 41) 
+q_spectraTypes = 'av_all' 
+l_accessions=c('CCMSLIB00000577898', 'CE000616') 
 result &lt;- spectralMatching(q_dbPth, q_xcmsGroups = q_xcmsGroups, q_spectraTypes = q_spectraTypes,
                              cores = 1, q_pol = NA, l_accessions = l_accessions,
                              l_pol = 'positive', updateDb = FALSE)</code></pre>

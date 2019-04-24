@@ -158,7 +158,8 @@ Perform spectral matching to spectral libraries for an LC-MS/MS dataset.
 
 The spectral matching is performed from a \strong{Query} SQLite spectral-database against a \strong{Library} SQLite spectral-database.
 
-The SQLite schema of the spectral database can be detailed \href{todo}{here}.
+The SQLite schema of the spectral database can be detailed Schema details can be found
+\href{https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html}{here}.
 
 The query spectral-database in most cases should contain be the "unknown" spectra database generated the msPurity
 function createDatabase as part of a msPurity-XCMS data processing workflow.
