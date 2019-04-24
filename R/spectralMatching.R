@@ -442,7 +442,8 @@ spectralMatching <- function(
 # }
 
 pullPid <- function(sp, pids){
-  nms <- names(sp %>% dplyr::collect())
+  tble <- sp %>% dplyr::collect()
+  nms <- colnames(tble)
   if ("pid" %in% nms){
     return(dplyr::pull(sp, pid))
   }else{

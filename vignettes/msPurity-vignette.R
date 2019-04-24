@@ -46,14 +46,7 @@ createMSP(pa, msp_file_pth = file.path(td, 'out.msp'))
 q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'test-mspurity-vignette.sqlite')
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
-result <- spectralMatching(q_dbPth,
-                           q_xcmsGroups = c(12, 27), 
-                           q_spectraTypes = 'av_all',
-                           cores = 1, 
-                           q_pol = NA,
-                           l_accessions = c('CCMSLIB00000577898', 'CE000616') ,
-                           l_pol = 'positive',
-                           updateDb = FALSE)
+result <- spectralMatching(q_dbPth, q_xcmsGroups =  c(12, 27), q_spectraTypes = 'av_all', cores = 1, q_pol = NA, l_accessions = c('CCMSLIB00000577898', 'CE000616'), l_pol = 'positive', updateDb = FALSE)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
