@@ -245,9 +245,9 @@ q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'test-mspurity-vignett
 A query SQLite database can be matched against a library SQLite database with the spectralMatching function. The library spectral-database in most cases should contain the "known" spectra from either public or user generated resources. The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS. A larger database can be downloaded from [here](https://github.com/computational-metabolomics/msp2db/releases).
 
 
-```{r}
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
-```
+#```{r}
+#result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
+#```
 
 
 # purityX
