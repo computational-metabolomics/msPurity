@@ -614,7 +614,13 @@ filterSMeta <- function(purity=NA,
 
     xcmsGroups <- as.character(xcmsGroups)
 
-    speakmeta <- speakmeta %>% dplyr::filter(grpid %in% xcmsGroups | pid %in% XLI$pid)
+    # doesn't work with database calls on travis (have to split into to filters)
+    # speakmeta <- speakmeta %>% dplyr::filter(grpid %in% xcmsGroups | pid %in% XLI$pid)
+    metaGrpPids <- speakmeta %>% dplyr::filter(grpid %in% xcmsGroups) %>% dplyr::pull(pid)
+    allGrpPids <- unique(c(XLI$pid,metaGrpPids))
+    speakmeta <- speakmeta %>% dplyr::filter(pid %in% allGrpPids)
+
+
 
   }
 

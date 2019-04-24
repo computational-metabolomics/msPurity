@@ -118,9 +118,9 @@ $$ F_{rel} = \Bigg( \frac{1}{N_{L\&Q}-1} \Bigg) \cdot \sum_{i=2}^{N_{L\&Q}} \Big
 $$ F_{cpdc} = \frac{1000}{N_{Q} + N_{L\&Q}} \cdot (N_{Q} \cdot F_{dpc} + N_{L\&Q} \cdot F_{rel}) $$
 
 
-#```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-#result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
-#```
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
+```
 
 
 The output of spectralMatching returns a list containing the following elements:
