@@ -33,12 +33,24 @@ msPurity::create_database is deprecated. Please use msPurity::createDatabase for
 }
 \examples{
 
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths)
-xset <- xcms::group(xset)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#xset <- xcms::xcmsSet(msmsPths)
+#xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
-pa <- averageAllFragSpectra(pa)
+#pa  <- purityA(msmsPths)
+#pa <- frag4feature(pa, xset)
+#pa <- averageAllFragSpectra(pa)
+#db_pth <- create_database(pa, xset)
+
+# Run from previously generated data
+pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
+xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
+
+# Need to ensure the filelists are matching
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 db_pth <- create_database(pa, xset)
 }

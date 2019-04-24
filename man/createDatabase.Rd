@@ -46,15 +46,27 @@ Schema details can be found [here](https://bioconductor.org/packages/release/bio
 }
 \examples{
 
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#xset <- xcms::xcmsSet(msmsPths)
+#xset <- xcms::group(xset)
+#xset <- xcms::retcor(xset)
+#xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
-pa <- filterFragSpectra(pa, allfrag=TRUE)
-pa <- averageAllFragSpectra(pa)
-dbPth <- createDatabase(pa, xset, metadata=list('polarity'='positive', 'instrument'='Q-Exactive'))
+#pa  <- purityA(msmsPths)
+#pa <- frag4feature(pa, xset)
+#pa <- filterFragSpectra(pa, allfrag=TRUE)
+#pa <- averageAllFragSpectra(pa)
+#dbPth <- createDatabase(pa, xset, metadata=list('polarity'='positive', 'instrument'='Q-Exactive'))
+
+# Run from previously generated data:
+pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
+xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+td <- tempdir()
+db_pth = createDatabase(pa, xset, outDir = td)
+
 }

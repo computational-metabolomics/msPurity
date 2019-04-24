@@ -97,8 +97,6 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 \item{outPth}{character; If copying the database - the path of the new database file}
 }
 \value{
-list of database details and dataframe summarising the results for the xcms features
-
 Returns a list containing the following elements
 
 \strong{q_dbPth}
@@ -150,6 +148,8 @@ be possible to summarise the matches for each XCMS grouped feature. The datafram
 \item lpid - pid in database of library match
 \item mid - id of the match
 }
+
+list of database details and dataframe summarising the results for the xcms features
 }
 \description{
 \strong{General}

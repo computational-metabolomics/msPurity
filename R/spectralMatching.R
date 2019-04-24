@@ -55,21 +55,6 @@
 #'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> **spectralMatching** -> (sqlite spectral database)
 #'
 #'
-#' @return list of database details and dataframe summarising the results for the xcms features
-#' @examples
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' #xset <- xcms::xcmsSet(msmsPths)
-#' #xset <- xcms::group(xset)
-#' #xset <- xcms::retcor(xset)
-#' #xset <- xcms::group(xset)
-#'
-#' #pa  <- purityA(msmsPths)
-#' #pa <- frag4feature(pa, xset)
-#' #pa <- filterFragSpectra(pa, allfrag=TRUE)
-#' #pa <- averageAllFragSpectra(pa)
-#' #q_dbPth <- createDatabase(pa, xset)
-#' q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
-#' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 #'
 #' @param q_dbPth character; Path of the database of queries that will be searched against the library spectra. Generated from createDatabase
 #' @param l_dbPth character; path to library spectral SQLite database. Defaults to msPurityData package data.
@@ -165,6 +150,23 @@
 #' * inchikey - inchikey of library match
 #' * lpid - pid in database of library match
 #' * mid - id of the match
+#'
+#' @return list of database details and dataframe summarising the results for the xcms features
+#'
+#' @examples
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #xset <- xcms::xcmsSet(msmsPths)
+#' #xset <- xcms::group(xset)
+#' #xset <- xcms::retcor(xset)
+#' #xset <- xcms::group(xset)
+#'
+#' #pa  <- purityA(msmsPths)
+#' #pa <- frag4feature(pa, xset)
+#' #pa <- filterFragSpectra(pa, allfrag=TRUE)
+#' #pa <- averageAllFragSpectra(pa)
+#' #q_dbPth <- createDatabase(pa, xset)
+#' q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
+#' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 #'
 #' @importFrom magrittr %>%
 #' @md

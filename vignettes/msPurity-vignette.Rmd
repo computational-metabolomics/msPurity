@@ -140,7 +140,7 @@ If the isolation efficiency of the instrument is not known, by default iwNorm is
 
 
 ## frag4feature - mapping XCMS features to fragmentation spectra
-The MS/MS spectra can be assigned to an XCMS grouped feature using the `frag4feature` function. 
+First an xcmsSet object of the same files is required
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 
@@ -150,7 +150,7 @@ xset <- xcms::xcmsSet(mzMLpths)
 xset <- xcms::group(xset)
 ```
 
-First an xcmsSet object of the same files is required
+Then the MS/MS spectra can be assigned to an XCMS grouped feature using the `frag4feature` function. 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 pa <- frag4feature(pa, xset)
 ```
@@ -188,7 +188,7 @@ print(pa@grped_ms2[[1]])  # fragmentation associated with the first XCMS grouped
 
 ## filterFragSpectra - filter the fragmentation spectra
 
-Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
+Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of the precursor.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 pa <- filterFragSpectra(pa)
@@ -245,9 +245,9 @@ q_dbPth <- createDatabase(pa, xset, outDir = td)
 A query SQLite database can be matched against a library SQLite database with the spectralMatching function. The library spectral-database in most cases should contain the "known" spectra from either public or user generated resources. The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS. A larger database can be downloaded from [here](https://github.com/computational-metabolomics/msp2db/releases).
 
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 result <- spectralMatching(q_dbPth,
-                           q_xcmsGroups = c(17, 41), 
+                           q_xcmsGroups = c(12, 27), 
                            q_spectraTypes = 'av_all',
                            cores = 1, 
                            q_pol = NA,
@@ -255,6 +255,7 @@ result <- spectralMatching(q_dbPth,
                            l_pol = 'positive',
                            updateDb = FALSE)
 ```
+
 
 
 # purityX
