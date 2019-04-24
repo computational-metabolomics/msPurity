@@ -551,7 +551,7 @@ filterSMeta <- function(purity=NA,
   #print('accession')
   #print(speakmeta)
 
-  if('inPurity' %in% meta_cn$name &&  !is.na(purity)){
+  if('inPurity' %in% meta_cn$name && !is.na(purity)){
     speakmeta <- speakmeta %>% dplyr::filter(inPurity > purity)
   }
   #print('purity')
