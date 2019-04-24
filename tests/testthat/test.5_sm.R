@@ -63,10 +63,10 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
   sm_out_pth <- file.path(td, rid)
 
   result <- spectralMatching(q_dbPth,
-                             q_xcmsGroups = c(12, 27),
+                            # q_xcmsGroups = c(12, 27),
                              cores = 1,
                              q_pol = NA,
-                             l_accessions=c('CCMSLIB00000577898', 'CE000616'),
+                             #l_accessions=c('CCMSLIB00000577898', 'CE000616'),
                              l_pol='positive',
                              updateDb = TRUE,
                              copyDb = TRUE,
