@@ -39,11 +39,11 @@ pa <- averageIntraFragSpectra(pa)
 pa <- averageInterFragSpectra(pa)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
-createMSP(pa)
+td <- tempdir()
+createMSP(pa, msp_file_pth = file.path(td, 'out.msp'))
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
-td <- tempdir()
-q_dbPth <- createDatabase(pa, xset, outDir = td)
+q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'test-mspurity-vignette.sqlite')
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 result <- spectralMatching(q_dbPth,
