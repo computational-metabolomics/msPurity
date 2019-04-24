@@ -4,7 +4,9 @@
 #'
 #' ** General **
 #'
-#' Create and SQLite database of an LC-MS(/MS) experiment (replaces the create_database function)
+#' Create and SQLite database of an LC-MS(/MS) experiment (replaces the create_database function).
+#'
+#' Schema details can be found [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
 #'
 #' **Example LC-MS/MS processing workflow**
 #'

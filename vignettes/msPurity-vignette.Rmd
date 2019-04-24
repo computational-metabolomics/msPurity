@@ -233,7 +233,7 @@ createMSP(pa)
 
 ## createDatabase - create a spectral database
 
-A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found xxx. This replaces the old schema used by the deprecated function spectral_matching.
+A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html). This replaces the old schema used by the deprecated function spectral_matching.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 td <- tempdir()

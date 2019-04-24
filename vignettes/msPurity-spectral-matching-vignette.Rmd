@@ -78,7 +78,7 @@ pa <- averageAllFragSpectra(pa)
 
 ## create spectral-database
 
-An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed here (link to add).
+An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 q_dbPth <- createDatabase(pa, xset)

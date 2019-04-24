@@ -7,7 +7,8 @@
 #'
 #' The spectral matching is performed from a **Query** SQLite spectral-database against a **Library** SQLite spectral-database.
 #'
-#' The SQLite schema of the spectral database can be detailed [here](todo).
+#' The SQLite schema of the spectral database can be detailed Schema details can be found
+#' [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
 #'
 #' The query spectral-database in most cases should contain be the "unknown" spectra database generated the msPurity
 #' function createDatabase as part of a msPurity-XCMS data processing workflow.
