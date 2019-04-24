@@ -62,15 +62,7 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
   rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
   sm_out_pth <- file.path(td, rid)
 
-  result <- spectralMatching(q_dbPth,
-                            # q_xcmsGroups = c(12, 27),
-                             cores = 1,
-                             q_pol = NA,
-                             #l_accessions=c('CCMSLIB00000577898', 'CE000616'),
-                             l_pol='positive',
-                             updateDb = TRUE,
-                             copyDb = TRUE,
-                             outPth = sm_out_pth)
+  result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
 
   expect_equal(result$xcmsMatchedResults$grpid, c(12,27))
   expect_equal(result$xcmsMatchedResults$accession, c("CCMSLIB00000577898", "CE000616"))

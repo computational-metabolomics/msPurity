@@ -272,6 +272,7 @@ spectralMatching <- function(
 
 
   q_fpids <- pullPid(q_speakmeta)
+
   l_fpids <- pullPid(l_speakmeta)
 
 
@@ -444,12 +445,14 @@ spectralMatching <- function(
 pullPid <- function(sp, pids){
   tble <- sp %>% dplyr::collect()
   nms <- colnames(tble)
+
   if ("pid" %in% nms){
-    return(dplyr::pull(sp, pid))
+    pids <- sp %>% dplyr::pull(pid)
   }else{
-    return(dplyr::pull(sp, id))
+    pids <- sp %>% dplyr::pull(id)
   }
-  return(sp)
+
+  return(pids)
 }
 
 getScanPeaksSqlite <- function(con, spectraFilter=TRUE, spectraTypes=NA, raThres=NA, pids=NA){
