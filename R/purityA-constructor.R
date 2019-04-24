@@ -1,27 +1,63 @@
 NULL
 
-#' @title Assess the purity of multiple LC-MS/MS or DI-MS/MS files (constructor)
+#' @title Assess the acquired precursor ion purity of MS/MS spectra (constructor)
 #'
 #' @description
-#' Constructor for the purityA class.
+#' **General**
 #'
-#' Given a vector of LC-MS/MS or DI-MS/MS mzML file paths calculate the
-#' precursor purity of each MS/MS scan
+#' Given a vector of LC-MS/MS or DI-MS/MS mzML file paths calculate the precursor ion purity of
+#' each MS/MS scan.
 #'
-#' Will automatically determine the isolation widths offsets from the mzML file.
-#' For some vendors though this is not recorded (Agilent).
-#' In these cases the offsets should be given as a parameter.
+#' The precursor ion purity represents the measure of the contribution of a selected precursor
+#' peak in an isolation window used for fragmentation and can be used as away of assessing the
+#' spectral quality and level of "contamination" of fragmentation spectra.
 #'
-#' In the case of Agilent only the "narrow" isolation is supported.
-#' This roughly equates to +/- 0.65 Da (depending on the instrument). If the
-#' file is detected as originating from an Agilent instrument the isolation
-#' widths will automatically be set as +/- 0.65 Da.
+#' The calculation involves dividing the intensity of the selected precursor peak by the total
+#' intensity of the isolation window and is performed before and after the MS/MS scan of
+#' interest and interpolated at the recorded time of the MS/MS acquisition.
 #'
-#' @param fileList vector; mzML file paths for MS/MS spectra
-#' @param cores numeric; Number of cores to use
-#' @param mostIntense boolean; True if the most intense peak is used for calculation. False if the centered peak is used
+#' Additionally, isotopic peaks are annotated and omitted from the calculation,
+#' low abundance peaks are removed that are thought to have minor contribution to the
+#' resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be
+#' used to normalise the intensities used for the calculation.
+#'
+#' The output is a purityA S4 class object (referred to as pa for convenience throughout
+#' the manual). The object contains a slot (pa@@puritydf) where the details of the purity
+#' assessments for each MS/MS scan. The purityA object can then be used for further processing
+#' including linking the fragmentation spectra to XCMS features, averaging fragmentation,
+#' database creation and spectral matching (from the created database).
+#'
+#'
+#' **Example LC-MS/MS processing workflow**
+#'
+#' The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
+#'
+#'  * Purity assessments
+#'    +  (mzML files) -> **purityA** -> (pa)
+#'  * XCMS processing
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'  * Fragmentation processing
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+#'
+#' **Isolation efficiency**
+#'
+#' When the isolation efficiency of an MS instrument is known the peak intensities within an isolation window can be normalised for the precursor purity calculation. The isolation efficiency can be estimated by measuring a single precursor across a sliding window. See figure 3 from the original msPurity paper (Lawson et al 2017). This has been experimentally measured  for a Thermo Fisher Q-Exactive Mass spectrometer using 0.5 Da windows and can be set within msPurity by using msPurity::iwNormQE.5() as the input to the iwNormFunc argument.
+#'
+#' Other options to model the isolation efficiency the  gaussian isolation window msPurity::iwNormGauss(minOff=-0.5, maxOff = 0.5) or a R-Cosine window msPurity::iwNormRCosine(minOff=-0.5, maxOff=0.5). Where the minOff and maxOff can be altered depending on the isolation window size.
+#'
+#' A user can also define their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
+#'
+#' **Notes regarding instrument specific isolation window offsets used:**
+#'
+#' * The isolation widths offsets will be automatically determined from extracting metadata from the mzML file. However, for some vendors though this is not recorded, in these cases the offsets should be given by the user as an argument (offsets).
+#'
+#' * In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da.
+#'
+#'
+#' @param fileList vector; mzML file paths
+#' @param mostIntense boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.
 #' @param nearest boolean; True if the peak selected is from either the preceding scan or the nearest.
-#' @param offsets vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
+#' @param offsets vector; Override the isolation offsets found in the mzML file e.g. c(0.5, 0.5)
 #' @param plotP boolean; If TRUE a plot of the purity is to be saved
 #' @param plotdir vector; If plotP is TRUE plots will be saved to this directory
 #' @param interpol character; type of interolation to be performed "linear" or "spline" (Spline option is only included for testing purposes,
@@ -32,13 +68,48 @@ NULL
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param mzRback character; backend to use for mzR parsing
+#' @param cores numeric; Number of cores to use
 #'
-#' @return a dataframe of the purity score of the ms/ms spectra
+#' @return Returns a purityA object (pa) with the pa@@puritydf slot updated
+#'
+#' The purity dataframe (**pa@@puritydf**) consists of the following columns:
+#' * pid: unique id for MS/MS scan
+#' * fileid: unique id for mzML file
+#' * seqNum: scan number
+#' * precursorIntensity: precursor intensity value as defined in the mzML file
+#' * precursorMZ: precursor m/z value as defined in the mzML file
+#' * precursorRT: precursor RT value as defined in the mzML file
+#' * precursorScanNum: precursor scan number value as defined in mzML file
+#' * id: unique id (redundant)
+#' * filename: mzML filename
+#' * precursorNearest: MS1 scan nearest to the MS/MS scan
+#' * aMz: The m/z value in the "precursorNearest" MS1 scan which most closely matches the precursorMZ value provided from the mzML file
+#' * aPurity: The purity score for aMz
+#' * apkNm: The number of peaks in the isolation window for aMz
+#' * iMz: The m/z value in the precursorNearest MS1 scan that is the most intense within the isolation window.
+#' * iPurity: The purity score for iMz
+#' * ipkNm: The number of peaks in the isolation window for iMz
+#' * inPurity: The interpolated purity score (the purity score is calculated at neighbouring MS1 scans and interpolated at the point of the MS/MS acquisition)
+#' * inpkNm: The interpolated number of peaks in the isolation window
+#'
+#' The remaining slots for purityA class include
+#' * pa@@cores: The number of CPUs to be used for any further processing with this purityA object
+#' * pa@@fileList: list of the mzML files that have been processed
+#' * pa@@mzRback: The backend library used by mzR to extract information from the mzML file (e.g. pwiz)
+#' * pa@@grped_df: If frag4feature has been performed, a dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
+#' * pa@@grped_ms2:  If frag4feature has been performed, a list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+#' * pa@@f4f_link_type: If frag4feature has been performed, the 'linking method' is recorded here, e.g. 'group' or 'individual'. Default is 'individual', see frag4feature documentation for more details
+#' * pa@@av_spectra: if averageIntraFragSpectra, averageInterFragSpectra,  or averageAllFragSpectra have been performed, the average spectra is recorded here
+#' * pa@@av_intra_params:  If averageIntraFragSpectra has been performed, the parameters are recorded here
+#' * pa@@av_inter_params: if averageInterFragSpectra has been performed, the  parameters are recorded here]
+#' * pa@@av_all_params: If averageAllFragSpectra has been performed, the parameters are recorded here
+#' * pa@@db_path: If create_database has been performed, the resulting path to the database is recorded here
 #'
 #' @examples
 #' filepths <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")
 #' pa <- purityA(filepths)
 #' @seealso \code{\link{assessPuritySingle}}
+#' @md
 #' @export
 purityA <- function(fileList,
                     cores=1,

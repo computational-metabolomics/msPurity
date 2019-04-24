@@ -1,8 +1,22 @@
-#' @title Create MSP file from purityA object
+#' @title Using a purityA object, create an MSP file of fragmentation spectra
 #'
 #' @description
+#' **General**
 #'
-#' Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
+#' Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature.
+#' Can export all the associated scans individually or the averaged fragmentation spectra can be exported.
+#'
+#' Additional metadata can be included in a dataframe (each column will be added to metadata of the MSP spectra).
+#' The dataframe must contain the column "grpid" corresponding to the XCMS grouped feature.
+#'
+#' **Example LC-MS/MS processing workflow**
+#'
+#'  * Purity assessments
+#'    +  (mzML files) -> purityA -> (pa)
+#'  * XCMS processing
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'  * Fragmentation processing
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> averageIntraFragSpectra -> **createMSP** -> (MSP file)
 #'
 #' @aliases createMSP
 #
@@ -20,18 +34,22 @@
 #' @param msp_schema character; Either MassBank (Europe) or MoNA style of MSP file format to be used ('massbank' or 'mona')
 #' @param intensity_ra character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
 #'                             to the MSP file
+#'
+#' @return Returns a MSP file with the selected spectra and metadata
 #' @examples
 #'
-#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-#' xset <- xcms::group(xset)
-#' xset <- xcms::retcor(xset)
-#' xset <- xcms::group(xset)
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#' #xset <- xcms::group(xset)
+#' #xset <- xcms::retcor(xset)
+#' #xset <- xcms::group(xset)
 #'
-#' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa, xset)
-#' pa <- averageAllFragSpectra(pa)
+#' #pa  <- purityA(msmsPths)
+#' #pa <- frag4feature(pa, xset)
+#' #pa <- averageAllFragSpectra(pa)
+#' pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
 #' createMSP(pa)
+#' @md
 #' @export
 setMethod(f="createMSP", signature="purityA",
           definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,
@@ -96,13 +114,13 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
           spectrum <- spec[[j]]
 
           if ((filter)  & ('pass_flag' %in% colnames(spectrum))){
-             spectrum <- spectrum[spectrum[,'pass_flag']==1,]
+             spectrum <- spectrum[spectrum[,'pass_flag']==1,,drop=FALSE]
           }
 
-          spectrum <- add_mzi_cols(spectrum)
-
-
-          write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
+          if (nrow(spectrum)>0){
+            spectrum <- add_mzi_cols(spectrum)
+            write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
+          }
 
 
         }
@@ -205,7 +223,7 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
     if (msp_schema=='mona'){
       metadata_cols <- c("NAME:", "PRECURSOR_TYPE:")
     }else{
-      metadata_cols <- c("CH$NAME:", "MS$FOCUSED_ION: PRECURSOR_TYPE")
+      metadata_cols <- c("RECORD_TITLE:", "MS$FOCUSED_ION: PRECURSOR_TYPE")
     }
   }
 
@@ -261,7 +279,7 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
     cat(paste0("PRECURSORMZ: ", precmz , line_end), file = ofile)
     cat(paste0("RETENTIONTIME: ", rtmed, line_end), file = ofile)
   }else{
-    cat(paste0("CH$NAME: ", name, line_end), file = ofile)
+    cat(paste0("RECORD_TITLE: ", name, line_end), file = ofile)
     cat(paste0("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end), file = ofile)
     cat(paste0("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end), file = ofile)
   }
@@ -270,7 +288,7 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
 
 
   if (!is.null(metadata)){
-    metadata_to_write <- metadata[ , !(names(metadata) %in%  c('NAME:','CH$NAME:', 'grpid', 'PRECURSORMZ:', 'RETENTIONTIME:',
+    metadata_to_write <- metadata[ , !(names(metadata) %in%  c('NAME:','RECORD_TITLE:', 'grpid', 'PRECURSORMZ:', 'RETENTIONTIME:',
                                                                'MS$FOCUSED_ION: PRECURSOR_M/Z', 'AC$CHROMATOGRAPHY: RETENTION_TIME'))]
 
     cat(paste(as.character(names(metadata_to_write)), ' ', as.character(unlist(metadata_to_write)), line_end, sep='', collapse=''), file = ofile)
@@ -318,7 +336,7 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
 
 concat_name <- function(mz, rtmed, grpid, fileid=NA, metadata, metadata_cols){
 
-  name <- paste(" MZ:" ,round(mz, 4)," | RT:" ,round(rtmed,1),  " | XCMS_group:" ,grpid, " | file:" ,fileid, sep='')
+  name <- paste(" MZ:" ,round(mz, 4)," | RT:" ,round(rtmed,1),  " | grpid:" ,grpid, " | file:" ,fileid, sep='')
 
   if (!is.null(metadata) && nrow(metadata[metadata$grpid==grpid,])>0){
 
@@ -331,6 +349,7 @@ concat_name <- function(mz, rtmed, grpid, fileid=NA, metadata, metadata_cols){
 }
 
 add_mzi_cols <- function(x){
+
   x <- data.frame(x)
   colnames(x) <- c('mz', 'i')
   return(x)

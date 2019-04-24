@@ -1,9 +1,20 @@
+CHANGES IN VERSION 1.9.9
+=========================
+* NEW FUNCTION: createDatabase
+    + Updated version of create_database that uses an updated schema
+* NEW FUNCTION: spectralMatching
+    + Updated version spectral_matching that allows for more flexibility
+* Vigenettes and documentation update
+
+
 CHANGES IN VERSION 1.9.8
 =========================
-* NEW FUNCTION: averageFrag (for purityA objects)
-** LC-MS/MS averaging and filtering functionality
+* NEW FUNCTION: filterFragSpectra (for purityA objects)
+    + LC-MS/MS filtering of spectra (prior to averaging)
+* NEW FUNCTIONS: averageIntraFragSpectra, averageInterFragSpectra, averageAllFragSpectra (for purityA objects)
+    + LC-MS/MS averaging and filtering functionality
 * NEW FUNCTION: createMSP
-** Create msp files from purityA objects where XCMS features have been linked to fragmentation spectra
+    + Create msp files from purityA objects where XCMS features have been linked to fragmentation spectra
 * Updated create_database and spectral matching to have the option to use averaged fragmentation spectra
 
 

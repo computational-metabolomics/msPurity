@@ -2,8 +2,9 @@
 msPurity: Package to assess precursor ion purity and perform spectral matching
 ============
 
+**Version:**
 
-
+1.9.9 (development) - use Bioconductor for stable
 
 **General:**
 
@@ -29,14 +30,23 @@ The code available from both the `Bioconductor development branch <http://biocon
 ------------
 About
 ------------
+msPurity R package and associated Galaxy tools were developed to: 1) assess the spectral quality of fragmentation spectra by evaluating the "precursor ion purity". 2) process fragmentation spectra. And 3) perform spectral matching.
 
-The importance of assessing the contribution of the precursor peak within an isolation window targeted for fragmentation has been previously detailed in proteomics but to date there has been little attention of this data-processing technique in metabolomics. Here we present msPurity, a vendor independent R package for Liquid Chromatography-Mass spectrometry (LC-MS) and Direct Infusion-Mass Spectrometry (DI-MS) that calculates a simple metric to describe the contribution of the selected precursor peak. What we call "Precursor ion purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the recorded time of the MS/MS acquisition. The calculation is similar to the "Precursor Ion Fraction" (PIF) metric described by  \[1\] for proteomics with the exception that metric here is interpolated at the recorded point of MS2 acquisition using bordering full-scan spectra, isotopic peaks can be removed, low abundance peaks are removed that are thought to have limited contribution to the resulting MS2 spectra and the isolation efficiency of the mass spectrometer can be used to normalise the intensities used for the calculation.
+Functionalities::
+* Assess the contribution of the targeted precursor of acquired fragmentation spectra by checking isolation windows using a metric called "precursor ion purity" (Works for both LC-MS(/MS) and DI-MS(/MS) data)
+* Assess the anticipated “precursor ion purity” (see below) of XCMS LC-MS features and DIMS features where no fragmentation has been acquired
+* Map fragmentation spectra to XCMS LC-MS features
+* Filter and average MS/MS spectra from an LC-MS/MS dataset
+* Create databases of LC-MS(/MS) spectra and associated annotations
+* Perform spectral matching of query MS/MS spectra against library MS/MS spectra
+* Export fragmentation spectra to MSP format
+* Basic processing of DIMS data. Note that these functionalities are not actively developed anymore - see DIMSpy (https://github.com/computational-metabolomics/dimspy) for recommended alternative for DIMS data processing
 
-The software can either be used on fragmentation spectra that has been collected to assess the precursor ion purity or it can be used to calculate the anticipated precursor ion purity of a future run based on MS1 spectra.
+**What is precursor ion purity?**
+What we call "Precursor ion purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the recorded time of the MS/MS acquisition. Additionally, isotopic peaks can be removed, low abundance peaks are removed that are thought to have limited contribution to the resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be used to normalise the intensities used for the calculation.
 
-Since the paper has been published the package now supports spectral matching, SQLite interaction and some of the functionality is now implemented in Galaxy.
 
-Associated paper  `msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry <http://pubs.acs.org/doi/abs/10.1021/acs.analchem.6b04358>`_ [2]
+Associated paper  `msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry <http://pubs.acs.org/doi/abs/10.1021/acs.analchem.6b04358>`_ [1]
 
 Use the following links for more details:
 
@@ -72,15 +82,13 @@ Github
   library(devtools)
   library(testthat)
   install_github('computational-metabolomics/msPurity')
- 
+
 
 
 ------------
 Ref
 ------------
-[1] Michalski, A., Cox, J., & Mann, M. (2011). More than 100,000 detectable peptide species elute in single shotgun proteomics runs but the majority is inaccessible to data-dependent LC-MS/MS. Journal of Proteome Research, 10(4), pp. 1785-1793.
-
-[2] Lawson, T.N., Weber, R.J., Jones, M.R., Chetwynd, A.J., Rodriguez Blanco, G.A., Di Guida, R., Viant, M.R. and Dunn, W.B., 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry.
+[1] Lawson, T.N., Weber, R.J., Jones, M.R., Chetwynd, A.J., Rodriguez Blanco, G.A., Di Guida, R., Viant, M.R. and Dunn, W.B., 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry.
 
 
 .. |Bioconductor release availability| image:: https://bioconductor.org/shields/availability/3.8/msPurity.svg

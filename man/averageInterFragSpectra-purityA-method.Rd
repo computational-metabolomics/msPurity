@@ -4,7 +4,7 @@
 \name{averageInterFragSpectra,purityA-method}
 \alias{averageInterFragSpectra,purityA-method}
 \alias{averageInterFragSpectra}
-\title{Average and filter fragmentation spectra for each XCMS feature across MS data files}
+\title{Using a purityA object, average and filter fragmentation spectra for each XCMS feature across multiple MS data files}
 \usage{
 \S4method{averageInterFragSpectra}{purityA}(pa, minfrac = 0.5,
   minnum = 1, ppm = 5, snr = 0, ra = 0, av = "median",
@@ -27,28 +27,72 @@
 
 \item{sumi}{boolean; TRUE if the intensity for each peak is summed across averaged spectra}
 
-\item{rmp}{boolean; RUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
+\item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
 
 \item{cores}{numeric; Number of cores for multiprocessing}
 }
+\value{
+Returns a purityA object (pa) with the following slots now with data
+\itemize{
+\item pa@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$\code{1}$av_inter" would give the average spectra for grouped feature 1
+\item pa@av_intra_params: The parameters used are recorded here
+}
+
+Each spectra in the av_spectra list contains the following columns:
+*
+\itemize{
+\item cl: id of clustered (averaged) peak
+\item mz: average m/z
+\item i: average intensity
+\item snr: average signal to noise ratio
+\item rsd: relative standard deviation
+\item count: number of clustered peaks
+\item total: total number of potential scans to be used for averaging
+\item inPurity: average precursor ion purity
+\item ra: average relative abundance
+\item frac: the fraction of clustered peaks (e.g. the count/total)
+\item snr_pass_flag: TRUE if snr threshold criteria met
+\item minfrac_pass_flag: TRUE if minfrac threshold criteria
+\item ra_pass_flag: TRUE if ra threshold criteria met
+\item pass_flag: TRUE if all threshold criteria met
+}
+}
 \description{
-Average and filter fragmentation spectra for each XCMS feature accross MS data files.
+\strong{General}
 
-The default approach is to use hierarchical clustering where peaks within a set ppm tolerance will be clustered.
+Average and filter fragmentation spectra for each XCMS feature across MS data files. This can only be run after averageIntraFragSpectra has been used.
 
-The clustered peaks are then averaged (or summed) and filtered.
+The averaging is performed using hierarchical clustering of the m/z values of each peaks, where m/z values within a set ppm tolerance will be clustered. The clustered peaks are then averaged (or summed).
+
+The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac and ra)
+
+\strong{Example LC-MS/MS processing workflow}
+\itemize{
+\item Purity assessments
+\itemize{
+\item (mzML files) -> purityA -> (pa)
+}
+\item XCMS processing
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+}
+\item Fragmentation processing
+\itemize{
+\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> \strong{averageIntraFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
+}
+}
 }
 \examples{
 
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#xset <- xcms::group(xset)
+#xset <- xcms::retcor(xset)
+#xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths, interpol = "linear")
-pa <- frag4feature(pa, xset)
-pa <- averageIntraFragSpectra(pa)
+#pa  <- purityA(msmsPths, interpol = "linear")
+#pa <- frag4feature(pa, xset)
+#pa <- averageIntraFragSpectra(pa)
+pa <- readRDS(system.file("extdata", "tests", "purityA", "4_averageIntraFragSpectra_no_filter_pa.rds", package="msPurity"))
 pa <- averageInterFragSpectra(pa)
-
 }

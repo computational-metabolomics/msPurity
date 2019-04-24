@@ -4,7 +4,7 @@
 \name{createMSP,purityA-method}
 \alias{createMSP,purityA-method}
 \alias{createMSP}
-\title{Create MSP file from purityA object}
+\title{Using a purityA object, create an MSP file of fragmentation spectra}
 \usage{
 \S4method{createMSP}{purityA}(pa, msp_file_pth = NULL, metadata = NULL,
   metadata_cols = NULL, xcms_groupids = NULL, method = "all",
@@ -24,7 +24,7 @@
 
 \item{method}{character; "all" will export all matching ms/ms spectra to xcms features, "max" will use spectra with the highest inensity,
 "av_intra" will use the intra file averaged spectra (within file), "av_inter" will use the inter file (across file)
- averaged spectra, "av_all" will use the averaged spectra (ignoring inter and intra)}
+averaged spectra, "av_all" will use the averaged spectra (ignoring inter and intra)}
 
 \item{adduct_split}{boolean; If either "adduct" or  MS$FOCUSED_ION: PRECURSOR_TYPE column is in metadata then each adduct will have it's own MSP spectra.
 (Useful, if the MSP file will be used for further annotation)}
@@ -36,19 +36,45 @@
 \item{intensity_ra}{character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
 to the MSP file}
 }
+\value{
+Returns a MSP file with the selected spectra and metadata
+}
 \description{
-Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature
+\strong{General}
+
+Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature.
+Can export all the associated scans individually or the averaged fragmentation spectra can be exported.
+
+Additional metadata can be included in a dataframe (each column will be added to metadata of the MSP spectra).
+The dataframe must contain the column "grpid" corresponding to the XCMS grouped feature.
+
+\strong{Example LC-MS/MS processing workflow}
+\itemize{
+\item Purity assessments
+\itemize{
+\item (mzML files) -> purityA -> (pa)
+}
+\item XCMS processing
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+}
+\item Fragmentation processing
+\itemize{
+\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> averageIntraFragSpectra -> \strong{createMSP} -> (MSP file)
+}
+}
 }
 \examples{
 
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#xset <- xcms::group(xset)
+#xset <- xcms::retcor(xset)
+#xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
-pa <- averageAllFragSpectra(pa)
+#pa  <- purityA(msmsPths)
+#pa <- frag4feature(pa, xset)
+#pa <- averageAllFragSpectra(pa)
+pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
 createMSP(pa)
 }

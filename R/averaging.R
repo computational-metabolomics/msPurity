@@ -23,8 +23,8 @@ performHc <- function(mzs, ppm){
 
   if(length(mzs)==1){return(1)}
 
-  mdist = dist(mzs)
-  averageMzPair = as.dist(outer(mzs, mzs, "+")/2)
+  mdist = stats::dist(mzs)
+  averageMzPair = stats::as.dist(outer(mzs, mzs, "+")/2)
   relativeErrors = averageMzPair * 0.000001
   m_massTolerance = mdist / relativeErrors
   clh <- fastcluster::hclust(m_massTolerance)
@@ -110,9 +110,9 @@ averageCluster <- function(x, av="median", minnum=1,
   # Calc average first of the mz. We don't want to mess around with
   # missing values for this stage
   if(av=="median"){
-    mz <- median(x$mz)
+    mz <- stats::median(x$mz)
   }else{
-    mz <- mean(x$mz)
+    mz <- stats::mean(x$mz)
   }
 
   # Zero any missing values for intensity and SNR (this is the thermo approach,

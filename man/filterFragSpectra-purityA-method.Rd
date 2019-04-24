@@ -7,7 +7,8 @@
 \title{Filter fragmentations spectra associated with an XCMS feature}
 \usage{
 \S4method{filterFragSpectra}{purityA}(pa, ilim = 0, plim = 0.8,
-  ra = 0, snr = 3, rmp = FALSE, snmeth = "median")
+  ra = 0, snr = 3, rmp = FALSE, snmeth = "median",
+  allfrag = FALSE)
 }
 \arguments{
 \item{pa}{object; purityA object}
@@ -23,28 +24,55 @@
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 
 \item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
+
+\item{allfrag}{boolean; Whether to filter on all fragmentation spectra or or just the fragmentation spectra grouped to XCMS feature}
 }
 \value{
-purityA object with additional columns for the fragmentation spectra in the grped_msms slot
+Returns a purityA object with the pa@grped_msms spectra matrices are updated with the following columns
+\itemize{
+\item snr: Signal to noise ratio (calculated at scan level)
+\item ra: Relative abundance (calculated at scan level)
+\item purity_pass_flag: Precursor ion purity flag (1 pass, 0 fail)
+\item intensity_pass_flag: Intensity flag (1 pass, 0 fail)
+\item snr_pass_flag: Signal-to-noise pass flag (1 pass, 0 fail)
+\item ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
+\item pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
+}
 }
 \description{
-Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and
-precursor ion purity of precursor.
+\strong{General}
 
-The grp_spectra slot to add the columns snr, ra, snr_flag, ra_flag, purity_flag, intensity_flag pass_flag
+Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
 
-This filtering occurs at the scan level (i.e. should be run prior to any averaging)
+\strong{Example LC-MS/MS processing workflow}
+
+The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
+\itemize{
+\item Purity assessments
+\itemize{
+\item (mzML files) -> purityA -> (pa)
+}
+\item XCMS processing
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+}
+\item Fragmentation processing
+\itemize{
+\item (xset, pa) -> frag4feature -> \strong{filterFragSpectra} -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+}
+}
 }
 \examples{
 
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#xset <- xcms::xcmsSet(msmsPths)
+#xset <- xcms::group(xset)
+#xset <- xcms::retcor(xset)
+#xset <- xcms::group(xset)
 
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
+#pa  <- purityA(msmsPths)
+#pa <- frag4feature(pa, xset)
+pa <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
 pa <- filterFragSpectra(pa)
 
 }

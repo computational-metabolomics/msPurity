@@ -1,26 +1,67 @@
-#' @title Assign precursor purity scored fragmentation spectra to XCMS features
+#' @title Using a purityA object, link MS/MS data to XCMS features
 #'
 #' @description
+#' **General**
+#' Assign fragmentation spectra (MS/MS) stored within a purityA class object to grouped features within an XCMS xset object.
 #'
-#' Assign fragmentation spectra (MS/MS) scored via msPurity package to features
-#' from an XCMS set object.
+#' XCMS calculates individual chromatographic peaks for each mzML file (saved in xset@@peaks), these are then grouped together
+#' (using xcms.group). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
+#' MS1 chromatographic features. If this is the case, to determine if a MS2 spectra is to be linked to an XCMS grouped feature,
+#' the associated acquisition time of the MS2 event has to be within the retention time window defined for the individual peaks
+#' associated for each file. The precursor m/z value also has to be within the user ppm tolerance to XCMS feature.
 #'
-#' Allows the user to filter out spectra below a certain threshold for purity.
+#' See below for representation of the linking (the &ast---&ast represent a many-to-many relationship) e.g. 1 or more MS/MS events can be
+#' linked to 1 or more individual feature and an individual XCMS feature can be linked to 1 or more grouped XCMS features
+#'
+#' * grouped XCMS feature (across files) &ast---&ast  individual XCMS feature (per file) &ast---&ast MS/MS spectra
+#'
+#' Alternatively, if the "useGroup" argument is set to TRUE, the full width of the grouped peak (determined as the minimum rtmin
+#' and maximum rtmax of the all associated individual peaks) will be used . This option should be used if the mzML file with
+#' MS/MS has very limited MS1 data and so individual chromatographic peaks might not be detected with the mzML files containing the
+#' MS/MS data. However, it should be noted this may lead to potential inaccurate linking.
+#'
+#' * grouped XCMS peaks &ast---&ast MS/MS spectra
+#'
+#'
+#' **Example LC-MS/MS processing workflow**
+#'
+#' The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
+#'
+#'  * Purity assessments
+#'    +  (mzML files) -> purityA -> (pa)
+#'  * XCMS processing
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'  * Fragmentation processing
+#'    + (xset, pa) -> **frag4feature** -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+#'
+#'
+#' **Additional notes**
+#' * If using only a single file, then grouping still needs to be performed within XCMS before frag4feature can be used.
+#' * Fragmentation spectra below a certain precursor ion purity can be be removed (see plim argument).
+#' * A SQLite database can be created directly here but the functionality has been deprecated and the createDatabase function should now be used
+#' * Can experience some problems when using XCMS version < 3 and obiwarp retention time correction.
+#'
 #'
 #' @aliases frag4feature
 #'
 #' @param pa object; purityA object
-#' @param xset object; XCMS object derived from the same files as the puritydf
-#' @param ppm numeric; ppm tolerance between precursor mz and feature mz
-#' @param plim numeric; min purity of precursor to be included
-#' @param intense boolean; If the most intense precursor or the centered precursor is used
-#' @param use_group boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature
+#' @param xset object; xcmsSet object derived from the same files as those used to create the purityA object
+#' @param ppm numeric; ppm tolerance between precursor mz and XCMS feature mz
+#' @param plim numeric; minimum purity of precursor to be included
+#' @param intense boolean; If TRUE the most intense precursor will be used. If FALSE the precursor closest to the center of the isolation window will be used
+#' @param useGroup boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature
 #' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
-#' @param create_db boolean; SQLite database will be created of the results
-#' @param db_name character; If create_db is TRUE, a custom database name can be used, default is a time stamp
-#' @param out_dir character; Path where database will be created
-#' @param grp_peaklist dataframe [optional]; Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
-#' @return purityA object with slots for fragmentation-XCMS links
+#' @param create_db boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results
+#' @param db_name character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp
+#' @param out_dir character; (Deprecated, to be removed - use createDatabase function) Path where database will be created
+#' @param grp_peaklist dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
+#' @param use_group boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)
+#' @return Returns a purityA object (pa) with the following slots populated:
+#'
+#' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
+#' * pa@@grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+#' * pa@@f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
+#'
 #'
 #' @examples
 #'
@@ -30,19 +71,21 @@
 #' xset <- xcms::retcor(xset)
 #' xset <- xcms::group(xset)
 #'
-#' pa  <- purityA(msmsPths, interpol = "linear")
+#' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#'
+#' @md
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, create_db=FALSE,
-                                out_dir='.', db_name=NA, grp_peaklist=NA, use_group=FALSE){
-
+          definition = function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, create_db=FALSE,
+                                out_dir='.', db_name=NA, grp_peaklist=NA, use_group=NA){
+  if(!is.na(use_group)){
+    useGroup <- use_group
+  }
   #Be sure we have a xset object
   xset <- getxcmsSetObject(xset)
-  
+
   # Makes sure the same files are being used
-  if (!use_group){
+  if (!useGroup){
     pa@f4f_link_type = 'individual'
     for(i in 1:length(pa@fileList)){
       if(!basename(pa@fileList[i])==basename(xset@filepaths[i])){
@@ -79,7 +122,7 @@ setMethod(f="frag4feature", signature="purityA",
 
 
 
-  if(use_group){
+  if(useGroup){
     fullpeakw <- data.frame(get_full_peak_width(xset@groups, xset))
     fullpeakw$grpid <- seq(1, nrow(fullpeakw))
 
@@ -100,7 +143,7 @@ setMethod(f="frag4feature", signature="purityA",
 
   #shrt <- puritydf[,c('fileid', 'seqNum', 'inPurity','pid')]
 
-  if (use_group){
+  if (useGroup){
     grpedp <- matched
   }else{
     #Group by the xcms groups
