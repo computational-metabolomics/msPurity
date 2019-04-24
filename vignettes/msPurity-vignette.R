@@ -45,13 +45,15 @@ createMSP(pa)
 td <- tempdir()
 q_dbPth <- createDatabase(pa, xset, outDir = td)
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T---------------
-q_xcmsGroups = c(17, 41) 
-q_spectraTypes = 'av_all' 
-l_accessions=c('CCMSLIB00000577898', 'CE000616') 
-result <- spectralMatching(q_dbPth, q_xcmsGroups = q_xcmsGroups, q_spectraTypes = q_spectraTypes,
-                             cores = 1, q_pol = NA, l_accessions = l_accessions,
-                             l_pol = 'positive', updateDb = FALSE)
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
+result <- spectralMatching(q_dbPth,
+                           q_xcmsGroups = c(12, 27), 
+                           q_spectraTypes = 'av_all',
+                           cores = 1, 
+                           q_pol = NA,
+                           l_accessions = c('CCMSLIB00000577898', 'CE000616') ,
+                           l_pol = 'positive',
+                           updateDb = FALSE)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")

@@ -227,7 +227,8 @@ Create an MSP file for all the fragmentation spectra that has been linked to an 
 Additional metadata can be included in a dataframe (each column will be added to metadata of the MSP spectra). The dataframe must contain the column "grpid" corresponding to the XCMS grouped feature.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
-createMSP(pa)
+td <- tempdir()
+createMSP(pa, msp_file_pth = file.path(td, 'out.msp'))
 ```
 
 
@@ -236,8 +237,7 @@ createMSP(pa)
 A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html). This replaces the old schema used by the deprecated function spectral_matching.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
-td <- tempdir()
-q_dbPth <- createDatabase(pa, xset, outDir = td)
+q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'test-mspurity-vignette.sqlite')
 ```
 
 ## spectralMatching - perfroming spectral matching to a spectral library

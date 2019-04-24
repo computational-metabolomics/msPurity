@@ -416,12 +416,12 @@ pa_norm &lt;- purityA(msmsPths[1], iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, m
 </div>
 <div id="frag4feature---mapping-xcms-features-to-fragmentation-spectra" class="section level2">
 <h2><span class="header-section-number">2.3</span> frag4feature - mapping XCMS features to fragmentation spectra</h2>
-<p>The MS/MS spectra can be assigned to an XCMS grouped feature using the <code>frag4feature</code> function.</p>
+<p>First an xcmsSet object of the same files is required</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(xcms))
 
 xset &lt;- xcms::xcmsSet(mzMLpths)
 xset &lt;- xcms::group(xset)</code></pre>
-<p>First an xcmsSet object of the same files is required</p>
+<p>Then the MS/MS spectra can be assigned to an XCMS grouped feature using the <code>frag4feature</code> function.</p>
 <pre class="r"><code>pa &lt;- frag4feature(pa, xset)</code></pre>
 <p>The slot <code>grped_df</code> is a dataframe of the grouped XCMS features linked to a reference to any associated MS/MS scans in the region of the full width of the XCMS feature in each file. The dataframe contains the following columns.</p>
 <ul>
@@ -465,7 +465,7 @@ xset &lt;- xcms::group(xset)</code></pre>
 </div>
 <div id="filterfragspectra---filter-the-fragmentation-spectra" class="section level2">
 <h2><span class="header-section-number">2.4</span> filterFragSpectra - filter the fragmentation spectra</h2>
-<p>Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.</p>
+<p>Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of the precursor.</p>
 <pre class="r"><code>pa &lt;- filterFragSpectra(pa)</code></pre>
 </div>
 <div id="averageallfragspectra---average-all-fragmentation-spectra" class="section level2">
@@ -498,12 +498,14 @@ q_dbPth &lt;- createDatabase(pa, xset, outDir = td)</code></pre>
 <div id="spectralmatching---perfroming-spectral-matching-to-a-spectral-library" class="section level2">
 <h2><span class="header-section-number">2.10</span> spectralMatching - perfroming spectral matching to a spectral library</h2>
 <p>A query SQLite database can be matched against a library SQLite database with the spectralMatching function. The library spectral-database in most cases should contain the “known” spectra from either public or user generated resources. The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS. A larger database can be downloaded from <a href="https://github.com/computational-metabolomics/msp2db/releases">here</a>.</p>
-<pre class="r"><code>q_xcmsGroups = c(17, 41) 
-q_spectraTypes = 'av_all' 
-l_accessions=c('CCMSLIB00000577898', 'CE000616') 
-result &lt;- spectralMatching(q_dbPth, q_xcmsGroups = q_xcmsGroups, q_spectraTypes = q_spectraTypes,
-                             cores = 1, q_pol = NA, l_accessions = l_accessions,
-                             l_pol = 'positive', updateDb = FALSE)</code></pre>
+<pre class="r"><code>result &lt;- spectralMatching(q_dbPth,
+                           q_xcmsGroups = c(12, 27), 
+                           q_spectraTypes = 'av_all',
+                           cores = 1, 
+                           q_pol = NA,
+                           l_accessions = c('CCMSLIB00000577898', 'CE000616') ,
+                           l_pol = 'positive',
+                           updateDb = FALSE)</code></pre>
 </div>
 </div>
 <div id="purityx" class="section level1">
