@@ -337,8 +337,8 @@ pa &lt;- averageInterFragSpectra(pa) # use parameters specific to inter spectra<
 <p>If the inter and intra fragmentation scans are to be treated the same the following workflow should be used.</p>
 <pre class="r"><code>pa &lt;- averageAllFragSpectra(pa) </code></pre>
 </div>
-<div id="create-spectral-database" class="section level2">
-<h2><span class="header-section-number">1.5</span> create spectral-database</h2>
+<div id="creating-a-spectral-database" class="section level2">
+<h2><span class="header-section-number">1.5</span> Creating a spectral-database</h2>
 <p>An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed <a href="https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html">here</a>.</p>
 <pre class="r"><code>td &lt;- tempdir()
 q_dbPth &lt;- createDatabase(pa, xset, outDir = td, dbName = 'lcmsms-processing.sqlite')</code></pre>
@@ -366,10 +366,10 @@ q_dbPth &lt;- createDatabase(pa, xset, outDir = td, dbName = 'lcmsms-processing.
 <pre><code>## Filter query dataset</code></pre>
 <pre><code>## Filter library dataset</code></pre>
 <pre><code>## aligning and matching</code></pre>
-<pre><code>## Summarising LC features annotations</code></pre>
+<pre><code>## Summarising LC feature annotations</code></pre>
 <pre class="r"><code>print(result)</code></pre>
 <pre><code>## $q_dbPth
-## [1] &quot;/tmp/Rtmpg2Im4n/lcmsms-processing.sqlite&quot;
+## [1] &quot;/tmp/RtmpshP410/lcmsms-processing.sqlite&quot;
 ## 
 ## $matchedResults
 ##         dpc rdpc      cdpc mcount allcount   mpercent          accession
