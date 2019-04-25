@@ -19,12 +19,12 @@
 #'
 #' @param pa purityA object; Needs to be the same used for frag4feature function
 #' @param xset xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)
-#' @param xsa CAMERA object [optional]; if CAMERA object is used, we ignore the xset parameter input and obtain all information
+#' @param xsa CAMERA object (optional); if CAMERA object is used, we ignore the xset parameter input and obtain all information
 #'                          from the xset object nested with the CAMERA xsa object. Adduct and isotope information
 #'                          will be included into the database when using this parameter. The underlying xset object must
 #'                          be the one used for the frag4feature function
-#' @param dbName character [optional]; Name of the result database
-#' @param grpPeaklist dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though
+#' @param dbName character (optional); Name of the result database
+#' @param grpPeaklist dataframe (optional); Can use any peak dataframe. Still needs to be derived from the xset object though
 #' @param outDir character; Out directory for the SQLite result database
 #' @param metadata list; A list of metadata to add to the s_peak_meta table
 #' @return path to SQLite database and database name
