@@ -59,6 +59,7 @@ Each spectra in the av_spectra list contains the following columns:
 }
 \description{
 \strong{General}
+
 Average and filter fragmentation spectra for each XCMS feature within and across MS data files (ignoring intra and inter relationships).
 
 The averaging is performed using hierarchical clustering of the m/z values of each peaks, where m/z values within a set ppm tolerance will be clustered. The clustered peaks are then averaged (or summed).

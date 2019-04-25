@@ -3,6 +3,8 @@ library(msPurity)
 mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
 xset <- xcms::xcmsSet(mzMLpths)
 xset <- xcms::group(xset)
+xset <- xcms::retcor(xset)
+xset <- xcms::group(xset)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 pa  <- purityA(mzMLpths)
@@ -20,8 +22,9 @@ pa <- averageAllFragSpectra(pa)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
 td <- tempdir()
-q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'test-lcmsms-processing.sqlite')
+q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'lcmsms-processing.sqlite')
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE------------
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
+## --------------------------------------------------------------------------
+result <- spectralMatching(q_dbPth, q_xcmsGroups = c(17, 41), l_accessions=c('CCMSLIB00000577898','CE000616'))
+print(result)
 

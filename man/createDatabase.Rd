@@ -12,16 +12,16 @@ createDatabase(pa, xset, xsa = NULL, outDir = ".", grpPeaklist = NA,
 
 \item{xset}{xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)}
 
-\item{xsa}{CAMERA object [optional]; if CAMERA object is used, we ignore the xset parameter input and obtain all information
+\item{xsa}{CAMERA object (optional); if CAMERA object is used, we ignore the xset parameter input and obtain all information
 from the xset object nested with the CAMERA xsa object. Adduct and isotope information
 will be included into the database when using this parameter. The underlying xset object must
 be the one used for the frag4feature function}
 
 \item{outDir}{character; Out directory for the SQLite result database}
 
-\item{grpPeaklist}{dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though}
+\item{grpPeaklist}{dataframe (optional); Can use any peak dataframe. Still needs to be derived from the xset object though}
 
-\item{dbName}{character [optional]; Name of the result database}
+\item{dbName}{character (optional); Name of the result database}
 
 \item{metadata}{list; A list of metadata to add to the s_peak_meta table}
 }
@@ -33,16 +33,23 @@ path to SQLite database and database name
 
 Create and SQLite database of an LC-MS(/MS) experiment (replaces the create_database function).
 
-Schema details can be found [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
+Schema details can be found \href{https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html}{here}.
 
-**Example LC-MS/MS processing workflow**
-
- * Purity assessments
-   +  (mzML files) -> purityA -> (pa)
- * XCMS processing
-   +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
- * Fragmentation processing
-   + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> **createDatabase** -> spectralMatching -> (sqlite spectral database)
+\strong{Example LC-MS/MS processing workflow}
+\itemize{
+\item Purity assessments
+\itemize{
+\item (mzML files) -> purityA -> (pa)
+}
+\item XCMS processing
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+}
+\item Fragmentation processing
+\itemize{
+\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> \strong{createDatabase} -> spectralMatching -> (sqlite spectral database)
+}
+}
 }
 \examples{
 

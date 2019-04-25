@@ -179,7 +179,7 @@ spectralMatching <- function(
                              q_ppmProd=10,
                              q_ppmPrec=5,
                              q_raThres=NA,
-                             q_pol='positive',
+                             q_pol=NA,
                              q_instrumentTypes=NA,
                              q_instruments=NA,
                              q_sources=NA,
@@ -411,7 +411,7 @@ spectralMatching <- function(
   ########################################################
   if (DBI::dbExistsTable(q_con, "c_peak_groups")){
     # check if the query is from an XCMS object
-    message("Summarising LC features annotations")
+    message("Summarising LC feature annotations")
 
     xcmsMatchedResults <- getXcmsSmSummary(q_con, matched,spectraTypes=q_spectraTypes)
     if (updateDb){

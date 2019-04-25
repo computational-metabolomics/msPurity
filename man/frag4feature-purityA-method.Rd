@@ -46,26 +46,27 @@ Returns a purityA object (pa) with the following slots populated:
 }
 \description{
 \strong{General}
+
 Assign fragmentation spectra (MS/MS) stored within a purityA class object to grouped features within an XCMS xset object.
 
 XCMS calculates individual chromatographic peaks for each mzML file (saved in xset@peaks), these are then grouped together
 (using xcms.group). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
 MS1 chromatographic features. If this is the case, to determine if a MS2 spectra is to be linked to an XCMS grouped feature,
-the associated acquisition time of the MS2 event has to be within the retention time window defined for the individual peaks
+the associated acquisition time of the MS/MS event has to be within the retention time window defined for the individual peaks
 associated for each file. The precursor m/z value also has to be within the user ppm tolerance to XCMS feature.
 
-See below for representation of the linking (the &ast---&ast represent a many-to-many relationship) e.g. 1 or more MS/MS events can be
+See below for representation of the linking (the *------* represent a many-to-many relationship) e.g. 1 or more MS/MS events can be
 linked to 1 or more individual feature and an individual XCMS feature can be linked to 1 or more grouped XCMS features
 \itemize{
-\item grouped XCMS feature (across files) &ast---&ast  individual XCMS feature (per file) &ast---&ast MS/MS spectra
+\item [grouped XCMS feature - across files] *------*  [individual XCMS feature - per file] *------*  [MS/MS spectra]
 }
 
 Alternatively, if the "useGroup" argument is set to TRUE, the full width of the grouped peak (determined as the minimum rtmin
-and maximum rtmax of the all associated individual peaks) will be used . This option should be used if the mzML file with
+and maximum rtmax of the all associated individual peaks) will be used. This option should be used if the mzML file with
 MS/MS has very limited MS1 data and so individual chromatographic peaks might not be detected with the mzML files containing the
 MS/MS data. However, it should be noted this may lead to potential inaccurate linking.
 \itemize{
-\item grouped XCMS peaks &ast---&ast MS/MS spectra
+\item [grouped XCMS peaks] *------* [MS/MS spectra]
 }
 
 \strong{Example LC-MS/MS processing workflow}

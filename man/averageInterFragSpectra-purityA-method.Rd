@@ -78,7 +78,7 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> \strong{averageIntraFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> \strong{averageInterFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }

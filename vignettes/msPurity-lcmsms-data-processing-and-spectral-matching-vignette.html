@@ -11,7 +11,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2019-04-24" />
+<meta name="date" content="2019-04-25" />
 
 <title>LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS</title>
 
@@ -284,7 +284,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS</h1>
 <p class="author-name">Thomas N. Lawson</p>
-<h4 class="date">2019-04-24</h4>
+<h4 class="date">2019-04-25</h4>
 
 </div>
 
@@ -316,6 +316,8 @@ div.tocify {
 <pre class="r"><code>library(msPurity)
 mzMLpths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE)
 xset &lt;- xcms::xcmsSet(mzMLpths)
+xset &lt;- xcms::group(xset)
+xset &lt;- xcms::retcor(xset)
 xset &lt;- xcms::group(xset)</code></pre>
 </div>
 <div id="purity-assesments-and-linking-fragmentation-to-xcms-features" class="section level2">
@@ -335,11 +337,11 @@ pa &lt;- averageInterFragSpectra(pa) # use parameters specific to inter spectra<
 <p>If the inter and intra fragmentation scans are to be treated the same the following workflow should be used.</p>
 <pre class="r"><code>pa &lt;- averageAllFragSpectra(pa) </code></pre>
 </div>
-<div id="create-spectral-database" class="section level2">
-<h2><span class="header-section-number">1.5</span> create spectral-database</h2>
+<div id="creating-a-spectral-database" class="section level2">
+<h2><span class="header-section-number">1.5</span> Creating a spectral-database</h2>
 <p>An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed <a href="https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html">here</a>.</p>
 <pre class="r"><code>td &lt;- tempdir()
-q_dbPth &lt;- createDatabase(pa, xset, outDir = td, dbName = 'test-lcmsms-processing.sqlite')</code></pre>
+q_dbPth &lt;- createDatabase(pa, xset, outDir = td, dbName = 'lcmsms-processing.sqlite')</code></pre>
 </div>
 <div id="spectral-matching" class="section level2">
 <h2><span class="header-section-number">1.6</span> Spectral matching</h2>
@@ -351,14 +353,45 @@ q_dbPth &lt;- createDatabase(pa, xset, outDir = td, dbName = 'test-lcmsms-proces
 <p>The <strong>spectral alignment</strong> stage involves aligning the query peaks to the library peaks. The approach used is similar to modified pMatch algorithm described in <span class="citation">(Zhou et al. 2014)</span>.</p>
 <p>The <strong>spectral matching</strong> of the aligned spectra is performed against a combined intensity and m/z weighted vector - created for both the query and library spectra (wq and wl). See below:</p>
 <p><span class="math display">\[ \vec{w}=\vec{intensity}^x \cdot \vec{mz}^y\]</span></p>
-<p>Where x and y represent weight factors, defaults to <span class="math inline">\(x=0.5\)</span> and <span class="math inline">\(y=2\)</span> as per MassBank. These can be adjusted by the user though.</p>
+<p>Where x and y represent weight factors, defaults to <span class="math inline">\(x=0.5\)</span> and <span class="math inline">\(y=2\)</span> as per MassBank recommendations for ESI based data <span class="citation">(Horai, Arita, and Nishioka 2008)</span>. These can be adjusted by the user though.</p>
 <p>The aligned weighted vectors are then matched using dot product cosine, reverse dot product cosine and the composite dot product. See below for dot product cosine equation.</p>
 <p><span class="math display">\[ F_{dpc} = \frac{\sum \vec{w_{Q} }\cdot \vec{w_{L}}}{\sqrt{\sum \vec{w_{Q}^{2}}} \cdot \sqrt{\sum \vec{w_{L}^{2}}}} \]</span></p>
 <p>The reverse dot product cosine (rpdc) uses the same algorithm as dpc but all peaks that do not match in the query spectra (based on the alignment) are omitted from the calculation. This will improve scores when the query spectra is noisy but should be used with caution as it might lead to more false positives.</p>
-<p>The composite dot product cosine (cdpc) approach is also calculated - this appraoch is used in the NIST MS search tool and incorporates relative intensity of neighbouring peaks (see function <span class="math inline">\(M_{rel}\)</span> ), where <span class="math inline">\(N\)</span>=number of peaks, <span class="math inline">\(Q\)</span>=query, <span class="math inline">\(L\)</span>=library, <span class="math inline">\(L\&amp;Q\)</span>= matching library and query peaks, <span class="math inline">\(w\)</span> is the weighted value and <span class="math inline">\(n\)</span> is either 1 (if the abundance ratio of the library - e.g. <span class="math inline">\(\frac{w_{L,i}}{w_{L,i-1}}\)</span> - is <span class="math inline">\(&lt;\)</span> than the abundance ratio of the query - e.g.) or -1 (if the abundance ratio of the library is <span class="math inline">\(&gt;\)</span> than the abundance ratio of the query)</p>
+<p>The composite dot product cosine (cdpc) approach is also calculated - this appraoch is used in the NIST MS search tool and incorporates relative intensity of neighbouring peaks (see function <span class="math inline">\(M_{rel}\)</span> ), where <span class="math inline">\(N\)</span>=number of peaks, <span class="math inline">\(Q\)</span>=query, <span class="math inline">\(L\)</span>=library, <span class="math inline">\(L\&amp;Q\)</span>= matching library and query peaks, <span class="math inline">\(w\)</span> is the weighted value and <span class="math inline">\(n\)</span> is either 1 (if the abundance ratio of the library, i.e. <span class="math inline">\(\frac{w_{L,i}}{w_{L,i-1}}\)</span>, is <span class="math inline">\(&lt;\)</span> than the abundance ratio of the query i.e. <span class="math inline">\(\frac{w_{Q,i}}{w_{Q,i-1}}\)</span>) or -1 (if the abundance ratio of the library is <span class="math inline">\(&gt;\)</span> than the abundance ratio of the query). The approach was first described in <span class="citation">(Stein and Scott 1994)</span>.</p>
 <p><span class="math display">\[ F_{rel} = \Bigg( \frac{1}{N_{L\&amp;Q}-1} \Bigg) \cdot \sum_{i=2}^{N_{L\&amp;Q}} \Bigg( \frac{w_{L,i}}{w_{L,i-1}} \Bigg)_{}{^n} \cdot \Bigg( \frac{w_{Q,i}}{w_{Q,i-1}} \Bigg)_{}{^{-n}}\]</span></p>
 <p><span class="math display">\[ F_{cpdc} = \frac{1000}{N_{Q} + N_{L\&amp;Q}} \cdot (N_{Q} \cdot F_{dpc} + N_{L\&amp;Q} \cdot F_{rel}) \]</span></p>
-<pre class="r"><code>result &lt;- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))</code></pre>
+<p>The following example shows how to match two xcms groups against two of the library spectral filtered by their MoNA/MassBank accession ids.</p>
+<pre class="r"><code>result &lt;- spectralMatching(q_dbPth, q_xcmsGroups = c(17, 41), l_accessions=c('CCMSLIB00000577898','CE000616'))</code></pre>
+<pre><code>## Running msPurity spectral matching function for LC-MS(/MS) data</code></pre>
+<pre><code>## Filter query dataset</code></pre>
+<pre><code>## Filter library dataset</code></pre>
+<pre><code>## aligning and matching</code></pre>
+<pre><code>## Summarising LC feature annotations</code></pre>
+<pre class="r"><code>print(result)</code></pre>
+<pre><code>## $q_dbPth
+## [1] &quot;/tmp/RtmpshP410/lcmsms-processing.sqlite&quot;
+## 
+## $matchedResults
+##         dpc rdpc      cdpc mcount allcount   mpercent          accession
+## 1 0.8739497    1 0.8359519      1       22 0.04545455 CCMSLIB00000577898
+## 2 0.9408905    1 0.8960862      1       20 0.05000000           CE000616
+##         name                    inchikey  lpid qpid mid
+## 1  L-PROLINE ONIBWKKTOPOVIA-UHFFFAOYSA-N  5325 1662   1
+## 2 Isoleucine AGPKZVBTJJNPAG-UHFFFAOYSA-N 53807 1665   2
+## 
+## $xcmsMatchedResults
+##    pid grpid       mz    mzmin    mzmax       rt    rtmin    rtmax npeaks
+## 1 1662    17 116.0705 116.0703 116.0706 44.45066 43.95639 44.90363      4
+## 2 1665    41 132.1018 132.1017 132.1018 70.39686 69.81528 70.75930      4
+##   mzML   LCMSMS_1   LCMSMS_2     LCMS_1     LCMS_2 grp_name       dpc rdpc
+## 1    4  130337063  124086404  230819937  234755462  M116T44 0.8739497    1
+## 2    4 2879676651 2794252073 3455044747 3379259900  M132T70 0.9408905    1
+##        cdpc mcount allcount   mpercent          accession       name
+## 1 0.8359519      1       22 0.04545455 CCMSLIB00000577898  L-PROLINE
+## 2 0.8960862      1       20 0.05000000           CE000616 Isoleucine
+##                      inchikey  lpid mid
+## 1 ONIBWKKTOPOVIA-UHFFFAOYSA-N  5325   1
+## 2 AGPKZVBTJJNPAG-UHFFFAOYSA-N 53807   2</code></pre>
 <p>The output of spectralMatching returns a list containing the following elements:</p>
 <p><strong>q_dbPth</strong>: Path of the query database (this will have been updated with the annotation results if updateDb argument used)</p>
 <p><strong>matchedResults</strong>: All matched results from the query spectra to the library spectra. Contains the following columns</p>
@@ -406,6 +439,12 @@ q_dbPth &lt;- createDatabase(pa, xset, outDir = td, dbName = 'test-lcmsms-proces
 <div id="references" class="section level1 unnumbered">
 <h1>References</h1>
 <div id="refs" class="references">
+<div id="ref-Horai2008">
+<p>Horai, Hisayuki, Masanori Arita, and Takaaki Nishioka. 2008. “Comparison of ESI-MS spectra in MassBank database.” <em>BioMedical Engineering and Informatics: New Development and the Future - Proceedings of the 1st International Conference on BioMedical Engineering and Informatics, BMEI 2008</em> 2: 853–57. doi:<a href="https://doi.org/10.1109/BMEI.2008.339">10.1109/BMEI.2008.339</a>.</p>
+</div>
+<div id="ref-stein1994optimization">
+<p>Stein, Stephen E, and Donald R Scott. 1994. “Optimization and testing of mass spectral library search algorithms for compound identification.” <em>Journal of the American Society for Mass Spectrometry</em> 5 (9). Elsevier: 859–66.</p>
+</div>
 <div id="ref-Zhou2014">
 <p>Zhou, Jiarui, Ralf J M Weber, J William Allwood, Robert Mistrik, Zexuan Zhu, Zhen Ji, Siping Chen, Warwick B Dunn, Shan He, and Mark R Viant. 2014. “HAMMER: automated operation of mass frontier to construct in silico mass spectral fragmentation libraries.” <em>Bioinformatics (Oxford, England)</em> 30 (4): 581–3. doi:<a href="https://doi.org/10.1093/bioinformatics/btt711">10.1093/bioinformatics/btt711</a>.</p>
 </div>

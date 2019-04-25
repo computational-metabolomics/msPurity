@@ -4,11 +4,11 @@ msPurity: Package to assess precursor ion purity and perform spectral matching
 
 **Version:**
 
-1.9.9 (development) - use Bioconductor for stable
+1.9.10 (development) - use Bioconductor for stable
 
 **General:**
-
-|Git| |Bioconda| |Build Status (Travis)|  |License| |DOI| |Paper|
+ 
+|Git| |Bioconda| |Build Status (Travis)|  |License| |DOI| |Paper| |Coverage|
 
 
 **Bioconductor (release):**
@@ -32,7 +32,8 @@ About
 ------------
 msPurity R package and associated Galaxy tools were developed to: 1) assess the spectral quality of fragmentation spectra by evaluating the "precursor ion purity". 2) process fragmentation spectra. And 3) perform spectral matching.
 
-Functionalities::
+Functionalities:
+
 * Assess the contribution of the targeted precursor of acquired fragmentation spectra by checking isolation windows using a metric called "precursor ion purity" (Works for both LC-MS(/MS) and DI-MS(/MS) data)
 * Assess the anticipated “precursor ion purity” (see below) of XCMS LC-MS features and DIMS features where no fragmentation has been acquired
 * Map fragmentation spectra to XCMS LC-MS features
@@ -43,6 +44,7 @@ Functionalities::
 * Basic processing of DIMS data. Note that these functionalities are not actively developed anymore - see DIMSpy (https://github.com/computational-metabolomics/dimspy) for recommended alternative for DIMS data processing
 
 **What is precursor ion purity?**
+
 What we call "Precursor ion purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the recorded time of the MS/MS acquisition. Additionally, isotopic peaks can be removed, low abundance peaks are removed that are thought to have limited contribution to the resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be used to normalise the intensities used for the calculation.
 
 
@@ -133,3 +135,7 @@ Ref
 
 .. |Paper| image:: https://img.shields.io/badge/paper-Analytical_Chemistry-teal.svg?style=flat&maxAge=3600
    :target: http://doi.org/10.1021/acs.analchem.6b04358
+
+
+.. |Coverage| image:: https://codecov.io/gh/computational-metabolomics/msPurity/branch/master/graph/badge.svg
+   :target: https://codecov.io/github/computational-metabolomics/msPurity?branch=master

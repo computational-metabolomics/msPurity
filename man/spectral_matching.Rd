@@ -94,6 +94,6 @@ msPurity::spectral_matching is deprecated - please use msPurity::spectralMatchin
 #pa <- frag4feature(pa, xset)
 #pa <- averageAllFragSpectra(pa)
 #db_pth <- create_database(pa, xset)
-q_dbPth <- system.file("extdata", "tests", "db", "create_database_example.sqlite", package="msPurity")
-result <- spectral_matching(q_dbPth, spectra_type_q="av_all")
+#q_dbPth <- system.file("extdata", "tests", "db", "create_database_example.sqlite", package="msPurity")
+#result <- spectral_matching(q_dbPth, spectra_type_q="av_all")
 }
