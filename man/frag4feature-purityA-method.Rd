@@ -52,7 +52,7 @@ Assign fragmentation spectra (MS/MS) stored within a purityA class object to gro
 XCMS calculates individual chromatographic peaks for each mzML file (saved in xset@peaks), these are then grouped together
 (using xcms.group). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
 MS1 chromatographic features. If this is the case, to determine if a MS2 spectra is to be linked to an XCMS grouped feature,
-the associated acquisition time of the MS2 event has to be within the retention time window defined for the individual peaks
+the associated acquisition time of the MS/MS event has to be within the retention time window defined for the individual peaks
 associated for each file. The precursor m/z value also has to be within the user ppm tolerance to XCMS feature.
 
 See below for representation of the linking (the *------* represent a many-to-many relationship) e.g. 1 or more MS/MS events can be
