@@ -54,6 +54,7 @@
 #' td <- tempdir()
 #' db_pth = createDatabase(pa, xset, outDir = td)
 #'
+#' @md
 #' @export
 createDatabase <-  function(pa, xset, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA){
   ########################################################

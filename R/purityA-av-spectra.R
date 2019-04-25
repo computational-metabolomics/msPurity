@@ -1,6 +1,7 @@
 #' @title Using a purityA object, average and filter fragmentation spectra for each XCMS feature within a MS data file
 #' @aliases averageIntraFragSpectra
 #' @description
+#'
 #' **General**
 #'
 #' Average and filter fragmentation spectra for each XCMS feature within a MS data file.
@@ -111,7 +112,7 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #'  * XCMS processing
 #'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
 #'  * Fragmentation processing
-#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> **averageIntraFragSpectra** -> createDatabase -> spectralMatching -> (sqlite spectral database)
+#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> **averageInterFragSpectra** -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
 #'
 #'
@@ -196,7 +197,9 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #' and across MS data files (ignoring intra and inter relationships)
 #' @aliases averageAllFragSpectra
 #' @description
+#'
 #' **General**
+#'
 #' Average and filter fragmentation spectra for each XCMS feature within and across MS data files (ignoring intra and inter relationships).
 #'
 #' The averaging is performed using hierarchical clustering of the m/z values of each peaks, where m/z values within a set ppm tolerance will be clustered. The clustered peaks are then averaged (or summed).

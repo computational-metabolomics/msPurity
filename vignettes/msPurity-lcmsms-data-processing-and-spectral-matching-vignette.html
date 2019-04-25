@@ -11,7 +11,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2019-04-24" />
+<meta name="date" content="2019-04-25" />
 
 <title>LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS</title>
 
@@ -284,7 +284,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS</h1>
 <p class="author-name">Thomas N. Lawson</p>
-<h4 class="date">2019-04-24</h4>
+<h4 class="date">2019-04-25</h4>
 
 </div>
 
@@ -355,7 +355,7 @@ q_dbPth &lt;- createDatabase(pa, xset, outDir = td, dbName = 'test-lcmsms-proces
 <p>The aligned weighted vectors are then matched using dot product cosine, reverse dot product cosine and the composite dot product. See below for dot product cosine equation.</p>
 <p><span class="math display">\[ F_{dpc} = \frac{\sum \vec{w_{Q} }\cdot \vec{w_{L}}}{\sqrt{\sum \vec{w_{Q}^{2}}} \cdot \sqrt{\sum \vec{w_{L}^{2}}}} \]</span></p>
 <p>The reverse dot product cosine (rpdc) uses the same algorithm as dpc but all peaks that do not match in the query spectra (based on the alignment) are omitted from the calculation. This will improve scores when the query spectra is noisy but should be used with caution as it might lead to more false positives.</p>
-<p>The composite dot product cosine (cdpc) approach is also calculated - this appraoch is used in the NIST MS search tool and incorporates relative intensity of neighbouring peaks (see function <span class="math inline">\(M_{rel}\)</span> ), where <span class="math inline">\(N\)</span>=number of peaks, <span class="math inline">\(Q\)</span>=query, <span class="math inline">\(L\)</span>=library, <span class="math inline">\(L\&amp;Q\)</span>= matching library and query peaks, <span class="math inline">\(w\)</span> is the weighted value and <span class="math inline">\(n\)</span> is either 1 (if the abundance ratio of the library - e.g. <span class="math inline">\(\frac{w_{L,i}}{w_{L,i-1}}\)</span> - is <span class="math inline">\(&lt;\)</span> than the abundance ratio of the query - e.g.) or -1 (if the abundance ratio of the library is <span class="math inline">\(&gt;\)</span> than the abundance ratio of the query)</p>
+<p>The composite dot product cosine (cdpc) approach is also calculated - this appraoch is used in the NIST MS search tool and incorporates relative intensity of neighbouring peaks (see function <span class="math inline">\(M_{rel}\)</span> ), where <span class="math inline">\(N\)</span>=number of peaks, <span class="math inline">\(Q\)</span>=query, <span class="math inline">\(L\)</span>=library, <span class="math inline">\(L\&amp;Q\)</span>= matching library and query peaks, <span class="math inline">\(w\)</span> is the weighted value and <span class="math inline">\(n\)</span> is either 1 (if the abundance ratio of the library, i.e. <span class="math inline">\(\frac{w_{L,i}}{w_{L,i-1}}\)</span>, is <span class="math inline">\(&lt;\)</span> than the abundance ratio of the query i.e. <span class="math inline">\(\frac{w_{Q,i}}{w_{Q,i-1}}\)</span>) or -1 (if the abundance ratio of the library is <span class="math inline">\(&gt;\)</span> than the abundance ratio of the query)</p>
 <p><span class="math display">\[ F_{rel} = \Bigg( \frac{1}{N_{L\&amp;Q}-1} \Bigg) \cdot \sum_{i=2}^{N_{L\&amp;Q}} \Bigg( \frac{w_{L,i}}{w_{L,i-1}} \Bigg)_{}{^n} \cdot \Bigg( \frac{w_{Q,i}}{w_{Q,i-1}} \Bigg)_{}{^{-n}}\]</span></p>
 <p><span class="math display">\[ F_{cpdc} = \frac{1000}{N_{Q} + N_{L\&amp;Q}} \cdot (N_{Q} \cdot F_{dpc} + N_{L\&amp;Q} \cdot F_{rel}) \]</span></p>
 <pre class="r"><code>result &lt;- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))</code></pre>
