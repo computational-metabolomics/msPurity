@@ -324,6 +324,21 @@ test_that("checking createMSP based functions", {
   expect_equal(av_all_msp_new, av_all_msp_old)
 
 
+  ################################
+  # When two metadata details for single XCMS feature
+  ################################
+  metadatad <- metadata
+  metadatad[3, ] <- metadatad[1,]
+  metadatad[3,4] <- 'possible other compound'
+
+  av_all_msp_new_dupmeta_pth <- file.path(tmp_dir,'av_all_dupmeta.msp')
+  createMSP(pa, msp_file = av_all_msp_new_dupmeta_pth, metadata = metadatad, method = "av_all", xcms_groupids = c(8, 12))
+
+  av_all_msp_dupmeta_new <- get_msp_str(av_all_msp_new_dupmeta_pth)
+  av_all_msp_dupmeta_old <- get_msp_str(system.file("extdata", "tests","msp", "av_all_dupmeta.msp", package="msPurity"))
+  expect_equal(av_all_msp_dupmeta_new, av_all_msp_dupmeta_old)
+
+
   #createMSP(pa, msp_file = 'all.msp', metadata = metadata, method = "all", xcms_groupids = c(8, 12))
   #createMSP(pa, msp_file = 'max.msp', metadata = metadata, method = "max", xcms_groupids = c(8, 12))
   #createMSP(pa, msp_file = 'av_inter.msp', metadata = metadata, method = "av_inter", xcms_groupids = c(8, 12))

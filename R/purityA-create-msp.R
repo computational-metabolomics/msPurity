@@ -88,6 +88,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   if (is.null(xcms_groupids)){
     xcms_groupids <- as.numeric(names(pa@grped_ms2))
   }
+
   for(grpid in xcms_groupids){
 
 
@@ -114,7 +115,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
           spectrum <- spec[[j]]
 
           if ((filter)  & ('pass_flag' %in% colnames(spectrum))){
-             spectrum <- spectrum[spectrum[,'pass_flag']==1,,drop=FALSE]
+            spectrum <- spectrum[spectrum[,'pass_flag']==1,,drop=FALSE]
           }
 
           if (nrow(spectrum)>0){
@@ -194,8 +195,10 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         av_all <- pa@av_spectra[[as.character(grpid)]]$av_all
 
         if (filter){
-           av_all  <- av_all[av_all[,'pass_flag']==1,]
+          av_all  <- av_all[av_all[,'pass_flag']==1,]
         }
+
+
 
         if (!is.null(av_all) && nrow(av_all)>0){
           write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
@@ -227,39 +230,44 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
     }
   }
 
-  if (adduct_split & sum(metadata$grpid==grpid) > 0){
-    # To keep the naming consisten we stick with the massbank naming convention
+  for(i in 1:sum(metadata$grpid==grpid)){
+    metadatai <- metadata[metadata$grpid==grpid,][i,]
+    if (adduct_split & sum(metadatai$grpid==grpid) > 0){
+      # To keep the naming consisten we stick with the massbank naming convention
 
-    if ('adduct' %in% names(metadata)){
-      names(metadata)[names(metadata)=='adduct'] <- precursor_name
-    }
+      if ('adduct' %in% names(metadatai)){
+        names(metadatai)[names(metadatai)=='adduct'] <- precursor_name
+      }
 
-    # check if in the precursor_type is in the columns
-    if (precursor_name %in% names(metadata)){
+      # check if in the precursor_type is in the columns
+      if (precursor_name %in% names(metadatai)){
 
-      # extract the text, expecting to be in CAMERA format, e.g. "[M-H]- 88.016 [M-H-NH3]- 105.042"
-      adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadata[metadata$grpid==grpid,precursor_name])
-      # get a vector of the adducts
+        # extract the text, expecting to be in CAMERA format, e.g. "[M-H]- 88.016 [M-H-NH3]- 105.042"
+        adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadatai[metadatai$grpid==grpid,precursor_name])
+        # get a vector of the adducts
 
-      adducts <- strsplit(adduct_text, ' ')[[1]]
-      # loop through the adducts creating an appropiate MSP for each
-      for (i in 1:length(adducts)){
-        adduct <- adducts[i]
-        metadata[metadata$grpid==grpid,precursor_name] = adduct
-        write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
+        adducts <- strsplit(adduct_text, ' ')[[1]]
+        # loop through the adducts creating an appropiate MSP for each
+        for (i in 1:length(adducts)){
+          adduct <- adducts[i]
+          metadatai[metadatai$grpid==grpid,precursor_name] = adduct
+          write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadatai, metadata_cols, ofile, method, msp_schema, intensity_ra)
+        }
+
+      }else{
+        # adduct set to split but adduct column not available
+        write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadatai, metadata_cols, ofile, method, msp_schema, intensity_ra)
       }
 
     }else{
-      # adduct set to split but adduct column not available
-      write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
+      # Ignore adduct splitting
+      write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadatai, metadata_cols, ofile, method, msp_schema, intensity_ra)
     }
-
-  }else{
-    # Ignore adduct splitting
-    write_msp_single(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema, intensity_ra)
   }
 
 }
+
+
 
 write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method, msp_schema='massbank', intensity_ra='intensity_ra'){
   name <- concat_name(precmz, rtmed, grpid, fileid, metadata, metadata_cols)
@@ -297,7 +305,7 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, spectra, metadata, me
 
   cat(paste0("XCMS groupid (grpid): ", grpid, line_end), file = ofile)
   cat(paste0("COMMENT: Exported from msPurity purityA object using function createMSP, using method '",
-            method, "' msPurity version:", packageVersion("msPurity")),
+             method, "' msPurity version:", packageVersion("msPurity")),
       line_end,file = ofile)
 
   if (msp_schema=='mona'){
