@@ -1,3 +1,8 @@
+CHANGES IN VERSION 1.9.11
+=========================
+* Bug fix for createMSP - now handles metada with duplicate grpids
+
+
 CHANGES IN VERSION 1.9.10
 =========================
 * Documentation updates
