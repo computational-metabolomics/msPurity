@@ -2,11 +2,11 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.9.11
-Date: 2019-04-26
+Version: 1.9.12
+Date: 2019-04-28
 Author: Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn
 Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
-Description: msPurity R package and associated Galaxy tools were developed to: 
+Description: msPurity R package was developed to: 
      1) Assess the spectral quality of fragmentation spectra by evaluating the "precursor ion purity". 
      2) Process fragmentation spectra. 
      3) Perform spectral matching.
@@ -22,6 +22,7 @@ Description: msPurity R package and associated Galaxy tools were developed to:
 Encoding: UTF-8
 License: GPL (>= 2)
 LazyData: TRUE
+BugReports: https://github.com/computational-metabolomics/msPurity/issues/new
 Depends:
     Rcpp
 Imports:
