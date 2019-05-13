@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.11.0
+=========================
+* Bioconductor dev (automatic version bump)
+
+CHANGES IN VERSION 1.10.0
+=========================
+* Bioconductor release (automatic version bump)
+
 CHANGES IN VERSION 1.9.12
 =========================
 * Troublshoot mac "[MSData::Spectrum::getMZIntensityPairs()] Sizes do not match" error
