@@ -72,7 +72,7 @@ Bioconductor
 
   if (!requireNamespace("BiocManager", quietly = TRUE))
       install.packages("BiocManager")
-  BiocManager::install("msPurity", version = "3.8")
+  BiocManager::install("msPurity")
 
 
 
@@ -82,7 +82,6 @@ Github
 .. code-block:: r
 
   library(devtools)
-  library(testthat)
   install_github('computational-metabolomics/msPurity')
 
 
