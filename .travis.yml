@@ -1,16 +1,10 @@
 language: r
-r: bioc-stable
+r: bioc-devel
 cache:
   packages: true
 sudo: required
 warnings_are_errors: true
 dist: trusty
-
-branches:
-  except:
-  - RELEASE_3_4
-  - RELEASE_3_5
-  - RELEASE_3_6
 
 bioc_packages: 
   - xcms 
