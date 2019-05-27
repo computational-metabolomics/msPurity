@@ -6,13 +6,17 @@ sudo: required
 warnings_are_errors: true
 dist: trusty
 
-# Based on XCMS travis yml created by johannes.rainer https://github.com/sneumann/xcms/blob/master/.travis.yml
+branches:
+  except:
+  - RELEASE_3_4
+  - RELEASE_3_5
+  - RELEASE_3_6
 
 bioc_packages: 
   - xcms 
   - msPurityData
 
-  
+# Based on XCMS travis yml created by johannes.rainer https://github.com/sneumann/xcms/blob/master/.travis.yml  
 addons:
   apt:
     packages:
