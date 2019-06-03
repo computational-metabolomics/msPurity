@@ -43,7 +43,7 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
   ########################################################
   # Export the target data into sqlite database
   ########################################################
-  if(xset){
+  if(!is.null(xset)){
     xset <- getxcmsSetObject(xset)
   }
 
