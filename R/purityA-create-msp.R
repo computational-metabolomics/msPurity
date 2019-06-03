@@ -201,6 +201,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
         if (!is.null(av_all) && nrow(av_all)>0){
+
           write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
         }
 
@@ -229,8 +230,12 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
       metadata_cols <- c("RECORD_TITLE:", "MS$FOCUSED_ION: PRECURSOR_TYPE")
     }
   }
-
+  # loop through meta data (if metadata is null the sum will be zero)
   for(i in 1:sum(metadata$grpid==grpid)){
+    if(i==0){
+      # metadata is null and a single iteration has been performed (all that is required)
+      next
+    }
     metadatai <- metadata[metadata$grpid==grpid,][i,]
     if (adduct_split & sum(metadatai$grpid==grpid) > 0){
       # To keep the naming consisten we stick with the massbank naming convention

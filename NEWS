@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.11.1
+=========================
+* Bug fix for duplicate MSP spectra when not using metadata table
+
 CHANGES IN VERSION 1.11.0
 =========================
 * Bioconductor dev (automatic version bump)
