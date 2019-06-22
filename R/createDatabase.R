@@ -60,6 +60,10 @@ createDatabase <-  function(pa, xset, xsa=NULL, outDir='.', grpPeaklist=NA, dbNa
   ########################################################
   # Export the target data into sqlite database
   ########################################################
+  if(!is.null(xset)){
+    xset <- getxcmsSetObject(xset)
+  }
+
   if (is.na(dbName)){
     dbName <- paste('lcmsms_data', format(Sys.time(), "%Y-%m-%d-%I%M%S"), '.sqlite', sep="-")
   }

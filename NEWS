@@ -1,3 +1,9 @@
+CHANGES IN VERSION 1.11.1
+=========================
+* Bug fix for duplicate MSP spectra when not using metadata table
+* Added xcms3 to xcmsSet conversion for "create database" code
+* Fix for sirius combine annotations (incorrect column format)
+
 CHANGES IN VERSION 1.11.0
 =========================
 * Bioconductor dev (automatic version bump)

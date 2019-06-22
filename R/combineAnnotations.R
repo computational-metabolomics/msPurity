@@ -190,7 +190,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
                             FROM metab_compound AS mc
                             LEFT JOIN
                             sirius_csifingerid_results AS s
-                            ON s.InChIkey2D = mc.inchikey1 WHERE s.grpid= :grpid', params=list('grpid'=grpid))
+                            ON s.inchikey2D = mc.inchikey1 WHERE s.grpid= :grpid', params=list('grpid'=grpid))
     # can have multiple hits for each inchikey (e.g. multiple scans)
     sirius <- plyr::ddply(sirius, ~inchikey, getBestScore, 'sirius_score')
 
@@ -419,12 +419,13 @@ addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors){
   if (!is.na(sirius_csi_resultPth) && file.exists(sirius_csi_resultPth)){
     DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
 
-    # Fetch in chunks
-    inchikey2ds <- DBI::dbGetQuery(con, "SELECT DISTINCT InChIKey2D FROM sirius_csifingerid_results")
+    # Change column name of inchikey (if different)
+
+    inchikey2ds <- DBI::dbGetQuery(con, "SELECT DISTINCT inchikey2D FROM sirius_csifingerid_results")
 
 
 
-    pubchemDetails <- plyr::adply(inchikey2ds$InChIkey2D, 1,getPubchemDetails, silentRestErrors=silentRestErrors)
+    pubchemDetails <- plyr::adply(inchikey2ds$inchikey2D, 1,getPubchemDetails, silentRestErrors=silentRestErrors)
 
     # filter out pubchem details we already have. And add new
     # Shouldnt be required as we haven't added any pubchem yet
@@ -453,12 +454,12 @@ addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors){
     ##################
     # calculate Sirius score
     ##################
-    # Loop through sqlite database by UID.
-    uids <- DBI::dbGetQuery(con, "SELECT DISTINCT UID FROM sirius_csifingerid_results")
+    # Loop through sqlite database by grpid.
+    uids <- DBI::dbGetQuery(con, "SELECT DISTINCT grpid FROM sirius_csifingerid_results")
 
-    rs <- DBI::dbSendQuery(con, "SELECT rowid, Score FROM sirius_csifingerid_results WHERE UID = ?")
+    rs <- DBI::dbSendQuery(con, "SELECT rowid, Score FROM sirius_csifingerid_results WHERE grpid = ?")
 
-    bounded_score <- plyr::adply(uids$UID, 1, getBoundedSiriusScore, rs=rs)
+    bounded_score <- plyr::adply(uids$grpid, 1, getBoundedSiriusScore, rs=rs)
     DBI::dbClearResult(rs)
     # caculate minmax normalised value (save)
     # Add new column
