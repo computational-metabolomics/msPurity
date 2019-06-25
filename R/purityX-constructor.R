@@ -92,9 +92,11 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   #  the 'fillpeaks' function)
   peaklist <- peaklist[!is.na( peaklist[,'sn']),]
 
+  msLevelTracking <- get_mslevel_tracking(filepth)
+
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
-    lidx <- get_rt_idx(peak, xset, rtrawColumns)
+    lidx <- get_rt_idx(peak, xset, rtrawColumns, msLevelTracking)
 
     peaklist[i,]['minscan'] <- lidx$rtminidx
     peaklist[i,]['maxscan'] <- lidx$rtmaxidx
@@ -106,7 +108,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
-  msLevelTracking <- get_mslevel_tracking(filepth)
+
 
   sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
                       rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
