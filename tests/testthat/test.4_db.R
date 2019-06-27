@@ -41,7 +41,7 @@ test_that("checking create_database (old schema)", {
   ####################################
   px  <- purityX(xset, saveEIC = TRUE, sqlitePth = db_pth, plotP = TRUE, xgroups=c(1,2,3))
   eics <- DBI::dbGetQuery(con, 'SELECT * FROM eics')
-  expect_equal(nrow(eics), 34)
+  expect_equal(nrow(eics), 211)
 
 })
 
