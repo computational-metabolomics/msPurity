@@ -310,27 +310,29 @@ get_rt_idx <- function(peak, xset, rtrawColumns, msLevelTracking){
   corrected <- xset@rt$corrected[[sid]]
 
   if (rtrawColumns){
-    rtmed <- as.numeric(peak['rt_raw'])
-    rtmin <- as.numeric(peak['rtmin_raw'])
-    rtmax <- as.numeric(peak['rtmax_raw'])
-    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmed]
-    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmin]
-    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmax]
+    rtmedraw <- as.numeric(peak['rt_raw'])
+    rtminraw <- as.numeric(peak['rtmin_raw'])
+    rtmaxraw <- as.numeric(peak['rtmax_raw'])
+    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmedraw]
+    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtminraw]
+    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmaxraw]
 
 
   }else{
     rtmed <- as.numeric(peak['rt'])
     rtmin <- as.numeric(peak['rtmin'])
     rtmax <- as.numeric(peak['rtmax'])
-
-    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==raw[which(corrected==rtmed)]]
-    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==raw[which(corrected==rtmin)]]
-    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==raw[which(corrected==rtmax)]]
+    rtmedraw <- raw[which(corrected==rtmed)]
+    rtminraw <- raw[which(corrected==rtmin)]
+    rtmaxraw <- raw[which(corrected==rtmax)]
+    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmedraw]
+    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtminraw]
+    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmaxraw]
   }
 
   return(list('rtmedidx'=rtmedidx, 'rtminidx'=rtminidx, 'rtmaxidx'=rtmaxidx,
-              'rtraw'=raw[rtmedidx], 'rtminraw'=raw[rtminidx],
-              'rtmaxraw'=raw[rtmaxidx]))
+              'rtraw'=rtmedraw, 'rtminraw'=rtminraw,
+              'rtmaxraw'=rtmaxraw))
 
 }
 
@@ -380,12 +382,15 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     target <- grpi
 
   }
-
+  print(target)
   # Get the peaks from each scan of the region of interest (ROI)
   roi_scns <- scanpeaks[[target$sample]][target$minscan:target$maxscan]
 
   mzmax <- target$mz + offsets[1]
   mzmin <- target$mz - offsets[2]
+
+  print(c(mzmax, mzmin))
+  print(head(roi_scns))
 
   #get purity for that region
   dfp <- plyr::ldply(roi_scns, pcalc,
@@ -401,7 +406,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
                      im=im)
 
   colnames(dfp) <- c("purity", "pknm")
-
+  print(head(dfp))
   scan <- seq(target$minscan, target$maxscan)
   dfp <- cbind(dfp, scan)
 
@@ -512,7 +517,13 @@ calculateFWHM <- function(df){
 }
 
 getEic <- function(roi_scn, target){
-  roi_scn <- data.frame(roi_scn)
+  if(is.null(roi_scn)){
+    return(0)
+  }else if(nrow(roi_scn)==0){
+    return(0)
+  }else{
+    roi_scn <- data.frame(roi_scn)
+  }
 
   sub <- roi_scn[(roi_scn[,1]>=target$mzmin) & (roi_scn[,1]<=target$mzmax),]
 

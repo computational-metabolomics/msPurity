@@ -38,8 +38,12 @@
 pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
                   iwNormFun=NULL, ilim=0, targetMinMZ=NA, targetMaxMZ=NA,
                   isotopes=FALSE, im=NULL){
-
-  if (is.na(mztarget)){
+  if(is.null(peaks)){
+    return(c(NA, NA))
+  }else if(nrow(peaks)==0){
+    return(c(NA, NA))
+  }
+  if(is.na(mztarget)){
     return(c(NA, NA))
   }
 
@@ -164,8 +168,9 @@ pcalc <- function(peaks, mzmin, mzmax, mztarget, ppm=NA, iwNorm=FALSE,
 }
 
 cleanUp <- function(mtch, mztarget){
-
-  if(is.vector(mtch)){
+  if(is.null(mtch)){
+    mtch <- c(NA, NA)
+  }else if(is.vector(mtch)){
     mtch <- unlist(mtch)
   }else if(nrow(mtch)>1){
     # multiple mz's in the same region of ppm tolerance.

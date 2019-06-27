@@ -4,7 +4,7 @@ msPurity: Package to assess precursor ion purity and perform spectral matching
 
 **Version:**
 
-1.11.2 (master github)
+1.11.3 (master github)
 1.11.0 (development bioconductor)
 1.10.0 (stable bioconductor)
 
