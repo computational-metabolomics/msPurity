@@ -11,11 +11,13 @@ test_that("checking combine annotations based functions", {
   sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
 
   td <- tempdir()
-  sm_resultPthCopy <- file.path(td, 'sm_result_tmp5.sqlite')
+  sm_resultPthCopy <- file.path(td, 'sm_result_tmp13.sqlite')
   file.copy(sm_resultPth, sm_resultPthCopy)
 
   sqlitePth <- sm_resultPthCopy
-  combined <- combineAnnotations(sqlitePth, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth)
+
+  combined <- combineAnnotations(sqlitePth, metfrag_resultPth, sirius_csi_resultPth, probmetab_resultPth, kegg_check = FALSE)
+
 
   #write.table(combined ,'inst/extdata/tests/external_annotations/combined.tsv', sep='\t', row.names = FALSE, col.names = TRUE )
 

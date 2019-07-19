@@ -4,33 +4,44 @@
 #'  Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID and probmetab
 #'  based on weighted scores for each technique aligning each annotation by inchikey and XCMS grouped feature.
 #'
+#'  Advised that the tool is run with a local compound database that includes (example found here xx)
+#'
+#'  Can be run without a local compound database but will take a very long time to finish.
+#'
 #' @param sm_resultPth character;
 #' @param metfrag_resultPth character;
 #' @param sirius_csi_resultPth character;
 #' @param probmetab_resultPth character;
 #' @param weights list;
 #' @param silentRestErrors boolean;
+#' @param localCompoundDbPth character;
 #' @param outPth character;
 #'
 #' @examples
-#' metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
+#' metfrag_resultPth <- system.file("extdata", "tests", "external_annotations", "metfrag.tsv", package="msPurity")
 #' # run the standard spectral matching workflow to get the sm_resultPth
 #' sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
-#'
-#' combined <- combineAnnotations(sm_resultPth, metfrag_resultPth, outPth=file.path(tempdir(), 'combined.sqlite'))
+#' localCompoundDbPth <- system.file("extdata", "tests", "db", "compounds_18July2019_0319.sqlite", package="msPurity")
+#' combined <- combineAnnotations(sm_resultPth,
+#'                                metfrag_resultPth,
+#'                                outPth=file.path(tempdir(), 'combined.sqlite'),
+#'                                localCompoundDbPth=localCompoundDbPth)
 #' @return purityA object with slots for fragmentation-XCMS links
 #' @export
 combineAnnotations <- function(sm_resultPth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
                                probmetab_resultPth=NA,
-                               weights=list('sm'=0.4,
-                                            'metfrag'=0.25,
-                                            'sirius_csifingerid'= 0.25,
-                                            'probmetab'=0.1
+                               weights=list('sm'=0.2,
+                                            'metfrag'=0.15,
+                                            'sirius_csifingerid'=0.15,
+                                            'cfm'=0.15,
+                                            'probmetab'=0.05,
+                                            'biosim'=0.3
                                ),
                                outPth=NA,
-                               silentRestErrors=FALSE
+                               silentRestErrors=FALSE,
+                               localCompoundDbPth=NULL
                                ){
 
   if(!is.na(outPth)){
@@ -43,15 +54,21 @@ combineAnnotations <- function(sm_resultPth,
   # sm, metfrag, sirius, probmetab, lipidsearch, mzcloud, bs
   con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
 
+  if (!is.null(localCompoundDbPth)){
+    con_comp <- DBI::dbConnect(RSQLite::SQLite(), localCompoundDbPth)
+  }else{
+    con_comp <- NULL
+  }
+
   #############################################
   # Add all the annotation results
   #############################################
   message('Add Metfrag results')
   addMetFragResults(metfrag_resultPth, con)
   message('Add Sirius CSI:FingerID results')
-  addSiriusResults(sirius_csi_resultPth, con, silentRestErrors=silentRestErrors)
+  addSiriusResults(sirius_csi_resultPth, con, silentRestErrors=silentRestErrors, con_comp=con_comp)
   message('Add Probmetab results')
-  addProbmetabResults(probmetab_resultPth, con, silentRestErrors=silentRestErrors)
+  addProbmetabResults(probmetab_resultPth, con, silentRestErrors=silentRestErrors, con_comp=con_comp)
   # Add lipidsearch result TODO
   # Add mzcloud result TODO
 
@@ -62,44 +79,42 @@ combineAnnotations <- function(sm_resultPth,
   # We now have inchikeys for all the annotations. For each inchikey we get all the associated
   # information from KEGG, Pubchem, LipidMaps and some additional IDS
   message('Update the compound table')
-  # Check new metab_compound entries - and get relevant information from
   metab_compounds <- RSQLite::dbGetQuery(con, 'SELECT * FROM metab_compound')
-
   metab_compounds <- updateColName(metab_compounds, 'inchikey_id', 'inchikey')
 
-  # pubchem
-  metab_compounds_m <- addPubchemToMetabCompound(metab_compounds, con, silentRestErrors=silentRestErrors)
+  if(is.null(con_comp)){
 
-  # KEGG
-  metab_compounds_m <- addKeggToMetabCompound(metab_compounds_m, con, silentRestErrors=silentRestErrors)
+    # pubchem
+    metab_compounds_m <- addPubchemToMetabCompound(metab_compounds, con, silentRestErrors=silentRestErrors)
 
+    # KEGG
+    metab_compounds_m <- addKeggToMetabCompound(metab_compounds_m, con, silentRestErrors=silentRestErrors)
+    inchisplit <- splitInchis(metab_compounds_m$inchikey)
+    # add new database with all the new information
+    metab_compounds_m <- cbind(metab_compounds_m, inchisplit)
 
+  }else{
+    # Replace the metab
+    inchi_str <- paste("'", unique(metab_compounds$inchikey), "'", collapse=",", sep='')
+    metab_compounds_m <- RSQLite::dbGetQuery(con_comp, sprintf('SELECT * FROM metab_compound WHERE inchikey IN (%s)', inchi_str))
 
-  # LipidMaps
-  # Takes too long
-  #lipidmaps_ids <- webchem::cts_convert(metab_compounds_m$inchikey, from = 'inchikey', to='lipidmaps')
+    # Add anything that is not found (will be a few cases where pubchem won't have inchikey)
+    missing_comps <- metab_compounds[!metab_compounds$inchikey %in% metab_compounds_m$inchikey,]
 
-  # HMDB
-  # Takes too long
-  #hmdb_ids <- webchem::cts_convert(metab_compounds_m$inchikey, from = 'inchikey', to='Human Metabolome Database')
+    missing_comps <- cbind(missing_comps, splitInchis(missing_comps$inchikey))
+    colnames(missing_comps)[colnames(missing_comps)=='pubchem_id'] = 'pubchem_cids'
+    # Remove rows we won't be using from missing_comps
+    keep_cols = c('inchikey', 'inchikey1', 'inchikey2', 'inchikey3', 'pubchem_cids',
+                  'exact_mass', 'molecular_formula', 'molecular_weight', 'name')
+    missing_comps <- missing_comps[,keep_cols]
+    findx <- sapply(missing_comps, is.factor)
+    missing_comps[findx] <- lapply(missing_comps[findx], as.character)
 
-  # PAN pesticide database
-  # Takes too long
-  #pan_pesticide <- webchem::pan_query(metab_compounds_m$name  , match='best')
+    metab_compounds_m <- dplyr::bind_rows(metab_compounds_m, missing_comps)
 
-  # Alan Wood's Compendium of Pesticide Common Names
-  # Takes too long
-  #aw_pesticide <- webchem::aw_query(metab_compounds_m$name , type='commonname')
+  }
 
-  #message('Create biological similarity')
-  # Calculate compound "biological" similarity score TODO
-  #metab_compounds_m$biological_similarity <- 0
-  #metab_compounds_m$biological_similarity_top_match <- NA
-
-  # addd New database with all the new information
-  inchisplit <- data.frame(stringr::str_split_fixed(metab_compounds_m$inchikey, '-', 3))
-  colnames(inchisplit) <- c('inchikey1', 'inchikey2', 'inchikey3')
-  metab_compounds_m <- cbind(metab_compounds_m, inchisplit)
+  # remove the old table and add the modified table
   DBI::dbExecute(con, 'DROP TABLE metab_compound')
   DBI::dbWriteTable(conn=con, name='metab_compound', value=metab_compounds_m, row.names=FALSE)
 
@@ -107,13 +122,19 @@ combineAnnotations <- function(sm_resultPth,
   # Build up the table by looping through xcms group
   message('Combine annotations')
   c_peak_groups <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups')
-  combined_scores <- plyr::ddply(c_peak_groups, ~grpid,combineScoresGrp, weights=weights, con=con)
+  combined_scores <- plyr::ddply(c_peak_groups, ~grpid, combineScoresGrp, weights=weights, con=con)
 
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
 
   return(getAnnotationSummary(con))
 
 
+}
+
+splitInchis <- function(inchikeys){
+  inchisplit <- data.frame(stringr::str_split_fixed(inchikeys, '-', 3))
+  colnames(inchisplit) <- c('inchikey1', 'inchikey2', 'inchikey3')
+  return(inchisplit)
 }
 
 getAnnotationSummary <- function(con){
@@ -125,29 +146,18 @@ getAnnotationSummary <- function(con){
   }
   sql_stmt <- sprintf('
   SELECT
+    mc.*,
     cpg.grp_name,
     cpg.mz,
     cpg.rt,
     GROUP_CONCAT(DISTINCT(cast(spm.acquisitionNum  as INTEGER) )) AS fragmentation_acquistion_num,
     ROUND(AVG(spm.inPurity),3) AS mean_precursor_ion_purity,
-    mc.name,
-    mc.exact_mass,
-    mc.molecular_formula,
-    GROUP_CONCAT(DISTINCT(pc.cid)) AS pubchem_cids,
-    GROUP_CONCAT(DISTINCT(k.kegg_id)) AS kegg_ids,
-    mc.drug AS kegg_drug,
-    mc.brite1 AS kegg_brite1,
-    mc.brite2 AS kegg_brite2,
     l.%s,
     l.accession,
     ca.*
     FROM combined_annotations AS ca
       LEFT JOIN
         metab_compound AS mc ON ca.inchikey = mc.inchikey
-      LEFT JOIN
-        pubchem AS pc ON pc.inchikey = mc.inchikey
-      LEFT JOIN
-        kegg AS k ON k.inchikey = mc.inchikey
       LEFT JOIN
         l_s_peak_meta AS l ON l.%s = ca.sm_lpid
       LEFT JOIN
@@ -271,28 +281,31 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   score_list <- list(sirius, metfrag, sm, probmetab)
 
   # combine all
-  combined_df <- Reduce(function(d1, d2, d3, d4) merge(d1, d2, by = "inchikey", all = TRUE), score_list)
+  combined_df <- Reduce(function(...) merge(..., all=TRUE, by='inchikey'), score_list)
+
+  # Get biosim score (if available)
+  # todo
 
   combined_df <- combined_df[!is.na(combined_df$inchikey),]
   combined_df[is.na(combined_df)] <- 0
   combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'sm_wscore', 'probmetab_wscore')])
 
-
-  # add rank
+  # Order
   combined_df <- combined_df[order(combined_df$wscore, decreasing=TRUE),]
 
   if (nrow(combined_df)==0){
     return(NULL)
   }else{
 
-    combined_df$rank <- as.numeric(factor(rank(combined_df$wscore)))
+  # Add rank
+  combined_df$rank <- as.numeric(factor(rank(combined_df$wscore)))
   }
 
   return(combined_df)
 }
 
 
-updateCol<- function(df, old, new, type='bothna'){
+updateCol<- function(df, old, new){
 
   df[,old][!is.na(df[,new])] <- df[,new][!is.na(df[,new])]
 
@@ -398,23 +411,24 @@ addKeggToMetabCompound <- function(metab_compounds, con, silentRestErrors){
 
 }
 
-addMetFragResults <- function(metfrag_resultPth, con){
+addMetFragResults <- function(metfrag_resultPth, con, con_comp){
   # Add metfrag details
   if (!is.na(metfrag_resultPth) && file.exists(metfrag_resultPth)){
     DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=T)
-    #  any new inchikeys
+
     DBI::dbExecute(con,
-                   'INSERT INTO metab_compound (inchikey_id)
+                     'INSERT INTO metab_compound (inchikey_id)
                    SELECT DISTINCT m.InChIKey
                    FROM metfrag_results AS m
                    LEFT JOIN
                    metab_compound AS c ON m.InChIKey = c.inchikey_id
                    WHERE c.inchikey_id IS NULL')
-  }
 
   }
+}
 
-addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors){
+
+addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors, con_comp=NULL){
   # Add sirius details
   if (!is.na(sirius_csi_resultPth) && file.exists(sirius_csi_resultPth)){
     DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
@@ -424,30 +438,29 @@ addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors){
     inchikey2ds <- DBI::dbGetQuery(con, "SELECT DISTINCT inchikey2D FROM sirius_csifingerid_results")
 
 
+    if (is.null(con_comp)){
+      compDetails <- plyr::adply(inchikey2ds$inchikey2D, 1,getPubchemDetails, silentRestErrors=silentRestErrors)
+    }else{
+      compDetails <- plyr::adply(inchikey2ds$inchikey2D, 1,getLocalCompoundDetails,
+                                 comp_con=comp_con,
+                                 inchiCol='inchikey1')
+    }
 
-    pubchemDetails <- plyr::adply(inchikey2ds$inchikey2D, 1,getPubchemDetails, silentRestErrors=silentRestErrors)
-
-    # filter out pubchem details we already have. And add new
-    # Shouldnt be required as we haven't added any pubchem yet
-    # rs <- RSQLite::dbSendQuery(con, sprintf('SELECT * FROM pubchem WHERE "cid" IN (%s)', paste(pubchemDetails$cid, collapse=',')))
-    # matching_cid <- DBI::dbFetch(rs)
-    # DBI::dbClearResult(rs)
-    # pubchemDetails[pubchemDetails$cid %in% matching_cid$cid,]
-    #custom_dbWriteTable(name_pk = 'cid', fks=NA,
-    #                    table_name = 'pubchem', df=pubchemDetails, con=con)
-    inchi_str <- paste("'", unique(pubchemDetails$inchikey), "'", collapse=",", sep='')
+    inchi_str <- paste("'", unique(compDetails$inchikey), "'", collapse=",", sep='')
     # filter out pubchem details we already have.
     rs <- RSQLite::dbSendQuery(con, sprintf('SELECT inchikey_id FROM metab_compound WHERE "inchikey_id" IN (%s)', inchi_str))
     matching_inchi <- DBI::dbFetch(rs)
     DBI::dbClearResult(rs)
-    new_pubchemDetails <- pubchemDetails[!pubchemDetails$inchikey %in% matching_inchi$inchikey_id,]
+    new_compDetails <- compDetails[!compDetails$inchikey %in% matching_inchi$inchikey_id,]
 
-    new_pubchemDetails = new_pubchemDetails[!duplicated(new_pubchemDetails$inchikey),]
+    new_compDetails = new_compDetails[!duplicated(new_compDetails$inchikey),]
 
-    if (nrow(new_pubchemDetails)>0){
-      new_inchi_str <- paste("('", unique(new_pubchemDetails$inchikey), "')", collapse=",", sep='')
+    if (nrow(new_compDetails)>0){
+
+      # Add new full inchikeys to metab_compound (full details can be added later)
+      new_inchi_str <- paste("('", unique(new_compDetails$inchikey), "')", collapse=",", sep='')
       insert_stmt <- sprintf('INSERT INTO metab_compound (inchikey_id) VALUES %s', new_inchi_str)
-      # Add new full inchikeys to metab_compound
+
       rs <- DBI::dbExecute(con, insert_stmt)
 
     }
@@ -473,6 +486,9 @@ addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors){
   }
 }
 
+
+
+
 getBoundedSiriusScore <- function(x, rs){
   DBI::dbBind(rs, unique(x))
   scores <- DBI::dbFetch(rs)
@@ -491,7 +507,7 @@ negMinMax <- function(x){
   return(abs(xn-1))
 
 }
-addProbmetabResults <- function(probmetab_resultPth, con, silentRestErrors){
+addProbmetabResults <- function(probmetab_resultPth, con, silentRestErrors, con_comp=NULL){
   if (!is.na(probmetab_resultPth) && file.exists(probmetab_resultPth)){
     addProbmetab(probmetab_resultPth, con)
 
@@ -501,27 +517,28 @@ addProbmetabResults <- function(probmetab_resultPth, con, silentRestErrors){
 
     # Should keep top level of Brite (e.g. )
     #kegg_details <- plyr::adply(kegg_cids, 1, getKeggDetail)
-
-    inchikey_col <- plyr::adply(kegg_cids, 1, getInchiFromKeggCid, silentRestErrors=silentRestErrors)
+    if (is.null(con_comp)){
+      compDetails <- plyr::adply(kegg_cids, 1, getInchiFromKeggCid, silentRestErrors=silentRestErrors)
+    }else{
+      kegg_cid_str <- paste("'", unique(kegg_cids), "'", collapse=",", sep='')
+      compDetails = DBI::dbGetQuery(comp_con, sprintf("SELECT kegg_cid, inchikey FROM kegg WHERE kegg_cid IN (%s)", kegg_cid_str))
+    }
 
     #kegg_alldetails <- data.frame(merge(kegg_details, inchikey_col[,-1]))
-    inchi_str <- paste("'", inchikey_col$inchikey, "'",collapse = ',', sep='')
+    inchi_str <- paste("'", compDetails$inchikey, "'",collapse = ',', sep='')
     sql_stmt <- sprintf('SELECT inchikey_id FROM metab_compound WHERE "inchikey_id" IN (%s)', inchi_str)
 
     matching_inchi <- RSQLite::dbGetQuery(con, sql_stmt)
 
-    new_inchi <- inchikey_col[!inchikey_col$inchikey %in% matching_inchi$inchikey_id,]
+    new_compDetails <- compDetails[!compDetails$inchikey %in% matching_inchi$inchikey_id,]
 
-    if (nrow(new_inchi)>0){
-      new_inchi_str <- paste("('", unique(new_inchi$inchikey), "')", collapse=",", sep='')
+    if (nrow(new_compDetails)>0){
+      new_inchi_str <- paste("('", unique(new_compDetails$inchikey), "')", collapse=",", sep='')
       insert_stmt <- sprintf('INSERT INTO metab_compound (inchikey_id) VALUES %s', new_inchi_str)
-      # Add new full inchikeys to metab_compound
+
       DBI::dbExecute(con, insert_stmt)
 
     }
-
-    # need to add "unknown" compounds
-
 
   }
 
@@ -583,6 +600,7 @@ getKeggDetail <-  function(kegg_id){
 
 
 }
+
 
 getInchiFromKeggCid <- function(kegg_cid, silentRestErrors){
   # Get KEGG details
@@ -732,6 +750,13 @@ getPubchemDetails <- function(inchikey, silentRestErrors){
 
   return(details)
 }
+
+
+getlocalCompoundDetails <- function(inchikey, comp_con, inchiCol='inchikey1'){
+  compounds = DBI::dbGetQuery(comp_con, paste0('SELECT * FROM metab_compounds WHERE ', inchiCol, " = ", inchikey))
+  return(compounds)
+}
+
 
 
 getPubchemDetailsExtended <- function(inchikey, silentRestErrors){
