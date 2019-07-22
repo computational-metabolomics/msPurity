@@ -441,8 +441,7 @@ addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors, con_co
     if (is.null(con_comp)){
       compDetails <- plyr::adply(inchikey2ds$inchikey2D, 1,getPubchemDetails, silentRestErrors=silentRestErrors)
     }else{
-      compDetails <- plyr::adply(inchikey2ds$inchikey2D, 1,getLocalCompoundDetails,
-                                 comp_con=comp_con,
+      compDetails <- getLocalCompoundDetails(inchikey2ds$inchikey2D,con_comp=con_comp,
                                  inchiCol='inchikey1')
     }
 
@@ -521,7 +520,9 @@ addProbmetabResults <- function(probmetab_resultPth, con, silentRestErrors, con_
       compDetails <- plyr::adply(kegg_cids, 1, getInchiFromKeggCid, silentRestErrors=silentRestErrors)
     }else{
       kegg_cid_str <- paste("'", unique(kegg_cids), "'", collapse=",", sep='')
-      compDetails = DBI::dbGetQuery(comp_con, sprintf("SELECT kegg_cid, inchikey FROM kegg WHERE kegg_cid IN (%s)", kegg_cid_str))
+      compDetails = DBI::dbGetQuery(con_comp, sprintf("SELECT kegg_cid AS kegg_id, inchikey FROM kegg WHERE kegg_cid IN (%s)", kegg_cid_str))
+      DBI::dbWriteTable(con, name='kegg', value=compDetails, row.names=FALSE)
+
     }
 
     #kegg_alldetails <- data.frame(merge(kegg_details, inchikey_col[,-1]))
@@ -752,8 +753,10 @@ getPubchemDetails <- function(inchikey, silentRestErrors){
 }
 
 
-getlocalCompoundDetails <- function(inchikey, comp_con, inchiCol='inchikey1'){
-  compounds = DBI::dbGetQuery(comp_con, paste0('SELECT * FROM metab_compounds WHERE ', inchiCol, " = ", inchikey))
+getLocalCompoundDetails <- function(inchikey, con_comp, inchiCol='inchikey1'){
+  inchi_str <- paste("('", unique(inchikey), "')", collapse=",", sep='')
+
+  compounds = DBI::dbGetQuery(con_comp, sprintf('SELECT * FROM metab_compound WHERE %s IN (%s)', inchiCol, inchi_str))
   return(compounds)
 }
 
