@@ -41,8 +41,7 @@ Imports:
     DBI,
     RSQLite,
     uuid,
-    jsonlite,
-    KEGGREST
+    jsonlite
 Suggests:
     testthat,
     xcms,
