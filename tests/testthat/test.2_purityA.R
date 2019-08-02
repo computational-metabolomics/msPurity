@@ -270,6 +270,7 @@ test_that("checking createMSP based functions", {
 
   tmp_dir <- tempdir()
 
+
   ################################
   # Check all method
   ################################
@@ -285,7 +286,8 @@ test_that("checking createMSP based functions", {
   # Check max method
   ################################
   max_msp_new_pth <- file.path(tmp_dir,'max.msp')
-  createMSP(pa, msp_file = max_msp_new_pth, metadata = metadata, method = "max", xcms_groupids = c(12, 27))
+  createMSP(pa, msp_file = max_msp_new_pth, metadata = metadata, method = "max",
+            xcms_groupids = c(12, 27), filter=FALSE)
 
   max_msp_new <- get_msp_str(max_msp_new_pth)
   max_msp_old <- get_msp_str(system.file("extdata", "tests","msp", "max.msp", package="msPurity"))
