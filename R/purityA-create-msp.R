@@ -53,12 +53,12 @@
 setMethod(f="createMSP", signature="purityA",
           definition = function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,
                                 xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE,
-                                msp_schema='massbank', intensity_ra='intensity_ra'
-                                ){
+                                msp_schema='massbank', intensity_ra='intensity_ra', include_adducts=''
+          ){
 
             mspurity_to_msp(pa, msp_file_pth, metadata, metadata_cols,
                             xcms_groupids, method, adduct_split, filter, msp_schema,
-                            intensity_ra)
+                            intensity_ra, include_adducts)
 
           }
 )
@@ -66,7 +66,7 @@ setMethod(f="createMSP", signature="purityA",
 
 mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,
                              xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE,
-                             msp_schema='massbank', intensity_ra='intensity_ra'){
+                             msp_schema='massbank', intensity_ra='intensity_ra', include_adducts=''){
 
   if (!is.null(metadata) && !'grpid' %in% colnames(metadata)){
     metadata$grpid <- 1:nrow(metadata)
@@ -126,7 +126,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
           if (nrow(spectrum)>0){
             spectrum <- add_mzi_cols(spectrum)
             write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,
-                      metadata_cols, of, method, adduct_split, msp_schema, intensity_ra)
+                      metadata_cols, of, method, adduct_split, msp_schema, intensity_ra, include_adducts)
           }
 
 
@@ -146,14 +146,13 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         }
         specmax <- spec[[idx]]
 
-        if ((filter) && ('pass_flag' %in% colnames(specmax))){
+        if ((filter) & ('pass_flag' %in% colnames(specmax))){
           specmax <- specmax[specmax[,'pass_flag']==1,]
         }
         specmax<- add_mzi_cols(specmax)
 
         write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, specmax, metadata, metadata_cols, of,
-                    method, adduct_split, msp_schema, intensity_ra)
-
+                  method, adduct_split, msp_schema, intensity_ra, include_adducts)
 
       }else if (method=="av_inter"){
 
@@ -170,7 +169,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
         if (!is.null(av_inter) && nrow(av_inter)>0){
           write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_inter, metadata, metadata_cols, of, method,
-                    adduct_split, msp_schema, intensity_ra)
+                    adduct_split, msp_schema, intensity_ra, include_adducts)
         }
 
 
@@ -194,7 +193,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
           if (!is.null(av_intra_j) && nrow(av_intra_j)>0){
             write.msp(grpd$mz[1], grpd$rt[1], grpid, fileid, av_intra_j, metadata, metadata_cols,
-                      of, method, adduct_split, msp_schema, intensity_ra)
+                      of, method, adduct_split, msp_schema, intensity_ra, include_adducts)
           }
 
         }
@@ -212,7 +211,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         if (!is.null(av_all) && nrow(av_all)>0){
 
           write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of,
-                    method, adduct_split, msp_schema, intensity_ra)
+                    method, adduct_split, msp_schema, intensity_ra, include_adducts)
         }
 
 
@@ -226,11 +225,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
 write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_cols, ofile, method,
-                      adduct_split, msp_schema, intensity_ra){
-
-  if(nrow(spectra)==0){
-    return('')
-  }
+                      adduct_split, msp_schema, intensity_ra, include_adducts){
 
   # Kee the same name for adduct type
   if (msp_schema=='mona'){
@@ -252,38 +247,49 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
     }
     metadatai <- metadata[metadata$grpid==grpid,][i,]
 
+    print(metadatai)
+
     if (precursor_type %in% names(metadatai) && sum(metadatai$grpid==grpid) > 0){
       # extract the text, expecting to be in CAMERA format, e.g. "[M-H]- 88.016 [M-H-NH3]- 105.042"
       adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadatai[metadatai$grpid==grpid,precursor_type])
-      # get a vector of the adducts
 
-      adducts <- strsplit(adduct_text, ' ')[[1]]
+      # add the user provided adduct text
+      adduct_text <- paste(adduct_text, include_adducts, sep = ',')
 
-      if (identical(adducts, character(0))){
-        adducts <- ''
-      }
+    }else{
+      # otherwise just use the user provided text
+      adduct_text <- include_adducts
+    }
 
-      if (adduct_split){
-        # loop through the adducts creating an appropiate MSP for each
+    # split the text into a vecotr
+    adducts <- strsplit(adduct_text, ' ')[[1]]
 
-        for (i in 1:length(adducts)){
+    if (identical(adducts, character(0))){
+      adducts <- ''
+    }
 
-          adduct <- adducts[i]
+    # Remove duplicate adducts
+    adducts <- unique(adducts)
 
-          # Already created an output with an adduct if using default aduct
+
+    if (adduct_split){
+      # loop through the adducts creating an appropiate MSP for each
+      for (i in 1:length(adducts)){
+
+        adduct <- adducts[i]
+        print(adduct)
+
+        # Already created an output with an adduct if using default adduct
+        if (!is.null(metadatai)){
           metadatai[metadatai$grpid==grpid,precursor_type] <- adduct
-          write_msp_single(precmz, rtmed, grpid, fileid, adduct, spectra, metadatai, metadata_cols, ofile,
-                           method, msp_schema, intensity_ra)
         }
-
-      }else{
-        # Ignore adduct splitting
-        write_msp_single(precmz, rtmed, grpid, fileid, adduct_text, spectra, metadatai, metadata_cols, ofile,
+        write_msp_single(precmz, rtmed, grpid, fileid, adduct, spectra, metadatai, metadata_cols, ofile,
                          method, msp_schema, intensity_ra)
       }
+
     }else{
-      # No adduct information
-      write_msp_single(precmz, rtmed, grpid, fileid, '', spectra, metadatai, metadata_cols, ofile,
+      # Ignore adduct splitting
+      write_msp_single(precmz, rtmed, grpid, fileid, adduct_text, spectra, metadatai, metadata_cols, ofile,
                        method, msp_schema, intensity_ra)
     }
   }
@@ -313,13 +319,17 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, adduct, spectra, meta
     cat(paste0("NAME: ", name, line_end), file = ofile)
     cat(paste0("PRECURSORMZ: ", precmz , line_end), file = ofile)
     cat(paste0("RETENTIONTIME: ", rtmed, line_end), file = ofile)
+    if (is.null(metadata) && !adduct==''){
+      cat(paste0("PRECURSOR_TYPE: ", adduct, line_end), file = ofile)
+    }
   }else{
     cat(paste0("RECORD_TITLE: ", name, line_end), file = ofile)
     cat(paste0("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end), file = ofile)
     cat(paste0("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end), file = ofile)
+    if (is.null(metadata) && !adduct==''){
+      cat(paste0("MS$FOCUSED_ION: PRECURSOR_TYPE: ", adduct, line_end), file = ofile)
+    }
   }
-
-
 
 
   if (!is.null(metadata)){
