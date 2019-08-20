@@ -34,6 +34,7 @@
 #' @param msp_schema character; Either MassBank (Europe) or MoNA style of MSP file format to be used ('massbank' or 'mona')
 #' @param intensity_ra character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
 #'                             to the MSP file
+#' @param include_adducts character; Additional adducts to include as a string seperated by white a space (e.g. \[M+H\]+ \[M+Na\]+)
 #' @return Returns a MSP file with the selected spectra and metadata
 #' @examples
 #'
@@ -247,14 +248,16 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
     }
     metadatai <- metadata[metadata$grpid==grpid,][i,]
 
-    print(metadatai)
 
     if (precursor_type %in% names(metadatai) && sum(metadatai$grpid==grpid) > 0){
       # extract the text, expecting to be in CAMERA format, e.g. "[M-H]- 88.016 [M-H-NH3]- 105.042"
       adduct_text <- gsub('[[:space:]]+[[:digit:]]+\\.[[:digit:]]+[[:space:]]*', ' ', metadatai[metadatai$grpid==grpid,precursor_type])
 
       # add the user provided adduct text
-      adduct_text <- paste(adduct_text, include_adducts, sep = ',')
+      if(!include_adducts==''){
+        adduct_text <- paste(adduct_text, include_adducts, sep = ',')
+      }
+
 
     }else{
       # otherwise just use the user provided text
@@ -277,7 +280,6 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
       for (i in 1:length(adducts)){
 
         adduct <- adducts[i]
-        print(adduct)
 
         # Already created an output with an adduct if using default adduct
         if (!is.null(metadatai)){
