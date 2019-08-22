@@ -270,11 +270,12 @@ test_that("checking createMSP based functions", {
 
   tmp_dir <- tempdir()
 
+
   ################################
   # Check all method
   ################################
   all_msp_new_pth <- file.path(tmp_dir,'all.msp')
-  createMSP(pa, msp_file_pth = all_msp_new_pth)
+  createMSP(pa, msp_file = all_msp_new_pth, metadata = metadata, method = "all", xcms_groupids = c(12, 27))
 
   all_msp_new <- get_msp_str(all_msp_new_pth)
   all_msp_old <- get_msp_str(system.file("extdata", "tests", "msp", "all.msp", package="msPurity"))
@@ -285,8 +286,8 @@ test_that("checking createMSP based functions", {
   # Check max method
   ################################
   max_msp_new_pth <- file.path(tmp_dir,'max.msp')
-  createMSP(pa, msp_file_pth = max_msp_new_pth, metadata = metadata, method = "max", xcms_groupids = c(12, 27))
-  createMSP(pa, msp_file_pth = '~/test.msp', metadata = metadata, method = "max", xcms_groupids = c(12, 27))
+  createMSP(pa, msp_file = max_msp_new_pth, metadata = metadata, method = "max",
+            xcms_groupids = c(12, 27), filter=FALSE)
 
   max_msp_new <- get_msp_str(max_msp_new_pth)
   max_msp_old <- get_msp_str(system.file("extdata", "tests","msp", "max.msp", package="msPurity"))
@@ -297,7 +298,7 @@ test_that("checking createMSP based functions", {
   # Check av_inter method
   ################################
   av_inter_msp_new_pth <- file.path(tmp_dir,'av_inter.msp')
-  createMSP(pa, msp_file_pth = av_inter_msp_new_pth, metadata = metadata, method = "av_inter", xcms_groupids = c(12, 27))
+  createMSP(pa, msp_file = av_inter_msp_new_pth, metadata = metadata, method = "av_inter", xcms_groupids = c(12, 27))
 
   av_inter_msp_new <- get_msp_str(av_inter_msp_new_pth)
   av_inter_msp_old <- get_msp_str(system.file("extdata","tests","msp", "av_inter.msp", package="msPurity"))
@@ -308,8 +309,7 @@ test_that("checking createMSP based functions", {
   # Check av_intra method
   ################################
   av_intra_msp_new_pth <- file.path(tmp_dir,'av_intra.msp')
-  createMSP(pa, msp_file_pth = av_intra_msp_new_pth, metadata = metadata, method = "av_intra", xcms_groupids = c(12, 27))
-
+  createMSP(pa, msp_file = av_intra_msp_new_pth, metadata = metadata, method = "av_intra", xcms_groupids = c(12, 27))
 
   av_intra_msp_new <- get_msp_str(av_intra_msp_new_pth)
   av_intra_msp_old <- get_msp_str(system.file("extdata","tests","msp", "av_intra.msp", package="msPurity"))
@@ -319,14 +319,11 @@ test_that("checking createMSP based functions", {
   # Check av_all method
   ################################
   av_all_msp_new_pth <- file.path(tmp_dir,'av_all.msp')
-  createMSP(pa, msp_file_pth = av_all_msp_new_pth, metadata = metadata, method = "av_all", xcms_groupids = c(8, 12))
-  createMSP(pa, msp_file_pth = '~/test.msp', metadata = metadata, method = "av_all", xcms_groupids = c(8, 12))
+  createMSP(pa, msp_file = av_all_msp_new_pth, metadata = metadata, method = "av_all", xcms_groupids = c(8, 12))
 
   av_all_msp_new <- get_msp_str(av_all_msp_new_pth)
   av_all_msp_old <- get_msp_str(system.file("extdata", "tests","msp", "av_all.msp", package="msPurity"))
   expect_equal(av_all_msp_new, av_all_msp_old)
-
-
 
 
   ################################
@@ -337,11 +334,19 @@ test_that("checking createMSP based functions", {
   metadatad[3,4] <- 'possible other compound'
 
   av_all_msp_new_dupmeta_pth <- file.path(tmp_dir,'av_all_dupmeta.msp')
-  createMSP(pa, msp_file_pth = av_all_msp_new_dupmeta_pth, metadata = metadatad, method = "av_all", xcms_groupids = c(8, 12))
+  createMSP(pa, msp_file = av_all_msp_new_dupmeta_pth, metadata = metadatad, method = "av_all", xcms_groupids = c(8, 12))
 
   av_all_msp_dupmeta_new <- get_msp_str(av_all_msp_new_dupmeta_pth)
   av_all_msp_dupmeta_old <- get_msp_str(system.file("extdata", "tests","msp", "av_all_dupmeta.msp", package="msPurity"))
   expect_equal(av_all_msp_dupmeta_new, av_all_msp_dupmeta_old)
+
+
+  #createMSP(pa, msp_file = 'all.msp', metadata = metadata, method = "all", xcms_groupids = c(8, 12))
+  #createMSP(pa, msp_file = 'max.msp', metadata = metadata, method = "max", xcms_groupids = c(8, 12))
+  #createMSP(pa, msp_file = 'av_inter.msp', metadata = metadata, method = "av_inter", xcms_groupids = c(8, 12))
+  #createMSP(pa, msp_file = 'av_intra.msp', metadata = metadata, method = "av_intra", xcms_groupids = c(8, 12))
+  #createMSP(pa, msp_file = 'av_all.msp', metadata = metadata, method = "av_all", xcms_groupids = c(8, 12))
+
 
 
 })

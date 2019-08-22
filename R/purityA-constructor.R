@@ -68,6 +68,8 @@ NULL
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param mzRback character; backend to use for mzR parsing
+#' @param ppmInterp numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
+#'                           the precursor ion found in the neighbouring scans.
 #' @param cores numeric; Number of cores to use
 #'
 #' @return Returns a purityA object (pa) with the pa@@puritydf slot updated
@@ -124,7 +126,8 @@ purityA <- function(fileList,
                     ilim=0.05,
                     mzRback='pwiz',
                     isotopes=TRUE,
-                    im=NULL){
+                    im=NULL,
+                    ppmInterp=7){
 
   if((is.null(fileList)) || (all(fileList == "" ))){
     message("no file list")
@@ -161,7 +164,8 @@ purityA <- function(fileList,
                                   ilim = ilim,
                                   mzRback = mzRback,
                                   isotopes = isotopes,
-                                  im = im
+                                  im = im,
+                                  ppmInterp = ppmInterp
                                   ))
 
   if(pa@cores>1){
@@ -207,6 +211,8 @@ purityA <- function(fileList,
 #' @param mzRback character; Backend to use for mzR parsing
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
+#' @param ppmInterp numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
+#'                           the precursor ion found in the neighbouring scans.
 #' @return a dataframe of the purity score of the ms/ms spectra
 #'
 #' @examples
@@ -229,7 +235,8 @@ assessPuritySingle <- function(filepth,
                                ilim=0,
                                mzRback='pwiz',
                                isotopes=TRUE,
-                               im=NULL){
+                               im=NULL,
+                               ppmInterp=7){
   #=================================
   # Load in files and initial setup
   #=================================
@@ -341,7 +348,7 @@ assessPuritySingle <- function(filepth,
   interDF <- plyr::ddply(mrdfshrt, ~ seqNum, .parallel = pBool,
                                    get_interp_purity, # FUNCTION
                                    scan_peaks=scans,
-                                   ppm=7, # hard coded at the moment
+                                   ppm=ppmInterp,
                                    ms2=mrdf[mrdf$msLevel==2,]$seqNum,
                                    prec_scans=prec_scans,
                                    minoff=minoff,

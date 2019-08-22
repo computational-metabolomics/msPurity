@@ -7,7 +7,7 @@
 purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
   offsets = NA, plotP = FALSE, plotdir = NULL, interpol = "linear",
   iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz",
-  isotopes = TRUE, im = NULL)
+  isotopes = TRUE, im = NULL, ppmInterp = 7)
 }
 \arguments{
 \item{fileList}{vector; mzML file paths}
@@ -38,6 +38,9 @@ linear should be used for all standard cases, isotope removal is also not availa
 \item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
 \item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+
+\item{ppmInterp}{numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
+the precursor ion found in the neighbouring scans.}
 }
 \value{
 Returns a purityA object (pa) with the pa@puritydf slot updated
