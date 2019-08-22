@@ -382,15 +382,14 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
     target <- grpi
 
   }
-  print(target)
+
   # Get the peaks from each scan of the region of interest (ROI)
   roi_scns <- scanpeaks[[target$sample]][target$minscan:target$maxscan]
 
   mzmax <- target$mz + offsets[1]
   mzmin <- target$mz - offsets[2]
 
-  print(c(mzmax, mzmin))
-  print(head(roi_scns))
+
 
   #get purity for that region
   dfp <- plyr::ldply(roi_scns, pcalc,
@@ -406,7 +405,7 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
                      im=im)
 
   colnames(dfp) <- c("purity", "pknm")
-  print(head(dfp))
+
   scan <- seq(target$minscan, target$maxscan)
   dfp <- cbind(dfp, scan)
 
