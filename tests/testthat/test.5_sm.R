@@ -62,10 +62,11 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
   rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
   sm_out_pth <- file.path(td, rid)
 
-  result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
+  result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'),
+                             q_spectraTypes = 'av_all')
 
   expect_equal(result$xcmsMatchedResults$grpid, c(12,27))
-  expect_equal(result$xcmsMatchedResults$accession, c("CCMSLIB00000577898", "CE000616"))
+  expect_equal(result$xcmsMatchedResults$library_accession, c("CCMSLIB00000577898", "CE000616"))
   expect_equal(result$xcmsMatchedResults$inchikey, c("ONIBWKKTOPOVIA-UHFFFAOYSA-N", "AGPKZVBTJJNPAG-UHFFFAOYSA-N"))
 
   expect_equal(round(as.numeric(result$xcmsMatchedResults$dpc),3), c( 0.879, 0.941))
@@ -150,8 +151,8 @@ test_that("checking spectral matching functions (spectralMatching) library vs li
   expect_equal(matched$cdpc, c(1,1,1))
   expect_equal(matched$mcount, c(43,9,321))
   expect_equal(matched$allcount, c(43,9,321))
-  expect_equal(matched$accession, c("CCMSLIB00000001577", "CCMSLIB00000001666", "CCMSLIB00000004593"))
-  expect_equal(matched$name, c("Carmaphycin B", "CarmaphycinA_enone", "MaprotilineHCl"))
+  expect_equal(matched$library_accession, c("CCMSLIB00000001577", "CCMSLIB00000001666", "CCMSLIB00000004593"))
+  expect_equal(matched$library_entry_name, c("Carmaphycin B", "CarmaphycinA_enone", "MaprotilineHCl"))
   expect_equal(matched$qpid, c(1,2,3))
 
 
@@ -184,6 +185,7 @@ test_that("checking spectral matching functions (spectralMatching) query vs quer
                              cores=1,
                              updateDb = TRUE,
                              copyDb = TRUE,
+                             usePrecursors=TRUE,
                              outPth = sm_out_pth)
 
   matched <- result$matchedResults

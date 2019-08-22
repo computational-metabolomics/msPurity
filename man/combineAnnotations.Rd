@@ -4,37 +4,58 @@
 \alias{combineAnnotations}
 \title{Combine Annotations}
 \usage{
-combineAnnotations(sm_resultPth, metfrag_resultPth = NA,
-  sirius_csi_resultPth = NA, probmetab_resultPth = NA,
-  weights = list(sm = 0.4, metfrag = 0.25, sirius_csifingerid = 0.25,
-  probmetab = 0.1), outPth = NA, silentRestErrors = FALSE)
+combineAnnotations(sm_resultPth, localCompoundDbPth,
+  metfrag_resultPth = NA, sirius_csi_resultPth = NA,
+  probmetab_resultPth = NA, ms1_lookup_resultPth = NA,
+  ms1_lookup_dbSource = "hmdb", ms1_lookup_checkAdducts = FALSE,
+  ms1_lookup_keepAdducts = c("[M+H]+", "[M-H]-"), weights = list(sm =
+  0.3, metfrag = 0.2, sirius_csifingerid = 0.2, probmetab = 0, ms1_lookup =
+  0.05, biosim = 0.25), outPth = NA)
 }
 \arguments{
-\item{sm_resultPth}{character;}
+\item{sm_resultPth}{character; Path to the msPurity SQLite database used for spectral matching}
 
-\item{metfrag_resultPth}{character;}
+\item{localCompoundDbPth}{character; Path to local compound database with pubchem, hmdb, KEGG and metab_compound summary table (full database available on request - contact t.n.lawson@bham.ac.uk)}
 
-\item{sirius_csi_resultPth}{character;}
+\item{metfrag_resultPth}{character; Path to the tsv table of metfrag results}
 
-\item{probmetab_resultPth}{character;}
+\item{sirius_csi_resultPth}{character; Path to the tsv table of Sirius CSI:Finger ID results}
+
+\item{probmetab_resultPth}{character; Path to the tsv table of Probmetab results}
+
+\item{ms1_lookup_resultPth}{character; Path to generic tsv table of MS1 lookup results}
+
+\item{ms1_lookup_dbSource}{character; Source of the compound database used for ms1_lookup
+(currently only supports HMDB, KEGG or PubChem)}
+
+\item{ms1_lookup_checkAdducts}{boolean; Check if adducts match to those found in CAMERA (requires the database to have been created with CAMERA object)}
+
+\item{ms1_lookup_keepAdducts}{vecotr; Keep only adducts found from the MS1 lookup that are found in this vector}
 
 \item{weights}{list;}
 
 \item{outPth}{character;}
 
-\item{silentRestErrors}{boolean;}
+\item{localCompoundDbPth}{character;}
 }
 \value{
 purityA object with slots for fragmentation-XCMS links
 }
 \description{
-Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID and probmetab
- based on weighted scores for each technique aligning each annotation by inchikey and XCMS grouped feature.
+Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID, probmetab and any generic
+ MS1 lookup software (e.g. results from the BEAMS software)
+
+ The annotation results are then aligned by inchikey and XCMS grouped feature.
+
+ The tool has to be run with a local compound database (available on request - contact t.n.lawson@bham.ac.uk)
 }
 \examples{
-metfrag_resultPth <- system.file("extdata", "external_annotations", "metfrag.tsv", package="msPurity")
+metfrag_resultPth <- system.file("extdata", "tests", "external_annotations", "metfrag.tsv", package="msPurity")
 # run the standard spectral matching workflow to get the sm_resultPth
 sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
-
-combined <- combineAnnotations(sm_resultPth, metfrag_resultPth, outPth=file.path(tempdir(), 'combined.sqlite'))
+localCompoundDbPth <- system.file("extdata", "tests", "db", "compounds_18July2019_0319.sqlite", package="msPurity")
+combined <- combineAnnotations(sm_resultPth,
+                               metfrag_resultPth,
+                               outPth=file.path(tempdir(), 'combined.sqlite'),
+                               localCompoundDbPth=localCompoundDbPth)
 }

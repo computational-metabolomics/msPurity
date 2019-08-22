@@ -1,17 +1,24 @@
 #' @title Combine Annotations
 #'
 #' @description
-#'  Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID and probmetab
-#'  based on weighted scores for each technique aligning each annotation by inchikey and XCMS grouped feature.
+#'  Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID, probmetab and any generic
+#'  MS1 lookup software (e.g. results from the BEAMS software)
 #'
-#'  Advised that the tool is run with a local compound database that includes (example found here xx)
+#'  The annotation results are then aligned by inchikey and XCMS grouped feature.
 #'
-#'  Can be run without a local compound database but will take a very long time to finish.
+#'  The tool has to be run with a local compound database (available on request - contact t.n.lawson@@bham.ac.uk)
 #'
-#' @param sm_resultPth character;
-#' @param metfrag_resultPth character;
-#' @param sirius_csi_resultPth character;
-#' @param probmetab_resultPth character;
+#'
+#' @param sm_resultPth character; Path to the msPurity SQLite database used for spectral matching
+#' @param metfrag_resultPth character; Path to the tsv table of metfrag results
+#' @param sirius_csi_resultPth character; Path to the tsv table of Sirius CSI:Finger ID results
+#' @param probmetab_resultPth character; Path to the tsv table of Probmetab results
+#' @param localCompoundDbPth character; Path to local compound database with pubchem, hmdb, KEGG and metab_compound summary table (full database available on request - contact t.n.lawson@@bham.ac.uk)
+#' @param ms1_lookup_resultPth character; Path to generic tsv table of MS1 lookup results
+#' @param ms1_lookup_dbSource character; Source of the compound database used for ms1_lookup
+#'                            (currently only supports HMDB, KEGG or PubChem)
+#' @param ms1_lookup_checkAdducts boolean; Check if adducts match to those found in CAMERA (requires the database to have been created with CAMERA object)
+#' @param ms1_lookup_keepAdducts vecotr; Keep only adducts found from the MS1 lookup that are found in this vector
 #' @param weights list;
 #' @param localCompoundDbPth character;
 #' @param outPth character;
@@ -32,12 +39,16 @@ combineAnnotations <- function(sm_resultPth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
                                probmetab_resultPth=NA,
-                               weights=list('sm'=0.2,
-                                            'metfrag'=0.15,
-                                            'sirius_csifingerid'=0.15,
-                                            'cfm'=0.15,
-                                            'probmetab'=0.05,
-                                            'biosim'=0.3
+                               ms1_lookup_resultPth=NA,
+                               ms1_lookup_dbSource='hmdb',
+                               ms1_lookup_checkAdducts=FALSE,
+                               ms1_lookup_keepAdducts=c('[M+H]+', '[M-H]-'),
+                               weights=list('sm'=0.3,
+                                            'metfrag'=0.2,
+                                            'sirius_csifingerid'=0.2,
+                                            'probmetab'=0,
+                                            'ms1_lookup'=0.05,
+                                            'biosim'=0.25
                                ),
                                outPth=NA
 
@@ -65,9 +76,13 @@ combineAnnotations <- function(sm_resultPth,
   message('Add Metfrag results')
   addMetFragResults(metfrag_resultPth, con)
   message('Add Sirius CSI:FingerID results')
-  addSiriusResults(sirius_csi_resultPth, con, silentRestErrors=silentRestErrors, con_comp=con_comp)
+  addSiriusResults(sirius_csi_resultPth, con, con_comp=con_comp)
   message('Add Probmetab results')
-  addProbmetabResults(probmetab_resultPth, con, silentRestErrors=silentRestErrors, con_comp=con_comp)
+  addProbmetabResults(probmetab_resultPth, con, con_comp=con_comp)
+  message('Add Generic MS1 Lookup results')
+  addGenericMS1LookupResults(ms1_lookup_resultPth, ms1_lookup_dbSource, ms1_lookup_checkAdducts,
+                             ms1_lookup_keepAdducts,
+                             con, con_comp=con_comp)
   # Add lipidsearch result TODO
   # Add mzcloud result TODO
 
@@ -132,7 +147,7 @@ addMetFragResults <- function(metfrag_resultPth, con, con_comp){
 
 
 
-addSiriusResults <- function(sirius_csi_resultPth, con, silentRestErrors, con_comp=NULL){
+addSiriusResults <- function(sirius_csi_resultPth, con, con_comp=NULL){
   # Add sirius details
   if (!is.na(sirius_csi_resultPth) && file.exists(sirius_csi_resultPth)){
     DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
@@ -188,14 +203,14 @@ negMinMax <- function(x){
 
 
 
-addProbmetabResults <- function(probmetab_resultPth, con, silentRestErrors, con_comp=NULL){
+addProbmetabResults <- function(probmetab_resultPth, con, con_comp){
   if (!is.na(probmetab_resultPth) && file.exists(probmetab_resultPth)){
     addProbmetab(probmetab_resultPth, con)
 
     # Fetch in chunks
     kegg_cids <- DBI::dbGetQuery(con, "SELECT DISTINCT mpc FROM probmetab_results")
 
-    kegg_cid_str <- vecToStringStmt(kegg_cids$mpc)
+    kegg_cid_str <- vecToStringInStmt(kegg_cids$mpc)
     compDetails = DBI::dbGetQuery(con_comp, sprintf("SELECT kegg_cid, inchikey FROM kegg WHERE kegg_cid IN (%s)", kegg_cid_str))
     DBI::dbWriteTable(con, name='kegg', value=compDetails, row.names=FALSE)
 
@@ -253,6 +268,90 @@ addProbmetab <- function(pth, con){
   }
 }
 
+adductCheckMS1Lookup <- function(row, keepAdducts, cameraAdducts){
+
+  if ((row$adduct %in% keepAdducts) || (row$adduct %in% cameraAdducts[cameraAdducts$grpid==row$grpid,]$adduct)){
+    return(row)
+  }else{
+    return(NULL)
+  }
+
+}
+
+addGenericMS1LookupResults <- function(ms1_lookup_resultPth, ms1_lookup_dbSource, ms1_lookup_checkAdducts,
+                                       ms1_lookup_keepAdducts, con, con_comp){
+  if (!is.na(ms1_lookup_resultPth) && file.exists(ms1_lookup_resultPth)){
+    # Read in table
+
+    ms1_lookup_result <- utils::read.table(ms1_lookup_resultPth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "")
+
+    if (!'grpid' %in% ms1_lookup_result){
+      nmap <- DBI::dbGetQuery(con, 'SELECT grpid, grp_name FROM c_peak_groups')
+      ms1_lookup_result <- merge(ms1_lookup_result, nmap, by.x='name', by.y='grp_name')
+    }
+
+    ms1_lookup_result$ms1_lookup_id <- 1:nrow(ms1_lookup_result)
+
+    # Get the relevant adduct details from the CAMERA results (if we want to check if the adducts used
+    # for the MS1 lookup are compatible)
+    if(ms1_lookup_checkAdducts){
+      cameraAdducts <- DBI::dbGetQuery(con, 'SELECT aa.grpid, ar.name FROM adduct_annotations
+                                       AS aa LEFT JOIN adduct_rules AS ar ON aa.rule_id=ar.rule_id')
+      # for each row of ms1_lookup_results, check if adduct is present adductKeeps,
+      # if it is then keep, if not check if adduct present in cameraAdducts, if not the discard
+    }else{
+      cameraAdducts <- data.frame(matrix(ncol=2, nrow=0))
+      colnames(cameraAdducts) <- c('grpid', 'adduct')
+    }
+
+    # Check if the adducts are from the "safe" list in keepAdducts, or if they match with camera adduct
+    # annotations
+    if (ms1_lookup_checkAdducts || (!is.null(ms1_lookup_keepAdducts) || !is.na(ms1_lookup_keepAdducts))){
+      ms1_lookup_resultFiltered <- plyr::ddply(ms1_lookup_result , ~ ms1_lookup_id, adductCheckMS1Lookup,
+                                               keepAdducts=ms1_lookup_keepAdducts, cameraAdducts=cameraAdducts)
+
+    }
+
+
+
+
+    # Get the compounds ids and relevant inchikeys
+    compound_ids <- unique(ms1_lookup_resultFiltered$compound_id)
+    compound_ids_str <- vecToStringInStmt(compound_ids)
+
+    if (ms1_lookup_dbSource=='hmdb'){
+      tableNm <- 'hmdb'
+      columnNm <- 'hmdb_id'
+    }else if (ms1_lookup_dbSource=='kegg'){
+      tableNm <- 'kegg'
+      columnNm <- 'kegg_cid'
+    }else if (ms1_lookup_dbSource=='pubchem'){
+      tableNm <- 'pubchem'
+      columnNm <- 'pubchem_cid'
+    }
+    # Search the compound database for inchikeys
+    compDetails = DBI::dbGetQuery(con_comp,
+                                  sprintf("SELECT inchikey, %s FROM %s WHERE %s IN (%s)", columnNm, tableNm, columnNm, compound_ids_str))
+    # save to database as reference
+    DBI::dbWriteTable(con, name=tableNm, value=compDetails, row.names=FALSE)
+
+    # update the results
+    ms1_lookup_resultFiltered <- merge(ms1_lookup_resultFiltered, compDetails, by.x='compound_id', by.y=columnNm)
+
+    # Default score of 1 given for all results
+    ms1_lookup_resultFiltered$ms1_lookup_score <- 1
+
+    # Add the filtered results to the table
+    DBI::dbWriteTable(con, name='ms1_lookup_results', value=ms1_lookup_resultFiltered, row.names=FALSE)
+
+    # Check if any of the same inchikeys have been added
+    new_compDetails <- insertNewInchikeys(con, con_comp, compDetails)
+
+  }
+
+
+}
+
 
 getAnnotationSummary <- function(con){
   meta_cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(l_s_peak_meta)')
@@ -261,12 +360,24 @@ getAnnotationSummary <- function(con){
   }else{
     pid_id <- 'id'
   }
+
+  cpg_cn <- DBI::dbGetQuery(con, 'PRAGMA table_info(c_peak_group)')
+
+  if ("adduct" %in% cpg_cn){
+    camera_adduct <- 'cpg.adduct AS camera_adducts,'
+  }else{
+    camera_adduct <- ''
+  }
+
   sql_stmt <- sprintf('
                       SELECT
                       cpg.grpid,
                       cpg.grp_name,
                       cpg.mz,
                       cpg.rt,
+                      %s,
+                      mc.inchikey,
+                      mc.inchi,
                       mc.inchikey,
                       mc.inchikey1,
                       mc.inchikey2,
@@ -276,8 +387,15 @@ getAnnotationSummary <- function(con){
                       mc.molecular_formula,
                       mc.pubchem_cids,
                       mc.kegg_cids,
-                      mc.brite,
-                      mc.kegg_drug,
+                      mc.kegg_brite,
+                      mc.kegg_drugs,
+                      mc.hmdb_ids,
+                      mc.hmdb_bio_custom_flag,
+                      mc.hmdb_drug_flag,
+                      mc.max_biosim_score,
+                      mc.max_biosim_count,
+                      mc.biosim_scores,
+                      mc.biosim_hmdb_ids,
                       GROUP_CONCAT(DISTINCT(cast(spm.acquisitionNum  as INTEGER) )) AS fragmentation_acquistion_num,
                       ROUND(AVG(spm.inPurity),3) AS mean_precursor_ion_purity,
                       l.accession,
@@ -289,8 +407,11 @@ getAnnotationSummary <- function(con){
                       ca.sm_wscore,
                       ca.probmetab_score,
                       ca.probmetab_wscore,
+                      ca.ms1_lookup_score,
+                      ca.ms1_lookup_wscore,
                       ca.wscore,
-                      ca.rank
+                      ca.rank,
+                      ca.adduct_overall
                       FROM combined_annotations AS ca
                       LEFT JOIN
                       metab_compound AS mc ON ca.inchikey = mc.inchikey
@@ -308,13 +429,17 @@ getAnnotationSummary <- function(con){
                       s_peak_meta AS spm ON spm.pid = cpXspm.pid
                       GROUP BY ca.grpid, ca.inchikey
                       ORDER BY ca.grpid, ca.rank
-                      ', pid_id)
+                      ', camera_adduct, pid_id)
 
 
 
   return(DBI::dbGetQuery(conn=con, sql_stmt))
 
 
+}
+
+combineRow <- function(row){
+  return(paste(unique(row), collapse = ','))
 }
 
 
@@ -324,14 +449,24 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   grpid <- unique(c_peak_group$grpid)
 
   if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
-    sirius <- DBI::dbGetQuery(con, 'SELECT
+    # check if adduct column present
+    sirius_cols <- DBI::dbGetQuery(con, 'PRAGMA table_info(sirius_csifingerid_results)')
+    if ('adduct' %in% sirius_cols){
+      adduct_colstr <- 's.adduct AS sirius_adduct'
+    }else{
+      adduct_colstr <- "'' AS sirius_adduct"
+    }
+
+    sirius <- DBI::dbGetQuery(con, sprintf('SELECT
                               s.rowid AS sirius_id,
                               s.bounded_score AS sirius_score,
+                              %s,
                               mc.inchikey
                               FROM metab_compound AS mc
                               LEFT JOIN
                               sirius_csifingerid_results AS s
-                              ON s.inchikey2D = mc.inchikey1 WHERE s.grpid= :grpid', params=list('grpid'=grpid))
+                              ON s.inchikey2D = mc.inchikey1 WHERE s.grpid= :grpid', adduct_colstr),
+                              params=list('grpid'=grpid))
     # can have multiple hits for each inchikey (e.g. multiple scans)
     sirius <- plyr::ddply(sirius, ~inchikey, getBestScore, 'sirius_score')
 
@@ -344,15 +479,23 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
 
   if(DBI::dbExistsTable(con, 'metfrag_results')){
+    metfrag_cols <- DBI::dbGetQuery(con, 'PRAGMA table_info(metfrag_results)')
+    if ('adduct' %in% metfrag_cols){
+      adduct_colstr <- 'm.adduct AS metfrag_adduct'
+    }else{
+      adduct_colstr <- "'' AS metrag_adduct"
+    }
+
     # get metfrag
-    metfrag <- DBI::dbGetQuery(con, 'SELECT
+    metfrag <- DBI::dbGetQuery(con, sprintf('SELECT
                                m.rowid as metfrag_id,
                                m.Score AS metfrag_score,
-                               mc.inchikey
+                               %s,
+                               mc.inchikey,
                                FROM metab_compound AS mc
                                LEFT JOIN
                                metfrag_results AS m
-                               ON m.InChIKey = mc.inchikey WHERE m.grpid=:grpid', params=list('grpid'=grpid))
+                               ON m.InChIKey = mc.inchikey WHERE m.grpid=:grpid'), params=list('grpid'=grpid))
     # can have multiple hits for each inchikey (e.g. multiple scans)
     metfrag <- plyr::ddply(metfrag, ~inchikey, getBestScore, 'metfrag_score')
 
@@ -372,6 +515,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   # get spectral matching
   sm <- DBI::dbGetQuery(con, sprintf('SELECT sm.lpid AS sm_lpid,
+                                     sm.library_adduct AS sm_adduct,
                                      sm.mid AS sm_mid,
                                      sm.dpc AS sm_score,
                                      mc.inchikey
@@ -406,20 +550,49 @@ combineScoresGrp <- function(c_peak_group, weights, con){
     probmetab <- data.frame(inchikey=NA, probmetab_score=NA, probmetab_wscore=NA)
   }
 
-  score_list <- list(sirius, metfrag, sm, probmetab)
+  if(DBI::dbExistsTable(con, 'ms1_lookup_results')){
+    ms1_lookup <- DBI::dbGetQuery(con, 'SELECT
+                                             m.ms1_lookup_id,
+                                             m.ms1_lookup_score,
+                                             m.adduct AS ms1_lookup_adduct,
+                                             mc.inchikey
+                                             FROM metab_compound AS mc
+                                             LEFT JOIN
+                                             ms1_lookup_results AS m
+                                             ON m.inchikey = mc.inchikey WHERE m.grpid=:grpid',
+                                             params=list('grpid'=grpid))
+
+    # can have multiple hits for each inchikey (e.g. multiple scans)
+    ms1_lookup <- plyr::ddply(ms1_lookup, ~inchikey, getBestScore, 'ms1_lookup_score')
+    ms1_lookup$ms1_lookup_wscore <- as.numeric(ms1_lookup$ms1_lookup_score)*weights$ms1_lookup
+  }else{
+    ms1_lookup <- data.frame(inchikey=NA, ms1_lookup_score=NA, ms1_lookup_wscore=NA)
+  }
+
+
+  score_list <- list(sirius, metfrag, sm, probmetab, ms1_lookup)
 
   # combine all
   combined_df <- Reduce(function(...) merge(..., all=TRUE, by='inchikey'), score_list)
 
   # Get biosim score (if available)
-  # todo
+  biosim_score <- DBI::dbGetQuery(con, 'SELECT inchikey, max_biosim_score FROM metab_compound')
+  combined_df <- merge(combined_df, biosim_score, by='inchikey')
+  combined_df$biosim_wscore <- combined_df$max_biosim_score * weights$biosim
 
   combined_df <- combined_df[!is.na(combined_df$inchikey),]
   combined_df[is.na(combined_df)] <- 0
-  combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'sm_wscore', 'probmetab_wscore')])
+  combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'sm_wscore', 'probmetab_wscore', 'probmetab_wscore',
+                                                'ms1_lookup_wscore', 'biosim_wscore')])
 
   # Order
   combined_df <- combined_df[order(combined_df$wscore, decreasing=TRUE),]
+
+  # in most cases the adduct will be the same but there is a chance a different naming was used
+  # or that there are adduct types that have give the same neutral mass
+  combined_df$adduct_overall <- apply(combined_df[,c('sirius_adduct', 'sm_adduct',
+                                                     'metfrag_adduct', 'ms1_lookup_adduct',
+                                                     'sm_adduct')], 1, combineRow)
 
   if (nrow(combined_df)==0){
     return(NULL)

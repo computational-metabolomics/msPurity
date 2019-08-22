@@ -9,7 +9,7 @@
 \S4method{createMSP}{purityA}(pa, msp_file_pth = NULL, metadata = NULL,
   metadata_cols = NULL, xcms_groupids = NULL, method = "all",
   adduct_split = TRUE, filter = TRUE, msp_schema = "massbank",
-  intensity_ra = "intensity_ra")
+  intensity_ra = "intensity_ra", include_adducts = "")
 }
 \arguments{
 \item{pa}{object;  purityA object}
