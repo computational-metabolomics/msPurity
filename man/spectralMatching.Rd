@@ -7,15 +7,18 @@
 spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
   q_ppmProd = 10, q_ppmPrec = 5, q_raThres = NA, q_pol = NA,
   q_instrumentTypes = NA, q_instruments = NA, q_sources = NA,
-  q_spectraTypes = "av_all", q_pids = NA, q_rtrange = c(NA, NA),
-  q_spectraFilter = TRUE, q_xcmsGroups = NA, q_accessions = NA,
-  l_purity = NA, l_ppmProd = 10, l_ppmPrec = 5, l_raThres = NA,
-  l_pol = "positive", l_instrumentTypes = NA, l_instruments = NA,
-  l_sources = NA, l_spectraTypes = NA, l_pids = NA,
-  l_rtrange = c(NA, NA), l_spectraFilter = FALSE, l_xcmsGroups = NA,
-  l_accessions = NA, usePrecursors = TRUE, raW = 0.5, mzW = 2,
-  rttol = NA, cores = 1, updateDb = FALSE, copyDb = FALSE,
-  outPth = "sm_result.sqlite")
+  q_spectraTypes = c("av_all", "inter"), q_pids = NA,
+  q_rtrange = c(NA, NA), q_spectraFilter = TRUE, q_xcmsGroups = NA,
+  q_accessions = NA, l_purity = NA, l_ppmProd = 10, l_ppmPrec = 5,
+  l_raThres = NA, l_pol = "positive", l_instrumentTypes = NA,
+  l_instruments = NA, l_sources = NA, l_spectraTypes = NA,
+  l_pids = NA, l_rtrange = c(NA, NA), l_spectraFilter = FALSE,
+  l_xcmsGroups = NA, l_accessions = NA, usePrecursors = TRUE,
+  raW = 0.5, mzW = 2, rttol = NA, q_dbType = "sqlite",
+  q_dbName = NA, q_dbHost = NA, q_dbUser = NA, q_dbPass = NA,
+  q_dbPort = NA, l_dbType = "sqlite", l_dbName = NA, l_dbHost = NA,
+  l_dbUser = NA, l_dbPass = NA, l_dbPort = NA, cores = 1,
+  updateDb = FALSE, copyDb = FALSE, outPth = "sm_result.sqlite")
 }
 \arguments{
 \item{q_dbPth}{character; Path of the database of queries that will be searched against the library spectra. Generated from createDatabase}
@@ -87,6 +90,30 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 \item{mzW}{numeric; mz weight for spectra (default to 2 as determined by massbank for ESI data)}
 
 \item{rttol}{numeric ; Tolerance in time range between the library and query spectra retention time}
+
+\item{q_dbType}{character; Query database type for compound database can be either (sqlite, postgres or mysql)}
+
+\item{q_dbName}{character; Query database name (only applicable for postgres and mysql)}
+
+\item{q_dbHost}{character; Query database host (only applicable for postgres and mysql)}
+
+\item{q_dbUser}{character; Query database user (only applicable for postgres and mysql)}
+
+\item{q_dbPass}{character; Query database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)}
+
+\item{q_dbPort}{character; Query database port (only applicable for postgres and mysql)}
+
+\item{l_dbType}{character; Library database type for compound database can be either (sqlite, postgres or mysql)}
+
+\item{l_dbName}{character; Library database name (only applicable for postgres and mysql)}
+
+\item{l_dbHost}{character; Library database host (only applicable for postgres and mysql)}
+
+\item{l_dbUser}{character; Library database user (only applicable for postgres and mysql)}
+
+\item{l_dbPass}{character; Library database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)}
+
+\item{l_dbPort}{character; Library database port (only applicable for postgres and mysql)}
 
 \item{cores}{numeric; Number of cores to use}
 

@@ -231,7 +231,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
          "retention_index", "retention_time", "inchikey_id")
   scaninfo[xx] <- NA
 
-  scaninfo$souceid <- 1
+  scaninfo$sourceid <- 1
 
   scaninfo$retention_time <- scaninfo$retentionTime
   scaninfo$precursor_mz <- scaninfo$precursorMZ

@@ -101,6 +101,20 @@
 #' @param copyDb boolean; If updating the database - perform on a copy rather thatn the original query database
 #' @param outPth character; If copying the database - the path of the new database file
 #'
+#' @param q_dbType character; Query database type for compound database can be either (sqlite, postgres or mysql)
+#' @param q_dbName character; Query database name (only applicable for postgres and mysql)
+#' @param q_dbHost character; Query database host (only applicable for postgres and mysql)
+#' @param q_dbPort character; Query database port (only applicable for postgres and mysql)
+#' @param q_dbUser character; Query database user (only applicable for postgres and mysql)
+#' @param q_dbPass character; Query database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)
+#'
+#' @param l_dbType character; Library database type for compound database can be either (sqlite, postgres or mysql)
+#' @param l_dbName character; Library database name (only applicable for postgres and mysql)
+#' @param l_dbHost character; Library database host (only applicable for postgres and mysql)
+#' @param l_dbPort character; Library database port (only applicable for postgres and mysql)
+#' @param l_dbUser character; Library database user (only applicable for postgres and mysql)
+#' @param l_dbPass character; Library database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)
+#'
 #' @return Returns a list containing the following elements
 #'
 #' **q_dbPth**
@@ -183,7 +197,7 @@ spectralMatching <- function(
                              q_instrumentTypes=NA,
                              q_instruments=NA,
                              q_sources=NA,
-                             q_spectraTypes='av_all',
+                             q_spectraTypes=c('av_all', 'inter'),
                              q_pids=NA,
                              q_rtrange=c(NA, NA),
                              q_spectraFilter=TRUE,
@@ -209,6 +223,21 @@ spectralMatching <- function(
                              mzW=2,
                              rttol=NA,
 
+                             q_dbType='sqlite',
+                             q_dbName=NA,
+                             q_dbHost=NA,
+                             q_dbUser=NA,
+                             q_dbPass=NA,
+                             q_dbPort=NA,
+
+                             l_dbType='sqlite',
+                             l_dbName=NA,
+                             l_dbHost=NA,
+                             l_dbUser=NA,
+                             l_dbPass=NA,
+                             l_dbPort=NA,
+
+
                              cores=1,
                              updateDb=FALSE,
                              copyDb=FALSE,
@@ -228,7 +257,13 @@ spectralMatching <- function(
   # Filter the query dataset
   ########################################################
   message("Filter query dataset")
-  q_con <- DBI::dbConnect(RSQLite::SQLite(), q_dbPth)
+  q_con <- connect2db(pth=q_dbPth,
+                      type=q_dbType,
+                      user=q_dbUser,
+                      pass=q_dbPass,
+                      dbname=q_dbName,
+                      host=q_dbHost,
+                      port=q_dbPort)
 
   q_speakmeta <- filterSMeta(purity =q_purity,
               pol = q_pol,
@@ -246,7 +281,14 @@ spectralMatching <- function(
   # Filter the library dataset
   ########################################################
   message("Filter library dataset")
-  l_con <- DBI::dbConnect(RSQLite::SQLite(), l_dbPth)
+  l_con <- connect2db(pth=l_dbPth,
+                      type=l_dbType,
+                      user=l_dbUser,
+                      pass=l_dbPass,
+                      dbname=l_dbName,
+                      host=l_dbHost,
+                      port=l_dbPort)
+
 
   l_speakmeta <- filterSMeta(purity = l_purity,
                              raThres = l_raThres,
@@ -261,14 +303,32 @@ spectralMatching <- function(
                              spectraTypes = l_spectraTypes,
                              accessions = l_accessions)
 
-
-
   ########################################################
   # Loop through the query dataset and spectra match
   # against the library spectra
   ########################################################
   # can't parallize dpylr without non cran package
-  # Go back to using good old plyr
+  # Go back to using good old plyr (but we need to connect to the database() each time
+  # we as we can't use the same connection for multiple cores..
+  dbDetails <- list(
+    'q'=list(pth=q_dbPth,
+             type=q_dbType,
+             user=q_dbUser,
+             pass=q_dbPass,
+             dbname=q_dbName,
+             host=q_dbHost,
+             port=q_dbPort
+
+  ),
+    'l'=list(pth=l_dbPth,
+             type=l_dbType,
+             user=l_dbUser,
+             pass=l_dbPass,
+             dbname=l_dbName,
+             host=l_dbHost,
+             port=l_dbPort
+
+  ))
 
 
   q_fpids <- pullPid(q_speakmeta)
@@ -290,8 +350,6 @@ spectralMatching <- function(
 
   # run parallel (or not) using foreach
   matched <- plyr::adply(q_fpids, 1, queryVlibrary, l_pids=l_fpids,
-                                                    q_dbPth=q_dbPth,
-                                                    l_dbPth=l_dbPth,
                                                     q_ppmPrec=q_ppmPrec,
                                                     q_ppmProd=q_ppmProd,
                                                     l_ppmPrec=l_ppmPrec,
@@ -304,45 +362,74 @@ spectralMatching <- function(
                                                     mzW=mzW,
                                                     raW=raW,
                                                     rttol=rttol,
+                                                    dbDetails=dbDetails,
                           .parallel=parallel)
 
-  # run parallel (or not) using foreach
-  # matched <- operator(foreach::foreach(i = 1:2,
-  #                                      .packages = c('dbplyr', 'magrittr', 'dplyr')),
-  #                                      queryVlibrary(q_pid = 1,
-  #                                                    q_speakmeta=q_speakmeta,
-  #                                                    q_speaks=q_speaks,
-  #                                                    l_speakmeta=l_speakmeta,
-  #                                                    l_speaks=l_speaks,
-  #                                                    q_ppmPrec=q_ppmPrec,
-  #                                                    q_ppmProd=q_ppmProd,
-  #                                                    l_ppmPrec=l_ppmPrec,
-  #                                                    l_ppmProd=l_ppmProd,
-  #                                                    raW=raW,
-  #                                                    mzW=mzW,
-  #                                                    rttol=rttol,
-  #                                                    usePrecursors=usePrecursors)
-  #                     )
 
   if(cores>1){
     parallel::stopCluster(cl)
   }
-
-
-
 
   if (nrow(matched)==0){
     message('No matches found')
     return(NULL)
   }
 
-
   # remove the plyr id column
   matched <- matched[,!names(matched)=='X1']
   matched$mid <- 1:nrow(matched)
 
-  nmCols <- c("dpc","rdpc","cdpc","mcount", "allcount", "mpercent", "lpid", "qpid", "mid")
+  # ensure numeric
+  nmCols <- c("mid", "dpc","rdpc","cdpc","mcount", "allcount", "mpercent", "lpid", "qpid")
   matched[,nmCols] <- as.numeric(as.character(unlist(matched[,nmCols])))
+
+  # make sure all NA values are fully NA values
+
+  # Add rtdiff
+  matched$rtdiff <- as.numeric(matched$library_rt)-as.numeric(matched$query_rt)
+
+  # Sort out order
+  matched <- matched[c('qpid', 'mid', 'dpc', 'rdpc', 'cdpc', 'mcount',
+                       'allcount', 'mpercent','lpid', 'library_rt', 'query_rt', 'rtdiff',
+                       'library_precursor_mz', 'query_precursor_mz',
+                       'library_precursor_ion_purity', 'query_precursor_ion_purity',
+                       'library_accession', 'library_precursor_type',
+                       'library_entry_name',  'inchikey')]
+
+
+  # Add information from other tables
+  if (DBI::dbExistsTable(l_con, "library_spectra_source")){
+    additional_details <- DBI::dbGetQuery(l_con, sprintf('SELECT lsm.id AS lpid,
+                                                      s.name AS library_source_name,
+                                                      mc.name AS library_compound_name
+                                                  FROM library_spectra_source AS s
+                                                    LEFT JOIN
+                                                  library_spectra_meta AS lsm ON lsm.library_spectra_source_id = s.id
+                                                    LEFT JOIN
+                                                  metab_compound AS mc ON mc.inchikey_id = lsm.inchikey_id
+                                                  WHERE lsm.id IN (%s)', paste(unique(matched$lpid), collapse=",")))
+  }else if (DBI::dbExistsTable(l_con, "source")) {
+
+    additional_details <- DBI::dbGetQuery(l_con, sprintf('SELECT pid AS lpid,
+                                                      s.name AS library_source_name,
+                                                      mc.name AS library_compound_name
+                                                  FROM source AS s
+                                                    LEFT JOIN
+                                                      s_peak_meta AS lsm ON lsm.sourceid = s.id
+                                                    LEFT JOIN
+                                                  metab_compound AS mc ON mc.inchikey_id = lsm.inchikey_id
+                                                  WHERE lsm.pid IN (%s)', paste(unique(matched$lpid), collapse=",")))
+  }else{
+    additional_details <- NULL
+  }
+
+  if (nrow(additional_details)==0){
+    additional_details <- NULL
+  }
+
+  if(!is.null(additional_details)){
+    matched <- merge(matched, additional_details, by='lpid')
+  }
 
 
   if (updateDb){
@@ -401,9 +488,6 @@ spectralMatching <- function(
 
     }
 
-
-
-
   }
 
   ########################################################
@@ -414,7 +498,7 @@ spectralMatching <- function(
     message("Summarising LC feature annotations")
 
     xcmsMatchedResults <- getXcmsSmSummary(q_con, matched,spectraTypes=q_spectraTypes)
-    if (updateDb){
+    if (updateDb && !is.null(xcmsMatchedResults)){
       DBI::dbWriteTable(q_con, name='xcms_match', value=xcmsMatchedResults, row.names=F, append=T)
     }
 
@@ -425,9 +509,7 @@ spectralMatching <- function(
   DBI::dbDisconnect(q_con)
   DBI::dbDisconnect(l_con)
 
-
-  return(list('q_dbPth' = q_dbPth, 'matchedResults' = matched,
-              'xcmsMatchedResults' = xcmsMatchedResults))
+  return(list('q_dbPth' = q_dbPth, 'matchedResults' = matched, 'xcmsMatchedResults' = xcmsMatchedResults))
 }
 
 # filterPid <- function(sp, pids){
@@ -513,9 +595,10 @@ getXcmsSmSummary <- function(con, matched, scoreF=0, fragNmF=1, spectraTypes='sc
   xcmsMatchedResults <- merge(xcmsGroupedPeaks, matched, by.x='pid', by.y='qpid')
   if(nrow(xcmsMatchedResults)==0){
     message('NO MATCHES FOR XCMS')
-    DBI::dbDisconnect(q_con)
-    return(0)
+    return(NULL)
   }
+  # Remove pid (is duplicate)
+  #xcmsMatchedResults <- xcmsMatchedResults[ , !(names(xcmsMatchedResults) %in% c('pid'))]
 
 
   xcmsMatchedResults <- xcmsMatchedResults[order(xcmsMatchedResults$grpid, -as.numeric(xcmsMatchedResults$dpc)),]
@@ -628,11 +711,10 @@ filterSMeta <- function(purity=NA,
   #print(speakmeta)
 
 
-  if ('spectrum_type' %in% meta_cn$name && !is.na(spectraTypes)){
+  if ('spectrum_type' %in% meta_cn$name && !anyNA(spectraTypes)){
     if ('av_all' %in% spectraTypes){
       spectraTypes[spectraTypes=='av_all'] = 'all'
     }
-
 
 
     speakmeta <- speakmeta %>% dplyr::filter(spectrum_type %in% spectraTypes)
@@ -689,14 +771,30 @@ getPeakCols <- function(con){
   return(cn)
 }
 
-queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd, l_ppmPrec, l_ppmProd,
-                          l_spectraFilter, q_spectraFilter, l_raThres, q_raThres, usePrecursors, mzW, raW, rttol){
+queryVlibrary <- function(q_pid, l_pids, q_ppmPrec, q_ppmProd, l_ppmPrec, l_ppmProd,
+                          l_spectraFilter, q_spectraFilter, l_raThres, q_raThres, usePrecursors, mzW, raW, rttol,
+                          dbDetails){
 
-  q_con <- DBI::dbConnect(RSQLite::SQLite(), q_dbPth)
-  l_con <- DBI::dbConnect(RSQLite::SQLite(), l_dbPth)
+  q_con <- connect2db(pth=dbDetails$q$pth,
+                      type=dbDetails$q$type,
+                      user=dbDetails$q$user,
+                      pass=dbDetails$q$pass,
+                      dbname=dbDetails$q$dbname,
+                      host=dbDetails$q$host,
+                      port=dbDetails$q$port)
+
+  l_con <- connect2db(pth=dbDetails$l$pth,
+                      type=dbDetails$l$type,
+                      user=dbDetails$l$user,
+                      pass=dbDetails$l$pass,
+                      dbname=dbDetails$l$dbname,
+                      host=dbDetails$l$host,
+                      port=dbDetails$l$port)
 
 
   q_speakmetai <- getSmeta(q_con, q_pid) %>% dplyr::collect()
+
+
 
   q_speaksi <- getScanPeaksSqlite(q_con, spectraFilter=q_spectraFilter, pids=q_pid) %>% dplyr::collect()
 
@@ -732,7 +830,7 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
   if(!is.na(rttol)){
 
-    l_fspeakmeta <- l_fspeakmeta %>% dplyr::filter(abs(retention_time-q_speakmetai)<rttol)
+    l_fspeakmeta <- l_fspeakmeta %>% dplyr::filter(abs(retention_time-q_speakmetai$retention_time)<rttol)
   }
 
   if(nrow(l_fspeakmeta)==0){
@@ -746,7 +844,6 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
     l_fpids <- l_fspeakmeta$id
   }
 
-
   searched <- plyr::adply(l_fpids , 1, queryVlibrarySingle,
                             q_speaksi=q_speaksi,
                             l_speakmeta=l_speakmeta,
@@ -758,9 +855,15 @@ queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd,
 
               )
 
-
   searched$qpid <- q_pid
+  searched$query_rt <- q_speakmetai$retention_time
+  searched$query_precursor_mz <- q_speakmetai$precursor_mz
 
+  if ("inPurity" %in% colnames(q_speakmetai)){
+    searched$query_precursor_ion_purity <- q_speakmetai$inPurity
+  }else{
+    searched$query_precursor_ion_purity <- NA
+  }
 
   DBI::dbDisconnect(q_con)
   DBI::dbDisconnect(l_con)
@@ -787,11 +890,9 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
     l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(id==l_pid) %>% dplyr::collect())
   }
 
-
   # ensure we have the relative abundance
   l_speaksi$ra <- (l_speaksi$i/max(l_speaksi$i))*100
   q_speaksi$ra <- (q_speaksi$i/max(q_speaksi$i))*100
-
 
   am <- alignAndMatch(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW)
 
@@ -801,8 +902,26 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
     lpids <- l_speakmetai$id
   }
 
-  return(c(am, 'accession'=l_speakmetai$accession,
-               'name'=l_speakmetai$name,
+  if ('retention_time' %in% colnames(l_speakmetai)){
+    library_rt <- as.numeric(l_speakmetai$retention_time)
+  }else{
+    library_rt <- NA
+  }
+
+  if ("inPurity" %in% colnames(l_speakmetai)){
+    library_precursor_ion_purity<- l_speakmetai$inPurity
+  }else{
+    library_precursor_ion_purity <- NA
+  }
+
+
+  return(c(am,
+               'library_rt'=library_rt,
+               'library_accession'=l_speakmetai$accession,
+               'library_precursor_mz'=l_speakmetai$precursor_mz,
+               'library_precursor_ion_purity'=library_precursor_ion_purity,
+               'library_precursor_type'=l_speakmetai$precursor_type,
+               'library_entry_name'=l_speakmetai$name,
                'inchikey'=l_speakmetai$inchikey_id,
                'lpid'=lpids
            ))
