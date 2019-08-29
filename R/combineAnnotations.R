@@ -80,22 +80,13 @@ combineAnnotations <- function(sm_resultPth,
   # sm, metfrag, sirius, probmetab, lipidsearch, mzcloud, bs
   con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
 
-  con_comp <- connect2db(pth=compoundDbPth,
-             type=compoundDbType,
-             user=compounDbUser,
-             pass=compoundDbPass,
-             dbname=compoundDbname,
-             host=compoundDbHost,
-             port=compoundDbHost)
-
-
   if (compoundDbType=='sqlite'){
     con_comp <- DBI::dbConnect(RSQLite::SQLite(), compoundDbPth)
   }else if (compoundDbType=='postgres'){
     con_comp <- DBI::dbConnect(RPostgres::Postgres(),
                                user=compoundDbUser,
                                password=compoundDbPass,
-                               dbname=compoundDbName,
+                               dbname=compoundDbname,
                                host=compoundDbHost,
                                pass=compoundDbPass)
   }else if (compoundDbType=='mysql'){

@@ -711,7 +711,7 @@ filterSMeta <- function(purity=NA,
   #print(speakmeta)
 
 
-  if ('spectrum_type' %in% meta_cn$name && !is.na(spectraTypes)){
+  if ('spectrum_type' %in% meta_cn$name && !anyNA(spectraTypes)){
     if ('av_all' %in% spectraTypes){
       spectraTypes[spectraTypes=='av_all'] = 'all'
     }
