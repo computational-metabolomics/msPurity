@@ -101,6 +101,20 @@
 #' @param copyDb boolean; If updating the database - perform on a copy rather thatn the original query database
 #' @param outPth character; If copying the database - the path of the new database file
 #'
+#' @param q_dbType character; Query database type for compound database can be either (sqlite, postgres or mysql)
+#' @param q_dbName character; Query database name (only applicable for postgres and mysql)
+#' @param q_dbHost character; Query database host (only applicable for postgres and mysql)
+#' @param q_dbPort character; Query database port (only applicable for postgres and mysql)
+#' @param q_dbUser character; Query database user (only applicable for postgres and mysql)
+#' @param q_dbPass character; Query database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)
+#'
+#' @param l_dbType character; Library database type for compound database can be either (sqlite, postgres or mysql)
+#' @param l_dbName character; Library database name (only applicable for postgres and mysql)
+#' @param l_dbHost character; Library database host (only applicable for postgres and mysql)
+#' @param l_dbPort character; Library database port (only applicable for postgres and mysql)
+#' @param l_dbUser character; Library database user (only applicable for postgres and mysql)
+#' @param l_dbPass character; Library database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)
+#'
 #' @return Returns a list containing the following elements
 #'
 #' **q_dbPth**
@@ -209,6 +223,21 @@ spectralMatching <- function(
                              mzW=2,
                              rttol=NA,
 
+                             q_dbType='sqlite',
+                             q_dbName=NA,
+                             q_dbHost=NA,
+                             q_dbUser=NA,
+                             q_dbPass=NA,
+                             q_dbPort=NA,
+
+                             l_dbType='sqlite',
+                             l_dbName=NA,
+                             l_dbHost=NA,
+                             l_dbUser=NA,
+                             l_dbPass=NA,
+                             l_dbPort=NA,
+
+
                              cores=1,
                              updateDb=FALSE,
                              copyDb=FALSE,
@@ -228,7 +257,13 @@ spectralMatching <- function(
   # Filter the query dataset
   ########################################################
   message("Filter query dataset")
-  q_con <- DBI::dbConnect(RSQLite::SQLite(), q_dbPth)
+  q_con <- connect2db(pth=q_dbPth,
+                      type=q_dbType,
+                      user=q_dbUser,
+                      pass=q_dbPass,
+                      dbname=q_dbName,
+                      host=q_dbHost,
+                      port=q_dbPort)
 
   q_speakmeta <- filterSMeta(purity =q_purity,
               pol = q_pol,
@@ -246,7 +281,14 @@ spectralMatching <- function(
   # Filter the library dataset
   ########################################################
   message("Filter library dataset")
-  l_con <- DBI::dbConnect(RSQLite::SQLite(), l_dbPth)
+  l_con <- connect2db(pth=l_dbPth,
+                      type=l_dbType,
+                      user=l_dbUser,
+                      pass=l_dbPass,
+                      dbname=l_dbName,
+                      host=l_dbHost,
+                      port=l_dbPort)
+
 
   l_speakmeta <- filterSMeta(purity = l_purity,
                              raThres = l_raThres,
@@ -266,7 +308,27 @@ spectralMatching <- function(
   # against the library spectra
   ########################################################
   # can't parallize dpylr without non cran package
-  # Go back to using good old plyr
+  # Go back to using good old plyr (but we need to connect to the database() each time
+  # we as we can't use the same connection for multiple cores..
+  dbDetails <- list(
+    'q'=list(pth=q_dbPth,
+             type=q_dbType,
+             user=q_dbUser,
+             pass=q_dbPass,
+             dbname=q_dbName,
+             host=q_dbHost,
+             port=q_dbPort
+
+  ),
+    'l'=list(pth=l_dbPth,
+             type=l_dbType,
+             user=l_dbUser,
+             pass=l_dbPass,
+             dbname=l_dbName,
+             host=l_dbHost,
+             port=l_dbPort
+
+  ))
 
 
   q_fpids <- pullPid(q_speakmeta)
@@ -288,8 +350,6 @@ spectralMatching <- function(
 
   # run parallel (or not) using foreach
   matched <- plyr::adply(q_fpids, 1, queryVlibrary, l_pids=l_fpids,
-                                                    q_dbPth=q_dbPth,
-                                                    l_dbPth=l_dbPth,
                                                     q_ppmPrec=q_ppmPrec,
                                                     q_ppmProd=q_ppmProd,
                                                     l_ppmPrec=l_ppmPrec,
@@ -302,6 +362,7 @@ spectralMatching <- function(
                                                     mzW=mzW,
                                                     raW=raW,
                                                     rttol=rttol,
+                                                    dbDetails=dbDetails,
                           .parallel=parallel)
 
 
@@ -710,11 +771,25 @@ getPeakCols <- function(con){
   return(cn)
 }
 
-queryVlibrary <- function(q_pid, l_pids, q_dbPth, l_dbPth, q_ppmPrec, q_ppmProd, l_ppmPrec, l_ppmProd,
-                          l_spectraFilter, q_spectraFilter, l_raThres, q_raThres, usePrecursors, mzW, raW, rttol){
+queryVlibrary <- function(q_pid, l_pids, q_ppmPrec, q_ppmProd, l_ppmPrec, l_ppmProd,
+                          l_spectraFilter, q_spectraFilter, l_raThres, q_raThres, usePrecursors, mzW, raW, rttol,
+                          dbDetails){
 
-  q_con <- DBI::dbConnect(RSQLite::SQLite(), q_dbPth)
-  l_con <- DBI::dbConnect(RSQLite::SQLite(), l_dbPth)
+  q_con <- connect2db(pth=dbDetails$q$pth,
+                      type=dbDetails$q$type,
+                      user=dbDetails$q$user,
+                      pass=dbDetails$q$pass,
+                      dbname=dbDetails$q$dbname,
+                      host=dbDetails$q$host,
+                      port=dbDetails$q$port)
+
+  l_con <- connect2db(pth=dbDetails$l$pth,
+                      type=dbDetails$l$type,
+                      user=dbDetails$l$user,
+                      pass=dbDetails$l$pass,
+                      dbname=dbDetails$l$dbname,
+                      host=dbDetails$l$host,
+                      port=dbDetails$l$port)
 
 
   q_speakmetai <- getSmeta(q_con, q_pid) %>% dplyr::collect()

@@ -13,29 +13,39 @@
 #' @param metfrag_resultPth character; Path to the tsv table of metfrag results
 #' @param sirius_csi_resultPth character; Path to the tsv table of Sirius CSI:Finger ID results
 #' @param probmetab_resultPth character; Path to the tsv table of Probmetab results
-#' @param localCompoundDbPth character; Path to local compound database with pubchem, hmdb, KEGG and metab_compound summary table (full database available on request - contact t.n.lawson@@bham.ac.uk)
 #' @param ms1_lookup_resultPth character; Path to generic tsv table of MS1 lookup results
 #' @param ms1_lookup_dbSource character; Source of the compound database used for ms1_lookup
 #'                            (currently only supports HMDB, KEGG or PubChem)
 #' @param ms1_lookup_checkAdducts boolean; Check if adducts match to those found in CAMERA (requires the database to have been created with CAMERA object)
 #' @param ms1_lookup_keepAdducts vecotr; Keep only adducts found from the MS1 lookup that are found in this vector
 #' @param weights list;
-#' @param localCompoundDbPth character;
+#' @param compoundDbPth character; Path to local compound database with pubchem, hmdb, KEGG and metab_compound summary table
+#'                                 (full database available on request - contact t.n.lawson@@bham.ac.uk).
+#'                                 This is only applicable if using "compoundDbType sqlite")
+#' @param compoundDbType character; Database type for compound database can be either (sqlite, postgres or mysql)
+#' @param compoundDbName character; Database name (only applicable for postgres and mysql)
+#' @param compoundDbHost character; Database host (only applicable for postgres and mysql)
+#' @param compoundDbPort character; Database port (only applicable for postgres and mysql)
+#' @param compoundDbUser character; Database user (only applicable for postgres and mysql)
+#' @param compoundDbPass character; Database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)
+#'
+#'
+#'
 #' @param outPth character;
 #'
 #' @examples
 #' metfrag_resultPth <- system.file("extdata", "tests", "external_annotations", "metfrag.tsv", package="msPurity")
 #' # run the standard spectral matching workflow to get the sm_resultPth
 #' sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
-#' localCompoundDbPth <- system.file("extdata", "tests", "db", "compounds_18July2019_0319.sqlite", package="msPurity")
+#' compoundDbPth <- system.file("extdata", "tests", "db", "compounds_18July2019_0319.sqlite", package="msPurity")
 #' combined <- combineAnnotations(sm_resultPth,
 #'                                metfrag_resultPth,
 #'                                outPth=file.path(tempdir(), 'combined.sqlite'),
-#'                                localCompoundDbPth=localCompoundDbPth)
+#'                                compoundDbPth=compoundDbPth)
 #' @return purityA object with slots for fragmentation-XCMS links
 #' @export
 combineAnnotations <- function(sm_resultPth,
-                               localCompoundDbPth,
+                               compoundDbPth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
                                probmetab_resultPth=NA,
@@ -50,9 +60,15 @@ combineAnnotations <- function(sm_resultPth,
                                             'ms1_lookup'=0.05,
                                             'biosim'=0.25
                                ),
+                               compoundDbType='sqlite',
+                               compoundDbName=NA,
+                               compoundDbHost=NA,
+                               compoundDbPort=NA,
+                               compoundDbUser=NA,
+                               compoundDbPass=NA,
                                outPth=NA
 
-                               ){
+){
 
   if(!is.na(outPth)){
     file.copy(sm_resultPth, outPth)
@@ -64,10 +80,31 @@ combineAnnotations <- function(sm_resultPth,
   # sm, metfrag, sirius, probmetab, lipidsearch, mzcloud, bs
   con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
 
-  if (!is.null(localCompoundDbPth)){
-    con_comp <- DBI::dbConnect(RSQLite::SQLite(), localCompoundDbPth)
-  }else{
-    con_comp <- NULL
+  con_comp <- connect2db(pth=compoundDbPth,
+             type=compoundDbType,
+             user=compounDbUser,
+             pass=compoundDbPass,
+             dbname=compoundDbname,
+             host=compoundDbHost,
+             port=compoundDbHost)
+
+
+  if (compoundDbType=='sqlite'){
+    con_comp <- DBI::dbConnect(RSQLite::SQLite(), compoundDbPth)
+  }else if (compoundDbType=='postgres'){
+    con_comp <- DBI::dbConnect(RPostgres::Postgres(),
+                               user=compoundDbUser,
+                               password=compoundDbPass,
+                               dbname=compoundDbName,
+                               host=compoundDbHost,
+                               pass=compoundDbPass)
+  }else if (compoundDbType=='mysql'){
+    con_comp <- DBI::dbConnect(RMySQL::MySQL(),
+                               user=compoundDbUser,
+                               password=compoundDbPass,
+                               dbname=compoundDbName,
+                               host=compoundDbHost,
+                               pass=compoundDbPass)
   }
 
   #############################################
@@ -80,7 +117,9 @@ combineAnnotations <- function(sm_resultPth,
   message('Add Probmetab results')
   addProbmetabResults(probmetab_resultPth, con, con_comp=con_comp)
   message('Add Generic MS1 Lookup results')
-  addGenericMS1LookupResults(ms1_lookup_resultPth, ms1_lookup_dbSource, ms1_lookup_checkAdducts,
+  addGenericMS1LookupResults(ms1_lookup_resultPth,
+                             ms1_lookup_dbSource,
+                             ms1_lookup_checkAdducts,
                              ms1_lookup_keepAdducts,
                              con, con_comp=con_comp)
   # Add lipidsearch result TODO
@@ -91,7 +130,7 @@ combineAnnotations <- function(sm_resultPth,
   ####################################
   # We now have inchikeys for all the annotations. For each inchikey we get all the associated informations
   message('Update the compound table')
-  metab_compounds <- RSQLite::dbGetQuery(con, 'SELECT * FROM metab_compound')
+  metab_compounds <- DBI::dbGetQuery(con, 'SELECT * FROM metab_compound')
   metab_compounds <- updateColName(metab_compounds, 'inchikey_id', 'inchikey')
 
   # Get all details for inchikeys (using local compoundDB - currently we only have the inchikeys)
@@ -104,7 +143,7 @@ combineAnnotations <- function(sm_resultPth,
   colnames(missing_comps)[colnames(missing_comps)=='pubchem_id'] = 'pubchem_cids'
   # Remove rows we won't be using from missing_comps
   keep_cols = c('inchikey', 'inchikey1', 'inchikey2', 'inchikey3', 'pubchem_cids',
-                  'exact_mass', 'molecular_formula', 'name')
+                'exact_mass', 'molecular_formula', 'name')
   missing_comps <- missing_comps[,keep_cols]
   findx <- sapply(missing_comps, is.factor)
   missing_comps[findx] <- lapply(missing_comps[findx], as.character)
@@ -123,10 +162,38 @@ combineAnnotations <- function(sm_resultPth,
 
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
 
-  return(getAnnotationSummary(con))
+  anns <- getAnnotationSummary(con)
+
+  DBI::dbDisconnect(con)
+  DBI::dbDisconnect(con_comp)
+
+  return(anns)
 
 }
 
+connect2db <- function(pth,type='sqlite',user=NA,pass=NA,dbname=NA,host=NA,port=NA){
+
+  if (type=='sqlite'){
+    con <- DBI::dbConnect(RSQLite::SQLite(), pth)
+  }else if (type=='postgres'){
+    con <- DBI::dbConnect(RPostgres::Postgres(),
+                               user=user,
+                               password=pass,
+                               dbname=dbname,
+                               host=host,
+                               port=port,
+                               pass=pass)
+  }else if (type=='mysql'){
+    con <- DBI::dbConnect(RMySQL::MySQL(),
+                               user=user,
+                               password=pass,
+                               dbname=dbname,
+                               host=host,
+                               port=port,
+                               pass=pass)
+  }
+  return(con)
+}
 
 
 addMetFragResults <- function(metfrag_resultPth, con, con_comp){
@@ -135,7 +202,7 @@ addMetFragResults <- function(metfrag_resultPth, con, con_comp){
     DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=T)
 
     DBI::dbExecute(con,
-                     'INSERT INTO metab_compound (inchikey_id)
+                   'INSERT INTO metab_compound (inchikey_id)
                    SELECT DISTINCT m.InChIKey
                    FROM metfrag_results AS m
                    LEFT JOIN
@@ -375,7 +442,7 @@ getAnnotationSummary <- function(con){
                       cpg.grp_name,
                       cpg.mz,
                       cpg.rt,
-                      %s,
+                      %s
                       mc.inchikey,
                       mc.inchi,
                       mc.inchikey,
@@ -392,9 +459,7 @@ getAnnotationSummary <- function(con){
                       mc.hmdb_ids,
                       mc.hmdb_bio_custom_flag,
                       mc.hmdb_drug_flag,
-                      mc.max_biosim_score,
-                      mc.max_biosim_count,
-                      mc.biosim_scores,
+                      mc.biosim_max_count,
                       mc.biosim_hmdb_ids,
                       GROUP_CONCAT(DISTINCT(cast(spm.acquisitionNum  as INTEGER) )) AS fragmentation_acquistion_num,
                       ROUND(AVG(spm.inPurity),3) AS mean_precursor_ion_purity,
@@ -409,6 +474,8 @@ getAnnotationSummary <- function(con){
                       ca.probmetab_wscore,
                       ca.ms1_lookup_score,
                       ca.ms1_lookup_wscore,
+                      mc.biosim_max_score,
+                      ca.biosim_wscore,
                       ca.wscore,
                       ca.rank,
                       ca.adduct_overall
@@ -439,7 +506,8 @@ getAnnotationSummary <- function(con){
 }
 
 combineRow <- function(row){
-  return(paste(unique(row), collapse = ','))
+  row[row==0] = ''
+  return(paste(unique(unique(row[row != ''])), collapse = ','))
 }
 
 
@@ -458,14 +526,14 @@ combineScoresGrp <- function(c_peak_group, weights, con){
     }
 
     sirius <- DBI::dbGetQuery(con, sprintf('SELECT
-                              s.rowid AS sirius_id,
-                              s.bounded_score AS sirius_score,
-                              %s,
-                              mc.inchikey
-                              FROM metab_compound AS mc
-                              LEFT JOIN
-                              sirius_csifingerid_results AS s
-                              ON s.inchikey2D = mc.inchikey1 WHERE s.grpid= :grpid', adduct_colstr),
+                                           s.rowid AS sirius_id,
+                                           s.bounded_score AS sirius_score,
+                                           %s,
+                                           mc.inchikey
+                                           FROM metab_compound AS mc
+                                           LEFT JOIN
+                                           sirius_csifingerid_results AS s
+                                           ON s.inchikey2D = mc.inchikey1 WHERE s.grpid= :grpid', adduct_colstr),
                               params=list('grpid'=grpid))
     # can have multiple hits for each inchikey (e.g. multiple scans)
     sirius <- plyr::ddply(sirius, ~inchikey, getBestScore, 'sirius_score')
@@ -483,19 +551,20 @@ combineScoresGrp <- function(c_peak_group, weights, con){
     if ('adduct' %in% metfrag_cols){
       adduct_colstr <- 'm.adduct AS metfrag_adduct'
     }else{
-      adduct_colstr <- "'' AS metrag_adduct"
+      adduct_colstr <- "'' AS metfrag_adduct"
     }
 
     # get metfrag
     metfrag <- DBI::dbGetQuery(con, sprintf('SELECT
-                               m.rowid as metfrag_id,
-                               m.Score AS metfrag_score,
-                               %s,
-                               mc.inchikey,
-                               FROM metab_compound AS mc
-                               LEFT JOIN
-                               metfrag_results AS m
-                               ON m.InChIKey = mc.inchikey WHERE m.grpid=:grpid'), params=list('grpid'=grpid))
+                                            m.rowid as metfrag_id,
+                                            m.Score AS metfrag_score,
+                                            %s,
+                                            mc.inchikey
+                                            FROM metab_compound AS mc
+                                            LEFT JOIN
+                                            metfrag_results AS m
+                                            ON m.InChIKey = mc.inchikey WHERE m.grpid=:grpid', adduct_colstr),
+                               params=list('grpid'=grpid))
     # can have multiple hits for each inchikey (e.g. multiple scans)
     metfrag <- plyr::ddply(metfrag, ~inchikey, getBestScore, 'metfrag_score')
 
@@ -515,7 +584,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   # get spectral matching
   sm <- DBI::dbGetQuery(con, sprintf('SELECT sm.lpid AS sm_lpid,
-                                     sm.library_adduct AS sm_adduct,
+                                     sm.library_precursor_type AS sm_adduct,
                                      sm.mid AS sm_mid,
                                      sm.dpc AS sm_score,
                                      mc.inchikey
@@ -552,15 +621,15 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   if(DBI::dbExistsTable(con, 'ms1_lookup_results')){
     ms1_lookup <- DBI::dbGetQuery(con, 'SELECT
-                                             m.ms1_lookup_id,
-                                             m.ms1_lookup_score,
-                                             m.adduct AS ms1_lookup_adduct,
-                                             mc.inchikey
-                                             FROM metab_compound AS mc
-                                             LEFT JOIN
-                                             ms1_lookup_results AS m
-                                             ON m.inchikey = mc.inchikey WHERE m.grpid=:grpid',
-                                             params=list('grpid'=grpid))
+                                  m.ms1_lookup_id,
+                                  m.ms1_lookup_score,
+                                  m.adduct AS ms1_lookup_adduct,
+                                  mc.inchikey
+                                  FROM metab_compound AS mc
+                                  LEFT JOIN
+                                  ms1_lookup_results AS m
+                                  ON m.inchikey = mc.inchikey WHERE m.grpid=:grpid',
+                                  params=list('grpid'=grpid))
 
     # can have multiple hits for each inchikey (e.g. multiple scans)
     ms1_lookup <- plyr::ddply(ms1_lookup, ~inchikey, getBestScore, 'ms1_lookup_score')
@@ -576,13 +645,14 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   combined_df <- Reduce(function(...) merge(..., all=TRUE, by='inchikey'), score_list)
 
   # Get biosim score (if available)
-  biosim_score <- DBI::dbGetQuery(con, 'SELECT inchikey, max_biosim_score FROM metab_compound')
+  biosim_score <- DBI::dbGetQuery(con, 'SELECT inchikey, biosim_max_score FROM metab_compound')
   combined_df <- merge(combined_df, biosim_score, by='inchikey')
-  combined_df$biosim_wscore <- combined_df$max_biosim_score * weights$biosim
+  combined_df$biosim_wscore <- combined_df$biosim_max_score * weights$biosim
 
   combined_df <- combined_df[!is.na(combined_df$inchikey),]
   combined_df[is.na(combined_df)] <- 0
-  combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'sm_wscore', 'probmetab_wscore', 'probmetab_wscore',
+  combined_df$wscore <- rowSums(combined_df[, c('sirius_wscore', 'metfrag_wscore', 'sm_wscore',
+                                                'probmetab_wscore', 'probmetab_wscore',
                                                 'ms1_lookup_wscore', 'biosim_wscore')])
 
   # Order
@@ -590,7 +660,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   # in most cases the adduct will be the same but there is a chance a different naming was used
   # or that there are adduct types that have give the same neutral mass
-  combined_df$adduct_overall <- apply(combined_df[,c('sirius_adduct', 'sm_adduct',
+  combined_df$adduct_overall <- apply(combined_df[,c('sirius_adduct',
                                                      'metfrag_adduct', 'ms1_lookup_adduct',
                                                      'sm_adduct')], 1, combineRow)
 
@@ -656,7 +726,7 @@ inchikeySelect <- function(inchikeys, con, inchikeyCol='inchikey', outCols='inch
     sql_stmt <- sprintf('SELECT %s FROM metab_compound WHERE %s IN (%s)', outCols, inchikeyCol, inchi_str)
   }
 
-  return(RSQLite::dbGetQuery(con, sql_stmt))
+  return(DBI::dbGetQuery(con, sql_stmt))
 }
 
 insertNewInchikeys <- function(con, con_comp, compDetails){

@@ -4,18 +4,22 @@
 \alias{combineAnnotations}
 \title{Combine Annotations}
 \usage{
-combineAnnotations(sm_resultPth, localCompoundDbPth,
-  metfrag_resultPth = NA, sirius_csi_resultPth = NA,
-  probmetab_resultPth = NA, ms1_lookup_resultPth = NA,
-  ms1_lookup_dbSource = "hmdb", ms1_lookup_checkAdducts = FALSE,
-  ms1_lookup_keepAdducts = c("[M+H]+", "[M-H]-"), weights = list(sm =
-  0.3, metfrag = 0.2, sirius_csifingerid = 0.2, probmetab = 0, ms1_lookup =
-  0.05, biosim = 0.25), outPth = NA)
+combineAnnotations(sm_resultPth, compoundDbPth, metfrag_resultPth = NA,
+  sirius_csi_resultPth = NA, probmetab_resultPth = NA,
+  ms1_lookup_resultPth = NA, ms1_lookup_dbSource = "hmdb",
+  ms1_lookup_checkAdducts = FALSE, ms1_lookup_keepAdducts = c("[M+H]+",
+  "[M-H]-"), weights = list(sm = 0.3, metfrag = 0.2, sirius_csifingerid =
+  0.2, probmetab = 0, ms1_lookup = 0.05, biosim = 0.25),
+  compoundDbType = "sqlite", compoundDbName = NA,
+  compoundDbHost = NA, compoundDbPort = NA, compoundDbUser = NA,
+  compoundDbPass = NA, outPth = NA)
 }
 \arguments{
 \item{sm_resultPth}{character; Path to the msPurity SQLite database used for spectral matching}
 
-\item{localCompoundDbPth}{character; Path to local compound database with pubchem, hmdb, KEGG and metab_compound summary table (full database available on request - contact t.n.lawson@bham.ac.uk)}
+\item{compoundDbPth}{character; Path to local compound database with pubchem, hmdb, KEGG and metab_compound summary table
+(full database available on request - contact t.n.lawson@bham.ac.uk).
+This is only applicable if using "compoundDbType sqlite")}
 
 \item{metfrag_resultPth}{character; Path to the tsv table of metfrag results}
 
@@ -34,9 +38,19 @@ combineAnnotations(sm_resultPth, localCompoundDbPth,
 
 \item{weights}{list;}
 
-\item{outPth}{character;}
+\item{compoundDbType}{character; Database type for compound database can be either (sqlite, postgres or mysql)}
 
-\item{localCompoundDbPth}{character;}
+\item{compoundDbName}{character; Database name (only applicable for postgres and mysql)}
+
+\item{compoundDbHost}{character; Database host (only applicable for postgres and mysql)}
+
+\item{compoundDbPort}{character; Database port (only applicable for postgres and mysql)}
+
+\item{compoundDbUser}{character; Database user (only applicable for postgres and mysql)}
+
+\item{compoundDbPass}{character; Database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)}
+
+\item{outPth}{character;}
 }
 \value{
 purityA object with slots for fragmentation-XCMS links
@@ -53,9 +67,9 @@ Combine the annotation results from msPurity spectral matching, MetFrag, Sirius 
 metfrag_resultPth <- system.file("extdata", "tests", "external_annotations", "metfrag.tsv", package="msPurity")
 # run the standard spectral matching workflow to get the sm_resultPth
 sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
-localCompoundDbPth <- system.file("extdata", "tests", "db", "compounds_18July2019_0319.sqlite", package="msPurity")
+compoundDbPth <- system.file("extdata", "tests", "db", "compounds_18July2019_0319.sqlite", package="msPurity")
 combined <- combineAnnotations(sm_resultPth,
                                metfrag_resultPth,
                                outPth=file.path(tempdir(), 'combined.sqlite'),
-                               localCompoundDbPth=localCompoundDbPth)
+                               compoundDbPth=compoundDbPth)
 }

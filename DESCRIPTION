@@ -49,7 +49,9 @@ Suggests:
     knitr,
     rmarkdown,
     msPurityData,
-    CAMERA
+    CAMERA,
+    RPostgres,
+    RMySQL
 VignetteBuilder: knitr
 RoxygenNote: 6.1.1
 biocViews: MassSpectrometry, Metabolomics, Software

@@ -63,7 +63,10 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
   sm_out_pth <- file.path(td, rid)
 
   result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'),
-                             q_spectraTypes = 'av_all')
+                             q_spectraTypes = 'av_all',
+                             updateDb = TRUE,
+                             copyDb = TRUE,
+                             outPth = sm_out_pth)
 
   expect_equal(result$xcmsMatchedResults$grpid, c(12,27))
   expect_equal(result$xcmsMatchedResults$library_accession, c("CCMSLIB00000577898", "CE000616"))
