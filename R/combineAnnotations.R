@@ -542,7 +542,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
     sirius$sirius_wscore <- as.numeric(sirius$sirius_score)*weights$sirius_csifingerid
 
   }else{
-    sirius <- data.frame(inchikey=NA, sirius_score=NA, sirius_wscore=NA)
+    sirius <- data.frame(inchikey=NA, sirius_score=NA, sirius_wscore=NA, sirius_adduct=NA)
   }
 
 
@@ -571,7 +571,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
     metfrag$metfrag_wscore <- as.numeric(metfrag$metfrag_score)*weights$metfrag
 
   }else{
-    metfrag <- data.frame(inchikey=NA, metfrag_score=NA, metfrag_wscore=NA)
+    metfrag <- data.frame(inchikey=NA, metfrag_score=NA, metfrag_wscore=NA, metfrag_adduct=NA)
 
   }
 
@@ -635,7 +635,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
     ms1_lookup <- plyr::ddply(ms1_lookup, ~inchikey, getBestScore, 'ms1_lookup_score')
     ms1_lookup$ms1_lookup_wscore <- as.numeric(ms1_lookup$ms1_lookup_score)*weights$ms1_lookup
   }else{
-    ms1_lookup <- data.frame(inchikey=NA, ms1_lookup_score=NA, ms1_lookup_wscore=NA)
+    ms1_lookup <- data.frame(inchikey=NA, ms1_lookup_score=NA, ms1_lookup_wscore=NA, ms1_lookup_adduct=NA)
   }
 
 
