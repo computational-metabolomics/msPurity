@@ -36,7 +36,9 @@
 #'                             "msms_only_xset.rds", package="msPurity"))
 #'
 #' # Need to ensure the filelists are matching
-#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#'                                    package="msPurityData"),
+#'                                    full.names = TRUE, pattern = "MSMS")
 #' pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
 #' pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 #' xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]

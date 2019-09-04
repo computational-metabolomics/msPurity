@@ -34,14 +34,17 @@
 #' @param outPth character;
 #'
 #' @examples
-#' metfrag_resultPth <- system.file("extdata", "tests", "external_annotations", "metfrag.tsv", package="msPurity")
+#' metfrag_resultPth <- system.file("extdata", "tests", "external_annotations",
+#'                                       "metfrag.tsv", package="msPurity")
 #' # run the standard spectral matching workflow to get the sm_resultPth
-#' sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
-#' compoundDbPth <- system.file("extdata", "tests", "db", "metab_compound_subset.sqlite", package="msPurity")
+#' sm_resultPth <- system.file("extdata","tests", "sm",
+#'                         "spectralMatching_result.sqlite", package="msPurity")
+#' compoundDbPth <- system.file("extdata", "tests", "db",
+#'                           "metab_compound_subset.sqlite", package="msPurity")
 #' combined <- combineAnnotations(sm_resultPth,
-#'                                metfrag_resultPth,
-#'                                outPth=file.path(tempdir(), 'combined.sqlite'),
-#'                                compoundDbPth=compoundDbPth)
+#'                              metfrag_resultPth,
+#'                              outPth=file.path(tempdir(), 'combined.sqlite'),
+#'                              compoundDbPth=compoundDbPth)
 #' @return purityA object with slots for fragmentation-XCMS links
 #' @export
 combineAnnotations <- function(sm_resultPth,
