@@ -56,7 +56,7 @@
 #' #pa <- averageAllFragSpectra(pa)
 #' #db_pth <- create_database(pa, xset)
 #' #q_dbPth <- system.file("extdata", "tests", "db",
-#'                         "create_database_example.sqlite", package="msPurity")
+#' #                        "create_database_example.sqlite", package="msPurity")
 #' #result <- spectral_matching(q_dbPth, spectra_type_q="av_all")
 #' @export
 spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1, pol='positive', ppm_tol_prod=10, ppm_tol_prec=5,
