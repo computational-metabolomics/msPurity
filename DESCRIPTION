@@ -2,8 +2,8 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.11.3
-Date: 2019-06-27
+Version: 1.11.4
+Date: 2019-09-10
 Author: Thomas N. Lawson, Ralf Weber, Martin Jones, Mark Viant, Warwick Dunn
 Maintainer: Thomas N. Lawson <thomas.nigel.lawson@gmail.com>
 Description: msPurity R package was developed to: 
@@ -65,6 +65,7 @@ Collate:
     'iw-norm.R'
     'matching-algs.R'
     'meta_extract.R'
+    'msPurity.R'
     'pcalc.R'
     'purityA-0-class.R'
     'purityA-av-spectra.R'

@@ -168,20 +168,20 @@ connect2db <- function(pth,type='sqlite',user=NA,pass=NA,dbname=NA,host=NA,port=
     con <- DBI::dbConnect(RSQLite::SQLite(), pth)
   }else if (type=='postgres'){
     con <- DBI::dbConnect(RPostgres::Postgres(),
-                               user=user,
-                               password=pass,
-                               dbname=dbname,
-                               host=host,
-                               port=port,
-                               pass=pass)
+                          user=user,
+                          password=pass,
+                          dbname=dbname,
+                          host=host,
+                          port=port,
+                          pass=pass)
   }else if (type=='mysql'){
     con <- DBI::dbConnect(RMySQL::MySQL(),
-                               user=user,
-                               password=pass,
-                               dbname=dbname,
-                               host=host,
-                               port=port,
-                               pass=pass)
+                          user=user,
+                          password=pass,
+                          dbname=dbname,
+                          host=host,
+                          port=port,
+                          pass=pass)
   }
   return(con)
 }

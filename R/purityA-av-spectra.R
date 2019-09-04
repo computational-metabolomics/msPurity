@@ -56,7 +56,8 @@
 #'
 #' @examples
 #'
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#' #package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 #' #xset <- xcms::group(xset)
 #' #xset <- xcms::retcor(xset)
@@ -64,7 +65,8 @@
 #'
 #' #pa  <- purityA(msmsPths)
 #' #pa <- frag4feature(pa, xset)
-#' pa <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
+#' pa <- readRDS(system.file("extdata", "tests", "purityA",
+#'               "2_frag4feature_pa.rds", package="msPurity"))
 #' pa <- averageIntraFragSpectra(pa)
 #' @md
 #' @export
@@ -152,7 +154,8 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #'
 #' @examples
 #'
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #msmsPths <- list.files(system.file("extdata",
+#' #"lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 #' #xset <- xcms::group(xset)
 #' #xset <- xcms::retcor(xset)
@@ -161,7 +164,9 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #' #pa  <- purityA(msmsPths, interpol = "linear")
 #' #pa <- frag4feature(pa, xset)
 #' #pa <- averageIntraFragSpectra(pa)
-#' pa <- readRDS(system.file("extdata", "tests", "purityA", "4_averageIntraFragSpectra_no_filter_pa.rds", package="msPurity"))
+#' pa <- readRDS(system.file("extdata", "tests", "purityA",
+#'                           "4_averageIntraFragSpectra_no_filter_pa.rds",
+#'                           package="msPurity"))
 #' pa <- averageInterFragSpectra(pa)
 #' @md
 #' @export
@@ -252,7 +257,8 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'
 #' @examples
 #'
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#' #package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 #' #xset <- xcms::group(xset)
 #' #xset <- xcms::retcor(xset)
@@ -261,7 +267,8 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #' #pa  <- purityA(msmsPths, interpol = "linear")
 #' #pa <- frag4feature(pa, xset)
 #' #pa <- filterFragSpectra(pa)
-#' pa <- readRDS(system.file("extdata", "tests", "purityA", "3_filterFragSpectra_pa.rds", package="msPurity"))
+#' pa <- readRDS(system.file("extdata", "tests", "purityA",
+#'                           "3_filterFragSpectra_pa.rds", package="msPurity"))
 #' pa <- averageAllFragSpectra(pa)
 #' @md
 #' @export

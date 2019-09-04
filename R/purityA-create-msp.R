@@ -38,7 +38,8 @@
 #' @return Returns a MSP file with the selected spectra and metadata
 #' @examples
 #'
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#' #                package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 #' #xset <- xcms::group(xset)
 #' #xset <- xcms::retcor(xset)
@@ -47,7 +48,9 @@
 #' #pa  <- purityA(msmsPths)
 #' #pa <- frag4feature(pa, xset)
 #' #pa <- averageAllFragSpectra(pa)
-#' pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
+#' pa <- readRDS(system.file("extdata", "tests", "purityA",
+#'                           "9_averageAllFragSpectra_with_filter_pa.rds",
+#'                           package="msPurity"))
 #' createMSP(pa)
 #' @md
 #' @export
@@ -255,7 +258,7 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
 
       # add the user provided adduct text
       if(!include_adducts==''){
-        adduct_text <- paste(adduct_text, include_adducts, sep = ',')
+        adduct_text <- paste(adduct_text, include_adducts, sep = '')
       }
 
 
@@ -267,13 +270,14 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
     # split the text into a vecotr
     adducts <- strsplit(adduct_text, ' ')[[1]]
 
+
+
     if (identical(adducts, character(0))){
       adducts <- ''
     }
 
     # Remove duplicate adducts
     adducts <- unique(adducts)
-
 
     if (adduct_split){
       # loop through the adducts creating an appropiate MSP for each
@@ -285,6 +289,7 @@ write.msp <- function(precmz, rtmed, grpid, fileid, spectra, metadata, metadata_
         if (!is.null(metadatai)){
           metadatai[metadatai$grpid==grpid,precursor_type] <- adduct
         }
+
         write_msp_single(precmz, rtmed, grpid, fileid, adduct, spectra, metadatai, metadata_cols, ofile,
                          method, msp_schema, intensity_ra)
       }
@@ -329,14 +334,15 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, adduct, spectra, meta
     cat(paste0("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end), file = ofile)
     cat(paste0("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end), file = ofile)
     if (is.null(metadata) && !adduct==''){
-      cat(paste0("MS$FOCUSED_ION: PRECURSOR_TYPE: ", adduct, line_end), file = ofile)
+      cat(paste0("MS$FOCUSED_ION: PRECURSOR_TYPE ", adduct, line_end), file = ofile)
     }
   }
 
 
   if (!is.null(metadata)){
     metadata_to_write <- metadata[ , !(names(metadata) %in%  c('NAME:','RECORD_TITLE:', 'grpid', 'PRECURSORMZ:', 'RETENTIONTIME:',
-                                                               'MS$FOCUSED_ION: PRECURSOR_M/Z', 'AC$CHROMATOGRAPHY: RETENTION_TIME'))]
+                                                               'MS$FOCUSED_ION: PRECURSOR_M/Z', 'AC$CHROMATOGRAPHY: RETENTION_TIME')),
+                                   drop=FALSE]
 
     cat(paste(as.character(names(metadata_to_write)), ' ', as.character(unlist(metadata_to_write)), line_end, sep='', collapse=''), file = ofile)
   }

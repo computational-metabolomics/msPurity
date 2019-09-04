@@ -130,8 +130,10 @@ predictPurityExp <- function(Object, fidx){
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param sim boolean = TRUE if file is from sim stitch experiment. Default FALSE
 #' @examples
-#' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
-#' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
+#' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML",
+#'                        package="msPurityData")
+#' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth,
+#'                              minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
 #' @return a dataframe of the target mz values and the predicted purity score
 #' @export
 dimsPredictPuritySingle <- function(mztargets,
