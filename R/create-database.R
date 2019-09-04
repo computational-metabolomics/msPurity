@@ -18,7 +18,8 @@
 #'
 #' @examples
 #'
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#' #            package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' #xset <- xcms::xcmsSet(msmsPths)
 #' #xset <- xcms::group(xset)
 #'
@@ -28,8 +29,11 @@
 #' #db_pth <- create_database(pa, xset)
 #'
 #' # Run from previously generated data
-#' pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
-#' xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
+#' pa <- readRDS(system.file("extdata", "tests", "purityA",
+#'                           "9_averageAllFragSpectra_with_filter_pa.rds",
+#'                           package="msPurity"))
+#' xset <- readRDS(system.file("extdata","tests", "xcms",
+#'                             "msms_only_xset.rds", package="msPurity"))
 #'
 #' # Need to ensure the filelists are matching
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")

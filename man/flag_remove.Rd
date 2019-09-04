@@ -67,7 +67,8 @@ The output is a list of the updated xcmsSet object, grouped peaklist and the bla
 }
 \examples{
 
-msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+msPths <- list.files(system.file("extdata", "lcms", "mzML",
+                     package="msPurityData"), full.names = TRUE)
 xset <- xcms::xcmsSet(msPths)
 xset@phenoData[,1] <- c('blank', 'blank', 'sample', 'sample')
 xset <- xcms::group(xset)

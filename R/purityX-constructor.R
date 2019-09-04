@@ -35,7 +35,9 @@
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
-#' msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+#' msPths <- list.files(system.file("extdata", "lcms", "mzML",
+#'                     package="msPurityData"), full.names = TRUE,
+#'                     pattern = "LCMS_")
 #' xset <- xcms::xcmsSet(msPths)
 #' xset <- xcms::group(xset)
 #' xset <- xcms::retcor(xset)

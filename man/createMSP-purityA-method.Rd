@@ -68,7 +68,8 @@ The dataframe must contain the column "grpid" corresponding to the XCMS grouped 
 }
 \examples{
 
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#                package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 #xset <- xcms::group(xset)
 #xset <- xcms::retcor(xset)
@@ -77,6 +78,8 @@ The dataframe must contain the column "grpid" corresponding to the XCMS grouped 
 #pa  <- purityA(msmsPths)
 #pa <- frag4feature(pa, xset)
 #pa <- averageAllFragSpectra(pa)
-pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
+pa <- readRDS(system.file("extdata", "tests", "purityA",
+                          "9_averageAllFragSpectra_with_filter_pa.rds",
+                          package="msPurity"))
 createMSP(pa)
 }

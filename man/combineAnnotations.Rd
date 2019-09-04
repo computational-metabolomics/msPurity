@@ -64,6 +64,7 @@ Combine the annotation results from msPurity spectral matching, MetFrag, Sirius 
  The tool has to be run with a local compound database (available on request - contact t.n.lawson@bham.ac.uk)
 }
 \examples{
+<<<<<<< Updated upstream
 metfrag_resultPth <- system.file("extdata", "tests", "external_annotations", "metfrag.tsv", package="msPurity")
 # run the standard spectral matching workflow to get the sm_resultPth
 sm_resultPth <- system.file("extdata","tests", "sm", "spectralMatching_result.sqlite", package="msPurity")
@@ -71,5 +72,18 @@ compoundDbPth <- system.file("extdata", "tests", "db", "metab_compound_subset.sq
 combined <- combineAnnotations(sm_resultPth,
                                metfrag_resultPth,
                                outPth=file.path(tempdir(), 'combined.sqlite'),
+=======
+metfrag_resultPth <- system.file("extdata", "tests", "external_annotations",
+                                 "metfrag.tsv", package="msPurity")
+# run the standard spectral matching workflow to get the sm_resultPth
+sm_resultPth <- system.file("extdata","tests", "sm",
+                        "spectralMatching_result.sqlite", package="msPurity")
+compoundDbPth <- system.file("extdata", "tests", "db",
+                          "metab_compound_subset.sqlite", package="msPurity")
+combined <- combineAnnotations(sm_resultPth,
+                               metfrag_resultPth,
+                               outPth=file.path(tempdir(),
+                                'combined.sqlite'),
+>>>>>>> Stashed changes
                                compoundDbPth=compoundDbPth)
 }

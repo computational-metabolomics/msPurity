@@ -28,7 +28,9 @@
 #'
 #' @examples
 #'
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #msmsPths <- list.files(system.file("extdata", "lcms",
+#' #                        "mzML", package="msPurityData"), full.names = TRUE,
+#' #                         pattern = "MSMS")
 #' #xset <- xcms::xcmsSet(msmsPths)
 #' #xset <- xcms::group(xset)
 #' #xset <- xcms::retcor(xset)
@@ -36,7 +38,8 @@
 #'
 #' #pa  <- purityA(msmsPths)
 #' #pa <- frag4feature(pa, xset)
-#' pa <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
+#' pa <- readRDS(system.file("extdata", "tests", "purityA",
+#'                           "2_frag4feature_pa.rds", package="msPurity"))
 #' pa <- filterFragSpectra(pa)
 #'
 #' @return Returns a purityA object with the pa@@grped_msms spectra matrices are updated with the following columns

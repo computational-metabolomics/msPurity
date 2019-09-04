@@ -1,3 +1,15 @@
+CHANGES IN VERSION 1.11.3/4
+=========================
+* Overahaul of combineAnnotation function. Uses local database now as previously
+  API calls would take too much time to finish and was not useable
+* Various updates of createMPS to make compatible with Galaxy workflows
+* Parameeter added to purityA to allow user to change the PPM tolerance for MZ
+  values between scans when calculated the interpolated precursor ion purity
+* Update of spectralMatching results columns to include additional details
+  (e.g. retention time)
+* Update of spectralMatching so that either postgres or mysql database can be
+  used as input to either query or library
+
 CHANGES IN VERSION 1.11.2
 =========================
 * Bug fix for EIC with MSMS data

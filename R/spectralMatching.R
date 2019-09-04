@@ -121,54 +121,45 @@
 #'
 #' Path of the query database (this will have been updated with the annotation results if updateDb argument used)
 #'
-#' **matchedResults**
+#'**xcmsMatchedResults**
 #'
-#' All matched results from the query spectra to the library spectra. Contains the following columns
-#'
-#' * dpc - dot product cosine of the match
-#' * rdpc - reverse dot product cosine of the match
-#' * cdpc - composite dot product cosine of the match
-#' * mcount - number of matching peaks
-#' * allcount - total number of peaks across both query and library spectra
-#' * mpercent - percentage of matching peaks across both query and library spectra
-#' * accession -  accession of library match
-#' * name - name of library match
-#' * inchikey - inchikey of library match
-#' * lpid - pid in database of library match
-#' * qpid - pid in database of query match
-#' * mid - id of the match
-#'
-#' **xcmsMatchedResults**
-#'
-#' If the qeury spectra had XCMS based chromotographic peaks tables (e.g c_peak_groups, c_peaks) in the sqlite database - it will
+#'  If the qeury spectra had XCMS based chromotographic peaks tables (e.g c_peak_groups, c_peaks) in the sqlite database - it will
 #' be possible to summarise the matches for each XCMS grouped feature. The dataframe contains the following columns
 #'
-#' * pid - pid in database of query match
-#' * grpid - grpid of the XCMS grouped feature for query match
-#' * mz - derived from XCMS grouped feature
-#' * mzmin - derived from XCMS grouped feature
-#' * mzmax - derived from XCMS grouped feature
-#' * rt - derived from XCMS grouped feature
-#' * rtmin - derived from XCMS grouped feature
-#' * rtmax - derived from XCMS grouped feature
-#' * npeaks - derived from XCMS grouped feature
-#' * grp_name - derived from XCMS grouped feature
+#' * lpid - id in database of library spectra
+#' * qpid - id in database of query spectra
 #' * dpc - dot product cosine of the match
 #' * rdpc - reverse dot product cosine of the match
 #' * cdpc - composite dot product cosine of the match
 #' * mcount - number of matching peaks
 #' * allcount - total number of peaks across both query and library spectra
 #' * mpercent - percentage of matching peaks across both query and library spectra
-#' * accession -  accession of library match
-#' * name - name of library match
-#' * inchikey - inchikey of library match
-#' * lpid - pid in database of library match
-#' * mid - id of the match
+#' * library_rt - retention time of library spectra
+#' * query_rt - retention time of query spectra
+#' * rtdiff - difference between library and query retention time
+#' * library_precursor_mz - library precursor mz
+#' * query_precursor_mz - query precursor mz
+#' * library_precursor_ion_purity - library precursor ion purity
+#' * query_precursor_ion_purity - query precursor ion purity
+#' * library_accession -  library accession value (unique string or number given to eith MoNA or Massbank data entires)
+#' * library_precursor_type - library precursor type (i.e. adduct)
+#' * library_entry_name - Name given to the library spectra
+#' * inchikey - inchikey of the matched library spectra
+#' * library_source_name - source of the spectra (e.g. massbank, gnps)
+#' * library_compound_name - name of compound spectra was obtained from
+#'
+#' **matchedResults**
+#'
+#' All matched results from the query spectra to the library spectra. Contains the same columns as above
+#' but without the XCMS details. This table is useful to observe spectral matching results
+#' for all MS/MS spectra irrespective of if they are linked to XCMS MS1 features.
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
 #'
 #' @examples
-#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#' #                        package="msPurityData"), full.names = TRUE,
+#' #                         pattern = "MSMS")
 #' #xset <- xcms::xcmsSet(msmsPths)
 #' #xset <- xcms::group(xset)
 #' #xset <- xcms::retcor(xset)
@@ -179,10 +170,11 @@
 #' #pa <- filterFragSpectra(pa, allfrag=TRUE)
 #' #pa <- averageAllFragSpectra(pa)
 #' #q_dbPth <- createDatabase(pa, xset)
-#' q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
-#' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
+#' q_dbPth <- system.file("extdata", "tests", "db",
+#'                        "createDatabase_example.sqlite", package="msPurity")
+#' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1,
+#'                            l_accessions=c('CCMSLIB00000577898','CE000616'))
 #'
-#' @importFrom magrittr %>%
 #' @md
 #' @export
 spectralMatching <- function(

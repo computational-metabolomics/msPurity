@@ -83,7 +83,8 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 }
 \examples{
 
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 #xset <- xcms::group(xset)
 #xset <- xcms::retcor(xset)
@@ -91,6 +92,7 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 
 #pa  <- purityA(msmsPths)
 #pa <- frag4feature(pa, xset)
-pa <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
+pa <- readRDS(system.file("extdata", "tests", "purityA",
+              "2_frag4feature_pa.rds", package="msPurity"))
 pa <- averageIntraFragSpectra(pa)
 }
