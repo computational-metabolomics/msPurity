@@ -27,7 +27,7 @@
 #' @param compoundDbHost character; Database host (only applicable for postgres and mysql)
 #' @param compoundDbPort character; Database port (only applicable for postgres and mysql)
 #' @param compoundDbUser character; Database user (only applicable for postgres and mysql)
-#' @param compoundDbPass character; Database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)
+#' @param compoundDbPass character; Database pass (only applicable for postgres and mysql) - Note this is not secure!
 #'
 #'
 #'
@@ -132,17 +132,16 @@ combineAnnotations <- function(sm_resultPth,
 
   # Add anything that is not found (e.g. will be a few cases where pubchem won't have inchikey but the spectral matching result will have)
   missing_comps <- metab_compounds[!metab_compounds$inchikey %in% metab_compounds_m$inchikey,]
-
   missing_comps <- cbind(missing_comps, splitInchis(missing_comps$inchikey))
   colnames(missing_comps)[colnames(missing_comps)=='pubchem_id'] = 'pubchem_cids'
-  # Remove rows we won't be using from missing_comps
+
   keep_cols = c('inchikey', 'inchikey1', 'inchikey2', 'inchikey3', 'pubchem_cids',
                 'exact_mass', 'molecular_formula', 'name')
   missing_comps <- missing_comps[,keep_cols]
   findx <- sapply(missing_comps, is.factor)
   missing_comps[findx] <- lapply(missing_comps[findx], as.character)
+  missing_comps$exact_mass <- as.numeric(missing_comps$exact_mass)
   metab_compounds_m <- dplyr::bind_rows(metab_compounds_m, missing_comps)
-
 
   # remove the old table and add the modified table
   DBI::dbExecute(con, 'DROP TABLE metab_compound')
@@ -249,7 +248,12 @@ getBoundedSiriusScore <- function(x, rs){
   if(nrow(scores)==1){
     bounded_score <- 1
   }else{
-    bounded_score <- negMinMax(abs(scores$Score))
+    if ('Score' %in% colnames(scores)){
+      score <- abs(scores$Score)
+    }else{
+      score <- abs(scores$score)
+    }
+    bounded_score <- negMinMax(score)
   }
   scores$bounded_score <- bounded_score
   return(scores)
