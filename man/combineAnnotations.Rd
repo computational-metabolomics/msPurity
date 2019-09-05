@@ -48,7 +48,7 @@ This is only applicable if using "compoundDbType sqlite")}
 
 \item{compoundDbUser}{character; Database user (only applicable for postgres and mysql)}
 
-\item{compoundDbPass}{character; Database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)}
+\item{compoundDbPass}{character; Database pass (only applicable for postgres and mysql) - Note this is not secure!}
 
 \item{outPth}{character;}
 }
