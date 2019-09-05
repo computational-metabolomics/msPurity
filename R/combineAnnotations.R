@@ -517,7 +517,8 @@ combineScoresGrp <- function(c_peak_group, weights, con){
   if(DBI::dbExistsTable(con, 'sirius_csifingerid_results')){
     # check if adduct column present
     sirius_cols <- DBI::dbGetQuery(con, 'PRAGMA table_info(sirius_csifingerid_results)')
-    if ('adduct' %in% sirius_cols){
+
+    if ('adduct' %in% sirius_cols$name){
       adduct_colstr <- 's.adduct AS sirius_adduct'
     }else{
       adduct_colstr <- "'' AS sirius_adduct"
@@ -546,7 +547,7 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   if(DBI::dbExistsTable(con, 'metfrag_results')){
     metfrag_cols <- DBI::dbGetQuery(con, 'PRAGMA table_info(metfrag_results)')
-    if ('adduct' %in% metfrag_cols){
+    if ('adduct' %in% metfrag_cols$name){
       adduct_colstr <- 'm.adduct AS metfrag_adduct'
     }else{
       adduct_colstr <- "'' AS metfrag_adduct"
@@ -655,6 +656,8 @@ combineScoresGrp <- function(c_peak_group, weights, con){
 
   # Order
   combined_df <- combined_df[order(combined_df$wscore, decreasing=TRUE),]
+
+
 
   # in most cases the adduct will be the same but there is a chance a different naming was used
   # or that there are adduct types that have give the same neutral mass
