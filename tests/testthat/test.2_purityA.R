@@ -347,7 +347,7 @@ test_that("checking createMSP based functions", {
   metadata <- data.frame('grpid'=c(12, 27), 'MS$FOCUSED_ION: PRECURSOR_TYPE'=c('[M+H]+', '[M+H]+ 88.0158 [M+H+NH3]+ 105.042'),
                          'AC$MASS_SPECTROMETRY: ION_MODE'=c("POSITIVE","POSITIVE"), 'RECORD_TITLE:'=c('Sulfamethizole', 'Unknown'),
                          check.names = FALSE, stringsAsFactors = FALSE)
-  recrdt_msp_new_pth <- file.path(tmp_dir,'all.msp')
+  recrdt_msp_new_pth <- file.path(tmp_dir,'recrdt.msp')
   createMSP(pa, msp_file = recrdt_msp_new_pth, metadata = metadata,
             method = "all", xcms_groupids = c(12, 27))
 
