@@ -323,14 +323,23 @@ write_msp_single <- function(precmz, rtmed, grpid, fileid, adduct, spectra, meta
   }
 
   if (msp_schema=='mona'){
-    cat(paste0("NAME: ", name, line_end), file = ofile)
+    if ('NAME:' %in% colnames(metadata)){
+      cat(paste0("NAME: ", metadata[,'NAME:'], line_end), file = ofile)
+    }else{
+      cat(paste0("NAME: ", name, line_end), file = ofile)
+    }
+
     cat(paste0("PRECURSORMZ: ", precmz , line_end), file = ofile)
     cat(paste0("RETENTIONTIME: ", rtmed, line_end), file = ofile)
     if (is.null(metadata) && !adduct==''){
       cat(paste0("PRECURSOR_TYPE: ", adduct, line_end), file = ofile)
     }
   }else{
-    cat(paste0("RECORD_TITLE: ", name, line_end), file = ofile)
+    if ('RECORD_TITLE:' %in% colnames(metadata)){
+      cat(paste0("RECORD_TITLE: ", metadata[,'RECORD_TITLE:'], line_end), file = ofile)
+    }else{
+      cat(paste0("RECORD_TITLE: ", name, line_end), file = ofile)
+    }
     cat(paste0("MS$FOCUSED_ION: PRECURSOR_M/Z ", precmz , line_end), file = ofile)
     cat(paste0("AC$CHROMATOGRAPHY: RETENTION_TIME ", rtmed, line_end), file = ofile)
     if (is.null(metadata) && !adduct==''){
