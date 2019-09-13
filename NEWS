@@ -1,13 +1,13 @@
 CHANGES IN VERSION 1.11.3/4
 =========================
-* Overahaul of combineAnnotation function. Uses local database now as previously
-  API calls would take too much time to finish and was not useable
+* Overhaul of combineAnnotation function. Uses local database now as previously
+  API calls would take too much time to finish and was not usable
 * Various updates of createMSP to make compatible with Galaxy workflows
-* Parameeter added to purityA to allow user to change the PPM tolerance for MZ
+* Parameter added to purityA to allow user to change the PPM tolerance for MZ
   values between scans when calculated the interpolated precursor ion purity
 * Update of spectralMatching results columns to include additional details
   (e.g. retention time)
-* Update of spectralMatching so that either postgres or mysql database can be
+* Update of spectralMatching so that either PostgreSQL or MySQL database can be
   used as input to either query or library
 
 CHANGES IN VERSION 1.11.2
@@ -34,7 +34,7 @@ CHANGES IN VERSION 1.9.12
 
 CHANGES IN VERSION 1.9.11
 =========================
-* Bug fix for createMSP - now handles metada with duplicate grpids
+* Bug fix for createMSP - now handles metadata with duplicate grpids
 
 CHANGES IN VERSION 1.9.10
 =========================
@@ -125,7 +125,7 @@ CHANGES IN VERSION 0.99.3
 =========================
 * Grouping multiple peaklist into one wide dataframe
 ** Peaklists can now be averaged across each class using the function groupPeaks() for the class purityD
-** A list of dataframes can also be grouped togther using the function groupPeakEx()
+** A list of dataframes can also be grouped together using the function groupPeakEx()
 
 CHANGES IN VERSION 0.99.2
 =========================

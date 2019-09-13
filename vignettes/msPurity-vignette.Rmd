@@ -18,7 +18,7 @@ vignette: >
 
 # Introduction
 
-Th R was originally developed to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called "precursor ion purity". See associated paper  [@Lawson2017]. 
+The msPurity R package was originally developed to assess the contribution of the targeted precursor in a fragmentation isolation window using a metric called "precursor ion purity". See associated paper  [@Lawson2017]. 
 
 A number of updates have been made since the original paper and the full functionality of msPurity now includes the following:
 
