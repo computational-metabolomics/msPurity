@@ -1,5 +1,5 @@
 ============
-msPurity: Package to assess precursor ion purity and perform spectral matching
+msPurity: Package to assess precursor ion purity, process fragmentation spectra and perform spectral matching
 ============
 
 **Version:**
