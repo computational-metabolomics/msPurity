@@ -2,7 +2,7 @@ CHANGES IN VERSION 1.11.3/4
 =========================
 * Overahaul of combineAnnotation function. Uses local database now as previously
   API calls would take too much time to finish and was not useable
-* Various updates of createMPS to make compatible with Galaxy workflows
+* Various updates of createMSP to make compatible with Galaxy workflows
 * Parameeter added to purityA to allow user to change the PPM tolerance for MZ
   values between scans when calculated the interpolated precursor ion purity
 * Update of spectralMatching results columns to include additional details
@@ -46,7 +46,7 @@ CHANGES IN VERSION 1.9.9
     + Updated version of create_database that uses an updated schema
 * NEW FUNCTION: spectralMatching
     + Updated version spectral_matching that allows for more flexibility
-* Vigenettes and documentation update
+* Vignettes and documentation update
 
 CHANGES IN VERSION 1.9.8
 =========================
