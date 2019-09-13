@@ -1,21 +1,23 @@
-RECORD_TITLE: Sulfamethizole | [M+H]+ |  MZ:116.0706 | RT:47.8 | grpid:12 | file:NA
+RECORD_TITLE: MZ:116.0706 | RT:47.8 | grpid:12 | file:NA | adduct:[M+H]+
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: Sulfamethizole
 XCMS groupid (grpid): 12
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_all' msPurity version:1.9.10 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_all' msPurity version:1.11.4 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 116.070899963379	2295773.625	100
 
-RECORD_TITLE: possible other compound | [M+H]+ |  MZ:116.0706 | RT:47.8 | grpid:12 | file:NA
+RECORD_TITLE: MZ:116.0706 | RT:47.8 | grpid:12 | file:NA | adduct:[M+H]+
 MS$FOCUSED_ION: PRECURSOR_M/Z 116.070557825043
 AC$CHROMATOGRAPHY: RETENTION_TIME 47.814411
 MS$FOCUSED_ION: PRECURSOR_TYPE [M+H]+
 AC$MASS_SPECTROMETRY: ION_MODE POSITIVE
+CH$NAME: possible other compound
 XCMS groupid (grpid): 12
-COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_all' msPurity version:1.9.10 
+COMMENT: Exported from msPurity purityA object using function createMSP, using method 'av_all' msPurity version:1.11.4 
 PK$NUM_PEAK: 1
 PK$PEAK: m/z int. rel.int.
 116.070899963379	2295773.625	100

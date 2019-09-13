@@ -7,15 +7,18 @@
 spectralMatching(q_dbPth, l_dbPth = NA, q_purity = NA,
   q_ppmProd = 10, q_ppmPrec = 5, q_raThres = NA, q_pol = NA,
   q_instrumentTypes = NA, q_instruments = NA, q_sources = NA,
-  q_spectraTypes = "av_all", q_pids = NA, q_rtrange = c(NA, NA),
-  q_spectraFilter = TRUE, q_xcmsGroups = NA, q_accessions = NA,
-  l_purity = NA, l_ppmProd = 10, l_ppmPrec = 5, l_raThres = NA,
-  l_pol = "positive", l_instrumentTypes = NA, l_instruments = NA,
-  l_sources = NA, l_spectraTypes = NA, l_pids = NA,
-  l_rtrange = c(NA, NA), l_spectraFilter = FALSE, l_xcmsGroups = NA,
-  l_accessions = NA, usePrecursors = TRUE, raW = 0.5, mzW = 2,
-  rttol = NA, cores = 1, updateDb = FALSE, copyDb = FALSE,
-  outPth = "sm_result.sqlite")
+  q_spectraTypes = c("av_all", "inter"), q_pids = NA,
+  q_rtrange = c(NA, NA), q_spectraFilter = TRUE, q_xcmsGroups = NA,
+  q_accessions = NA, l_purity = NA, l_ppmProd = 10, l_ppmPrec = 5,
+  l_raThres = NA, l_pol = "positive", l_instrumentTypes = NA,
+  l_instruments = NA, l_sources = NA, l_spectraTypes = NA,
+  l_pids = NA, l_rtrange = c(NA, NA), l_spectraFilter = FALSE,
+  l_xcmsGroups = NA, l_accessions = NA, usePrecursors = TRUE,
+  raW = 0.5, mzW = 2, rttol = NA, q_dbType = "sqlite",
+  q_dbName = NA, q_dbHost = NA, q_dbUser = NA, q_dbPass = NA,
+  q_dbPort = NA, l_dbType = "sqlite", l_dbName = NA, l_dbHost = NA,
+  l_dbUser = NA, l_dbPass = NA, l_dbPort = NA, cores = 1,
+  updateDb = FALSE, copyDb = FALSE, outPth = "sm_result.sqlite")
 }
 \arguments{
 \item{q_dbPth}{character; Path of the database of queries that will be searched against the library spectra. Generated from createDatabase}
@@ -88,6 +91,30 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 
 \item{rttol}{numeric ; Tolerance in time range between the library and query spectra retention time}
 
+\item{q_dbType}{character; Query database type for compound database can be either (sqlite, postgres or mysql)}
+
+\item{q_dbName}{character; Query database name (only applicable for postgres and mysql)}
+
+\item{q_dbHost}{character; Query database host (only applicable for postgres and mysql)}
+
+\item{q_dbUser}{character; Query database user (only applicable for postgres and mysql)}
+
+\item{q_dbPass}{character; Query database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)}
+
+\item{q_dbPort}{character; Query database port (only applicable for postgres and mysql)}
+
+\item{l_dbType}{character; Library database type for compound database can be either (sqlite, postgres or mysql)}
+
+\item{l_dbName}{character; Library database name (only applicable for postgres and mysql)}
+
+\item{l_dbHost}{character; Library database host (only applicable for postgres and mysql)}
+
+\item{l_dbUser}{character; Library database user (only applicable for postgres and mysql)}
+
+\item{l_dbPass}{character; Library database pass - Note this is not secure! use with caution (only applicable for postgres and mysql)}
+
+\item{l_dbPort}{character; Library database port (only applicable for postgres and mysql)}
+
 \item{cores}{numeric; Number of cores to use}
 
 \item{updateDb}{boolean; Update the Query SQLite database with the results}
@@ -103,51 +130,39 @@ Returns a list containing the following elements
 
 Path of the query database (this will have been updated with the annotation results if updateDb argument used)
 
-\strong{matchedResults}
-
-All matched results from the query spectra to the library spectra. Contains the following columns
-\itemize{
-\item dpc - dot product cosine of the match
-\item rdpc - reverse dot product cosine of the match
-\item cdpc - composite dot product cosine of the match
-\item mcount - number of matching peaks
-\item allcount - total number of peaks across both query and library spectra
-\item mpercent - percentage of matching peaks across both query and library spectra
-\item accession -  accession of library match
-\item name - name of library match
-\item inchikey - inchikey of library match
-\item lpid - pid in database of library match
-\item qpid - pid in database of query match
-\item mid - id of the match
-}
-
 \strong{xcmsMatchedResults}
 
 If the qeury spectra had XCMS based chromotographic peaks tables (e.g c_peak_groups, c_peaks) in the sqlite database - it will
 be possible to summarise the matches for each XCMS grouped feature. The dataframe contains the following columns
 \itemize{
-\item pid - pid in database of query match
-\item grpid - grpid of the XCMS grouped feature for query match
-\item mz - derived from XCMS grouped feature
-\item mzmin - derived from XCMS grouped feature
-\item mzmax - derived from XCMS grouped feature
-\item rt - derived from XCMS grouped feature
-\item rtmin - derived from XCMS grouped feature
-\item rtmax - derived from XCMS grouped feature
-\item npeaks - derived from XCMS grouped feature
-\item grp_name - derived from XCMS grouped feature
+\item lpid - id in database of library spectra
+\item qpid - id in database of query spectra
 \item dpc - dot product cosine of the match
 \item rdpc - reverse dot product cosine of the match
 \item cdpc - composite dot product cosine of the match
 \item mcount - number of matching peaks
 \item allcount - total number of peaks across both query and library spectra
 \item mpercent - percentage of matching peaks across both query and library spectra
-\item accession -  accession of library match
-\item name - name of library match
-\item inchikey - inchikey of library match
-\item lpid - pid in database of library match
-\item mid - id of the match
+\item library_rt - retention time of library spectra
+\item query_rt - retention time of query spectra
+\item rtdiff - difference between library and query retention time
+\item library_precursor_mz - library precursor mz
+\item query_precursor_mz - query precursor mz
+\item library_precursor_ion_purity - library precursor ion purity
+\item query_precursor_ion_purity - query precursor ion purity
+\item library_accession -  library accession value (unique string or number given to eith MoNA or Massbank data entires)
+\item library_precursor_type - library precursor type (i.e. adduct)
+\item library_entry_name - Name given to the library spectra
+\item inchikey - inchikey of the matched library spectra
+\item library_source_name - source of the spectra (e.g. massbank, gnps)
+\item library_compound_name - name of compound spectra was obtained from
 }
+
+\strong{matchedResults}
+
+All matched results from the query spectra to the library spectra. Contains the same columns as above
+but without the XCMS details. This table is useful to observe spectral matching results
+for all MS/MS spectra irrespective of if they are linked to XCMS MS1 features.
 
 list of database details and dataframe summarising the results for the xcms features
 }
@@ -213,7 +228,9 @@ See the vigenttes for more details regarding matching algorithms used.
 }
 }
 \examples{
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#                        package="msPurityData"), full.names = TRUE,
+#                         pattern = "MSMS")
 #xset <- xcms::xcmsSet(msmsPths)
 #xset <- xcms::group(xset)
 #xset <- xcms::retcor(xset)
@@ -224,7 +241,9 @@ See the vigenttes for more details regarding matching algorithms used.
 #pa <- filterFragSpectra(pa, allfrag=TRUE)
 #pa <- averageAllFragSpectra(pa)
 #q_dbPth <- createDatabase(pa, xset)
-q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'))
+q_dbPth <- system.file("extdata", "tests", "db",
+                       "createDatabase_example.sqlite", package="msPurity")
+result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1,
+                           l_accessions=c('CCMSLIB00000577898','CE000616'))
 
 }

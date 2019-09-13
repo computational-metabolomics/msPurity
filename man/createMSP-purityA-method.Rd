@@ -9,7 +9,7 @@
 \S4method{createMSP}{purityA}(pa, msp_file_pth = NULL, metadata = NULL,
   metadata_cols = NULL, xcms_groupids = NULL, method = "all",
   adduct_split = TRUE, filter = TRUE, msp_schema = "massbank",
-  intensity_ra = "intensity_ra")
+  intensity_ra = "intensity_ra", include_adducts = "")
 }
 \arguments{
 \item{pa}{object;  purityA object}
@@ -35,6 +35,8 @@ averaged spectra, "av_all" will use the averaged spectra (ignoring inter and int
 
 \item{intensity_ra}{character; Either 'intensity', 'ra' (relative abundance) or 'intensity_ra' (intensity and relative abundance) to be written
 to the MSP file}
+
+\item{include_adducts}{character; Additional adducts to include as a string seperated by white a space (e.g. [M+H]+ [M+Na]+)}
 }
 \value{
 Returns a MSP file with the selected spectra and metadata
@@ -66,7 +68,8 @@ The dataframe must contain the column "grpid" corresponding to the XCMS grouped 
 }
 \examples{
 
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#                package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 #xset <- xcms::group(xset)
 #xset <- xcms::retcor(xset)
@@ -75,6 +78,8 @@ The dataframe must contain the column "grpid" corresponding to the XCMS grouped 
 #pa  <- purityA(msmsPths)
 #pa <- frag4feature(pa, xset)
 #pa <- averageAllFragSpectra(pa)
-pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
+pa <- readRDS(system.file("extdata", "tests", "purityA",
+                          "9_averageAllFragSpectra_with_filter_pa.rds",
+                          package="msPurity"))
 createMSP(pa)
 }

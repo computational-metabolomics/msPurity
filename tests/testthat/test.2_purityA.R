@@ -265,16 +265,18 @@ test_that("checking createMSP based functions", {
 
 
   metadata <- data.frame('grpid'=c(12, 27), 'MS$FOCUSED_ION: PRECURSOR_TYPE'=c('[M+H]+', '[M+H]+ 88.0158 [M+H+NH3]+ 105.042'),
-                         'AC$MASS_SPECTROMETRY: ION_MODE'=c("POSITIVE","POSITIVE"), 'RECORD_TITLE:'=c('Sulfamethizole', 'Unknown'),
+                         'AC$MASS_SPECTROMETRY: ION_MODE'=c("POSITIVE","POSITIVE"), 'CH$NAME:'=c('Sulfamethizole', 'Unknown'),
                          check.names = FALSE, stringsAsFactors = FALSE)
 
   tmp_dir <- tempdir()
+
 
   ################################
   # Check all method
   ################################
   all_msp_new_pth <- file.path(tmp_dir,'all.msp')
-  createMSP(pa, msp_file = all_msp_new_pth, metadata = metadata, method = "all", xcms_groupids = c(12, 27))
+  createMSP(pa, msp_file = all_msp_new_pth, metadata = metadata,
+            method = "all", xcms_groupids = c(12, 27))
 
   all_msp_new <- get_msp_str(all_msp_new_pth)
   all_msp_old <- get_msp_str(system.file("extdata", "tests", "msp", "all.msp", package="msPurity"))
@@ -285,7 +287,8 @@ test_that("checking createMSP based functions", {
   # Check max method
   ################################
   max_msp_new_pth <- file.path(tmp_dir,'max.msp')
-  createMSP(pa, msp_file = max_msp_new_pth, metadata = metadata, method = "max", xcms_groupids = c(12, 27))
+  createMSP(pa, msp_file = max_msp_new_pth, metadata = metadata, method = "max",
+            xcms_groupids = c(12, 27), filter=FALSE)
 
   max_msp_new <- get_msp_str(max_msp_new_pth)
   max_msp_old <- get_msp_str(system.file("extdata", "tests","msp", "max.msp", package="msPurity"))
@@ -338,15 +341,19 @@ test_that("checking createMSP based functions", {
   av_all_msp_dupmeta_old <- get_msp_str(system.file("extdata", "tests","msp", "av_all_dupmeta.msp", package="msPurity"))
   expect_equal(av_all_msp_dupmeta_new, av_all_msp_dupmeta_old)
 
+  ################################
+  # When the RECORD_TITLE: is defined by user
+  ################################
+  metadata <- data.frame('grpid'=c(12, 27), 'MS$FOCUSED_ION: PRECURSOR_TYPE'=c('[M+H]+', '[M+H]+ 88.0158 [M+H+NH3]+ 105.042'),
+                         'AC$MASS_SPECTROMETRY: ION_MODE'=c("POSITIVE","POSITIVE"), 'RECORD_TITLE:'=c('Sulfamethizole', 'Unknown'),
+                         check.names = FALSE, stringsAsFactors = FALSE)
+  recrdt_msp_new_pth <- file.path(tmp_dir,'recrdt.msp')
+  createMSP(pa, msp_file = recrdt_msp_new_pth, metadata = metadata,
+            method = "all", xcms_groupids = c(12, 27))
 
-  #createMSP(pa, msp_file = 'all.msp', metadata = metadata, method = "all", xcms_groupids = c(8, 12))
-  #createMSP(pa, msp_file = 'max.msp', metadata = metadata, method = "max", xcms_groupids = c(8, 12))
-  #createMSP(pa, msp_file = 'av_inter.msp', metadata = metadata, method = "av_inter", xcms_groupids = c(8, 12))
-  #createMSP(pa, msp_file = 'av_intra.msp', metadata = metadata, method = "av_intra", xcms_groupids = c(8, 12))
-  #createMSP(pa, msp_file = 'av_all.msp', metadata = metadata, method = "av_all", xcms_groupids = c(8, 12))
-
-
-
+  recrdt_msp_new <- get_msp_str(recrdt_msp_new_pth)
+  recrdt_msp_old <- get_msp_str(system.file("extdata", "tests", "msp", "recrdt.msp", package="msPurity"))
+  expect_equal(recrdt_msp_new, recrdt_msp_old)
 })
 
 

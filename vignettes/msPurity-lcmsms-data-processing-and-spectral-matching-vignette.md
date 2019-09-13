@@ -1,7 +1,7 @@
 ---
 title: "LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS"
 author: "Thomas N. Lawson"
-date: "`r Sys.Date()`"
+date: "2019-09-05"
 output: 
   BiocStyle::html_document:
     toc: true
@@ -34,7 +34,8 @@ We first need to run XCMS so that we can later link the spectral matching result
 
 (Please use the appropiate settings for your data)
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+
+```r
 library(msPurity)
 mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
 xset <- xcms::xcmsSet(mzMLpths)
@@ -49,7 +50,8 @@ xset <- xcms::group(xset)
 The `purityA` function is then called to calculate the precursor purity of the fragmentation results and the `frag4feature` function will link the 
 fragmentation data back to the XCMS feature.
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+
+```r
 pa  <- purityA(mzMLpths)
 pa <- frag4feature(pa, xset)
 ```
@@ -58,7 +60,8 @@ pa <- frag4feature(pa, xset)
 
 The fragmentation can be filtered prior to averaging using the “filterFragSpectra” function
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+
+```r
 pa <- filterFragSpectra(pa)
 ```
 
@@ -67,14 +70,16 @@ Averaging of the fragmentation spectra can be done with either “averageAllFrag
 
 If the inter and intra fragmentation scans are to be treated differently the following should be followed:
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+
+```r
 pa <- averageIntraFragSpectra(pa) # use parameters specific to intra spectra 
 pa <- averageInterFragSpectra(pa) # use parameters specific to inter spectra
 ```
 
 If the inter and intra fragmentation scans are to be treated the same the following workflow should be used.
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+
+```r
 pa <- averageAllFragSpectra(pa) 
 ```
 
@@ -82,7 +87,8 @@ pa <- averageAllFragSpectra(pa)
 
 An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+
+```r
 td <- tempdir()
 q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'lcmsms-processing.sqlite')
 ```
@@ -121,9 +127,102 @@ $$ F_{cpdc} = \frac{1000}{N_{Q} + N_{L\&Q}} \cdot (N_{Q} \cdot F_{dpc} + N_{L\&Q
 
 The following example shows how to match two xcms groups against two of the library spectral filtered by their MoNA/MassBank accession ids.
 
-```{r}
+
+```r
 result <- spectralMatching(q_dbPth, q_xcmsGroups = c(17, 41), l_accessions=c('CCMSLIB00000577898','CE000616'))
+```
+
+```
+## Running msPurity spectral matching function for LC-MS(/MS) data
+```
+
+```
+## Filter query dataset
+```
+
+```
+## Filter library dataset
+```
+
+```
+## aligning and matching
+```
+
+```
+## Summarising LC feature annotations
+```
+
+```r
 print(result)
+```
+
+```
+## $q_dbPth
+## [1] "/tmp/RtmpodCsKs/lcmsms-processing.sqlite"
+## 
+## $matchedResults
+##    lpid qpid mid       dpc rdpc      cdpc mcount allcount   mpercent
+## 1  5325 1661   1 0.8739497    1 0.8359519      1       22 0.04545455
+## 2  5325 1662   2 0.8739497    1 0.8359519      1       22 0.04545455
+## 3 53807 1664   3 0.9408905    1 0.8960862      1       20 0.05000000
+## 4 53807 1665   4 0.9408905    1 0.8960862      1       20 0.05000000
+##   library_rt query_rt rtdiff library_precursor_mz query_precursor_mz
+## 1       <NA> 44.45066     NA               116.07           116.0705
+## 2       <NA> 44.45066     NA               116.07           116.0705
+## 3       <NA> 70.39686     NA            132.10191           132.1018
+## 4       <NA> 70.39686     NA            132.10191           132.1018
+##   library_precursor_ion_purity query_precursor_ion_purity
+## 1                         <NA>                   0.997344
+## 2                         <NA>                   1.000000
+## 3                         <NA>                   1.000000
+## 4                         <NA>                   1.000000
+##    library_accession library_precursor_type library_entry_name
+## 1 CCMSLIB00000577898                    M+H          L-PROLINE
+## 2 CCMSLIB00000577898                    M+H          L-PROLINE
+## 3           CE000616                 [M+H]+         Isoleucine
+## 4           CE000616                 [M+H]+         Isoleucine
+##                      inchikey library_source_name library_compound_name
+## 1 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
+## 2 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
+## 3 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
+## 4 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
+## 
+## $xcmsMatchedResults
+##    pid grpid       mz    mzmin    mzmax       rt    rtmin    rtmax npeaks
+## 1 1661    17 116.0705 116.0703 116.0706 44.45066 43.95639 44.90363      4
+## 2 1662    17 116.0705 116.0703 116.0706 44.45066 43.95639 44.90363      4
+## 3 1664    41 132.1018 132.1017 132.1018 70.39686 69.81528 70.75930      4
+## 4 1665    41 132.1018 132.1017 132.1018 70.39686 69.81528 70.75930      4
+##   mzML   LCMSMS_1   LCMSMS_2     LCMS_1     LCMS_2 grp_name  lpid mid
+## 1    4  130337063  124086404  230819937  234755462  M116T44  5325   1
+## 2    4  130337063  124086404  230819937  234755462  M116T44  5325   2
+## 3    4 2879676651 2794252073 3455044747 3379259900  M132T70 53807   3
+## 4    4 2879676651 2794252073 3455044747 3379259900  M132T70 53807   4
+##         dpc rdpc      cdpc mcount allcount   mpercent library_rt query_rt
+## 1 0.8739497    1 0.8359519      1       22 0.04545455       <NA> 44.45066
+## 2 0.8739497    1 0.8359519      1       22 0.04545455       <NA> 44.45066
+## 3 0.9408905    1 0.8960862      1       20 0.05000000       <NA> 70.39686
+## 4 0.9408905    1 0.8960862      1       20 0.05000000       <NA> 70.39686
+##   rtdiff library_precursor_mz query_precursor_mz
+## 1     NA               116.07           116.0705
+## 2     NA               116.07           116.0705
+## 3     NA            132.10191           132.1018
+## 4     NA            132.10191           132.1018
+##   library_precursor_ion_purity query_precursor_ion_purity
+## 1                         <NA>                   0.997344
+## 2                         <NA>                   1.000000
+## 3                         <NA>                   1.000000
+## 4                         <NA>                   1.000000
+##    library_accession library_precursor_type library_entry_name
+## 1 CCMSLIB00000577898                    M+H          L-PROLINE
+## 2 CCMSLIB00000577898                    M+H          L-PROLINE
+## 3           CE000616                 [M+H]+         Isoleucine
+## 4           CE000616                 [M+H]+         Isoleucine
+##                      inchikey library_source_name library_compound_name
+## 1 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
+## 2 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
+## 3 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
+## 4 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
 ```
 
 

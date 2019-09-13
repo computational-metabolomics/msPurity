@@ -84,7 +84,9 @@ Perform spectral matching to spectral libraries using dot product cosine on a LC
 msPurity::spectral_matching is deprecated - please use msPurity::spectralMatching for future use
 }
 \examples{
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#                         package="msPurityData"), full.names = TRUE,
+#                         pattern = "MSMS")
 #xset <- xcms::xcmsSet(msmsPths)
 #xset <- xcms::group(xset)
 #xset <- xcms::retcor(xset)
@@ -94,6 +96,7 @@ msPurity::spectral_matching is deprecated - please use msPurity::spectralMatchin
 #pa <- frag4feature(pa, xset)
 #pa <- averageAllFragSpectra(pa)
 #db_pth <- create_database(pa, xset)
-#q_dbPth <- system.file("extdata", "tests", "db", "create_database_example.sqlite", package="msPurity")
+#q_dbPth <- system.file("extdata", "tests", "db",
+#                        "create_database_example.sqlite", package="msPurity")
 #result <- spectral_matching(q_dbPth, spectra_type_q="av_all")
 }

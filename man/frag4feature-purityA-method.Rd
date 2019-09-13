@@ -97,7 +97,9 @@ The purityA object can be used for further processing including linking the frag
 }
 \examples{
 
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+msmsPths <- list.files(system.file("extdata", "lcms",
+                       "mzML", package="msPurityData"), full.names = TRUE,
+                       pattern = "MSMS")
 xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
 xset <- xcms::group(xset)
 xset <- xcms::retcor(xset)
