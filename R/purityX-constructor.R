@@ -35,7 +35,9 @@
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
-#' msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+#' msPths <- list.files(system.file("extdata", "lcms", "mzML",
+#'                     package="msPurityData"), full.names = TRUE,
+#'                     pattern = "LCMS_")
 #' xset <- xcms::xcmsSet(msPths)
 #' xset <- xcms::group(xset)
 #' xset <- xcms::retcor(xset)
@@ -92,9 +94,11 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   #  the 'fillpeaks' function)
   peaklist <- peaklist[!is.na( peaklist[,'sn']),]
 
+  msLevelTracking <- get_mslevel_tracking(filepth)
+
   for(i in 1:nrow(peaklist)){
     peak <- peaklist[i,]
-    lidx <- get_rt_idx(peak, xset, rtrawColumns)
+    lidx <- get_rt_idx(peak, xset, rtrawColumns, msLevelTracking)
 
     peaklist[i,]['minscan'] <- lidx$rtminidx
     peaklist[i,]['maxscan'] <- lidx$rtmaxidx
@@ -106,7 +110,7 @@ xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, pl
   if(plotP){
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
-  msLevelTracking <- get_mslevel_tracking(filepth)
+
 
   sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
                       rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
@@ -182,9 +186,13 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 
   # Need to get the raw retention time and scans
   # (i.e. the times prior to retention time correction)
+  msLevelTracking <- get_mslevel_tracking(filepths)
+
+
   for(i in 1:nrow(grouplist)){
     peak <- grouplist[i,]
-    lidx <- get_rt_idx(peak, xset, rtrawColumns)
+
+    lidx <- get_rt_idx(peak, xset, rtrawColumns, msLevelTracking)
 
     grouplist[i,]['rtraw'] <- lidx$rtraw
     grouplist[i,]['rtminraw'] <- lidx$rtminraw
@@ -196,7 +204,7 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 
   }
 
-  print(nrow(grouplist))
+  #print(nrow(grouplist))
 
   # Trn into dataframe for ease of use with plyr
   grouplist <- data.frame(grouplist)
@@ -227,7 +235,7 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
     dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
   }
 
-  msLevelTracking <- get_mslevel_tracking(filepths)
+
 
   # perform predictions
   purityPredictions <- plyr::dlply(grouplist,
@@ -297,33 +305,36 @@ xcmsGroupPurity <- function(xset, purityType, offsets,
 }
 
 
-get_rt_idx <- function(peak, xset, rtrawColumns){
+get_rt_idx <- function(peak, xset, rtrawColumns, msLevelTracking){
 
   sid <- as.numeric(peak['sample'])
   raw <- xset@rt$raw[[sid]]
   corrected <- xset@rt$corrected[[sid]]
 
   if (rtrawColumns){
-    rtmed <- as.numeric(peak['rt_raw'])
-    rtmin <- as.numeric(peak['rtmin_raw'])
-    rtmax <- as.numeric(peak['rtmax_raw'])
-    rtmedidx <- which(raw==rtmed)
-    rtminidx <- which(raw==rtmin)
-    rtmaxidx <- which(raw==rtmax)
+    rtmedraw <- as.numeric(peak['rt_raw'])
+    rtminraw <- as.numeric(peak['rtmin_raw'])
+    rtmaxraw <- as.numeric(peak['rtmax_raw'])
+    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmedraw]
+    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtminraw]
+    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmaxraw]
+
 
   }else{
     rtmed <- as.numeric(peak['rt'])
     rtmin <- as.numeric(peak['rtmin'])
     rtmax <- as.numeric(peak['rtmax'])
-    rtmedidx <- which(corrected==rtmed)
-    rtminidx <- which(corrected==rtmin)
-    rtmaxidx <- which(corrected==rtmax)
-
+    rtmedraw <- raw[which(corrected==rtmed)]
+    rtminraw <- raw[which(corrected==rtmin)]
+    rtmaxraw <- raw[which(corrected==rtmax)]
+    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmedraw]
+    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtminraw]
+    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmaxraw]
   }
 
   return(list('rtmedidx'=rtmedidx, 'rtminidx'=rtminidx, 'rtmaxidx'=rtmaxidx,
-              'rtraw'=raw[rtmedidx], 'rtminraw'=raw[rtminidx],
-              'rtmaxraw'=raw[rtmaxidx]))
+              'rtraw'=rtmedraw, 'rtminraw'=rtminraw,
+              'rtmaxraw'=rtmaxraw))
 
 }
 
@@ -380,6 +391,8 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
   mzmax <- target$mz + offsets[1]
   mzmin <- target$mz - offsets[2]
 
+
+
   #get purity for that region
   dfp <- plyr::ldply(roi_scns, pcalc,
                      mzmin=mzmin,
@@ -405,11 +418,12 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
   # Calculate FWHM
   fwhm <- calculateFWHM(dfp)
 
-
   # we wan't to ignore any ms2 or above scans for any of the proceeding calculations
   msLevelTrackingShrt <- msLevelTracking[msLevelTracking$sample==target$sample,]
+
   dfp <- merge(x = dfp, y = msLevelTrackingShrt, by = "scan")
   dfp <- dfp[dfp$msLevel==1, ]
+
   mslevel1_indx <- as.numeric(rownames(dfp))
 
   if(plotP){
@@ -455,9 +469,11 @@ pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
       con <- DBI::dbConnect(RSQLite::SQLite(),'eics.sqlite')
     }
 
+    colnames(dfp)[colnames(dfp)=='retentionTime'] = 'rt_raw'
+    #dfp$rt_raw <- xset@rt$raw[[target$sample]][dfp$scan]
 
-    dfp$rt_raw <- xset@rt$raw[[target$sample]][dfp$scan]
-    dfp$rt_corrected <- xset@rt$corrected[[target$sample]][dfp$scan]
+    dfp$rt_corrected <- xset@rt$corrected[[target$sample]][which(xset@rt$raw[[target$sample]] %in% dfp$rt_raw)]
+
     dfp$grpid <- target$grpid
     dfp$c_peak_id <- target$c_peak_id
     dfp$eicidi <- 1:nrow(dfp)
@@ -502,7 +518,13 @@ calculateFWHM <- function(df){
 }
 
 getEic <- function(roi_scn, target){
-  roi_scn <- data.frame(roi_scn)
+  if(is.null(roi_scn)){
+    return(0)
+  }else if(nrow(roi_scn)==0){
+    return(0)
+  }else{
+    roi_scn <- data.frame(roi_scn)
+  }
 
   sub <- roi_scn[(roi_scn[,1]>=target$mzmin) & (roi_scn[,1]<=target$mzmax),]
 
@@ -533,7 +555,7 @@ CV <- function(x) (sd(x)/mean(x))*100
 
 get_mslevel_tracking <- function(filepths){
   msLevelTracking <- getmrdf_standard_all(filepths)
-  msLevelTracking <- msLevelTracking[,c('seqNum','sample', 'msLevel')]
+  msLevelTracking <- msLevelTracking[,c('seqNum','sample', 'msLevel', 'acquisitionNum', 'retentionTime')]
   colnames(msLevelTracking)[1] <- 'scan'
   return(msLevelTracking)
 }

@@ -8,7 +8,7 @@ assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
   nearest = TRUE, offsets = NA, cores = 1, plotP = FALSE,
   plotdir = NULL, interpol = "linear", iwNorm = FALSE,
   iwNormFun = NULL, ilim = 0, mzRback = "pwiz", isotopes = TRUE,
-  im = NULL)
+  im = NULL, ppmInterp = 7)
 }
 \arguments{
 \item{filepth}{character; mzML file path for MS/MS spectra}
@@ -40,6 +40,9 @@ assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
 \item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
 \item{im}{matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)}
+
+\item{ppmInterp}{numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
+the precursor ion found in the neighbouring scans.}
 }
 \value{
 a dataframe of the purity score of the ms/ms spectra

@@ -50,8 +50,8 @@ setGeneric(name="writeOut",
 
 setGeneric(name="frag4feature",
            def=function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE,
-                        create_db=FALSE, out_dir='.', db_name=NA, grp_peaklist=NA,
-                        use_group=FALSE){
+                        useGroup=FALSE, create_db=FALSE,
+                        out_dir='.', db_name=NA, grp_peaklist=NA, use_group=NA){
              standardGeneric("frag4feature")
            }
 )
@@ -79,7 +79,7 @@ setGeneric(name="averageAllFragSpectra",
 
 
 setGeneric(name="filterFragSpectra",
-           def=function(pa, ilim=0, plim=0.8, ra=0, snr=3, cores=1, rmp=FALSE, snmeth='median') {
+           def=function(pa, ilim=0, plim=0.8, ra=0, snr=3, cores=1, rmp=FALSE, snmeth='median', allfrag=FALSE) {
              standardGeneric("filterFragSpectra")
            }
 )
@@ -88,7 +88,7 @@ setGeneric(name="filterFragSpectra",
 setGeneric(name="createMSP",
            def=function(pa, msp_file_pth=NULL, metadata=NULL, metadata_cols=NULL,
                         xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE,
-                        msp_schema='massbank', intensity_ra='intensity_ra') {
+                        msp_schema='massbank', intensity_ra='intensity_ra', include_adducts='') {
              standardGeneric("createMSP")
            }
 )
