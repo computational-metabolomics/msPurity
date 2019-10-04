@@ -103,7 +103,7 @@ setMethod(f="frag4feature", signature="purityA",
 
   # Get the purity data frame and the xcms peaks data frame
   puritydf <- pa@puritydf
-  puritydf$fileid <- as.numeric(puritydf$fileid)
+  puritydf$fileid <- as.numeric(as.character(puritydf$fileid))
   allpeaks <- data.frame(xset@peaks)
   allpeaks$cid <- seq(1, nrow(allpeaks))
   allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=xset)
