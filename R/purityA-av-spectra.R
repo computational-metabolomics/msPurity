@@ -457,7 +457,7 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sumi,
     # have already have been calculated
     # these will have already been calculated if filterFragSpectra has already been applied
     if ((!'snr' %in% colnames(spectra)) & (!'ra' %in% colnames(spectra))){
-      spectra <- ddply(spectra, indx, set_snr_ra)
+      spectra <- plyr::ddply(spectra, indx, set_snr_ra)
     }
 
   }
