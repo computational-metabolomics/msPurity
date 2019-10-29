@@ -106,6 +106,14 @@ setMethod(f="frag4feature", signature="purityA",
   puritydf$fileid <- as.numeric(as.character(puritydf$fileid))
   allpeaks <- data.frame(xset@peaks)
   allpeaks$cid <- seq(1, nrow(allpeaks))
+  correctNA <- function(x){
+    if(is.na(x)){
+      x <- 0
+    }else{
+      x <- x #Need it because I obtained NULL value without it
+    }
+  }
+  allpeaks <- data.frame(apply(allpeaks,c(1,2),correctNA),stringsAsFactors=FALSE)
   allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=xset)
 
   if(convert2RawRT){
@@ -225,9 +233,9 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
   }
 
   if (fullp){
-    mtchRT <- allpeaks[prt>=allpeaks$rtmin_full & prt<=allpeaks$rtmax_full, ]
+    mtchRT <- allpeaks[which(allpeaks[,"rtmin_full"]<=prt & allpeaks[,"rtmax_full"]>=prt),]
   }else{
-    mtchRT <- allpeaks[prt>=allpeaks$rtmin & prt<=allpeaks$rtmax, ]
+    mtchRT <- allpeaks[which(allpeaks[,"rtmin"]<=prt & allpeaks[,"rtmax"]>=prt),]
   }
 
 
