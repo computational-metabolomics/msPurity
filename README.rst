@@ -21,7 +21,7 @@ See NEWS file for updates
 
 **Bioconductor (devel):**
 
-|Bioconductor devel availability| |Bioconductor devel downloads|  |Bioconductor release build results|
+|Bioconductor devel availability| |Bioconductor devel downloads|  |Bioconductor devel build results|
 
 ------------
 Which version to use?
