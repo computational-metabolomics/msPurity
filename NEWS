@@ -1,3 +1,8 @@
+CHANGES IN VERSION 1.11.5
+=========================
+* frag4feature fileid fix for conversion from factor to character
+* Add missing plyr:: reference (thanks jsaintvanne)
+
 CHANGES IN VERSION 1.11.3/4
 =========================
 * Overhaul of combineAnnotation function. Uses local database now as previously
