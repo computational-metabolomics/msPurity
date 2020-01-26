@@ -335,7 +335,7 @@ addProbmetab <- function(pth, con){
 
 adductCheckMS1Lookup <- function(row, keepAdducts, cameraAdducts){
 
-  if ((row$adduct %in% keepAdducts) || (row$adduct %in% cameraAdducts[cameraAdducts$grpid==row$grpid,]$adduct)){
+  if ((row$adduct %in% keepAdducts) || (row$adduct %in% cameraAdducts[cameraAdducts$grpid==row$grpid,]$name)){
     return(row)
   }else{
     return(NULL)
@@ -348,14 +348,17 @@ addGenericMS1LookupResults <- function(ms1_lookup_resultPth, ms1_lookup_dbSource
   if (!is.na(ms1_lookup_resultPth) && file.exists(ms1_lookup_resultPth)){
     # Read in table
 
-    ms1_lookup_result <- utils::read.table(ms1_lookup_resultPth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "")
+    ms1_lookup_result <- utils::read.table(ms1_lookup_resultPth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "",
+                                           quote=NULL)
 
     if (!'grpid' %in% ms1_lookup_result){
       nmap <- DBI::dbGetQuery(con, 'SELECT grpid, grp_name FROM c_peak_groups')
       ms1_lookup_result <- merge(ms1_lookup_result, nmap, by.x='name', by.y='grp_name')
     }
 
+
     ms1_lookup_result$ms1_lookup_id <- 1:nrow(ms1_lookup_result)
+
 
     # Get the relevant adduct details from the CAMERA results (if we want to check if the adducts used
     # for the MS1 lookup are compatible)
@@ -369,16 +372,18 @@ addGenericMS1LookupResults <- function(ms1_lookup_resultPth, ms1_lookup_dbSource
       colnames(cameraAdducts) <- c('grpid', 'adduct')
     }
 
+
+
     # Check if the adducts are from the "safe" list in keepAdducts, or if they match with camera adduct
     # annotations
+
     if (ms1_lookup_checkAdducts || (!is.null(ms1_lookup_keepAdducts) || !is.na(ms1_lookup_keepAdducts))){
       ms1_lookup_resultFiltered <- plyr::ddply(ms1_lookup_result , ~ ms1_lookup_id, adductCheckMS1Lookup,
                                                keepAdducts=ms1_lookup_keepAdducts, cameraAdducts=cameraAdducts)
 
+    }else{
+      ms1_lookup_resultFiltered <- ms1_lookup_result
     }
-
-
-
 
     # Get the compounds ids and relevant inchikeys
     compound_ids <- unique(ms1_lookup_resultFiltered$compound_id)
@@ -401,7 +406,8 @@ addGenericMS1LookupResults <- function(ms1_lookup_resultPth, ms1_lookup_dbSource
     DBI::dbWriteTable(con, name=tableNm, value=compDetails, row.names=FALSE)
 
     # update the results
-    ms1_lookup_resultFiltered <- merge(ms1_lookup_resultFiltered, compDetails, by.x='compound_id', by.y=columnNm)
+    ms1_lookup_resultFiltered <- merge(ms1_lookup_resultFiltered, compDetails, by.x='compound_id', by.y=columnNm, all.x=TRUE)
+
 
     # Default score of 1 given for all results
     ms1_lookup_resultFiltered$ms1_lookup_score <- 1
