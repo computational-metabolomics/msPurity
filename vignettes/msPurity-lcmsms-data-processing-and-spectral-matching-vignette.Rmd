@@ -23,10 +23,13 @@ The msPurity package can be used with XCMS as part of a data processing and anno
 
 * Purity assessments
     +  (mzML files) -> purityA -> (pa)
-* XCMS processing
-    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+* XCMS processing 
+    +  (mzML files) -> xcms.xcmsSet  -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+* XCMS processing (version >= 3)
+    +  (mzML files) -> MSnBase.readMSdata -> xcms.findChromPeaks -> xcms.groupChromPeaks-> xcms.adjustRtime -> xcms.groupChromPeaks -> convert to xset format as(x, "xcmsSet")
 * Fragmentation processing
     + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+
 
 
 ## XCMS processing
@@ -80,7 +83,7 @@ pa <- averageAllFragSpectra(pa)
 
 ## Creating a spectral-database
 
-An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
+An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-database-vignette.html).
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 td <- tempdir()
@@ -168,3 +171,5 @@ It should be noted that in a typical Data Dependent Acquisition (DDA) experiment
 
 
 # References
+
+
