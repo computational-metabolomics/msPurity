@@ -68,7 +68,7 @@
 #' @param q_instruments vector; Instruments for query spectra (note that this is used in combination with q_instrumentTypes - any
 #'                              spectra matching either q_instrumentTypes or q_instruments will be used).
 #' @param q_sources vector; Sources of query spectra (e.g. massbank, hmdb).
-#' @param q_spectraTypes character; Spectra types of query spectra to perfrom spectral matching e.g. ('scans', 'av_all', 'intra', 'inter')
+#' @param q_spectraTypes character; Spectra types of query spectra to perfrom spectral matching e.g. ('scan', 'av_all', 'intra', 'inter')
 #' @param q_pids vector; pids for query spectra (correspond to column 'pid; in s_peak_meta)
 #' @param q_rtrange vector; retention time range (in secs) of query spectra, first value mininum time and second value max e.g. c(0, 10) is between 0 and 10 seconds
 #' @param q_spectraFilter boolean; For query spectra, if prior filtering performed with msPurity, flag peaks will be removed from spectral matching
@@ -84,7 +84,7 @@
 #' @param l_instruments vector; Instruments for library spectra (note that this is used in combination with q_instrumentTypes - any
 #'                              spectra matching either q_instrumentTypes or q_instruments will be used).
 #' @param l_sources vector; Sources of library spectra (e.g. massbank, hmdb).
-#' @param l_spectraTypes vector; Spectra type of library spectra to perfrom spectral matching with e.g. ('scans', 'av_all', 'intra', 'inter')
+#' @param l_spectraTypes vector; Spectra type of library spectra to perfrom spectral matching with e.g. ('scan', 'av_all', 'intra', 'inter')
 #' @param l_pids vector; pids for library spectra (correspond to column 'pid; in s_peak_meta)
 #' @param l_rtrange vector; retention time range (in secs) of library spectra, first value mininum time and second value max e.g. c(0, 10) is between 0 and 10 seconds
 #' @param l_spectraFilter boolean; For library spectra, if prior filtering performed with msPurity, flag peaks will be removed from spectral matching
