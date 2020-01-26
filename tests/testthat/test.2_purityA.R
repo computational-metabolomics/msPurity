@@ -59,6 +59,45 @@ test_that("checking frag4feature", {
 
 })
 
+
+test_that("checking frag4feature (fillpeaks)", {
+  print("\n")
+  print("########################################################")
+  print("## Checking frag4feature                              ##")
+  print("########################################################")
+  library(xcms)
+  #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+  #pa  <- purityA(msmsPths)
+  #xset <- xcmsSet(msmsPths)
+  #xset <- group(xset)
+  msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+
+  pa <- readRDS(system.file("extdata", "tests", "purityA", "1_purityA_pa.rds", package="msPurity"))
+  xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
+  pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+  pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+  xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+  xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+
+  xset <- xcms::fillPeaks(xset)
+
+  pa <- frag4feature(pa, xset)
+
+  #saveRDS(pa, file.path("inst", "extdata", "test_data", "purityA", "2_frag4feature_pa.rds"))
+  expect_equal(round(pa@grped_df$inPurity[1],4), 1)
+  expect_equal(round(pa@grped_df$precurMtchPPM[1], 4), 1.0048)
+  expect_equal(length(pa@grped_ms2), 77)
+  expect_equal(nrow(pa@grped_ms2[[2]][[1]]), 4)
+  expect_equal(round(pa@grped_ms2[[1]][[1]][1],4), 112.0509)
+
+  pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
+  expect_equal(pa@grped_ms2, pa_saved@grped_ms2)
+  expect_equal(pa@grped_df, pa_saved@grped_df)
+
+
+})
+
+
 test_that("checking filterFragSpectra purityA", {
   print ("\n")
   print("########################################################")
