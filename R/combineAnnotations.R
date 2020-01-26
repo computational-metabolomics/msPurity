@@ -348,8 +348,7 @@ addGenericMS1LookupResults <- function(ms1_lookup_resultPth, ms1_lookup_dbSource
   if (!is.na(ms1_lookup_resultPth) && file.exists(ms1_lookup_resultPth)){
     # Read in table
 
-    ms1_lookup_result <- utils::read.table(ms1_lookup_resultPth,  header = TRUE,
-                                           sep='\t', stringsAsFactors = FALSE,  comment.char = "",
+    ms1_lookup_result <- utils::read.table(ms1_lookup_resultPth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "",
                                            quote=NULL)
 
     if (!'grpid' %in% ms1_lookup_result){
