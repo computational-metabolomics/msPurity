@@ -519,7 +519,7 @@ combineRow <- function(row){
 combineScoresGrp <- function(c_peak_group, weights, sqlitePth){
   
   # connect to database 
-  con <- connectdb(sqlitePth)
+  con <- connect2db(sqlitePth)
   
   # get sirius data
   grpid <- unique(c_peak_group$grpid)
