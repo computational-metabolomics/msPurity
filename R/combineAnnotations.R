@@ -147,12 +147,13 @@ combineAnnotations <- function(sm_resultPth,
   DBI::dbExecute(con, 'DROP TABLE metab_compound')
   DBI::dbWriteTable(conn=con, name='metab_compound', value=metab_compounds_m, row.names=FALSE)
 
-  # Calculate final score and rank
+  # Calculate final score and ranks
   # Build up the table by looping through xcms group
   message('Combine annotations')
   c_peak_groups <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups')
-  combined_scores <- plyr::ddply(c_peak_groups, ~grpid, combineScoresGrp, weights=weights, con=con)
-
+  combined_scores <- plyr::ddply(c_peak_groups, ~grpid, combineScoresGrp, weights=weights, sqlitePth=sqlitePth)
+  
+  message('Write summary table')
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
 
   anns <- getAnnotationSummary(con)
@@ -515,8 +516,11 @@ combineRow <- function(row){
 }
 
 
-combineScoresGrp <- function(c_peak_group, weights, con){
-
+combineScoresGrp <- function(c_peak_group, weights, sqlitePth){
+  
+  # connect to database 
+  con <- connectdb(sqlitePth)
+  
   # get sirius data
   grpid <- unique(c_peak_group$grpid)
 
