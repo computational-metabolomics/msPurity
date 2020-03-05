@@ -151,11 +151,15 @@ combineAnnotations <- function(sm_resultPth,
   # Build up the table by looping through xcms group
   message('Combine annotations')
   c_peak_groups <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups')
+  
+  DBI::dbDisconnect(con)
   combined_scores <- plyr::ddply(c_peak_groups, ~grpid, combineScoresGrp, weights=weights, sqlitePth=sqlitePth)
   
-  message('Write summary table')
+  message('Add combined scores to database')
+  con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
-
+  
+  message('Get summary output')
   anns <- getAnnotationSummary(con)
 
   DBI::dbDisconnect(con)
@@ -682,6 +686,8 @@ combineScoresGrp <- function(c_peak_group, weights, sqlitePth){
     # Add rank
     combined_df$rank <- as.numeric(factor(rank(-combined_df$wscore)))
   }
+                        
+  DBI::dbDisconnect(con)
 
   return(combined_df)
 }
