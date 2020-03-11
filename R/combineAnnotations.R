@@ -160,6 +160,8 @@ combineAnnotations <- function(sm_resultPth,
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
   
   message('Get summary output')
+  DBI::dbDisconnect(con)
+  con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
   anns <- getAnnotationSummary(con)
 
   DBI::dbDisconnect(con)
