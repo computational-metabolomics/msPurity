@@ -167,7 +167,7 @@ combineAnnotations <- function(sm_resultPth,
      anns <- getAnnotationSummary(con)
 
      DBI::dbDisconnect(con)
-     DBI::dbDisconnect(con_comp
+     DBI::dbDisconnect(con_comp)
      return(anns)
   }else{
      return(NULL)
