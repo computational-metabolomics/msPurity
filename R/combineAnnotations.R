@@ -202,7 +202,8 @@ connect2db <- function(pth,type='sqlite',user=NA,pass=NA,dbname=NA,host=NA,port=
 
 addMetFragResults <- function(metfrag_resultPth, con, con_comp){
   # Add metfrag details
-  if (!is.na(metfrag_resultPth) && file.exists(metfrag_resultPth)){
+  if (!is.na(metfrag_resultPth) & file.exists(metfrag_resultPth) & length(count.fields(metfrag_resultPth, sep = "\t")>1)){
+    if length(count.fields(metfrag_resultPth, sep = "\t"))
     DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=T)
 
     DBI::dbExecute(con,
@@ -220,7 +221,7 @@ addMetFragResults <- function(metfrag_resultPth, con, con_comp){
 
 addSiriusResults <- function(sirius_csi_resultPth, con, con_comp=NULL){
   # Add sirius details
-  if (!is.na(sirius_csi_resultPth) && file.exists(sirius_csi_resultPth)){
+  if (!is.na(sirius_csi_resultPth) & file.exists(sirius_csi_resultPth) & length(count.fields(sirius_csi_resultPth, sep = "\t")>1)){
     DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
 
     inchikey2ds <- DBI::dbGetQuery(con, "SELECT DISTINCT inchikey2D FROM sirius_csifingerid_results")
@@ -356,7 +357,7 @@ adductCheckMS1Lookup <- function(row, keepAdducts, cameraAdducts){
 
 addGenericMS1LookupResults <- function(ms1_lookup_resultPth, ms1_lookup_dbSource, ms1_lookup_checkAdducts,
                                        ms1_lookup_keepAdducts, con, con_comp){
-  if (!is.na(ms1_lookup_resultPth) && file.exists(ms1_lookup_resultPth)){
+  if (!is.na(ms1_lookup_resultPth) & file.exists(ms1_lookup_resultPth) & length(count.fields(ms1_lookup_resultPth, sep = "\t")>1)){
     # Read in table
 
     ms1_lookup_result <- utils::read.table(ms1_lookup_resultPth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "",
