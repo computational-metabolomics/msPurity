@@ -28,7 +28,7 @@
 #' @param compoundDbPort character; Database port (only applicable for postgres and mysql)
 #' @param compoundDbUser character; Database user (only applicable for postgres and mysql)
 #' @param compoundDbPass character; Database pass (only applicable for postgres and mysql) - Note this is not secure!
-#'
+#' @param summaryOutput boolean; If a summary dataframe is to be created
 #'
 #'
 #' @param outPth character;
@@ -69,7 +69,8 @@ combineAnnotations <- function(sm_resultPth,
                                compoundDbPort=NA,
                                compoundDbUser=NA,
                                compoundDbPass=NA,
-                               outPth=NA
+                               outPth=NA,
+                               summaryOutput=True
 
 ){
 
@@ -134,7 +135,7 @@ combineAnnotations <- function(sm_resultPth,
   missing_comps <- metab_compounds[!metab_compounds$inchikey %in% metab_compounds_m$inchikey,]
   missing_comps <- cbind(missing_comps, splitInchis(missing_comps$inchikey))
   colnames(missing_comps)[colnames(missing_comps)=='pubchem_id'] = 'pubchem_cids'
-
+:
   keep_cols = c('inchikey', 'inchikey1', 'inchikey2', 'inchikey3', 'pubchem_cids',
                 'exact_mass', 'molecular_formula', 'name')
   missing_comps <- missing_comps[,keep_cols]
@@ -160,14 +161,17 @@ combineAnnotations <- function(sm_resultPth,
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
   
   message('Get summary output')
-  DBI::dbDisconnect(con)
-  con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
-  anns <- getAnnotationSummary(con)
+  if (summaryOutput){
+     DBI::dbDisconnect(con)
+     con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
+     anns <- getAnnotationSummary(con)
 
-  DBI::dbDisconnect(con)
-  DBI::dbDisconnect(con_comp)
-
-  return(anns)
+     DBI::dbDisconnect(con)
+     DBI::dbDisconnect(con_comp
+     return(anns)
+  }else{
+     return(NULL)
+  }
 
 }
 
