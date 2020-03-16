@@ -70,7 +70,7 @@ combineAnnotations <- function(sm_resultPth,
                                compoundDbUser=NA,
                                compoundDbPass=NA,
                                outPth=NA,
-                               summaryOutput=True
+                               summaryOutput=TRUE
 
 ){
 
@@ -150,14 +150,14 @@ combineAnnotations <- function(sm_resultPth,
   # Build up the table by looping through xcms group
   message('Combine annotations')
   c_peak_groups <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups')
-  
+
   DBI::dbDisconnect(con)
   combined_scores <- plyr::ddply(c_peak_groups, ~grpid, combineScoresGrp, weights=weights, sqlitePth=sqlitePth)
-  
+
   message('Add combined scores to database')
   con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
   DBI::dbWriteTable(conn=con, name='combined_annotations', value=combined_scores, row.names=FALSE)
-  
+
   message('Get summary output')
   if (summaryOutput){
      DBI::dbDisconnect(con)
@@ -200,8 +200,7 @@ connect2db <- function(pth,type='sqlite',user=NA,pass=NA,dbname=NA,host=NA,port=
 
 addMetFragResults <- function(metfrag_resultPth, con, con_comp){
   # Add metfrag details
-  if (!is.na(metfrag_resultPth) & 
-      file.exists(metfrag_resultPth) & 
+  if (!is.na(metfrag_resultPth) && file.exists(metfrag_resultPth) &&
       length(count.fields(metfrag_resultPth, sep = "\t")>1)){
     DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=T)
 
@@ -220,9 +219,8 @@ addMetFragResults <- function(metfrag_resultPth, con, con_comp){
 
 addSiriusResults <- function(sirius_csi_resultPth, con, con_comp=NULL){
   # Add sirius details
-  if (!is.na(sirius_csi_resultPth) & 
-      file.exists(sirius_csi_resultPth) &
-      length(count.fields(sirius_csi_resultPth, sep = "\t")>1)){
+  if (!is.na(sirius_csi_resultPth) && file.exists(sirius_csi_resultPth)
+      && length(count.fields(sirius_csi_resultPth, sep = "\t")>1)){
     DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
 
     inchikey2ds <- DBI::dbGetQuery(con, "SELECT DISTINCT inchikey2D FROM sirius_csifingerid_results")
@@ -358,7 +356,8 @@ adductCheckMS1Lookup <- function(row, keepAdducts, cameraAdducts){
 
 addGenericMS1LookupResults <- function(ms1_lookup_resultPth, ms1_lookup_dbSource, ms1_lookup_checkAdducts,
                                        ms1_lookup_keepAdducts, con, con_comp){
-  if (!is.na(ms1_lookup_resultPth) & file.exists(ms1_lookup_resultPth) & length(count.fields(ms1_lookup_resultPth, sep = "\t")>1)){
+  if (!is.na(ms1_lookup_resultPth) && file.exists(ms1_lookup_resultPth) &&
+      length(count.fields(ms1_lookup_resultPth, sep = "\t")>1)){
     # Read in table
 
     ms1_lookup_result <- utils::read.table(ms1_lookup_resultPth,  header = TRUE, sep='\t', stringsAsFactors = FALSE,  comment.char = "",
@@ -529,10 +528,10 @@ combineRow <- function(row){
 
 
 combineScoresGrp <- function(c_peak_group, weights, sqlitePth){
-  
-  # connect to database 
+
+  # connect to database
   con <- connect2db(sqlitePth)
-  
+
   # get sirius data
   grpid <- unique(c_peak_group$grpid)
 
@@ -694,7 +693,7 @@ combineScoresGrp <- function(c_peak_group, weights, sqlitePth){
     # Add rank
     combined_df$rank <- as.numeric(factor(rank(-combined_df$wscore)))
   }
-                        
+
   DBI::dbDisconnect(con)
 
   return(combined_df)
