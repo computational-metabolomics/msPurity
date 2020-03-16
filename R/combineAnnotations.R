@@ -135,7 +135,7 @@ combineAnnotations <- function(sm_resultPth,
   missing_comps <- metab_compounds[!metab_compounds$inchikey %in% metab_compounds_m$inchikey,]
   missing_comps <- cbind(missing_comps, splitInchis(missing_comps$inchikey))
   colnames(missing_comps)[colnames(missing_comps)=='pubchem_id'] = 'pubchem_cids'
-:
+
   keep_cols = c('inchikey', 'inchikey1', 'inchikey2', 'inchikey3', 'pubchem_cids',
                 'exact_mass', 'molecular_formula', 'name')
   missing_comps <- missing_comps[,keep_cols]
