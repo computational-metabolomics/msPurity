@@ -117,8 +117,6 @@ combineAnnotations <- function(sm_resultPth,
                              ms1_lookup_checkAdducts,
                              ms1_lookup_keepAdducts,
                              con, con_comp=con_comp)
-  # Add lipidsearch result TODO
-  # Add mzcloud result TODO
 
   ####################################
   # Update the metab_compound
@@ -202,8 +200,9 @@ connect2db <- function(pth,type='sqlite',user=NA,pass=NA,dbname=NA,host=NA,port=
 
 addMetFragResults <- function(metfrag_resultPth, con, con_comp){
   # Add metfrag details
-  if (!is.na(metfrag_resultPth) & file.exists(metfrag_resultPth) & length(count.fields(metfrag_resultPth, sep = "\t")>1)){
-    if length(count.fields(metfrag_resultPth, sep = "\t"))
+  if (!is.na(metfrag_resultPth) & 
+      file.exists(metfrag_resultPth) & 
+      length(count.fields(metfrag_resultPth, sep = "\t")>1)){
     DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=T)
 
     DBI::dbExecute(con,
@@ -221,7 +220,9 @@ addMetFragResults <- function(metfrag_resultPth, con, con_comp){
 
 addSiriusResults <- function(sirius_csi_resultPth, con, con_comp=NULL){
   # Add sirius details
-  if (!is.na(sirius_csi_resultPth) & file.exists(sirius_csi_resultPth) & length(count.fields(sirius_csi_resultPth, sep = "\t")>1)){
+  if (!is.na(sirius_csi_resultPth) & 
+      file.exists(sirius_csi_resultPth) &
+      length(count.fields(sirius_csi_resultPth, sep = "\t")>1)){
     DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
 
     inchikey2ds <- DBI::dbGetQuery(con, "SELECT DISTINCT inchikey2D FROM sirius_csifingerid_results")
