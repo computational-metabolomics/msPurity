@@ -42,7 +42,7 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 
 \item{q_sources}{vector; Sources of query spectra (e.g. massbank, hmdb).}
 
-\item{q_spectraTypes}{character; Spectra types of query spectra to perfrom spectral matching e.g. ('scans', 'av_all', 'intra', 'inter')}
+\item{q_spectraTypes}{character; Spectra types of query spectra to perfrom spectral matching e.g. ('scan', 'av_all', 'intra', 'inter')}
 
 \item{q_pids}{vector; pids for query spectra (correspond to column 'pid; in s_peak_meta)}
 
@@ -71,7 +71,7 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 
 \item{l_sources}{vector; Sources of library spectra (e.g. massbank, hmdb).}
 
-\item{l_spectraTypes}{vector; Spectra type of library spectra to perfrom spectral matching with e.g. ('scans', 'av_all', 'intra', 'inter')}
+\item{l_spectraTypes}{vector; Spectra type of library spectra to perfrom spectral matching with e.g. ('scan', 'av_all', 'intra', 'inter')}
 
 \item{l_pids}{vector; pids for library spectra (correspond to column 'pid; in s_peak_meta)}
 

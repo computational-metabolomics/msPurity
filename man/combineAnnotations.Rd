@@ -12,7 +12,7 @@ combineAnnotations(sm_resultPth, compoundDbPth, metfrag_resultPth = NA,
   0.2, probmetab = 0, ms1_lookup = 0.05, biosim = 0.25),
   compoundDbType = "sqlite", compoundDbName = NA,
   compoundDbHost = NA, compoundDbPort = NA, compoundDbUser = NA,
-  compoundDbPass = NA, outPth = NA)
+  compoundDbPass = NA, outPth = NA, summaryOutput = TRUE)
 }
 \arguments{
 \item{sm_resultPth}{character; Path to the msPurity SQLite database used for spectral matching}
@@ -51,6 +51,8 @@ This is only applicable if using "compoundDbType sqlite")}
 \item{compoundDbPass}{character; Database pass (only applicable for postgres and mysql) - Note this is not secure!}
 
 \item{outPth}{character;}
+
+\item{summaryOutput}{boolean; If a summary dataframe is to be created}
 }
 \value{
 purityA object with slots for fragmentation-XCMS links
