@@ -1,6 +1,6 @@
 language: r
-r: bioc-devel
-cache:
+r: bioc-release
+cache: 
   packages: true
 sudo: required
 warnings_are_errors: true
