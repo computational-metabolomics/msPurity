@@ -1,7 +1,3 @@
-CHANGES IN VERSION 1.13.2
-=========================
-* Update dev to match bug fixes in master
-
 CHANGES IN VERSION 1.12.2
 =========================
 * Fix to allow large files to be processed with combineAnnotation (in some cases the summary report should be excluded)
