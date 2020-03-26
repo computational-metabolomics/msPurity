@@ -134,6 +134,7 @@ flag_remove <- function(xset, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
   if(temp_save){
     write.csv(grp_peaklist, file.path(out_dir, paste(pol, 'grp_peaklist_blanksRemoved.csv', sep='_')))
   }
+  grp_peaklist <- data.frame(cbind(grp_peaklist, 'grp_names'=xcms::groupnames(xset)))
 
   return(list('xset'=xset, 'grp_peaklist'=grp_peaklist, 'removed_peaks'=removed_peaks))
 
