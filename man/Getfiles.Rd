@@ -4,9 +4,16 @@
 \alias{Getfiles}
 \title{Get files for DI-MS processing}
 \usage{
-Getfiles(projectFolder = NULL, recursive = FALSE, pattern = ".csv",
-  check = TRUE, raw = FALSE, peakout = NA, cStrt = TRUE,
-  mzml_out = FALSE)
+Getfiles(
+  projectFolder = NULL,
+  recursive = FALSE,
+  pattern = ".csv",
+  check = TRUE,
+  raw = FALSE,
+  peakout = NA,
+  cStrt = TRUE,
+  mzml_out = FALSE
+)
 }
 \arguments{
 \item{projectFolder}{character; Directory path}

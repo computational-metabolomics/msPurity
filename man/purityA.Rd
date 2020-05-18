@@ -4,10 +4,23 @@
 \alias{purityA}
 \title{Assess the acquired precursor ion purity of MS/MS spectra (constructor)}
 \usage{
-purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
-  offsets = NA, plotP = FALSE, plotdir = NULL, interpol = "linear",
-  iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz",
-  isotopes = TRUE, im = NULL, ppmInterp = 7)
+purityA(
+  fileList,
+  cores = 1,
+  mostIntense = FALSE,
+  nearest = TRUE,
+  offsets = NA,
+  plotP = FALSE,
+  plotdir = NULL,
+  interpol = "linear",
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0.05,
+  mzRback = "pwiz",
+  isotopes = TRUE,
+  im = NULL,
+  ppmInterp = 7
+)
 }
 \arguments{
 \item{fileList}{vector; mzML file paths}
@@ -31,7 +44,7 @@ linear should be used for all standard cases, isotope removal is also not availa
 
 \item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
 
-\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
+\item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\\% (0.05)}
 
 \item{mzRback}{character; backend to use for mzR parsing}
 

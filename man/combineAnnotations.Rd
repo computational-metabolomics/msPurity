@@ -4,15 +4,27 @@
 \alias{combineAnnotations}
 \title{Combine Annotations}
 \usage{
-combineAnnotations(sm_resultPth, compoundDbPth, metfrag_resultPth = NA,
-  sirius_csi_resultPth = NA, probmetab_resultPth = NA,
-  ms1_lookup_resultPth = NA, ms1_lookup_dbSource = "hmdb",
-  ms1_lookup_checkAdducts = FALSE, ms1_lookup_keepAdducts = c("[M+H]+",
-  "[M-H]-"), weights = list(sm = 0.3, metfrag = 0.2, sirius_csifingerid =
-  0.2, probmetab = 0, ms1_lookup = 0.05, biosim = 0.25),
-  compoundDbType = "sqlite", compoundDbName = NA,
-  compoundDbHost = NA, compoundDbPort = NA, compoundDbUser = NA,
-  compoundDbPass = NA, outPth = NA, summaryOutput = TRUE)
+combineAnnotations(
+  sm_resultPth,
+  compoundDbPth,
+  metfrag_resultPth = NA,
+  sirius_csi_resultPth = NA,
+  probmetab_resultPth = NA,
+  ms1_lookup_resultPth = NA,
+  ms1_lookup_dbSource = "hmdb",
+  ms1_lookup_checkAdducts = FALSE,
+  ms1_lookup_keepAdducts = c("[M+H]+", "[M-H]-"),
+  weights = list(sm = 0.3, metfrag = 0.2, sirius_csifingerid = 0.2, probmetab = 0,
+    ms1_lookup = 0.05, biosim = 0.25),
+  compoundDbType = "sqlite",
+  compoundDbName = NA,
+  compoundDbHost = NA,
+  compoundDbPort = NA,
+  compoundDbUser = NA,
+  compoundDbPass = NA,
+  outPth = NA,
+  summaryOutput = TRUE
+)
 }
 \arguments{
 \item{sm_resultPth}{character; Path to the msPurity SQLite database used for spectral matching}

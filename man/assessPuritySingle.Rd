@@ -4,11 +4,24 @@
 \alias{assessPuritySingle}
 \title{Assess the purity of a single LC-MS/MS or DI-MS/MS file}
 \usage{
-assessPuritySingle(filepth, fileid = NA, mostIntense = FALSE,
-  nearest = TRUE, offsets = NA, cores = 1, plotP = FALSE,
-  plotdir = NULL, interpol = "linear", iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0, mzRback = "pwiz", isotopes = TRUE,
-  im = NULL, ppmInterp = 7)
+assessPuritySingle(
+  filepth,
+  fileid = NA,
+  mostIntense = FALSE,
+  nearest = TRUE,
+  offsets = NA,
+  cores = 1,
+  plotP = FALSE,
+  plotdir = NULL,
+  interpol = "linear",
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0,
+  mzRback = "pwiz",
+  isotopes = TRUE,
+  im = NULL,
+  ppmInterp = 7
+)
 }
 \arguments{
 \item{filepth}{character; mzML file path for MS/MS spectra}

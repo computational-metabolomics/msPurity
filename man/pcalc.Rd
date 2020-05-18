@@ -4,9 +4,20 @@
 \alias{pcalc}
 \title{Perform purity calculation on a peak matrix}
 \usage{
-pcalc(peaks, mzmin, mzmax, mztarget, ppm = NA, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0, targetMinMZ = NA, targetMaxMZ = NA,
-  isotopes = FALSE, im = NULL)
+pcalc(
+  peaks,
+  mzmin,
+  mzmax,
+  mztarget,
+  ppm = NA,
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0,
+  targetMinMZ = NA,
+  targetMaxMZ = NA,
+  isotopes = FALSE,
+  im = NULL
+)
 }
 \arguments{
 \item{peaks}{matrix; Matrix of peaks consisting of 2 columns: mz and i}

@@ -566,24 +566,35 @@ getScanPeaksSqlite <- function(con, spectraFilter=TRUE, spectraTypes=NA, raThres
 
 }
 
-getXcmsSmSummary <- function(con, matched, scoreF=0, fragNmF=1, spectraTypes='scans'){
+getXcmsSmSummary <- function(con, matched, scoreF=0, fragNmF=1, spectraTypes='scan'){
 
-  if ('scans' %in% spectraTypes){
-    sqlStmt <- sprintf("SELECT * FROM c_peak_groups
+  if ('scan' %in% spectraTypes){
+    sqlStmt <- sprintf("SELECT c_peak_groups.*,
+                               cp.cid as c_peak_cid,
+                               cp.mz as c_peak_mz,
+                               cp.rt as c_peak_rt,
+                               s_peak_meta.pid,
+                               s_peak_meta.precursorScanNum
+                               FROM c_peak_groups
                        LEFT JOIN c_peak_X_c_peak_group AS cXg ON cXg.grpid=c_peak_groups.grpid
-                       LEFT JOIN c_peaks on c_peaks.cid=cXg.cid
-                       LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=c_peaks.cid
+                       LEFT JOIN c_peaks AS cp on cp.cid=cXg.cid
+                       LEFT JOIN c_peak_X_s_peak_meta AS cXs ON cXs.cid=cp.cid
                        LEFT JOIN s_peak_meta ON cXs.pid=s_peak_meta.pid
                        WHERE s_peak_meta.pid in (%s)", paste(unique(matched$qpid), collapse=','))
+
+
 
   }else{
     sqlStmt <- sprintf("SELECT cpg.*, spm.pid FROM c_peak_groups AS cpg
                        LEFT JOIN s_peak_meta AS spm ON cpg.grpid=spm.grpid
                        WHERE spm.pid in (%s)", paste(unique(matched$qpid), collapse=','))
-
   }
+
   xcmsGroupedPeaks <- DBI::dbGetQuery(con, sqlStmt)
+
   xcmsMatchedResults <- merge(xcmsGroupedPeaks, matched, by.x='pid', by.y='qpid')
+
+
   if(nrow(xcmsMatchedResults)==0){
     message('NO MATCHES FOR XCMS')
     return(NULL)
@@ -707,8 +718,8 @@ filterSMeta <- function(purity=NA,
       spectraTypes[spectraTypes=='av_all'] = 'all'
     }
 
-
     speakmeta <- speakmeta %>% dplyr::filter(spectrum_type %in% spectraTypes)
+
   }
 
 

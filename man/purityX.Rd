@@ -4,11 +4,25 @@
 \alias{purityX}
 \title{Assessing anticipated purity of XCMS features from an LC-MS run}
 \usage{
-purityX(xset, purityType = "purityFWHMmedian", offsets = c(0.5, 0.5),
-  fileignore = NULL, cores = 1, xgroups = NULL, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0.05, plotP = FALSE, mzRback = "pwiz",
-  isotopes = FALSE, im = NULL, singleFile = 0,
-  rtrawColumns = FALSE, saveEIC = FALSE, sqlitePth = NULL)
+purityX(
+  xset,
+  purityType = "purityFWHMmedian",
+  offsets = c(0.5, 0.5),
+  fileignore = NULL,
+  cores = 1,
+  xgroups = NULL,
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0.05,
+  plotP = FALSE,
+  mzRback = "pwiz",
+  isotopes = FALSE,
+  im = NULL,
+  singleFile = 0,
+  rtrawColumns = FALSE,
+  saveEIC = FALSE,
+  sqlitePth = NULL
+)
 }
 \arguments{
 \item{xset}{object; xcms object}

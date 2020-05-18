@@ -207,3 +207,38 @@ test_that("checking spectral matching functions (spectralMatching) query vs quer
   expect_equal(xcmsMatchedResults$grpid, c(12, 27))
 
 })
+
+test_that("checking spectral matching functions (spectralMatching) query(scans) vs library", {
+  print ("\n")
+  print("#################################################################")
+  print("## Testing spectral matching (spectralMatching)   q(scan) v q ##")
+  print("#################################################################")
+  td <- tempdir()
+
+  q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
+
+  rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
+  sm_out_pth <- file.path(td, rid)
+
+
+  result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1, l_accessions=c('CCMSLIB00000577898','CE000616'),
+                             q_spectraTypes = 'scan',
+                             updateDb = TRUE,
+                             copyDb = TRUE,
+                             outPth = sm_out_pth)
+
+  matched <- result$matchedResults
+  expect_equal(matched$lpid, c(5325, 5325, 5325, 5325, 5325, 5325, 53807, 53807, 53807, 53807, 53807, 53807))
+  expect_equal(matched$qpid, c(226, 281, 336, 1110, 1166, 1055, 509, 394, 451, 1220, 1275, 1330))
+  expect_equal(round(matched$dpc,2), c(0.14, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+  expect_equal(round(matched$rdpc,2), c(0.16, 0.03 ,NaN ,NaN ,NaN ,NaN ,NaN ,NaN ,NaN ,NaN ,NaN ,NaN ))
+  expect_equal(round(matched$cdpc,2), c(0.13, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+  expect_equal(matched$mcount, c(1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+  expect_equal(matched$allcount, c(34, 46, 56, 53, 37, 43, 34, 59, 30, 24, 40, 29))
+
+  xcmsMatchedResults <- result$xcmsMatchedResults
+
+  expect_equal(xcmsMatchedResults$grpid, c(12, 12, 12, 12, 12, 12, 27, 27, 27, 27, 27, 27))
+
+})
+

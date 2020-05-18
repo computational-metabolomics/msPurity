@@ -5,11 +5,24 @@
 \title{Calculates to average mz, intensity and signal-to-noise of multiple
  scans from 1 MS datafile (mzML or .csv)}
 \usage{
-averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
-  timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3,
-  cores = 1, av = "median", missingV = "ignore", minfrac = 0.6667,
-  snMeth = "median", csvFile = FALSE, normTIC = FALSE,
-  mzRback = "pwiz", MSFileReader = FALSE)
+averageSpectraSingle(
+  filePth,
+  rtscn = "all",
+  scanRange = NA,
+  timeRange = NA,
+  clustType = "hc",
+  ppm = 1.5,
+  snthr = 3,
+  cores = 1,
+  av = "median",
+  missingV = "ignore",
+  minfrac = 0.6667,
+  snMeth = "median",
+  csvFile = FALSE,
+  normTIC = FALSE,
+  mzRback = "pwiz",
+  MSFileReader = FALSE
+)
 }
 \arguments{
 \item{filePth}{character; Path of the file to be processed}
