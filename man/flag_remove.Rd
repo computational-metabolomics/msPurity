@@ -30,7 +30,7 @@ flag_remove(
 \arguments{
 \item{xset}{object; xcmsSet object}
 
-\item{pol}{str; polarity (just used for naming purpose for files being saved) \link{positive, negative, NA}}
+\item{pol}{str; polarity (just used for naming purpose for files being saved) [positive, negative, NA]}
 
 \item{rsd_i_blank}{numeric; RSD threshold for the blank}
 

@@ -8,7 +8,7 @@
 #' The output is a list of the updated xcmsSet object, grouped peaklist and the blank removed peaks
 #'
 #' @param xset object; xcmsSet object
-#' @param pol str; polarity (just used for naming purpose for files being saved) [positive, negative, NA]
+#' @param pol str; polarity (just used for naming purpose for files being saved) \[positive, negative, NA\]
 #' @param rsd_i_blank numeric; RSD threshold for the blank
 #' @param minfrac_blank numeric; minimum fraction of files for features needed for the blank
 #' @param rsd_rt_blank numeric; RSD threshold for the RT of the blank

@@ -7,13 +7,13 @@
 #'
 #' @param query_db_pth character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
 #'                       either from frag4feature or from create_database functions.
-#' @param library_db_pth character [optional]; path to library spectral SQLite database.
+#' @param library_db_pth character \[optional\]; path to library spectral SQLite database.
 #'                                             Defaults to msPurityData package data.
 #' @param ra_thres_q numeric; Relative abundance threshold for target (query) spectra
 #'                      (Peaks below this RA threshold will be excluded)
 #' @param ra_thres_l numeric; Relative abundance threshold for library spectra
 #' @param cores numeric; Number of cores to use
-#' @param pol character; Polarity ['positive' or 'negative']
+#' @param pol character; Polarity \['positive' or 'negative'\]
 #' @param ppm_tol_prod numeric; PPM tolerance to match to product
 #' @param ppm_tol_prec numeric; PPM tolerance to match to precursor
 #' @param score_thres numeric; Dot product cosine score threshold
@@ -23,23 +23,23 @@
 #' @param spectra_type_q character; Type of fragmentation spectra from query to match with "scans" =  all individual scans,
 #'                                  "av_intra" = averaged spectra (intra), "av_inter" = averaged spectra (inter), "av_all" = averaged all
 #'                                   spectra ignoring inter-intra relationships
-#' @param topn numeric [optional]; Only use top n matches
-#' @param db_name character [optional]; Name of the result database
+#' @param topn numeric \[optional\]; Only use top n matches
+#' @param db_name character \[optional\]; Name of the result database
 #'                                   (e.g. can use CAMERA peaklist)
-#' @param instrument_types vector [optional]; Vector of instrument types, defaults to all
-#' @param library_sources vector [optional]; Vector of library sources. Default option is for massbank only but the 'lipidblast'
+#' @param instrument_types vector \[optional\]; Vector of instrument types, defaults to all
+#' @param library_sources vector \[optional\]; Vector of library sources. Default option is for massbank only but the 'lipidblast'
 #'                                    library is also available
-#' @param scan_ids vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
+#' @param scan_ids vector \[optional\]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 #'                        used for the spectral matching. All scans will be used if set to NA
-#' @param rt_range vector [optional]; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
+#' @param rt_range vector \[optional\]; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
 #'                                    retention time range
-#' @param rttol numeric [optional]; Tolerance in time range between the Library and Query database retention time (in seconds) NA to ignore
-#' @param pa purityA object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
-#' @param xset xcms object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
-#' @param grp_peaklist dataframe [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
-#' @param out_dir character [optional]; If target_db_pth set to NA, Out directory for the SQLite result database
-#' @param target_db_pth character [deprecated]; The query database path (use query_db_pth for future use)
-#' @param ra_thres_t numeric [deprecated]; The relative abundance threshold for the query spectra (use ra_thres_q for future use)
+#' @param rttol numeric \[optional\]; Tolerance in time range between the Library and Query database retention time (in seconds) NA to ignore
+#' @param pa purityA object \[optional\]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param xset xcms object \[optional\]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param grp_peaklist dataframe \[optional\]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist
+#' @param out_dir character \[optional\]; If target_db_pth set to NA, Out directory for the SQLite result database
+#' @param target_db_pth character \[deprecated\]; The query database path (use query_db_pth for future use)
+#' @param ra_thres_t numeric \[deprecated\]; The relative abundance threshold for the query spectra (use ra_thres_q for future use)
 #'
 #' @return list of database details and dataframe summarising the results for the xcms features
 #' @examples

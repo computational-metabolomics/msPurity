@@ -44,7 +44,7 @@ either from frag4feature or from create_database functions.}
 
 \item{cores}{numeric; Number of cores to use}
 
-\item{pol}{character; Polarity \link{'positive' or 'negative'}}
+\item{pol}{character; Polarity ['positive' or 'negative']}
 
 \item{ppm_tol_prod}{numeric; PPM tolerance to match to product}
 
@@ -52,29 +52,29 @@ either from frag4feature or from create_database functions.}
 
 \item{score_thres}{numeric; Dot product cosine score threshold}
 
-\item{topn}{numeric \link{optional}; Only use top n matches}
+\item{topn}{numeric [optional]; Only use top n matches}
 
-\item{db_name}{character \link{optional}; Name of the result database
+\item{db_name}{character [optional]; Name of the result database
 (e.g. can use CAMERA peaklist)}
 
-\item{library_db_pth}{character \link{optional}; path to library spectral SQLite database.
+\item{library_db_pth}{character [optional]; path to library spectral SQLite database.
 Defaults to msPurityData package data.}
 
-\item{instrument_types}{vector \link{optional}; Vector of instrument types, defaults to all}
+\item{instrument_types}{vector [optional]; Vector of instrument types, defaults to all}
 
-\item{library_sources}{vector \link{optional}; Vector of library sources. Default option is for massbank only but the 'lipidblast'
+\item{library_sources}{vector [optional]; Vector of library sources. Default option is for massbank only but the 'lipidblast'
 library is also available}
 
-\item{scan_ids}{vector \link{optional}; Vector of unique scan ids calculated from msPurity "pid". These scans will on
+\item{scan_ids}{vector [optional]; Vector of unique scan ids calculated from msPurity "pid". These scans will on
 used for the spectral matching. All scans will be used if set to NA}
 
-\item{pa}{purityA object \link{optional}; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+\item{pa}{purityA object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
 
-\item{xset}{xcms object \link{optional}; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+\item{xset}{xcms object [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
 
-\item{grp_peaklist}{dataframe \link{optional}; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
+\item{grp_peaklist}{dataframe [optional]; If target_db_pth set to NA, a new database can be created using pa, xset and grp_peaklist}
 
-\item{out_dir}{character \link{optional}; If target_db_pth set to NA, Out directory for the SQLite result database}
+\item{out_dir}{character [optional]; If target_db_pth set to NA, Out directory for the SQLite result database}
 
 \item{ra_w}{numeric; Relative abundance weight for spectra}
 
@@ -84,14 +84,14 @@ used for the spectral matching. All scans will be used if set to NA}
 "av_intra" = averaged spectra (intra), "av_inter" = averaged spectra (inter), "av_all" = averaged all
 spectra ignoring inter-intra relationships}
 
-\item{ra_thres_t}{numeric \link{deprecated}; The relative abundance threshold for the query spectra (use ra_thres_q for future use)}
+\item{ra_thres_t}{numeric [deprecated]; The relative abundance threshold for the query spectra (use ra_thres_q for future use)}
 
-\item{target_db_pth}{character \link{deprecated}; The query database path (use query_db_pth for future use)}
+\item{target_db_pth}{character [deprecated]; The query database path (use query_db_pth for future use)}
 
-\item{rt_range}{vector \link{optional}; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
+\item{rt_range}{vector [optional]; Vector of rention time range to filter the library spectra (rtmin, rtmax). Default is to ignore
 retention time range}
 
-\item{rttol}{numeric \link{optional}; Tolerance in time range between the Library and Query database retention time (in seconds) NA to ignore}
+\item{rttol}{numeric [optional]; Tolerance in time range between the Library and Query database retention time (in seconds) NA to ignore}
 
 \item{match_alg}{character; Can either use dot product cosine (dpc) or match factor (mf) for spectral matching. Defaults to dpc}
 }

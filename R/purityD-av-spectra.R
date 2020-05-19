@@ -121,10 +121,10 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #' The function will work for both LC-MS or DI-MS datasets.
 #'
 #' @param filePth character; Path of the file to be processed
-#' @param rtscn character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']
+#' @param rtscn character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. \['rt', 'scns', 'all'\]
 #' @param scanRange vector; Scan range (if rtscn='scns') e.g. c(40, 69)
 #' @param timeRange vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)
-#' @param clustType character; Type of clustering used either Hierarchical or just simple 1D grouping ['hc', 'simple']
+#' @param clustType character; Type of clustering used either Hierarchical or just simple 1D grouping \['hc', 'simple'\]
 #' @param ppm numeric; The ppm error to cluster mz together
 #' @param snthr numeric; Signal to noise ratio threshold
 #' @param av character; What type of averaging to do between peaks
@@ -133,7 +133,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2
 #' @param csvFile boolean; A csv file can be used as input. Useful for thermo files where the MSFileReader API can extract peaklist. This can consist of an .csv file with
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
-#' @param snMeth character; Type of snMethod to use ['mean', 'median', 'precalc']. Precalc only applicable when using the csvFile parameter as TRUE
+#' @param snMeth character; Type of snMethod to use \['mean', 'median', 'precalc'\]. Precalc only applicable when using the csvFile parameter as TRUE
 #' @param normTIC boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
 #' @param mzRback character; Backend to use for mzR parsing
 #' @param MSFileReader boolean; Deprecapted. Use csvFile parameter
@@ -370,7 +370,7 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #' @description
 #' Group a list of dataframes by their m/z values
 #'
-#' @param peak_list list = A list (named) of dataframes consiting of a least the following columns ['peakID', 'mz']
+#' @param peak_list list = A list (named) of dataframes consiting of a least the following columns \['peakID', 'mz'\]
 #' @param ppm numeric = The ppm tolerance to group peaklists
 #' @param clustType = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
 #' @param cores = number of cores used for calculation

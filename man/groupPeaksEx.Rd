@@ -7,7 +7,7 @@
 groupPeaksEx(peak_list, cores = 1, clustType = "hc", ppm = 2)
 }
 \arguments{
-\item{peak_list}{list = A list (named) of dataframes consiting of a least the following columns \link{'peakID', 'mz'}}
+\item{peak_list}{list = A list (named) of dataframes consiting of a least the following columns ['peakID', 'mz']}
 
 \item{cores}{= number of cores used for calculation}
 
