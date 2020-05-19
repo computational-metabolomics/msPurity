@@ -21,7 +21,7 @@ Creates a function based on a gaussian curve shape that will normalise any inten
 a defined isolation window.
 
 The function that is created will output a value between 0 to 1 based on the position between
-the minOff and maxOff params. (The value 1.0 being equivalent to 100% efficient)
+the minOff and maxOff params. (The value 1.0 being equivalent to 100\% efficient)
 }
 \examples{
 

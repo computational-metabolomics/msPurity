@@ -3,7 +3,7 @@ NULL
 #' @title Assess the acquired precursor ion purity of MS/MS spectra (constructor)
 #'
 #' @description
-#' **General**
+#' ## General
 #'
 #' Given a vector of LC-MS/MS or DI-MS/MS mzML file paths calculate the precursor ion purity of
 #' each MS/MS scan.
@@ -28,7 +28,7 @@ NULL
 #' database creation and spectral matching (from the created database).
 #'
 #'
-#' **Example LC-MS/MS processing workflow**
+#' ## Example LC-MS/MS processing workflow
 #'
 #' The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
 #'
@@ -39,7 +39,7 @@ NULL
 #'  * Fragmentation processing
 #'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
-#' **Isolation efficiency**
+#' ## Isolation efficiency
 #'
 #' When the isolation efficiency of an MS instrument is known the peak intensities within an isolation window can be normalised for the precursor purity calculation. The isolation efficiency can be estimated by measuring a single precursor across a sliding window. See figure 3 from the original msPurity paper (Lawson et al 2017). This has been experimentally measured  for a Thermo Fisher Q-Exactive Mass spectrometer using 0.5 Da windows and can be set within msPurity by using msPurity::iwNormQE.5() as the input to the iwNormFunc argument.
 #'
@@ -47,7 +47,7 @@ NULL
 #'
 #' A user can also define their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
 #'
-#' **Notes regarding instrument specific isolation window offsets used:**
+#' ## Notes regarding instrument specific isolation window offsets used:
 #'
 #' * The isolation widths offsets will be automatically determined from extracting metadata from the mzML file. However, for some vendors though this is not recorded, in these cases the offsets should be given by the user as an argument (offsets).
 #'
@@ -64,7 +64,7 @@ NULL
 #'                            linear should be used for all standard cases, isotope removal is also not available for the spline option)
 #' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param mzRback character; backend to use for mzR parsing
@@ -207,7 +207,7 @@ purityA <- function(fileList,
 #' @param interpol character; Type of interolation to be performed "linear", "spline" or "none"
 #' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
 #' @param mzRback character; Backend to use for mzR parsing
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)

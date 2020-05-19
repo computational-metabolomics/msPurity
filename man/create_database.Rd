@@ -2,10 +2,16 @@
 % Please edit documentation in R/create-database.R
 \name{create_database}
 \alias{create_database}
-\title{Create database [deprecated]}
+\title{Create database \link{deprecated}}
 \usage{
-create_database(pa, xset, xsa = NULL, out_dir = ".",
-  grp_peaklist = NA, db_name = NA)
+create_database(
+  pa,
+  xset,
+  xsa = NULL,
+  out_dir = ".",
+  grp_peaklist = NA,
+  db_name = NA
+)
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}

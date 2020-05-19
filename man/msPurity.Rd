@@ -3,7 +3,6 @@
 \docType{package}
 \name{msPurity}
 \alias{msPurity}
-\alias{msPurity-package}
 \title{\code{msPurity} package}
 \description{
 \href{https://bioconductor.org/packages/release/bioc/html/msPurity.html}{msPurity Bioconductor}

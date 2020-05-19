@@ -4,12 +4,28 @@
 \alias{flag_remove}
 \title{Flag and remove unwanted peaks}
 \usage{
-flag_remove(xset, pol = NA, rsd_i_blank = NA, minfrac_blank = 0.5,
-  rsd_rt_blank = NA, ithres_blank = NA, s2b = 10,
-  ref.class = "blank", egauss_thr = NA, rsd_i_sample = NA,
-  minfrac_sample = 0.7, rsd_rt_sample = NA, ithres_sample = NA,
-  minfrac_xcms = 0.7, mzwid = 0.025, bw = 5, out_dir = ".",
-  temp_save = FALSE, remove_spectra = TRUE, grp_rm_ids = NA)
+flag_remove(
+  xset,
+  pol = NA,
+  rsd_i_blank = NA,
+  minfrac_blank = 0.5,
+  rsd_rt_blank = NA,
+  ithres_blank = NA,
+  s2b = 10,
+  ref.class = "blank",
+  egauss_thr = NA,
+  rsd_i_sample = NA,
+  minfrac_sample = 0.7,
+  rsd_rt_sample = NA,
+  ithres_sample = NA,
+  minfrac_xcms = 0.7,
+  mzwid = 0.025,
+  bw = 5,
+  out_dir = ".",
+  temp_save = FALSE,
+  remove_spectra = TRUE,
+  grp_rm_ids = NA
+)
 }
 \arguments{
 \item{xset}{object; xcmsSet object}

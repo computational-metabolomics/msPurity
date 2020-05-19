@@ -4,9 +4,20 @@
 \alias{pcalc}
 \title{Perform purity calculation on a peak matrix}
 \usage{
-pcalc(peaks, mzmin, mzmax, mztarget, ppm = NA, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0, targetMinMZ = NA, targetMaxMZ = NA,
-  isotopes = FALSE, im = NULL)
+pcalc(
+  peaks,
+  mzmin,
+  mzmax,
+  mztarget,
+  ppm = NA,
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0,
+  targetMinMZ = NA,
+  targetMaxMZ = NA,
+  isotopes = FALSE,
+  im = NULL
+)
 }
 \arguments{
 \item{peaks}{matrix; Matrix of peaks consisting of 2 columns: mz and i}
@@ -40,14 +51,14 @@ a vector of the purity score and the number of peaks in the window e.g c(purity,
 This is the main purity calculation that is performed in purityX,
 purityD and purityA.
 \itemize{
- \item{Takes in a matrix of peaks}
- \item{gets isolation window based on mzmin mzmax}
- \item{locates the mz target in the peak matrix}
- \item{removes isotopic peaks}
- \item{removes any peaks below limit (percentage of target peak intensity)}
- \item{normalises}
- \item{Calculates purity: Divides the target peak intensity by the total peak intensity for
-    the isolation window}
+\item{Takes in a matrix of peaks}
+\item{gets isolation window based on mzmin mzmax}
+\item{locates the mz target in the peak matrix}
+\item{removes isotopic peaks}
+\item{removes any peaks below limit (percentage of target peak intensity)}
+\item{normalises}
+\item{Calculates purity: Divides the target peak intensity by the total peak intensity for
+the isolation window}
 }
 }
 \examples{

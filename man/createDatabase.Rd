@@ -4,8 +4,15 @@
 \alias{createDatabase}
 \title{Create database}
 \usage{
-createDatabase(pa, xset, xsa = NULL, outDir = ".", grpPeaklist = NA,
-  dbName = NA, metadata = NA)
+createDatabase(
+  pa,
+  xset,
+  xsa = NULL,
+  outDir = ".",
+  grpPeaklist = NA,
+  dbName = NA,
+  metadata = NA
+)
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}

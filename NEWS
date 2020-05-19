@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.15.2
+=========================
+* Update dev to match bug fixes in master
+
+CHANGES IN VERSION 1.14.1
+=========================
+* Fix for spectralMatching of type 'scan' previously incorrectly outputing no matches
+
 CHANGES IN VERSION 1.13.2
 =========================
 * Update dev to match bug fixes in master

@@ -4,10 +4,23 @@
 \alias{purityA}
 \title{Assess the acquired precursor ion purity of MS/MS spectra (constructor)}
 \usage{
-purityA(fileList, cores = 1, mostIntense = FALSE, nearest = TRUE,
-  offsets = NA, plotP = FALSE, plotdir = NULL, interpol = "linear",
-  iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz",
-  isotopes = TRUE, im = NULL, ppmInterp = 7)
+purityA(
+  fileList,
+  cores = 1,
+  mostIntense = FALSE,
+  nearest = TRUE,
+  offsets = NA,
+  plotP = FALSE,
+  plotdir = NULL,
+  interpol = "linear",
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0.05,
+  mzRback = "pwiz",
+  isotopes = TRUE,
+  im = NULL,
+  ppmInterp = 7
+)
 }
 \arguments{
 \item{fileList}{vector; mzML file paths}
@@ -83,7 +96,7 @@ The remaining slots for purityA class include
 }
 }
 \description{
-\strong{General}
+\subsection{General}{
 
 Given a vector of LC-MS/MS or DI-MS/MS mzML file paths calculate the precursor ion purity of
 each MS/MS scan.
@@ -106,8 +119,9 @@ the manual). The object contains a slot (pa@puritydf) where the details of the p
 assessments for each MS/MS scan. The purityA object can then be used for further processing
 including linking the fragmentation spectra to XCMS features, averaging fragmentation,
 database creation and spectral matching (from the created database).
+}
 
-\strong{Example LC-MS/MS processing workflow}
+\subsection{Example LC-MS/MS processing workflow}{
 
 The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
 \itemize{
@@ -124,19 +138,22 @@ The purityA object can be used for further processing including linking the frag
 \item (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
+}
 
-\strong{Isolation efficiency}
+\subsection{Isolation efficiency}{
 
 When the isolation efficiency of an MS instrument is known the peak intensities within an isolation window can be normalised for the precursor purity calculation. The isolation efficiency can be estimated by measuring a single precursor across a sliding window. See figure 3 from the original msPurity paper (Lawson et al 2017). This has been experimentally measured  for a Thermo Fisher Q-Exactive Mass spectrometer using 0.5 Da windows and can be set within msPurity by using msPurity::iwNormQE.5() as the input to the iwNormFunc argument.
 
 Other options to model the isolation efficiency the  gaussian isolation window msPurity::iwNormGauss(minOff=-0.5, maxOff = 0.5) or a R-Cosine window msPurity::iwNormRCosine(minOff=-0.5, maxOff=0.5). Where the minOff and maxOff can be altered depending on the isolation window size.
 
 A user can also define their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
+}
 
-\strong{Notes regarding instrument specific isolation window offsets used:}
+\subsection{Notes regarding instrument specific isolation window offsets used:}{
 \itemize{
 \item The isolation widths offsets will be automatically determined from extracting metadata from the mzML file. However, for some vendors though this is not recorded, in these cases the offsets should be given by the user as an argument (offsets).
 \item In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da.
+}
 }
 }
 \examples{

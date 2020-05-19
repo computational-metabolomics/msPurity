@@ -4,10 +4,21 @@
 \alias{dimsPredictPuritySingle}
 \title{Predict the precursor purity from a DI-MS dataset}
 \usage{
-dimsPredictPuritySingle(mztargets, filepth, minOffset = 0.5,
-  maxOffset = 0.5, ppm = 2.5, mzML = TRUE, iwNorm = FALSE,
-  iwNormFun = NULL, ilim = 0.05, mzRback = "pwiz", isotopes = TRUE,
-  im = NULL, sim = FALSE)
+dimsPredictPuritySingle(
+  mztargets,
+  filepth,
+  minOffset = 0.5,
+  maxOffset = 0.5,
+  ppm = 2.5,
+  mzML = TRUE,
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0.05,
+  mzRback = "pwiz",
+  isotopes = TRUE,
+  im = NULL,
+  sim = FALSE
+)
 }
 \arguments{
 \item{mztargets}{vector = mz targets to get predicted purity for}

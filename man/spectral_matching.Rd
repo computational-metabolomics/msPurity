@@ -2,16 +2,36 @@
 % Please edit documentation in R/spectral-matching.R
 \name{spectral_matching}
 \alias{spectral_matching}
-\title{Spectral matching [deprecated]}
+\title{Spectral matching \link{deprecated}}
 \usage{
-spectral_matching(query_db_pth, ra_thres_l = 0, ra_thres_q = 2,
-  cores = 1, pol = "positive", ppm_tol_prod = 10, ppm_tol_prec = 5,
-  score_thres = 0.6, topn = NA, db_name = NA, library_db_pth = NA,
-  instrument_types = NA, library_sources = "massbank", scan_ids = NA,
-  pa = NA, xset = NA, grp_peaklist = NA, out_dir = ".",
-  ra_w = 0.5, mz_w = 2, spectra_type_q = "scans", ra_thres_t = NA,
-  target_db_pth = NA, rt_range = c(NA, NA), rttol = NA,
-  match_alg = "dpc")
+spectral_matching(
+  query_db_pth,
+  ra_thres_l = 0,
+  ra_thres_q = 2,
+  cores = 1,
+  pol = "positive",
+  ppm_tol_prod = 10,
+  ppm_tol_prec = 5,
+  score_thres = 0.6,
+  topn = NA,
+  db_name = NA,
+  library_db_pth = NA,
+  instrument_types = NA,
+  library_sources = "massbank",
+  scan_ids = NA,
+  pa = NA,
+  xset = NA,
+  grp_peaklist = NA,
+  out_dir = ".",
+  ra_w = 0.5,
+  mz_w = 2,
+  spectra_type_q = "scans",
+  ra_thres_t = NA,
+  target_db_pth = NA,
+  rt_range = c(NA, NA),
+  rttol = NA,
+  match_alg = "dpc"
+)
 }
 \arguments{
 \item{query_db_pth}{character; Path of the database of targets (queries) that will be searched against the library spectra. Generated
@@ -62,7 +82,7 @@ used for the spectral matching. All scans will be used if set to NA}
 
 \item{spectra_type_q}{character; Type of fragmentation spectra from query to match with "scans" =  all individual scans,
 "av_intra" = averaged spectra (intra), "av_inter" = averaged spectra (inter), "av_all" = averaged all
- spectra ignoring inter-intra relationships}
+spectra ignoring inter-intra relationships}
 
 \item{ra_thres_t}{numeric [deprecated]; The relative abundance threshold for the query spectra (use ra_thres_q for future use)}
 

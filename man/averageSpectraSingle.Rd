@@ -3,13 +3,26 @@
 \name{averageSpectraSingle}
 \alias{averageSpectraSingle}
 \title{Calculates to average mz, intensity and signal-to-noise of multiple
- scans from 1 MS datafile (mzML or .csv)}
+scans from 1 MS datafile (mzML or .csv)}
 \usage{
-averageSpectraSingle(filePth, rtscn = "all", scanRange = NA,
-  timeRange = NA, clustType = "hc", ppm = 1.5, snthr = 3,
-  cores = 1, av = "median", missingV = "ignore", minfrac = 0.6667,
-  snMeth = "median", csvFile = FALSE, normTIC = FALSE,
-  mzRback = "pwiz", MSFileReader = FALSE)
+averageSpectraSingle(
+  filePth,
+  rtscn = "all",
+  scanRange = NA,
+  timeRange = NA,
+  clustType = "hc",
+  ppm = 1.5,
+  snthr = 3,
+  cores = 1,
+  av = "median",
+  missingV = "ignore",
+  minfrac = 0.6667,
+  snMeth = "median",
+  csvFile = FALSE,
+  normTIC = FALSE,
+  mzRback = "pwiz",
+  MSFileReader = FALSE
+)
 }
 \arguments{
 \item{filePth}{character; Path of the file to be processed}
@@ -53,7 +66,7 @@ Averages multiple scans of mass spectrometry data together.
 Each scan consisting of a minimum of intensity and mz values.
 
 Works for either mzML or a .csv file consisting of mz, i, scanid,
- (optional: noise, backgroun, snr)
+(optional: noise, backgroun, snr)
 
 Signal-to-noise (SNR) can be calculated a number of ways. Default is to
 calculate the SN for every scan as the
