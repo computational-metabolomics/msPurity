@@ -25,13 +25,13 @@ and signal-to-noise of multiple scans from multiple MS datafiles
 \arguments{
 \item{Object}{object; purityD object}
 
-\item{rtscn}{character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']}
+\item{rtscn}{character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. \link{'rt', 'scns', 'all'}}
 
 \item{scanRange}{vector; Scan range (if rtscn='scns') e.g. c(40, 69)}
 
 \item{timeRange}{vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)}
 
-\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1D grouping ['hc', 'simple']}
+\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1D grouping \link{'hc', 'simple'}}
 
 \item{ppm}{numeric; The ppm error to cluster mz together}
 
@@ -45,7 +45,7 @@ and signal-to-noise of multiple scans from multiple MS datafiles
 
 \item{normTIC}{boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
 
-\item{snMeth}{character; Type of snMethod to use ['mean', 'median', 'precalc']. Precalc only applicable when using the csvFile parameter as TRUE}
+\item{snMeth}{character; Type of snMethod to use \link{'mean', 'median', 'precalc'}. Precalc only applicable when using the csvFile parameter as TRUE}
 }
 \value{
 purityD object with averaged spectra

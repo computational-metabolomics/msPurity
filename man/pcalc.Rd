@@ -51,14 +51,14 @@ a vector of the purity score and the number of peaks in the window e.g c(purity,
 This is the main purity calculation that is performed in purityX,
 purityD and purityA.
 \itemize{
- \item{Takes in a matrix of peaks}
- \item{gets isolation window based on mzmin mzmax}
- \item{locates the mz target in the peak matrix}
- \item{removes isotopic peaks}
- \item{removes any peaks below limit (percentage of target peak intensity)}
- \item{normalises}
- \item{Calculates purity: Divides the target peak intensity by the total peak intensity for
-    the isolation window}
+\item{Takes in a matrix of peaks}
+\item{gets isolation window based on mzmin mzmax}
+\item{locates the mz target in the peak matrix}
+\item{removes isotopic peaks}
+\item{removes any peaks below limit (percentage of target peak intensity)}
+\item{normalises}
+\item{Calculates purity: Divides the target peak intensity by the total peak intensity for
+the isolation window}
 }
 }
 \examples{

@@ -124,7 +124,7 @@ predictPurityExp <- function(Object, fidx){
 #' @param mzML boolean = Whether an mzML file is to be used or .csv file (TRUE == mzML)
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
-#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)
+#' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
 #' @param mzRback character = backend to use for mzR parsing
 #' @param isotopes boolean = TRUE if isotopes are to be removed
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)

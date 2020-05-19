@@ -1,8 +1,7 @@
 #' @title Using a purityA object, link MS/MS data to XCMS features
-#'
 #' @description
 #'
-#' **General**
+#' ## General
 #'
 #' Assign fragmentation spectra (MS/MS) stored within a purityA class object to grouped features within an XCMS xset object.
 #'
@@ -12,20 +11,20 @@
 #' the associated acquisition time of the MS/MS event has to be within the retention time window defined for the individual peaks
 #' associated for each file. The precursor m/z value also has to be within the user ppm tolerance to XCMS feature.
 #'
-#' See below for representation of the linking (the \*------\* represent a many-to-many relationship) e.g. 1 or more MS/MS events can be
+#' See below for representation of the linking (the &ast; ------ &ast; represent a many-to-many relationship) e.g. 1 or more MS/MS events can be
 #' linked to 1 or more individual feature and an individual XCMS feature can be linked to 1 or more grouped XCMS features
 #'
-#' * \[grouped XCMS feature - across files\] \*------\*  \[individual XCMS feature - per file\] \*------\*  \[MS/MS spectra\]
+#' * \[grouped XCMS feature - across files\] &ast; ------ &ast;  \[individual XCMS feature - per file\] &ast; ------ &ast;  \[MS/MS spectra\]
 #'
 #' Alternatively, if the "useGroup" argument is set to TRUE, the full width of the grouped peak (determined as the minimum rtmin
 #' and maximum rtmax of the all associated individual peaks) will be used. This option should be used if the mzML file with
 #' MS/MS has very limited MS1 data and so individual chromatographic peaks might not be detected with the mzML files containing the
 #' MS/MS data. However, it should be noted this may lead to potential inaccurate linking.
 #'
-#' * \[grouped XCMS peaks\] \*------\* \[MS/MS spectra\]
+#' * \[grouped XCMS peaks\] &ast; ------ &ast; \[MS/MS spectra\]
 #'
 #'
-#' **Example LC-MS/MS processing workflow**
+#' ## Example LC-MS/MS processing workflow
 #'
 #' The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
 #'
@@ -36,7 +35,7 @@
 #'  * Fragmentation processing
 #'    + (xset, pa) -> **frag4feature** -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
-#' **Additional notes**
+#' ## Additional notes
 #'
 #' * If using only a single file, then grouping still needs to be performed within XCMS before frag4feature can be used.
 #' * Fragmentation spectra below a certain precursor ion purity can be be removed (see plim argument).
@@ -77,7 +76,6 @@
 #'
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, xset)
-#' @md
 #' @export
 setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, create_db=FALSE,

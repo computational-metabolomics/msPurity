@@ -71,11 +71,11 @@ purityA object with slots for fragmentation-XCMS links
 }
 \description{
 Combine the annotation results from msPurity spectral matching, MetFrag, Sirius CSI:FingerID, probmetab and any generic
- MS1 lookup software (e.g. results from the BEAMS software)
+MS1 lookup software (e.g. results from the BEAMS software)
 
- The annotation results are then aligned by inchikey and XCMS grouped feature.
+The annotation results are then aligned by inchikey and XCMS grouped feature.
 
- The tool has to be run with a local compound database (available on request - contact t.n.lawson@bham.ac.uk)
+The tool has to be run with a local compound database (available on request - contact t.n.lawson@bham.ac.uk)
 }
 \examples{
 metfrag_resultPth <- system.file("extdata", "tests", "external_annotations",

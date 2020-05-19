@@ -3,7 +3,7 @@
 \name{averageSpectraSingle}
 \alias{averageSpectraSingle}
 \title{Calculates to average mz, intensity and signal-to-noise of multiple
- scans from 1 MS datafile (mzML or .csv)}
+scans from 1 MS datafile (mzML or .csv)}
 \usage{
 averageSpectraSingle(
   filePth,
@@ -27,13 +27,13 @@ averageSpectraSingle(
 \arguments{
 \item{filePth}{character; Path of the file to be processed}
 
-\item{rtscn}{character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. ['rt', 'scns', 'all']}
+\item{rtscn}{character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. \link{'rt', 'scns', 'all'}}
 
 \item{scanRange}{vector; Scan range (if rtscn='scns') e.g. c(40, 69)}
 
 \item{timeRange}{vector; Time range (if rtscn='rt) e.g. c(10.3, 400.8) (only if using mzML file)}
 
-\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1D grouping ['hc', 'simple']}
+\item{clustType}{character; Type of clustering used either Hierarchical or just simple 1D grouping \link{'hc', 'simple'}}
 
 \item{ppm}{numeric; The ppm error to cluster mz together}
 
@@ -47,7 +47,7 @@ averageSpectraSingle(
 
 \item{minfrac}{numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak}
 
-\item{snMeth}{character; Type of snMethod to use ['mean', 'median', 'precalc']. Precalc only applicable when using the csvFile parameter as TRUE}
+\item{snMeth}{character; Type of snMethod to use \link{'mean', 'median', 'precalc'}. Precalc only applicable when using the csvFile parameter as TRUE}
 
 \item{csvFile}{boolean; A csv file can be used as input. Useful for thermo files where the MSFileReader API can extract peaklist. This can consist of an .csv file with
 the following columns c('mz', 'i', 'scanid', 'snr')}
@@ -66,7 +66,7 @@ Averages multiple scans of mass spectrometry data together.
 Each scan consisting of a minimum of intensity and mz values.
 
 Works for either mzML or a .csv file consisting of mz, i, scanid,
- (optional: noise, backgroun, snr)
+(optional: noise, backgroun, snr)
 
 Signal-to-noise (SNR) can be calculated a number of ways. Default is to
 calculate the SN for every scan as the

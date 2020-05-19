@@ -2,7 +2,7 @@
 % Please edit documentation in R/create-database.R
 \name{create_database}
 \alias{create_database}
-\title{Create database [deprecated]}
+\title{Create database \link{deprecated}}
 \usage{
 create_database(
   pa,
@@ -18,16 +18,16 @@ create_database(
 
 \item{xset}{xcms object; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)}
 
-\item{xsa}{CAMERA object [optional]; if CAMERA object is used, we ignore the xset parameter input and obtain all information
+\item{xsa}{CAMERA object \link{optional}; if CAMERA object is used, we ignore the xset parameter input and obtain all information
 from the xset object nested with the CAMERA xsa object. Adduct and isotope information
 will be included into the database when using this parameter. The underlying xset object must
 be the one used for the frag4feature function}
 
 \item{out_dir}{character; Out directory for the SQLite result database}
 
-\item{grp_peaklist}{dataframe [optional]; Can use any peak dataframe. Still needs to be derived from the xset object though}
+\item{grp_peaklist}{dataframe \link{optional}; Can use any peak dataframe. Still needs to be derived from the xset object though}
 
-\item{db_name}{character [optional]; Name of the result database}
+\item{db_name}{character \link{optional}; Name of the result database}
 }
 \value{
 path to SQLite database and database name
