@@ -1043,7 +1043,7 @@ align <-function(q_speaksi,l_speaksi, l_ppmProd=10, q_ppmProd=100, raDiffThres=1
 
   cp = length(allpeaks)+1
 
-  # get ramining query empty values
+  # get remaining query empty values
   for (i in lp_remain){
     if(is.na(i)){
       next
