@@ -1,5 +1,6 @@
-CHANGES IN VERSION 1.15.2
+CHANGES IN VERSION 1.15.1
 =========================
+* Update of rdpc algorithm (see https://github.com/computational-metabolomics/msPurity/issues/78)
 * Update dev to match bug fixes in master
 
 CHANGES IN VERSION 1.14.1

@@ -948,9 +948,9 @@ alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW){
   # Match
   ##################
   dpcOut <- dpc(aligned$q, aligned$l)
-
-  rl <- aligned$l[!aligned$q==0]
-  rq <- aligned$q[!aligned$q==0]
+  
+  rl <- aligned$l[!aligned$l==0] 
+  rq <- aligned$q[!aligned$l==0] 
   rdpcOut <- dpc(rq, rl)
 
   cdpcOut <- cdpc(aligned$q, aligned$l)
