@@ -1,10 +1,11 @@
 CHANGES IN VERSION 1.15.1
 =========================
-* Update of rdpc algorithm (see https://github.com/computational-metabolomics/msPurity/issues/78)
 * Update dev to match bug fixes in master
 
 CHANGES IN VERSION 1.14.1
 =========================
+* Update of rdpc algorithm (see https://github.com/computational-metabolomics/msPurity/issues/78)
+* Update of align algorithm (see https://github.com/computational-metabolomics/msPurity/issues/79)
 * Fix for spectralMatching of type 'scan' previously incorrectly outputing no matches
 
 CHANGES IN VERSION 1.13.2
