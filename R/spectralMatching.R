@@ -977,7 +977,7 @@ mzComparePPMrange <- function(mz1, mz2, ppm1, ppm2){
 }
 
 
-align <-function(q_speaksi,l_speaksi, l_ppmProd=100, q_ppmProd=100, raDiffThres=10){
+align <-function(q_speaksi,l_speaksi, l_ppmProd=10, q_ppmProd=100, raDiffThres=10){
 
   # Following the pMatch-hammer method for peak matching but with slight variation that we also check the percentage difference for
   # the relative intensity as well
@@ -1022,7 +1022,7 @@ align <-function(q_speaksi,l_speaksi, l_ppmProd=100, q_ppmProd=100, raDiffThres=
     }
 
     # First check to see if there is a matching intensity value within ra_diff (default 10%)
-    intenc <- iD[ppmD==1 & iD<raDiffThres & !is.na(ppmD) & !is.na(raDiffThres)]
+    intenc <- iD[ppmB==1 & iD<raDiffThres & !is.na(ppmD) & !is.na(raDiffThres)]
 
     if (!identical(unname(intenc), numeric(0))){
       matchi <- match(min(intenc, na.rm = TRUE), iD)
