@@ -210,7 +210,14 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     grpPeaklist <- data.frame(grpPeaklist)
   }
   colnames(grpPeaklist)[which(colnames(grpPeaklist)=='into')] <- '_into'
+
   grpPeaklist$grp_name <- xcms::groupnames(xset)
+
+  grpPeaklist <- grpPeaklist[order(grpPeaklist$grpid),]
+  colnames(grpPeaklist)['rtmed']
+  colnames(grpPeaklist)[colnames(grpPeaklist)=='rtmed'] = 'rt'
+  colnames(grpPeaklist)[colnames(grpPeaklist)=='mzmed'] = 'mz'
+
   custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grpPeaklist, con=con)
 
   ###############################################
@@ -271,7 +278,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     av_spectra$pid <- newPids
 
     topnav <- plyr::ddply(av_spectra, ~pid, getXcmsGrpDetails, grpPeaklist)
-
+    head(topnav)
 
     grpidx <- which(grpPeaklist$grpid %in% topnav$grpid)
     if (is.null(topnav$fileid)){
@@ -430,7 +437,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 getAvSpectraForGrp <- function(x){
 
   if (length(x$av_intra)>0){
-    av_intra_df <- plyr::ldply(x$av_intra)
+    av_intra_df <- plyr::ldply(x$av_intra, .id = 'fileid')
 
     if (nrow(av_intra_df)==0){
       av_intra_df <- NULL
