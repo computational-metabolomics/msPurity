@@ -278,7 +278,6 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     av_spectra$pid <- newPids
 
     topnav <- plyr::ddply(av_spectra, ~pid, getXcmsGrpDetails, grpPeaklist)
-    head(topnav)
 
     grpidx <- which(grpPeaklist$grpid %in% topnav$grpid)
     if (is.null(topnav$fileid)){
