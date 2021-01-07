@@ -116,7 +116,7 @@ jobs:
         if: runner.os == 'Linux'
         ## sysreqs=$(Rscript -e 'cat("apt-get update -y && apt-get install -y", paste(gsub("apt-get install -y ", "", remotes::system_requirements("ubuntu", "20.04")), collapse = " "))')
         run: |
-          sysreqs=$(Rscript -e 'cat("apt-get update -y && apt-get install -y", "libicu-dev pandoc libpq-dev')
+          sysreqs=$(Rscript -e 'cat("apt-get update -y && apt-get install -y", "libicu-dev pandoc libpq-dev")
           echo $sysreqs
           sudo -s eval "$sysreqs"
           
