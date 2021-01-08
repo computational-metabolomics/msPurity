@@ -496,7 +496,7 @@ get_xcms_sm_summary <- function(query_db_pth, topn=NA, score_f=0.3, frag_nm_f=1,
     return(0)
   }
 
-  DBI::dbWriteTable(conQ, name='xcms_match', value=xcms_mtch, row.names=F, append=T)
+  DBI::dbWriteTable(conQ, name='xcms_match', value=xcms_mtch, row.names=FALSE, append=TRUE)
   DBI::dbDisconnect(conQ)
   return(xcms_mtch)
 
@@ -694,7 +694,7 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
       next
     }
 
-    bm <- min(ppmD, na.rm = T)
+    bm <- min(ppmD, na.rm = TRUE)
 
     if (bm>ppm_tol_prod){
       allpeaks[[i]] <- rbind(target_peaks[i,],c(0, 0, 2,0))

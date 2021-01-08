@@ -509,7 +509,7 @@ spectralMatching <- function(
 
     xcmsMatchedResults <- getXcmsSmSummary(q_con, matched,spectraTypes=q_spectraTypes)
     if (updateDb && !is.null(xcmsMatchedResults)){
-      DBI::dbWriteTable(q_con, name='xcms_match', value=xcmsMatchedResults, row.names=F, append=T)
+      DBI::dbWriteTable(q_con, name='xcms_match', value=xcmsMatchedResults, row.names=FALSE, append=TRUE)
     }
 
   }else{

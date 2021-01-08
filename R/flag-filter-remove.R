@@ -286,7 +286,7 @@ sum_calc_peaklist <- function(xset){
 
     subseti <- grp_peaklist[ , which(colnames(grp_peaklist) %in% files)]
     rsdi <- apply(subseti, 1, rsd)
-    mediani <- apply(subseti, 1, median, na.rm=T)
+    mediani <- apply(subseti, 1, median, na.rm=TRUE)
 
     med_i_m[,cnt] <- mediani
     colnames(med_i_m)[cnt] <- paste(c, "median_I", sep="_")
@@ -427,7 +427,7 @@ flag_peaks <- function(peaklist, RSD_I_filter, minfrac_filter, RSD_RT_filter, i_
 
 }
 
-rsd <- function(x){ (sd(x,na.rm = T)/mean(x, na.rm=T))*100 }
+rsd <- function(x){ (sd(x,na.rm = TRUE)/mean(x, na.rm=TRUE))*100 }
 
 remove_spectra <- function(xset, peaklist, rclass, rm_peak_out=FALSE){
   # remove the valid peaks of one selected class from an xcms object

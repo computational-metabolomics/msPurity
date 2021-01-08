@@ -219,7 +219,7 @@ addMetFragResults <- function(metfrag_resultPth, con, con_comp){
   # Add metfrag details
   if (!is.na(metfrag_resultPth) && file.exists(metfrag_resultPth) &&
       length(count.fields(metfrag_resultPth, sep = "\t")>1)){
-    DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=T)
+    DBI::dbWriteTable(conn=con, name='metfrag_results', value=metfrag_resultPth, sep='\t', header=TRUE)
 
     DBI::dbExecute(con,
                    'INSERT INTO metab_compound (inchikey_id)
@@ -238,7 +238,7 @@ addSiriusResults <- function(sirius_csi_resultPth, con, con_comp=NULL){
   # Add sirius details
   if (!is.na(sirius_csi_resultPth) && file.exists(sirius_csi_resultPth)
       && length(count.fields(sirius_csi_resultPth, sep = "\t")>1)){
-    DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=T, row.names=T, nrows = 4)
+    DBI::dbWriteTable(conn=con, name='sirius_csifingerid_results', value=sirius_csi_resultPth, sep='\t', header=TRUE, row.names=TRUE, nrows = 4)
 
     inchikey2ds <- DBI::dbGetQuery(con, "SELECT DISTINCT inchikey2D FROM sirius_csifingerid_results")
 
@@ -327,7 +327,7 @@ addProbmetab <- function(pth, con){
     df$grpid <- nmap$grpid[match(df$name, nmap$grp_name)]
 
 
-    start <- T
+    start <- TRUE
     for (i in 1:nrow(df)){
 
       x <- df[i,]
@@ -346,10 +346,10 @@ addProbmetab <- function(pth, con){
         row <-  c(x$grpid, x$propmz, mpc[[1]][j], proba[[1]][j])
 
         if (start){
-          df_out <- data.frame(t(row), stringsAsFactors=F)
-          start <- F
+          df_out <- data.frame(t(row), stringsAsFactors=FALSE)
+          start <- FALSE
         }else{
-          df_out <- data.frame(rbind(df_out, row), stringsAsFactors=F)
+          df_out <- data.frame(rbind(df_out, row), stringsAsFactors=FALSE)
         }
       }
 

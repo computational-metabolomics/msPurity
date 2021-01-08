@@ -357,10 +357,10 @@ convert2Raw <- function(x, xset){
 # This function retrieve a xset like object
 getxcmsSetObject <- function(xobject) {
     # XCMS 1.x
-    if (class(xobject) == "xcmsSet")
+    if (is(xobject) == "xcmsSet")
         return (xobject)
     # XCMS 3.x
-    if (class(xobject) == "XCMSnExp") {
+    if (is(xobject) == "XCMSnExp") {
         # Get the legacy xcmsSet object
         suppressWarnings(xset <- as(xobject, 'xcmsSet'))
         if (!is.null(xset@phenoData$sample_group))
