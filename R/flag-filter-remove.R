@@ -1,3 +1,22 @@
+# msPurity R package for processing MS/MS data - Copyright (C)
+#
+# This file is part of msPurity.
+#
+# msPurity is a free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# msPurity is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
+
+
+
 #' @title Flag and remove unwanted peaks
 #'
 #' @description
@@ -267,7 +286,7 @@ sum_calc_peaklist <- function(xset){
 
     subseti <- grp_peaklist[ , which(colnames(grp_peaklist) %in% files)]
     rsdi <- apply(subseti, 1, rsd)
-    mediani <- apply(subseti, 1, median, na.rm=T)
+    mediani <- apply(subseti, 1, median, na.rm=TRUE)
 
     med_i_m[,cnt] <- mediani
     colnames(med_i_m)[cnt] <- paste(c, "median_I", sep="_")
@@ -408,7 +427,7 @@ flag_peaks <- function(peaklist, RSD_I_filter, minfrac_filter, RSD_RT_filter, i_
 
 }
 
-rsd <- function(x){ (sd(x,na.rm = T)/mean(x, na.rm=T))*100 }
+rsd <- function(x){ (sd(x,na.rm = TRUE)/mean(x, na.rm=TRUE))*100 }
 
 remove_spectra <- function(xset, peaklist, rclass, rm_peak_out=FALSE){
   # remove the valid peaks of one selected class from an xcms object

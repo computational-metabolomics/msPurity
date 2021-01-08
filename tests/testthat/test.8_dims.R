@@ -102,8 +102,8 @@ test_that("Check predict purity (function only)", {
                                         minOffset=0.5,
                                         maxOffset=0.5,
                                         ppm=5,
-                                        mzML=F,
-                                        iwNorm = T,
+                                        mzML=FALSE,
+                                        iwNorm = TRUE,
                                         ilim = 0)
 
   # check the function
@@ -116,7 +116,7 @@ test_that("Check predict purity (function only)", {
 
   #run the function
   predicted2 <- dimsPredictPuritySingle(c(155.0700, 157.0834, 173.0806, 179.1177, 195.1224),
-                                        filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=T)
+                                        filepth=mzmlPth , minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
 
   expect_equal(round(unname(unlist(predicted2[1,])), 3), c(1, 1, 0, 0, 0, 1))
   expect_equal(round(unname(unlist(predicted2[5,])), 3), c(0.816, 0.816, 0.021, 2.634, 0.010, 2.000))
@@ -252,8 +252,8 @@ test_that("Check mzML workflow", {
   expect_equal(nrow(exG@groupedPeaks), 78)
   expect_equal(ncol(exG@groupedPeaks), 13)
   # check a few columns
-  expect_equal(round(median(exG@groupedPeaks$i_B02_Blank_TEST_pos, na.rm = T),1), 805515.5)
-  expect_equal(round(median(exG@groupedPeaks$inorm_B02_Blank_TEST_pos, na.rm = T),5), 0.01144)
+  expect_equal(round(median(exG@groupedPeaks$i_B02_Blank_TEST_pos, na.rm = TRUE),1), 805515.5)
+  expect_equal(round(median(exG@groupedPeaks$inorm_B02_Blank_TEST_pos, na.rm = TRUE),5), 0.01144)
 
 
 })

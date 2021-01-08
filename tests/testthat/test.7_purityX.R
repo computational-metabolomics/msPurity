@@ -55,9 +55,9 @@ test_that("checking purityX (single file)", {
 
 
   #saveRDS(px, file.path("inst", "extdata", "tests", "purityX", "1_purityX_single_px.rds"))
-  expect_equal(round(median(px@predictions$purityFWHMmedian, na.rm = T),3), 0.935)
+  expect_equal(round(median(px@predictions$purityFWHMmedian, na.rm = TRUE),3), 0.935)
   expect_equal(round(median(px@predictions$purityFWmedian),3), 0.505)
-  expect_equal(round(median(px@predictions$pknmFWHMmedian, na.rm=T ),3), 2)
+  expect_equal(round(median(px@predictions$pknmFWHMmedian, na.rm=TRUE ),3), 2)
   expect_equal(round(median(px@predictions$pknmFWmedian),3), 3)
 
   px_saved <- readRDS(system.file("extdata", "tests", "purityX", "1_purityX_single_px.rds", package="msPurity"))

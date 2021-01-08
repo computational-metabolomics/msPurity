@@ -1,3 +1,13 @@
+CHANGES IN VERSION 1.17.1
+=========================
+* Update dev to match bug fixes in master
+
+CHANGES IN VERSION 1.16.1
+=========================
+* Update of createDatabase to record all intra average spectra in database
+* Add license and copyright info to code
+* Add github workflow CI (and subsequent formatting updates to pass tests)
+
 CHANGES IN VERSION 1.15.1
 =========================
 * Update dev to match bug fixes in master

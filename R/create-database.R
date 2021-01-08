@@ -1,3 +1,20 @@
+# msPurity R package for processing MS/MS data - Copyright (C)
+#
+# This file is part of msPurity.
+#
+# msPurity is a free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# msPurity is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
+
 #' @title Create database [deprecated]
 #'
 #' @description
@@ -266,7 +283,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
     # Add CAMERA ruleset
     ###############################################
     if(is.null(xsa@ruleset)){
-      rules_pos <- utils::read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = T)
+      rules_pos <- utils::read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = TRUE)
       rules_neg <- utils::read.csv(system.file(file.path('rules', 'extended_adducts_neg.csv') , package = "CAMERA"))
       rules <- rbind(rules_pos, rules_neg)
 
