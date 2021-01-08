@@ -4,15 +4,15 @@ msPurity: Package to assess precursor ion purity, process fragmentation spectra 
 
 **Version:**
 
-- 1.15.1 (master github)
-- 1.15.1 (development bioconductor v3.12)
-- 1.14.1 (stable bioconductor v3.11)
+- 1.17.1 (master github)
+- 1.17.1 (development bioconductor v3.13)
+- 1.16.1 (stable bioconductor v3.12)
 
 See NEWS file for updates
 
 **General:**
 
-|Git| |Bioconda| |Build Status (Travis)|  |License| |DOI| |Paper| |Coverage|
+|Git| |Bioconda| |License| |DOI| |Paper| |Coverage|
 
 
 **Bioconductor (release):**
@@ -115,14 +115,6 @@ Ref
 
 .. |Bioconductor devel build results| image:: https://bioconductor.org/shields/build/devel/bioc/msPurity.svg
    :target: http://bioconductor.org/checkResults/devel/bioc-LATEST/msPurity/
-
-
-
-.. |Build Status (Travis)| image:: https://img.shields.io/travis/computational-metabolomics/msPurity/master.svg?label=Travis
-   :target: https://travis-ci.org/computational-metabolomics/msPurity
-
-.. |Build Status (AppVeyor)| image:: https://ci.appveyor.com/api/projects/status/github/computational-metabolomics/mspurity?branch=master&svg=true
-   :target: https://ci.appveyor.com/project/Tomnl/msPurity
 
 .. |Git| image:: https://img.shields.io/badge/repository-GitHub-blue.svg?style=flat&maxAge=3600
    :target: https://github.com/computational-metabolomics/msPurity
