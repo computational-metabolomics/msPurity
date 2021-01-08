@@ -1,3 +1,22 @@
+# msPurity R package for processing MS/MS data - Copyright (C)
+#
+# This file is part of msPurity.
+#
+# msPurity is a free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# msPurity is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
+
+
+
 #' @title Create database
 #'
 #' @description
@@ -210,7 +229,14 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     grpPeaklist <- data.frame(grpPeaklist)
   }
   colnames(grpPeaklist)[which(colnames(grpPeaklist)=='into')] <- '_into'
+
   grpPeaklist$grp_name <- xcms::groupnames(xset)
+
+  grpPeaklist <- grpPeaklist[order(grpPeaklist$grpid),]
+  colnames(grpPeaklist)['rtmed']
+  colnames(grpPeaklist)[colnames(grpPeaklist)=='rtmed'] = 'rt'
+  colnames(grpPeaklist)[colnames(grpPeaklist)=='mzmed'] = 'mz'
+
   custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grpPeaklist, con=con)
 
   ###############################################
@@ -271,7 +297,6 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     av_spectra$pid <- newPids
 
     topnav <- plyr::ddply(av_spectra, ~pid, getXcmsGrpDetails, grpPeaklist)
-
 
     grpidx <- which(grpPeaklist$grpid %in% topnav$grpid)
     if (is.null(topnav$fileid)){
@@ -366,7 +391,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
     # Add CAMERA ruleset
     ###############################################
     if(is.null(xsa@ruleset)){
-      rules_pos <- utils::read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = T)
+      rules_pos <- utils::read.table(system.file(file.path('rules', 'extended_adducts_pos.csv') , package = "CAMERA"), header = TRUE)
       rules_neg <- utils::read.csv(system.file(file.path('rules', 'extended_adducts_neg.csv') , package = "CAMERA"))
       rules <- rbind(rules_pos, rules_neg)
 
@@ -430,7 +455,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
 getAvSpectraForGrp <- function(x){
 
   if (length(x$av_intra)>0){
-    av_intra_df <- plyr::ldply(x$av_intra)
+    av_intra_df <- plyr::ldply(x$av_intra, .id = 'fileid')
 
     if (nrow(av_intra_df)==0){
       av_intra_df <- NULL

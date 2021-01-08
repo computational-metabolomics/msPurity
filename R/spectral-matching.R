@@ -1,3 +1,22 @@
+# msPurity R package for processing MS/MS data - Copyright (C)
+#
+# This file is part of msPurity.
+#
+# msPurity is a free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# msPurity is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
+
+
+
 #' @title Spectral matching [deprecated]
 #'
 #' @description
@@ -477,7 +496,7 @@ get_xcms_sm_summary <- function(query_db_pth, topn=NA, score_f=0.3, frag_nm_f=1,
     return(0)
   }
 
-  DBI::dbWriteTable(conQ, name='xcms_match', value=xcms_mtch, row.names=F, append=T)
+  DBI::dbWriteTable(conQ, name='xcms_match', value=xcms_mtch, row.names=FALSE, append=TRUE)
   DBI::dbDisconnect(conQ)
   return(xcms_mtch)
 
@@ -675,7 +694,7 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
       next
     }
 
-    bm <- min(ppmD, na.rm = T)
+    bm <- min(ppmD, na.rm = TRUE)
 
     if (bm>ppm_tol_prod){
       allpeaks[[i]] <- rbind(target_peaks[i,],c(0, 0, 2,0))
