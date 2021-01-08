@@ -233,7 +233,7 @@ export2sqlite <- function(pa, grpPeaklist, xset, xsa, outDir, dbName, metadata){
   grpPeaklist$grp_name <- xcms::groupnames(xset)
 
   grpPeaklist <- grpPeaklist[order(grpPeaklist$grpid),]
-  colnames(grpPeaklist)['rtmed']
+
   colnames(grpPeaklist)[colnames(grpPeaklist)=='rtmed'] = 'rt'
   colnames(grpPeaklist)[colnames(grpPeaklist)=='mzmed'] = 'mz'
 

@@ -20,7 +20,7 @@ Description: msPurity R package was developed to:
     resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be used 
     to normalise the intensities used for the calculation.
 Encoding: UTF-8
-License: GPL (>= 2)
+License: GPL-3.0
 LazyData: TRUE
 BugReports: https://github.com/computational-metabolomics/msPurity/issues/new
 Depends:
@@ -53,7 +53,7 @@ Suggests:
     RPostgres,
     RMySQL
 VignetteBuilder: knitr
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
 biocViews: MassSpectrometry, Metabolomics, Software
 Collate: 

@@ -238,7 +238,9 @@ jobs:
           BiocCheck::BiocCheck(
               dir('check', 'tar.gz$', full.names = TRUE),
               `quit-with-status` = TRUE,
+              `no-check-namespace` =  TRUE,
               `no-check-pkg-size` = TRUE,
+              `no-check-file-size` = TRUE,
               `no-check-version-num` = TRUE,
               `no-check-R-ver` = FALSE,
               `no-check-bioc-help` = TRUE
