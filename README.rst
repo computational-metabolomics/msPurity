@@ -4,9 +4,9 @@ msPurity: Package to assess precursor ion purity, process fragmentation spectra 
 
 **Version:**
 
-- 1.17.1 (master github)
-- 1.17.1 (development bioconductor v3.13)
-- 1.16.1 (stable bioconductor v3.12)
+- 1.17.2 (master github)
+- 1.17.2 (development bioconductor v3.13)
+- 1.16.2 (stable bioconductor v3.12)
 
 See NEWS file for updates
 
