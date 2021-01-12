@@ -2,18 +2,18 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.16.1
-Date: 2021-01-08
+Version: 1.16.2
+Date: 2021-01-12
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
-        email = "t.n.lawson@gmail.com", role = c("aut", "cre"),
+        email = "thomas.nigel.lawson@gmail.com", role = c("aut", "cre"),
         comment = c(ORCID = "0000-0002-5915-7980")),
     person(given = "Ralf", family = "Weber", role = "ctb"),
     person(given = "Martin", family = "Jones", role = "ctb"),
     person(given = "Julien", family = "Saint-Vanne", role = "ctb"),
     person(given = "Andris", family = "Jankevics", role = "ctb"),
-    person(given = "Mark", family = "Viant"),
-    person(given = "Warwick", family = "Dunn"))
+    person(given = "Mark", family = "Viant", role = "ths"),
+    person(given = "Warwick", family = "Dunn", role = "ths"))
 URL:  https://github.com/computational-metabolomics/msPurity/
 Description: msPurity R package was developed to: 
      1) Assess the spectral quality of fragmentation spectra by evaluating the "precursor ion purity". 
