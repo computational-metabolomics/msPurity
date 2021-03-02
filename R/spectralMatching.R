@@ -572,7 +572,7 @@ getScanPeaksSqlite <- function(con, spectraFilter=TRUE, spectraTypes=NA, raThres
   }
 
   if ('type' %in% cn$name && !anyNA(spectraTypes)){
-    speaks <- speaks %>% dplyr::filter(type %in% spectraType)
+    speaks <- speaks %>% dplyr::filter(type %in% spectraTypes)
   }
 
   if ('ra' %in% cn$name && !is.na(raThres)){
