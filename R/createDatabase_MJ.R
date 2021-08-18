@@ -105,8 +105,7 @@ createDatabase_xcms3 <-  function(pa, XCMSnExp_obj, xsa=NULL, outDir='.', grpPea
   }
 
   message("Creating a database of fragmentation spectra and LC features")
-  targetDBpth <- export2sqlite(pa, grpPeaklist = grpPeaklist, XCMSnExp_obj =XCMSnExp_obj,
-                               xsa = xsa, outDir = outDir, dbName = dbName, metadata = metadata)
+  targetDBpth <- export2sqlite(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, metadata)
 
   return(targetDBpth)
 
@@ -123,12 +122,12 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   }
 
   #confirm whether xset is of class "XCMSnExp" (if not, it should be of class "xcmsSet")
-  XCMSnExp_check <- (class(XCMSnExp_obj) == "XCMSnExp")
+  XCMSnExp_check <- (class(xset) == "XCMSnExp")
 
   if (XCMSnExp_check) {
-    cond1 = (length(pa@fileList) > length(XCMSnExp_obj@processingData@files)) && (pa@f4f_link_type=='group')
-    cond2 = !all(basename(pa@fileList)==basename(XCMSnExp_obj@processingData@files)) && (pa@f4f_link_type=='individual')
-    cond3 = !all(names(pa@fileList)==basename(XCMSnExp_obj@processingData@files))
+    cond1 = (length(pa@fileList) > length(xset@processingData@files)) && (pa@f4f_link_type=='group')
+    cond2 = !all(basename(pa@fileList)==basename(xset@processingData@files)) && (pa@f4f_link_type=='individual')
+    cond3 = !all(names(pa@fileList)==basename(xset@processingData@files))
   }else{
     cond1 = (length(pa@fileList) > length(xset@filepaths)) && (pa@f4f_link_type=='group')
     cond2 = !all(basename(pa@fileList)==basename(xset@filepaths)) && (pa@f4f_link_type=='individual')
@@ -147,17 +146,17 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   # if they are the same length, we check to make sure they are in the same order (only matters when
   # the f4f linking was for individual peaks)
   if(cond2){
-    if(cond3){
-      message('FILELISTS DO NOT MATCH')
-      return(NULL)
+      if(cond3){
+        message('FILELISTS DO NOT MATCH')
+        return(NULL)
+      }else{
+        if(XCMSnExp_check){
+          xset@processingData@files = unname(pa@fileList)
+        }else{
+          xset@filepaths <- unname(pa@fileList)
+        }
+      }
     }
-  }else{
-    if(XCMSnExp_check){
-      XCMSnExp_obj@processingData@files = unname(pa@fileList)
-    }else{
-      xset@filepaths <- unname(pa@fileList)
-    }
-  }
 
   dbPth <- file.path(outDir, dbName)
 
@@ -196,7 +195,7 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   ###############################################
   # Add File info
   ###############################################
-  nmsave <- pa@fileList # this is for name tracking in Galaxy
+  nmsave <- names(pa@fileList) # this is for name tracking in Galaxy
 
   pa@fileList <- unname(pa@fileList)
 
@@ -204,12 +203,12 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   fileList <- pa@fileList
 
   if(XCMSnExp_check){
-    classInfo = XCMSnExp_obj@phenoData@data$class
+    classInfo = xset@phenoData@data$class
   }else{
     classInfo = xset@phenoData$class
   }
 
-  if(is.null(classInfo)){
+  if(is.null(class_info)){
     classInfo = rep(NA, length(fileList))
   }
 
@@ -230,7 +229,7 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   ###############################################
 
   if(XCMSnExp_check){
-    cPeaks <- chromPeaks(XCMSnExp_obj)
+    cPeaks <- chromPeaks(xset)
   }else{
     cPeaks <- xset@peaks
   }
@@ -240,7 +239,7 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   # in these cases we need to ensure that fileids are correct
   if (unevenFilelists){
     if(XCMSnExp_check){
-      cPeaks[,'sample'] <- match(basename(XCMSnExp_obj@processingData@files[cPeaks[,'sample']]), filedf$filename)
+      cPeaks[,'sample'] <- match(basename(xset@processingData@files[cPeaks[,'sample']]), filedf$filename)
     }else{
       cPeaks[,'sample'] <- match(basename(xset@filepaths[cPeaks[,'sample']]), filedf$filename)
     }
@@ -268,7 +267,7 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   colnames(grpPeaklist)[which(colnames(grpPeaklist)=='into')] <- '_into'
 
   if(XCMSnExp_check){
-    grpPeaklist$grp_name = XCMSnExp_obj@msFeatureData$featureDefinitions@rownames
+    grpPeaklist$grp_name = xset@msFeatureData$featureDefinitions@rownames
   }else{
     grpPeaklist$grp_name <- xcms::groupnames(xset)
   }
@@ -278,24 +277,12 @@ export2sqlite <- function(pa, grpPeaklist, XCMSnExp_obj, xsa, outDir, dbName, me
   colnames(grpPeaklist)[colnames(grpPeaklist)=='rtmed'] = 'rt'
   colnames(grpPeaklist)[colnames(grpPeaklist)=='mzmed'] = 'mz'
 
-  if(XCMSnExp_check){
-    #flatten peakidx lists
-    grpPeaklist = ddply(grpPeaklist, ~grpid, function(row) {
-      row$peakidx = paste(unlist(row$peakidx), collapse = ', ')
-      return(row)})
-  }
-
   custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grpPeaklist, con=con)
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to c_peak_group
   ###############################################
-  if(XCMSnExp_check){
-    c_peak_X_c_peak_group <- getGroupPeakLink_XCMSnExp(XCMSnExp_obj)
-  }else{
-    c_peak_X_c_peak_group <- getGroupPeakLink(xset)
-  }
-
+  c_peak_X_c_peak_group <- getGroupPeakLink(xset)
 
   fks_for_cxg <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
                       'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks')
@@ -670,47 +657,6 @@ getGroupPeakLink <- function(xset, method='medret'){
   filenames = rownames(xset@phenoData)
 
   idis <- unlist(plyr::dlply(data.frame(xset@peaks), ~sample, function(x){ 1:nrow(x)}))
-
-  #for(i in 1:1000){
-  for(i in 1:length(gidx)){
-    gidxi <- gidx[[i]]
-    bpi <- bestpeaks[i,]
-
-    grpid <- rep(i, length(gidxi))
-    #sid=sids[gidxi]
-
-    im <- cbind('grpid'=grpid, 'cid'=gidxi, 'idi'=idis[gidxi], 'bestpeak'=((gidxi %in% bpi) * 1))
-    #im <- data.frame(im)
-    # multipling by 1 converts TRUE FALSE to 1 0
-
-    if(i==1){
-      allm <- im
-    }else{
-      allm <- rbind(allm, im)
-    }
-  }
-
-  rownames(allm) <- 1:nrow(allm)
-  allm <- data.frame(allm)
-  allm$cXg_id <- 1:nrow(allm)
-  return(allm)
-
-}
-
-
-getGroupPeakLink_XCMSnExp <- function(XCMSn_obj, method='medret'){
-
-  gidx <- featureDefinitions(XCMSn_obj)$peakidx
-  bestpeaks <- featureValues(XCMSn_obj, method = 'medret', value = 'index')
-  #bestpeaks <- xcms::groupval(xset, method=method)
-
-  #sids = xset@peaks[,'sample']
-  sids <- data.frame(chromPeaks(XCMSn_obj))$sample
-
-  #filenames = rownames(xset@phenoData)
-  filenames <- XCMSn_obj@phenoData@data$sampleNames
-
-  idis <- unlist(plyr::dlply(data.frame(chromPeaks(XCMSn_obj)), ~sample, function(x){ 1:nrow(x)}))
 
   #for(i in 1:1000){
   for(i in 1:length(gidx)){
