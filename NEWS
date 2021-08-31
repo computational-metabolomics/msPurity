@@ -1,4 +1,4 @@
-CHANGES IN VERSION 1.19.1/1.18.1
+CHANGES IN VERSION 1.19.1
 =========================
 * Bug fix for flagRemove (full width was not calculated as expected)
 
