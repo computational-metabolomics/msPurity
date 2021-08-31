@@ -488,13 +488,13 @@ get_full_peak_width <- function(peaklist, xsa){
   rt.min = apply(rt.min, 1, min, na.rm = TRUE)
 
   rt.max = xcms::groupval(obj, method = "medret", value = "rtmax", intensity = "into")
-  rt.max = apply(rt.max, 1, min, na.rm = TRUE)
+  rt.max = apply(rt.max, 1, max, na.rm = TRUE)
 
   mz.min = xcms::groupval(obj, method = "medret", value = "mzmin", intensity = "into")
   mz.min = apply(mz.min, 1, min, na.rm = TRUE)
 
   mz.max = xcms::groupval(obj, method = "medret", value = "mzmax", intensity = "into")
-  mz.max = apply(mz.max, 1, min, na.rm = TRUE)
+  mz.max = apply(mz.max, 1, max, na.rm = TRUE)
 
   peaklist_full = cbind(peaklist, "mzmin_full" = mz.min, "mzmax_full" = mz.max, "rtmin_full" = rt.min, "rtmax_full" = rt.max)
   return(peaklist_full)
