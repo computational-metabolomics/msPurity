@@ -7,23 +7,27 @@
 \usage{
 \S4method{frag4feature}{purityA}(
   pa,
-  xset,
+  obj,
   ppm = 5,
   plim = NA,
   intense = TRUE,
   convert2RawRT = TRUE,
   useGroup = FALSE,
-  create_db = FALSE,
-  out_dir = ".",
-  db_name = NA,
+  createDb = FALSE,
+  outDir = ".",
+  dbName = NA,
+  grpPeaklist = NA,
+  use_group = NA,
+  out_dir = NA,
+  create_db = NA,
   grp_peaklist = NA,
-  use_group = NA
+  db_name = NA
 )
 }
 \arguments{
 \item{pa}{object; purityA object}
 
-\item{xset}{object; xcmsSet object derived from the same files as those used to create the purityA object}
+\item{obj}{object; XCMSnExp object derived from the same files as those used to create the purityA object}
 
 \item{ppm}{numeric; ppm tolerance between precursor mz and XCMS feature mz}
 
@@ -35,15 +39,23 @@
 
 \item{useGroup}{boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature}
 
-\item{create_db}{boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results}
+\item{createDb}{boolean; if yes, generate a database of MS2 spectra}
+
+\item{outDir}{string; path where (optionally generated) database file should be saved}
+
+\item{dbName}{character; name to assign to (optionally exported) database.}
+
+\item{grpPeaklist}{dataframe; Can use any peak dataframe to add to databse. Still needs to be derived from the "obj" object though}
+
+\item{use_group}{boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)}
 
 \item{out_dir}{character; (Deprecated, to be removed - use createDatabase function) Path where database will be created}
 
-\item{db_name}{character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp}
+\item{create_db}{boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results}
 
 \item{grp_peaklist}{dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though}
 
-\item{use_group}{boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)}
+\item{db_name}{character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp}
 }
 \value{
 Returns a purityA object (pa) with the following slots populated:
@@ -108,15 +120,31 @@ The purityA object can be used for further processing including linking the frag
 }
 }
 \examples{
+#read in MS data
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-msmsPths <- list.files(system.file("extdata", "lcms",
-                       "mzML", package="msPurityData"), full.names = TRUE,
-                       pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+## For xcms version 3.X
 
+#find peaks in each file
+cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+obj <- xcms::findChromPeaks(ms_data, param = cwp)
+
+#optionally adjust retention time
+obj <- adjustRtime(obj, param = ObiwarpParam(binSize = 0.6))
+
+#group features across samples
+sg = rep(1, length(obj$sampleNames))
+pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
+obj <- groupChromPeaks(obj, param = pdp)
+
+## For xcms versions < 3.X
+obj <- xcms::xcmsSet(msmsPths)
+obj <- xcms::group(obj)
+obj <- xcms::retcor(obj)
+obj <- xcms::group(obj)
+
+## generate purityA object and run frag4feature
 pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
+pa <- frag4feature(pa, obj)
 }

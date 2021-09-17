@@ -25,13 +25,13 @@
 
 \item{ra}{numeric; minimum relative abundance of a peak}
 
-\item{snr}{numeric; minimum signal-to-noise of a peak  peak within each file}
+\item{snr}{numeric; minimum signal-to-noise of a peak within each file}
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 
 \item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
 
-\item{allfrag}{boolean; Whether to filter on all fragmentation spectra or or just the fragmentation spectra grouped to XCMS feature}
+\item{allfrag}{boolean; Whether to filter on all fragmentation spectra or just the fragmentation spectra grouped to XCMS feature}
 }
 \value{
 Returns a purityA object with the pa@grped_msms spectra matrices are updated with the following columns
@@ -48,7 +48,7 @@ Returns a purityA object with the pa@grped_msms spectra matrices are updated wit
 \description{
 \strong{General}
 
-Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
+Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and purity of the precursor ion.
 
 \strong{Example LC-MS/MS processing workflow}
 
@@ -60,23 +60,36 @@ The purityA object can be used for further processing including linking the frag
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (XCMSnExp)
+\item [older versions of xcms] (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> \strong{filterFragSpectra} -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item ([xset/XCMSnExp], pa) -> frag4feature -> \strong{filterFragSpectra} -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }
 \examples{
 
-#msmsPths <- list.files(system.file("extdata", "lcms",
-#                        "mzML", package="msPurityData"), full.names = TRUE,
-#                         pattern = "MSMS")
-#xset <- xcms::xcmsSet(msmsPths)
-#xset <- xcms::group(xset)
-#xset <- xcms::retcor(xset)
-#xset <- xcms::group(xset)
+#read in MS data
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
+
+#find peaks in each file
+cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+obj <- xcms::findChromPeaks(ms_data, param = cwp)
+#obj <- xcms::xcmsSet(msmsPths)
+
+#optionally adjust retention time
+obj <- adjustRtime(obj, param = ObiwarpParam(binSize = 0.6))
+#obj <- xcms::group(obj)
+#obj <- xcms::retcor(obj)
+
+#group features across samples
+sg = rep(1, length(obj$sampleNames))
+pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
+obj <- groupChromPeaks(obj, param = pdp)
+#obj <- xcms::group(obj)
 
 #pa  <- purityA(msmsPths)
 #pa <- frag4feature(pa, xset)

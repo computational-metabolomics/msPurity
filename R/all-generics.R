@@ -20,8 +20,6 @@ setGeneric("getP", function(x) standardGeneric("getP"))
 setGeneric("updatePeaks", function(x, newlist) standardGeneric("updatePeaks"))
 
 
-
-
 setGeneric(name="averageSpectra",
            def=function(Object,rtscn = "all", scanRange=NA, timeRange = NA,
                         clustType="hc", ppm=1.5, snthr = 3, av="median",
@@ -66,9 +64,10 @@ setGeneric(name="writeOut",
 )
 
 setGeneric(name="frag4feature",
-           def=function(pa, xset, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE,
-                        useGroup=FALSE, create_db=FALSE,
-                        out_dir='.', db_name=NA, grp_peaklist=NA, use_group=NA){
+           def=function(pa, obj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE,
+                        useGroup=NA, createDb=FALSE,
+                        outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA,
+                        create_db = NA, grp_peaklist = NA, db_name = NA){
              standardGeneric("frag4feature")
            }
 )

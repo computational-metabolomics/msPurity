@@ -1,31 +1,30 @@
 context ("checking database functions")
 
-test_that("checking create_database (old schema)", {
+test_that("checking createDatabase", {
   print ("\n")
   print("########################################################")
   print("## Checking database (old schema)                     ##")
   print("########################################################")
 
   pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
-  xset <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset.rds", package="msPurity"))
+  xdata <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xcmsnexp.rds", package="msPurity"))
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
   pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
   pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-  xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-  xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+
 
 
   td <- tempdir()
-  db_pth = create_database(pa, xset, out_dir = td)
+  db_pth = createDatabase(pa, obj = xdata, outDir = td)
 
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
 
   cpg <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups')
-  expect_equal(nrow(cpg), 375)
+  expect_equal(nrow(cpg), 406)
 
   cpgX <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_X_c_peak_group')
-  expect_equal(nrow(cpgX), 780)
+  expect_equal(nrow(cpgX), 619)
 
   csX <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_X_s_peak_meta')
   expect_equal(nrow(csX), 270)
