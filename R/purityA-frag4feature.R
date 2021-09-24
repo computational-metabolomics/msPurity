@@ -64,7 +64,7 @@
 #'
 #' @aliases frag4feature
 #' @param pa object; purityA object
-#' @param obj object; XCMSnExp object derived from the same files as those used to create the purityA object
+#' @param xcmsObj object; XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object
 #' @param ppm numeric; ppm tolerance between precursor mz and XCMS feature mz
 #' @param plim numeric; minimum purity of precursor to be included
 #' @param intense boolean; If TRUE the most intense precursor will be used. If FALSE the precursor closest to the center of the isolation window will be used
@@ -95,29 +95,29 @@
 #'
 #' #find peaks in each file
 #' cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
-#' obj <- xcms::findChromPeaks(ms_data, param = cwp)
+#' xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
 
 #'
 #' #optionally adjust retention time
-#' obj <- adjustRtime(obj, param = ObiwarpParam(binSize = 0.6))
+#' xcmsObj <- adjustRtime(xcmsObj, param = ObiwarpParam(binSize = 0.6))
 #'
 #' #group features across samples
-#' sg = rep(1, length(obj$sampleNames))
+#' sg = rep(1, length(xcmsObj$sampleNames))
 #' pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
-#' obj <- groupChromPeaks(obj, param = pdp)
+#' xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 #'
 #' ## For xcms versions < 3.X
-#' obj <- xcms::xcmsSet(msmsPths)
-#' obj <- xcms::group(obj)
-#' obj <- xcms::retcor(obj)
-#' obj <- xcms::group(obj)
+#' xcmsObj <- xcms::xcmsSet(msmsPths)
+#' xcmsObj <- xcms::group(xcmsObj)
+#' xcmsObj <- xcms::retcor(xcmsObj)
+#' xcmsObj <- xcms::group(xcmsObj)
 #'
 #' ## generate purityA object and run frag4feature
 #' pa  <- purityA(msmsPths)
 #' pa <- frag4feature(pa, obj)
 #' @export
 setMethod(f="frag4feature", signature="purityA",
-          definition = function(pa, obj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
+          definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA){
 
@@ -142,12 +142,15 @@ setMethod(f="frag4feature", signature="purityA",
     dbName <- db_name
   }
 
-  if('XCMSnExp' == class(obj)[1]){
+  if('XCMSnExp' == class(xcmsObj)[1]){
     XCMSnExp_bool = TRUE
-  }else if('xcmsSet' == class(obj)[1]){
+  }else if('xcmsSet' == class(xcmsObj)[1]){
     XCMSnExp_bool = FALSE
+  }else if('xsAnnotate' == class(xcmsObj)){
+    XCMSnExp_bool = FALSE
+    xcmsObj = xcmsObj@xcmsSet
   }else{
-    stop('obj is not of class XCMSnExp or xcmsSet')
+    stop('obj is not of class XCMSnExp, xcmsSet or xsAnnotate')
   }
 
   # Makes sure the same files are being used
@@ -156,9 +159,9 @@ setMethod(f="frag4feature", signature="purityA",
     for(i in 1:length(pa@fileList)){
       f_nms =
       if(XCMSnExp_bool){
-        f_nms = basename(obj@processingData@files[i])
+        f_nms = basename(xcmsObj@processingData@files[i])
       }else{
-        f_nms = basename(obj@filepaths[i])
+        f_nms = basename(xcmsObj@filepaths[i])
       }
 
       if(!basename(pa@fileList[i])==f_nms){
@@ -175,11 +178,11 @@ setMethod(f="frag4feature", signature="purityA",
   puritydf$fileid <- as.numeric(as.character(puritydf$fileid))
 
   if(XCMSnExp_bool){
-    allpeaks <- data.frame(xcms::chromPeaks(obj))
-    allpeaks$filename = obj$sampleName[allpeaks$sample]
+    allpeaks <- data.frame(xcms::chromPeaks(xcmsObj))
+    allpeaks$filename = xcmsObj$sampleName[allpeaks$sample]
   }else{
-    allpeaks <- data.frame(obj@peaks)
-    allpeaks$filename <- sampnames(obj)[allpeaks$sample]
+    allpeaks <- data.frame(xcmsObj@peaks)
+    allpeaks$filename <- sampnames(xcmsObj)[allpeaks$sample]
     #allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=obj)
   }
 
@@ -190,11 +193,11 @@ setMethod(f="frag4feature", signature="purityA",
     conv_check = FALSE
 
     if(XCMSnExp_bool){
-      if(hasAdjustedRtime(obj)){
+      if(hasAdjustedRtime(xcmsObj)){
         conv_check = TRUE
       }
     }else{
-      if(any(lapply(obj@.processHistory, function(mesg){ "Retention time correction" %in% mesg@type }))){
+      if(any(lapply(xcmsObj@.processHistory, function(mesg){ "Retention time correction" %in% mesg@type }))){
         conv_check = TRUE
       }
     }
@@ -202,9 +205,9 @@ setMethod(f="frag4feature", signature="purityA",
     if(conv_check){
       allpeaks$rtminCorrected <- allpeaks$rtmin
       allpeaks$rtmaxCorrected <- allpeaks$rtmax
-      allpeaks <- ddply(allpeaks, ~ sample, convert2Raw, obj=obj, XCMSnExp_bool=XCMSnExp_bool)
+      allpeaks <- ddply(allpeaks, ~ sample, convert2Raw, xcmsObj=xcmsObj, XCMSnExp_bool=XCMSnExp_bool)
     }else{
-      cat('convert2RawRT == TRUE but retention time alignment not applied to obj. Using raw retention times for features')
+      cat('convert2RawRT == TRUE but retention time alignment not applied to xcmsObj. Using raw retention times for features')
       allpeaks$rtminCorrected <- NA
       allpeaks$rtmaxCorrected <- NA
     }
@@ -232,14 +235,15 @@ setMethod(f="frag4feature", signature="purityA",
   if(useGroup){
 
     if(XCMSnExp_bool){
-      fullpeakw <- data.frame(get_full_peak_widths(xcms::featureDefinitions(obj), obj = obj, XCMSnExp_bool = XCMSnExp_bool))
+      fullpeakw <- data.frame(get_full_peak_widths(xcms::featureDefinitions(xcmsObj), xcmsObj = xcmsObj))
     }else{
-      fullpeakw <- data.frame(get_full_peak_widths(obj@groups, obj = obj, XCMSnExp_bool = FALSE))
+      fullpeakw <- data.frame(get_full_peak_widths(xcmsObj@groups, xcmsObj = xcmsObj))
     }
 
     fullpeakw$grpid <- seq(1, nrow(fullpeakw))
 
-    matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm, fullp=TRUE, use_grped=TRUE)
+    matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm,
+                           fullp=TRUE, use_grped=TRUE)
 
   }else{
     # Map xcms features to the data frame (takes a while)
@@ -261,9 +265,9 @@ setMethod(f="frag4feature", signature="purityA",
     #Group by the xcms groups
     #
     if(XCMSnExp_bool){
-      grpedp <- plyr::llply(xcms::featureDefinitions(obj)$peakidx,grpByXCMS, matched=matched)
+      grpedp <- plyr::llply(xcms::featureDefinitions(xcmsObj)$peakidx,grpByXCMS, matched=matched)
     }else{
-      grpedp <- plyr::llply(obj@groupidx, grpByXCMS, matched=matched)
+      grpedp <- plyr::llply(xcmsObj@groupidx, grpByXCMS, matched=matched)
     }
 
     names(grpedp) <- seq(1, length(grpedp))
@@ -291,7 +295,8 @@ setMethod(f="frag4feature", signature="purityA",
     if(is.null(pa@filter_frag_params$allfrag)){
       pa@filter_frag_params$allfrag = FALSE
     }
-    pa@db_path <- createDatabase(pa, obj = obj, xsa=NULL, outDir=outDir, grpPeaklist=grpPeaklist, dbName=dbName)
+    pa@db_path <- createDatabase(pa, xcmsObj = xcmsObj, xsa=NULL, outDir=outDir,
+                                 grpPeaklist=grpPeaklist, dbName=dbName)
   }
 
   return(pa)
@@ -429,8 +434,8 @@ getScanLoop <- function(peaks, scans){
   return(grpl)
 }
 
-getname <- function(x, xset){
- x$filename <- basename(xset@filepaths[x$sample])
+getname <- function(x, xcmsObj){
+ x$filename <- basename(xcmsObj@filepaths[x$sample])
  return(x)
 }
 
@@ -448,82 +453,82 @@ grpByXCMS <- function(x, matched){
 #}
 
 
-convert2Raw <- function(all_peaks, obj, XCMSnExp_bool){
+convert2Raw <- function(all_peaks, xcmsObj, XCMSnExp_bool){
   ## all_peaks = dataframe of chrompeaks
-  ## obj = either an XCMSnExp or xcmsSet obj.
-  ## XCMSnExp_bol = boolean, where 1 means obj class == XCMSnExp, 0 means obj class == xcmsSet
+  ## xcmsObj = object of class XCMSnExp, xcmsSet or xsAnnotaiton.
+  ## XCMSnExp_bol = boolean, where 1 means xcmsObj class == XCMSnExp, 0 means obj class == xcmsSet
   sid <- unique(all_peaks$sample)
   # for each file get list of peaks
-  if(XCMSnExp_bool==1 && (class(obj) == 'XCMSnExp')){
-      all_peaks$rtmin <- rtime(obj, adjusted=FALSE, bySample=T)[[sid]][match(all_peaks$rtmin, rtime(obj, adjusted = T, bySample = T)[[sid]])]
-      all_peaks$rtmax <- rtime(obj, adjusted=FALSE, bySample=T)[[sid]][match(all_peaks$rtmax, rtime(obj, adjusted = T, bySample = T)[[sid]])]
-  }else if(XCMSnExp_bool==0 && (class(obj) == 'xcmsSet')){
-      all_peaks$rtmin <- obj@rt$raw[[sid]][match(all_peaks$rtmin, obj@rt$corrected[[sid]])]
-      all_peaks$rtmax <- obj@rt$raw[[sid]][match(all_peaks$rtmax, obj@rt$corrected[[sid]])]
+  if(XCMSnExp_bool==1 && (class(xcmsObj) == 'XCMSnExp')){
+      all_peaks$rtmin <- rtime(xcmsObj, adjusted=FALSE, bySample=T)[[sid]][match(all_peaks$rtmin, rtime(xcmsObj, adjusted = T, bySample = T)[[sid]])]
+      all_peaks$rtmax <- rtime(xcmsObj, adjusted=FALSE, bySample=T)[[sid]][match(all_peaks$rtmax, rtime(xcmsObj, adjusted = T, bySample = T)[[sid]])]
+  }else if(XCMSnExp_bool==0 && (class(xcmsObj) == 'xcmsSet')){
+      all_peaks$rtmin <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmin, xcmsObj@rt$corrected[[sid]])]
+      all_peaks$rtmax <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmax, xcmsObj@rt$corrected[[sid]])]
   }
   return(all_peaks)
 }
 
 
-get_full_peak_widths <- function(peaklist, obj, XCMSnExp_bool=TRUE){
-  ###########################################
-  # Get full peak width
-  ###########################################
-  # Args:
-  #   peaklist: the peak list generated from either XCMS or CAMERA.
-  #              Use the CAMERA peak list for this piplein
-  #   xsa: The CAMERA annotation object
-  #
-  # Returns:
-  #   An updated peaklist with the full retention window ranges (and full mz ranges)
-  #
-  # See also:
-  #   full_minmax, getpeaks, ldply (from the plyr library)
-
-  message("Getting full peak widths")
-  # Get 'peaks' (xcms features) from the XCMSnSet object
-  # in the camera annotation object
-
-  message("Get 'individual' peaks from camera-xcms object")
-
-  if(attributes(obj)$class[1] == 'xsAnnotate'){
-   obj = xsa@xcmsSet
-   XCMSnExp_bool = FALSE
-  }
-
-  if(XCMSnExp_bool && (class(obj) == 'XCMSnExp')){
-    rt.min = xcms::featureValues(obj, method = "medret", value = "rtmin", intensity = "into")
-    rt.max = xcms::featureValues(obj, method = "medret", value = "rtmax", intensity = "into")
-    mz.min = xcms::featureValues(obj, method = "medret", value = "mzmin", intensity = "into")
-    mz.max = xcms::featureValues(obj, method = "medret", value = "mzmax", intensity = "into")
-  }else if (XCMSnExp_bool==FALSE && (class(obj) == 'xcmsSet')){
-    rt.min = xcms::groupval(obj, method = "medret", value = "rtmin", intensity = "into")
-    rt.max = xcms::groupval(obj, method = "medret", value = "rtmax", intensity = "into")
-    mz.min = xcms::groupval(obj, method = "medret", value = "mzmin", intensity = "into")
-    mz.max = xcms::groupval(obj, method = "medret", value = "mzmax", intensity = "into")
-  }
-
-  rt.min = apply(rt.min, 1, min, na.rm = TRUE)
-  rt.max = apply(rt.max, 1, max, na.rm = TRUE)
-  mz.min = apply(mz.min, 1, min, na.rm = TRUE)
-  mz.max = apply(mz.max, 1, max, na.rm = TRUE)
-
-  peaklist_full = cbind(peaklist, "mzmin_full" = mz.min, "mzmax_full" = mz.max, "rtmin_full" = rt.min, "rtmax_full" = rt.max)
-  return(peaklist_full)
-
-}
+# get_full_peak_widths <- function(peaklist, obj, XCMSnExp_bool=TRUE){
+#   ###########################################
+#   # Get full peak width
+#   ###########################################
+#   # Args:
+#   #   peaklist: the peak list generated from either XCMS or CAMERA.
+#   #              Use the CAMERA peak list for this piplein
+#   #   xsa: The CAMERA annotation object
+#   #
+#   # Returns:
+#   #   An updated peaklist with the full retention window ranges (and full mz ranges)
+#   #
+#   # See also:
+#   #   full_minmax, getpeaks, ldply (from the plyr library)
+#
+#   message("Getting full peak widths")
+#   # Get 'peaks' (xcms features) from the XCMSnSet object
+#   # in the camera annotation object
+#
+#   message("Get 'individual' peaks from camera-xcms object")
+#
+#   if(attributes(obj)$class[1] == 'xsAnnotate'){
+#    obj = xsa@xcmsSet
+#    XCMSnExp_bool = FALSE
+#   }
+#
+#   if(XCMSnExp_bool && (class(obj) == 'XCMSnExp')){
+#     rt.min = xcms::featureValues(obj, method = "medret", value = "rtmin", intensity = "into")
+#     rt.max = xcms::featureValues(obj, method = "medret", value = "rtmax", intensity = "into")
+#     mz.min = xcms::featureValues(obj, method = "medret", value = "mzmin", intensity = "into")
+#     mz.max = xcms::featureValues(obj, method = "medret", value = "mzmax", intensity = "into")
+#   }else if (XCMSnExp_bool==FALSE && (class(obj) == 'xcmsSet')){
+#     rt.min = xcms::groupval(obj, method = "medret", value = "rtmin", intensity = "into")
+#     rt.max = xcms::groupval(obj, method = "medret", value = "rtmax", intensity = "into")
+#     mz.min = xcms::groupval(obj, method = "medret", value = "mzmin", intensity = "into")
+#     mz.max = xcms::groupval(obj, method = "medret", value = "mzmax", intensity = "into")
+#   }
+#
+#   rt.min = apply(rt.min, 1, min, na.rm = TRUE)
+#   rt.max = apply(rt.max, 1, max, na.rm = TRUE)
+#   mz.min = apply(mz.min, 1, min, na.rm = TRUE)
+#   mz.max = apply(mz.max, 1, max, na.rm = TRUE)
+#
+#   peaklist_full = cbind(peaklist, "mzmin_full" = mz.min, "mzmax_full" = mz.max, "rtmin_full" = rt.min, "rtmax_full" = rt.max)
+#   return(peaklist_full)
+#
+# }
 
 # This function retrieve a xset like object
-getxcmsSetObject <- function(xobject) {
+getxcmsSetObject <- function(xcmsObj) {
     # XCMS 1.x
-    if (class(xobject) == "xcmsSet")
-        return (xobject)
+    if (class(xcmsObj) == "xcmsSet")
+        return (xcmsObj)
     # XCMS 3.x
-    if (class(xobject) == "XCMSnExp") {
+    if (class(xcmsObj) == "XCMSnExp") {
         # Get the legacy xcmsSet object
-        suppressWarnings(xset <- as(xobject, 'xcmsSet'))
-        if (!is.null(xobject@phenoData$sample_group))
-            sampclass(xset) <- xobject@phenoData$sample_group
+        suppressWarnings(xset <- as(xcmsObj, 'xcmsSet'))
+        if (!is.null(xcmsObj@phenoData$sample_group))
+            sampclass(xset) <- xcmsObj@phenoData$sample_group
         else
             sampclass(xset) <- "."
         return (xset)

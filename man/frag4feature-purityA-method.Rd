@@ -7,7 +7,7 @@
 \usage{
 \S4method{frag4feature}{purityA}(
   pa,
-  obj,
+  xcmsObj,
   ppm = 5,
   plim = NA,
   intense = TRUE,
@@ -27,7 +27,7 @@
 \arguments{
 \item{pa}{object; purityA object}
 
-\item{obj}{object; XCMSnExp object derived from the same files as those used to create the purityA object}
+\item{xcmsObj}{object; XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object}
 
 \item{ppm}{numeric; ppm tolerance between precursor mz and XCMS feature mz}
 
@@ -101,11 +101,11 @@ The purityA object can be used for further processing including linking the frag
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xdata)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> \strong{frag4feature} -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item (xdata, pa) -> \strong{frag4feature} -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }
@@ -128,21 +128,21 @@ ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
 #find peaks in each file
 cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
-obj <- xcms::findChromPeaks(ms_data, param = cwp)
+xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
 
 #optionally adjust retention time
-obj <- adjustRtime(obj, param = ObiwarpParam(binSize = 0.6))
+xcmsObj <- adjustRtime(xcmsObj, param = ObiwarpParam(binSize = 0.6))
 
 #group features across samples
-sg = rep(1, length(obj$sampleNames))
+sg = rep(1, length(xcmsObj$sampleNames))
 pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
-obj <- groupChromPeaks(obj, param = pdp)
+xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
 ## For xcms versions < 3.X
-obj <- xcms::xcmsSet(msmsPths)
-obj <- xcms::group(obj)
-obj <- xcms::retcor(obj)
-obj <- xcms::group(obj)
+xcmsObj <- xcms::xcmsSet(msmsPths)
+xcmsObj <- xcms::group(xcmsObj)
+xcmsObj <- xcms::retcor(xcmsObj)
+xcmsObj <- xcms::group(xcmsObj)
 
 ## generate purityA object and run frag4feature
 pa  <- purityA(msmsPths)

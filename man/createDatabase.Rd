@@ -6,7 +6,7 @@
 \usage{
 createDatabase(
   pa,
-  obj,
+  xcmsObj,
   xsa = NULL,
   outDir = ".",
   grpPeaklist = NA,
@@ -18,7 +18,7 @@ createDatabase(
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}
 
-\item{obj}{xcms object of class XCMSnExp or xcmsSet; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)}
+\item{xcmsObj}{xcms object of class XCMSnExp or xcmsSet; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)}
 
 \item{xsa}{CAMERA object (optional); if CAMERA object is used, we ignore the xset parameter input and obtain all information
 from the xset object nested with the CAMERA xsa object. Adduct and isotope information
@@ -62,42 +62,40 @@ Schema details can be found \href{https://bioconductor.org/packages/release/bioc
 }
 }
 \examples{
-
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+library(msPurity)
+library(xcms)
+library(magrittr)
+#read in files and data
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = 'LCMSMS')
 ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-####### FEATURE DETECTION AND GROUPING USING XCMS3 (hashed lines for older xcms versions) ########
+#subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
+rtr = c(30, 90)
+mzr = c(100, 200)
+ms_data = ms_data \%>\%  filterRt(rt = rtr) \%>\%  filterMz(mz = mzr)
 
-#find peaks in each file
-cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
-obj <- xcms::findChromPeaks(ms_data, param = cwp)
-#obj <- xcms::xcmsSet(msmsPths)
-
-#optionally adjust retention time
-obj <- adjustRtime(obj, param = ObiwarpParam(binSize = 0.6))
-#obj <- xcms::group(obj)
-#obj <- xcms::retcor(obj)
-
-#group features across samples
-sg = rep(1, length(obj$sampleNames))
-pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
-obj <- groupChromPeaks(obj, param = pdp)
-#obj <- xcms::group(obj)
+##### perform feature detection in individual files
+cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
+xcmsObj@phenoData@data$class = c('sample', 'sample')
+xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
+pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
+xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
 ###### use msPurity to link MS^2 scans to MS1 grouped features and export database ######
-#pa  <- purityA(msmsPths)
-#pa <- frag4feature(pa, obj)
-#pa <- filterFragSpectra(pa, allfrag=TRUE)
-#pa <- averageAllFragSpectra(pa)
-#dbPth <- createDatabase(pa, obj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
+pa  <- purityA(msmsPths)
+pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+pa <- filterFragSpectra(pa, allfrag=TRUE)
+pa <- averageAllFragSpectra(pa)
+dbPth <- createDatabase(pa, obj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
 
 
 #######
-# Run from previously generated data (where class(obj) == 'XCMSnExp'):
+# Run from previously generated data (where class(xcmsObj) == 'XCMSnExp'):
 pa <- readRDS(system.file("extdata", "tests", "purityA",
           "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
-obj <- readRDS(system.file("extdata","tests", "xcms",
-                "msms_only_xset.rds", package="msPurity"))
+xcmsObj <- readRDS(system.file("extdata","tests", "xcms",
+                "msms_only_xcmsnexp.rds", package="msPurity"))
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
                package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
@@ -105,6 +103,6 @@ pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 obj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
 obj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 td <- tempdir()
-db_pth = createDatabase(pa, obj, outDir = td)
+db_pth = createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td)
 
 }

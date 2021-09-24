@@ -42,15 +42,15 @@ test_that("checking frag4feature", {
 
   #perform feature detection in individual files
   #cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-  #xdata <- xcms::findChromPeaks(ms_data, param = cwp)
+  #xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
 
   #perform retention time correction
-  #xdata <- adjustRtime(xdata, param = ObiwarpParam(binSize = 0.6))
+  #xcmsObj <- adjustRtime(xcmsObj, param = ObiwarpParam(binSize = 0.6))
 
   #group features across samples
-  #sg = rep(1, length(xdata$sampleNames))
+  #sg = rep(1, length(xcmsObj$sampleNames))
   #pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 5, binSize = 0.017)
-  #xdata <- groupChromPeaks(xdata, param = pdp)
+  #xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
   #create purity A object
   #pa = purityA(msmsPths)
@@ -64,13 +64,13 @@ test_that("checking frag4feature", {
     pa <- readRDS(system.file("extdata", "tests", "purityA", "1_purityA_pa.rds", package="msPurity"))
     pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
     pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-    xdata <- readRDS(fn)
-    if('xcmsSet' == class(xdata)){
-      xdata@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-      xdata@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+    xcmsObj <- readRDS(fn)
+    if('xcmsSet' == class(xcmsObj)){
+      xcmsObj@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+      xcmsObj@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
     }
 
-    pa <- frag4feature(pa = pa, obj = xdata, create_db=FALSE)
+    pa <- frag4feature(pa = pa, xcmsObj = xcmsObj, create_db=FALSE)
 
     #saveRDS(pa, file.path("inst", "extdata", "test_data", "purityA", "2_frag4feature_pa.rds"))
 
@@ -87,9 +87,6 @@ test_that("checking frag4feature", {
 
   }
 
-
-
-
 })
 
 
@@ -99,21 +96,30 @@ test_that("checking frag4feature (fillpeaks)", {
   print("## Checking frag4feature                              ##")
   print("########################################################")
   library(xcms)
-  #read in files and data
-  #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  #ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
-
-  #perform feature detection in individual files
-  #cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-  #xdata <- xcms::findChromPeaks(ms_data, param = cwp)
-
-  #perform retention time correction
-  #xdata <- adjustRtime(xdata, param = ObiwarpParam(binSize = 0.6))
-
-  #group features across samples
-  #sg = rep(1, length(xdata$sampleNames))
-  #pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
-  #xdata <- groupChromPeaks(xdata, param = pdp)
+  # library(msPurity)
+  # library(xcms)
+  # library(magrittr)
+  #
+  # #### read in files and data
+  # msPths <- dirname(list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE))
+  # msPths[1] <- file.path(msPths[1], 'LCMS_1.mzML')
+  # msPths[2] <- file.path(msPths[2], 'LCMS_2.mzML')
+  # msPths[3] <- file.path(msPths[3], 'LCMSMS_1.mzML')
+  # msPths[4] <- file.path(msPths[4], 'LCMSMS_2.mzML')
+  # ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
+  #
+  # ##### subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
+  # rtr = c(30, 90)
+  # mzr = c(100, 200)
+  # ms_data = ms_data %>%  filterRt(rt = rtr) %>%  filterMz(mz = mzr)
+  #
+  # ##### perform feature detection in individual files
+  # cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+  # xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
+  # xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
+  # xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
+  # pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
+  # xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 
   fns = c(system.file("extdata","tests", "xcms", "msms_only_xcmsnexp.rds", package="msPurity"),
@@ -123,20 +129,20 @@ test_that("checking frag4feature (fillpeaks)", {
     pa <- readRDS(system.file("extdata", "tests", "purityA", "1_purityA_pa.rds", package="msPurity"))
     pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
     pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-    xdata <- readRDS(fn)
+    xcmsObj <- readRDS(fn)
 
-    if('XCMSnExp' == class(xdata)[1]){
-      #xdata <- xcms::fillChromPeaks(xdata, param = ChromPeakAreaParam())
-      xdata <- xcms::fillChromPeaks(xdata, param = FillChromPeaksParam(expandMz = 0, expandRt = 0, ppm = 0))
-    }else if('xcmsSet' == class(xdata)[1]){
-      xdata@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-      xdata@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-      xdata <- xcms::fillPeaks.chrom(xdata, expand.mz = 0, expand.rt = 0)
+    if('XCMSnExp' == class(xcmsObj)[1]){
+      #xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = ChromPeakAreaParam())
+      xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = FillChromPeaksParam(expandMz = 0, expandRt = 0, ppm = 0))
+    }else if('xcmsSet' == class(xcmsObj)[1]){
+      xcmsObj@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+      xcmsObj@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+      xcmsObj <- xcms::fillPeaks.chrom(xcmsObj, expand.mz = 0, expand.rt = 0)
     }else{
       stop('obj is not of class XCMSnExp or xcmsSet')
     }
 
-    pa <- frag4feature(pa, obj = xdata, createDb = FALSE)
+    pa <- frag4feature(pa = pa, xcmsObj = xcmsObj, createDb = FALSE)
 
     #saveRDS(pa, file.path("inst", "extdata", "test_data", "purityA", "2_frag4feature_pa.rds"))
 

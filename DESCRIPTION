@@ -14,7 +14,7 @@ Authors@R: c(
     person(given = "Andris", family = "Jankevics", role = "ctb"),
     person(given = "Mark", family = "Viant", role = "ths"),
     person(given = "Warwick", family = "Dunn", role = "ths"))
-URL:  https://github.com/computational-metabolomics/msPurity/
+URL: https://github.com/computational-metabolomics/msPurity/
 Description: msPurity R package was developed to: 
      1) Assess the spectral quality of fragmentation spectra by evaluating the "precursor ion purity". 
      2) Process fragmentation spectra. 
@@ -62,7 +62,7 @@ Suggests:
     RPostgres,
     RMySQL
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
 biocViews: MassSpectrometry, Metabolomics, Software
 Collate: 
