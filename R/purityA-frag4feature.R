@@ -114,7 +114,7 @@
 #'
 #' ## generate purityA object and run frag4feature
 #' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa, obj)
+#' pa <- frag4feature(pa, xcmsObj)
 #' @export
 setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,

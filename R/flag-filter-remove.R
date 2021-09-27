@@ -26,7 +26,7 @@
 #'
 #' The output is a list object containing: 1) the updated xcms object, 2) the grouped peaklist and 3) the blank removed peaks
 #'
-#' @param obj object; XCMSnExp, xcmsSet or xsAnnotate object
+#' @param xcmsObj object; XCMSnExp, xcmsSet or xsAnnotate object
 #' @param pol str; polarity (just used for naming purpose for files being saved) \[positive, negative, NA\]
 #' @param rsd_i_blank numeric; RSD threshold for the blank
 #' @param minfrac_blank numeric; minimum fraction of files for features needed for the blank
@@ -47,7 +47,7 @@
 #' @param remove_spectra_bool bool; TRUE if flagged spectra is to be removed
 #'
 #' @param minfrac_xcms numeric; minfrac for xcms  grouping
-#' @param mzwid numeric; xcms grouping parameter
+#' @param mzwid numeric; xcms grouping parameter (corresponds to variable 'binSize' in XCMS3)
 #' @param bw numeric; xcms grouping parameter
 #' @param out_dir str; out directory
 #' @param temp_save boolean; Assign True if files for each step saved (for testing purpsoses)
