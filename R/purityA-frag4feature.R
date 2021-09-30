@@ -183,7 +183,7 @@ setMethod(f="frag4feature", signature="purityA",
   }else{
     allpeaks <- data.frame(xcmsObj@peaks)
     allpeaks$filename <- sampnames(xcmsObj)[allpeaks$sample]
-    #allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xset=obj)
+    allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xcmsObj=xcmsObj)
   }
 
   allpeaks$cid <- seq(1, nrow(allpeaks))
@@ -205,22 +205,13 @@ setMethod(f="frag4feature", signature="purityA",
     if(conv_check){
       allpeaks$rtminCorrected <- allpeaks$rtmin
       allpeaks$rtmaxCorrected <- allpeaks$rtmax
-      allpeaks <- ddply(allpeaks, ~ sample, convert2Raw, xcmsObj=xcmsObj, XCMSnExp_bool=XCMSnExp_bool)
+      allpeaks <- plyr::ddply(allpeaks, ~ sample, convert2Raw, xcmsObj=xcmsObj, XCMSnExp_bool=XCMSnExp_bool)
     }else{
       cat('convert2RawRT == TRUE but retention time alignment not applied to xcmsObj. Using raw retention times for features')
       allpeaks$rtminCorrected <- NA
       allpeaks$rtmaxCorrected <- NA
     }
 
-    #if(hasAdjustedRtime(obj)){
-    #  allpeaks$rtminCorrected <- allpeaks$rtmin
-    #  allpeaks$rtmaxCorrected <- allpeaks$rtmax
-    #  allpeaks <- ddply(allpeaks, ~ sample, convert2Raw, obj=obj, XCMSnExp_bool=XCMSnExp_bool)
-    #}else{
-    #  cat('convert2RawRT == TRUE but retention time alignment not applied to obj. Using raw retention times for features')
-    #  allpeaks$rtminCorrected <- NA
-    #  allpeaks$rtmaxCorrected <- NA
-    #}
   }
 
   # Check if is going to be multi-core
