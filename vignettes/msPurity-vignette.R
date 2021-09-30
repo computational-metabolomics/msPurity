@@ -17,7 +17,6 @@ print(pa@puritydf[1:3,])
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE----------
 ### original XCMS approach
-# xset = xcms::xcmsSet(msPths, method = 'centWave',
 #library(msPurity)
 #library(xcms)
 #mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)

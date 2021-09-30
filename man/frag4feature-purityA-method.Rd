@@ -21,7 +21,8 @@
   out_dir = NA,
   create_db = NA,
   grp_peaklist = NA,
-  db_name = NA
+  db_name = NA,
+  xset = NA
 )
 }
 \arguments{
@@ -56,6 +57,8 @@
 \item{grp_peaklist}{dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though}
 
 \item{db_name}{character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp}
+
+\item{xset}{object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object}
 }
 \value{
 Returns a purityA object (pa) with the following slots populated:
@@ -99,9 +102,13 @@ The purityA object can be used for further processing including linking the frag
 \itemize{
 \item (mzML files) -> purityA -> (pa)
 }
-\item XCMS processing
+\item XCMS processing (versions 3+)
 \itemize{
 \item (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+}
+\item XCMS processing (versions < 3)
+\itemize{
+\item (mzML files) -> xcms.xcmsSet -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
@@ -124,7 +131,7 @@ The purityA object can be used for further processing including linking the frag
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-## For xcms version 3.X
+## For xcms version 3+
 
 #find peaks in each file
 cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
@@ -138,11 +145,25 @@ sg = rep(1, length(xcmsObj$sampleNames))
 pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
 xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
-## For xcms versions < 3.X
+## For xcms versions < 3
 xcmsObj <- xcms::xcmsSet(msmsPths)
 xcmsObj <- xcms::group(xcmsObj)
 xcmsObj <- xcms::retcor(xcmsObj)
 xcmsObj <- xcms::group(xcmsObj)
+
+## For xcms versions < 3
+## xset = xcms::xcmsSet(msPths, method = 'centWave',
+#library(msPurity)
+#library(xcms)
+#mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+### read in the data
+#xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+## for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
+#xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
+#xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+## group features across samples
+#xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+#xcmsObj = xset
 
 ## generate purityA object and run frag4feature
 pa  <- purityA(msmsPths)
