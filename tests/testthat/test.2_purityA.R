@@ -169,40 +169,6 @@ test_that("checking frag4feature (fillpeaks)", {
 })
 
 
-test_that("checking frag4feature (xcms v2 functions)", {
-  print("\n")
-  print("########################################################")
-  print("## Checking frag4feature (run xcms v2 functions)      ##")
-  print("########################################################")
-  # Most of the other tests use the a(xcmsObject, 'xcmsSet') some slight differences
-  # are found if the original functions are used. This test should catch these
-
-  #read in files and data
-  mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  xset <- xcms::xcmsSet(mzMLpths)
-  xset <- xcms::group(xset)
-
-  pa  <- purityA(mzMLpths)
-  pa <- frag4feature(pa, xset)
-
-  expect_equal(round(pa@grped_df$inPurity[1],4), 1)
-  expect_equal(round(pa@grped_df$precurMtchPPM[1], 4), 1.0048)
-  expect_equal(length(pa@grped_ms2), 77)
-  expect_equal(nrow(pa@grped_ms2[[2]][[1]]), 4)
-  expect_equal(round(pa@grped_ms2[[1]][[1]][1],4), 112.0509)
-
-  pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa@grped_ms2, pa_saved@grped_ms2)
-
-  # Saved object is from an old version of msPurity where we stored the rtminCorrected differently (no correction used here
-  # so not important to check for this test)
-  grped_df <- pa@grped_df[,-match(c('rtminCorrected', 'rtmaxCorrected'), colnames(pa@grped_df))]
-  grped_df_saved <- pa@grped_df[,-match(c('rtminCorrected', 'rtmaxCorrected'), colnames(pa@grped_df))]
-  expect_equal(grped_df, grped_df_saved)
-
-})
-
-
 
 test_that("checking filterFragSpectra purityA", {
   print ("\n")
