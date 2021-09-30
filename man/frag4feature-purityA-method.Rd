@@ -70,8 +70,8 @@ Returns a purityA object (pa) with the following slots populated:
 
 Assign fragmentation spectra (MS/MS) stored within a purityA class object to grouped features within an XCMS xset object.
 
-XCMS calculates individual chromatographic peaks for each mzML file (saved in xset@peaks), these are then grouped together
-(using xcms.group). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
+XCMS calculates individual chromatographic peaks for each mzML file (retrieved using xcms::chromPeaks(xcmsObj)), these are then grouped together
+(using xcms::groupChromPeaks). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
 MS1 chromatographic features. If this is the case, to determine if a MS2 spectra is to be linked to an XCMS grouped feature,
 the associated acquisition time of the MS/MS event has to be within the retention time window defined for the individual peaks
 associated for each file. The precursor m/z value also has to be within the user ppm tolerance to XCMS feature.
@@ -101,11 +101,11 @@ The purityA object can be used for further processing including linking the frag
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xdata)
+\item (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xdata, pa) -> \strong{frag4feature} -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item (xcmsObj, pa) -> \strong{frag4feature} -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }

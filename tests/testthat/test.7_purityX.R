@@ -11,7 +11,7 @@ test_that("checking purityX (grouped)", {
   #xset <- group(xset)
   #saveRDS(xset, file.path("inst", "extdata", "tests", "xcms", "ms_only_xset.rds"))
 
-  xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset.rds", package="msPurity"))
+  xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset_OLD.rds", package="msPurity"))
 
   xset@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
   xset@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
@@ -48,7 +48,7 @@ test_that("checking purityX (single file)", {
   #xset <- group(xset)
   #saveRDS(xset, file.path("inst", "extdata", "tests", "xcms", "ms_only_xset.rds"))
   msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
-  xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset.rds", package="msPurity"))
+  xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset_OLD.rds", package="msPurity"))
   xset@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
   xset@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
   px <- purityX(xset, singleFile = 1)

@@ -24,8 +24,8 @@
 #'
 #' Assign fragmentation spectra (MS/MS) stored within a purityA class object to grouped features within an XCMS xset object.
 #'
-#' XCMS calculates individual chromatographic peaks for each mzML file (saved in xset@@peaks), these are then grouped together
-#' (using xcms.group). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
+#' XCMS calculates individual chromatographic peaks for each mzML file (retrieved using xcms::chromPeaks(xcmsObj)), these are then grouped together
+#' (using xcms::groupChromPeaks). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
 #' MS1 chromatographic features. If this is the case, to determine if a MS2 spectra is to be linked to an XCMS grouped feature,
 #' the associated acquisition time of the MS/MS event has to be within the retention time window defined for the individual peaks
 #' associated for each file. The precursor m/z value also has to be within the user ppm tolerance to XCMS feature.
@@ -50,9 +50,9 @@
 #'  * Purity assessments
 #'    +  (mzML files) -> purityA -> (pa)
 #'  * XCMS processing
-#'    +  (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xdata)
+#'    +  (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
 #'  * Fragmentation processing
-#'    + (xdata, pa) -> **frag4feature** -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+#'    + (xcmsObj, pa) -> **frag4feature** -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
 #' ## Additional notes
 #'
@@ -79,7 +79,11 @@
 #' @param create_db boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results
 #' @param grp_peaklist dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @param db_name character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp
+<<<<<<< Updated upstream
 #' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA objec
+=======
+#' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
+>>>>>>> Stashed changes
 #' @return Returns a purityA object (pa) with the following slots populated:
 #'
 #' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
@@ -97,7 +101,6 @@
 #' #find peaks in each file
 #' cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
 #' xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
-
 #'
 #' #optionally adjust retention time
 #' xcmsObj <- adjustRtime(xcmsObj, param = ObiwarpParam(binSize = 0.6))
@@ -121,6 +124,13 @@ setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA){
+<<<<<<< Updated upstream
+=======
+
+  if(!is.na(xset)){
+    xcmsObj <- xset
+  }
+>>>>>>> Stashed changes
 
   if(!is.na(xset)){
     message('The param xset is deprecated - please use xcmsObj instead')

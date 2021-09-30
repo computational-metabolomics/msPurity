@@ -5,7 +5,7 @@ library(xcms)
 library(MSnbase)
 mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
 
-#read in files and data
+#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
 msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)
 rtr = c(30, 90)
 mzr = c(100, 200)
@@ -14,8 +14,10 @@ msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr
 #perform feature detection in individual files
 cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
 xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
+#update metadata
 xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
 xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
+#group chromatographic peaks across samples (correspondence analysis)
 pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
 xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
@@ -27,11 +29,11 @@ pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
 pa <- filterFragSpectra(pa = pa)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra 
+pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra
 pa <- averageInterFragSpectra(pa = pa) # use parameters specific to inter spectra
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa <- averageAllFragSpectra(pa = pa) 
+pa <- averageAllFragSpectra(pa = pa)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
 td <- tempdir()
