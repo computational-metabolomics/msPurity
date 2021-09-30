@@ -68,6 +68,9 @@ test_that("checking frag4feature", {
     if('xcmsSet' == class(xcmsObj)){
       xcmsObj@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
       xcmsObj@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+    }else{
+      xcmsObj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+      xcmsObj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
     }
 
     pa <- frag4feature(pa = pa, xcmsObj = xcmsObj, create_db=FALSE)
@@ -93,7 +96,7 @@ test_that("checking frag4feature", {
 test_that("checking frag4feature (fillpeaks)", {
   print("\n")
   print("########################################################")
-  print("## Checking frag4feature                              ##")
+  print("## Checking frag4feature (fillpeaks)                  ##")
   print("########################################################")
   library(xcms)
   # library(msPurity)
@@ -133,6 +136,8 @@ test_that("checking frag4feature (fillpeaks)", {
 
     if('XCMSnExp' == class(xcmsObj)[1]){
       #xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = ChromPeakAreaParam())
+      xcmsObj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+      xcmsObj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
       xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = FillChromPeaksParam(expandMz = 0, expandRt = 0, ppm = 0))
     }else if('xcmsSet' == class(xcmsObj)[1]){
       xcmsObj@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]

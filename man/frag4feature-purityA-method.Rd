@@ -146,5 +146,5 @@ xcmsObj <- xcms::group(xcmsObj)
 
 ## generate purityA object and run frag4feature
 pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, obj)
+pa <- frag4feature(pa, xcmsObj)
 }

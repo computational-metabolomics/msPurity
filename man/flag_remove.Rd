@@ -29,6 +29,8 @@ flag_remove(
 )
 }
 \arguments{
+\item{xcmsObj}{object; XCMSnExp, xcmsSet or xsAnnotate object}
+
 \item{pol}{str; polarity (just used for naming purpose for files being saved) [positive, negative, NA]}
 
 \item{rsd_i_blank}{numeric; RSD threshold for the blank}
@@ -58,7 +60,7 @@ if the verbose option was set for XCMS;}
 
 \item{minfrac_xcms}{numeric; minfrac for xcms  grouping}
 
-\item{mzwid}{numeric; xcms grouping parameter}
+\item{mzwid}{numeric; xcms grouping parameter (corresponds to variable 'binSize' in XCMS3)}
 
 \item{bw}{numeric; xcms grouping parameter}
 
@@ -71,8 +73,6 @@ if the verbose option was set for XCMS;}
 \item{grp_rm_ids}{vector; vector of grouped_xcms peaks to remove (corresponds to the row from xcms::group output)}
 
 \item{xset}{object, DEPRECATED; xcmsSet object}
-
-\item{obj}{object; XCMSnExp, xcmsSet or xsAnnotate object}
 }
 \value{
 list(xset, grp_peaklist, removed_peaks)

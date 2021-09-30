@@ -207,7 +207,7 @@ setMethod(f="frag4feature", signature="purityA",
       allpeaks$rtmaxCorrected <- allpeaks$rtmax
       allpeaks <- plyr::ddply(allpeaks, ~ sample, convert2Raw, xcmsObj=xcmsObj, XCMSnExp_bool=XCMSnExp_bool)
     }else{
-      cat('convert2RawRT == TRUE but retention time alignment not applied to xcmsObj. Using raw retention times for features')
+      message('convert2RawRT == TRUE but retention time alignment not applied to xcmsObj. Using raw retention times for features')
       allpeaks$rtminCorrected <- NA
       allpeaks$rtmaxCorrected <- NA
     }
