@@ -67,7 +67,7 @@ setGeneric(name="frag4feature",
            def=function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE,
                         useGroup=NA, createDb=FALSE,
                         outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA,
-                        create_db = NA, grp_peaklist = NA, db_name = NA){
+                        create_db = NA, grp_peaklist = NA, db_name = NA, xset = NA){
              standardGeneric("frag4feature")
            }
 )

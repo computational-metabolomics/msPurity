@@ -9,7 +9,7 @@ mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityD
 msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)
 rtr = c(30, 90)
 mzr = c(100, 200)
-msdata = msdata %>%  filterRt(rt = rtr) %>%  filterMz(mz = mzr)
+msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
 
 #perform feature detection in individual files
 cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
