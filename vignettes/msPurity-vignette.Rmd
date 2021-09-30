@@ -101,7 +101,7 @@ library(msPurity)
 mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 ```
 
-Note that if there are any mzML files that do not have MS/MS scans - then an ID is save of the file but no assessments will be made.
+Note that if there are any mzML files that do not have MS/MS scans - then an ID is saved of the file but no assessments will be made.
 
 ```{r}
 pa <- purityA(mzMLpths)
@@ -129,7 +129,7 @@ Other available options are to use gaussian isolation window msPurity::iwNormGau
 
 A user can also create their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
 
-Se below for example of using one of the default provided normalisation functions. 
+See below for example of using one of the default provided normalisation functions. 
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")

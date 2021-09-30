@@ -183,7 +183,7 @@ setMethod(f="frag4feature", signature="purityA",
   }else{
     allpeaks <- data.frame(xcmsObj@peaks)
     allpeaks$filename <- xcms::sampnames(xcmsObj)[allpeaks$sample]
-    allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xcmsObj=xcmsObj)
+    #allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xcmsObj=xcmsObj)
   }
 
   allpeaks$cid <- seq(1, nrow(allpeaks))
@@ -197,7 +197,7 @@ setMethod(f="frag4feature", signature="purityA",
         conv_check = TRUE
       }
     }else{
-      if(any(lapply(xcmsObj@.processHistory, function(mesg){ "Retention time correction" %in% mesg@type }))){
+      if(any(unlist(lapply(xcmsObj@.processHistory, function(mesg){ "Retention time correction" %in% mesg@type })))){
         conv_check = TRUE
       }
     }
@@ -226,9 +226,9 @@ setMethod(f="frag4feature", signature="purityA",
   if(useGroup){
 
     if(XCMSnExp_bool){
-      fullpeakw <- data.frame(get_full_peak_widths(xcms::featureDefinitions(xcmsObj), xcmsObj = xcmsObj))
+      fullpeakw <- data.frame(get_full_peak_width(xcms::featureDefinitions(xcmsObj), xcmsObj = xcmsObj))
     }else{
-      fullpeakw <- data.frame(get_full_peak_widths(xcmsObj@groups, xcmsObj = xcmsObj))
+      fullpeakw <- data.frame(get_full_peak_width(xcmsObj@groups, xcmsObj = xcmsObj))
     }
 
     fullpeakw$grpid <- seq(1, nrow(fullpeakw))

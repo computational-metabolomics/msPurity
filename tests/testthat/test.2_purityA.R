@@ -104,11 +104,9 @@ test_that("checking frag4feature (fillpeaks)", {
   # library(magrittr)
   #
   # #### read in files and data
-  # msPths <- dirname(list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE))
-  # msPths[1] <- file.path(msPths[1], 'LCMS_1.mzML')
-  # msPths[2] <- file.path(msPths[2], 'LCMS_2.mzML')
-  # msPths[3] <- file.path(msPths[3], 'LCMSMS_1.mzML')
-  # msPths[4] <- file.path(msPths[4], 'LCMSMS_2.mzML')
+  # msPths <- dirname(list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = 'MSMS'))
+  # msPths[1] <- file.path(msPths[1], 'LCMSMS_1.mzML')
+  # msPths[2] <- file.path(msPths[2], 'LCMSMS_2.mzML')
   # ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
   #
   # ##### subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
@@ -119,7 +117,7 @@ test_that("checking frag4feature (fillpeaks)", {
   # ##### perform feature detection in individual files
   # cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
   # xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
-  # xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
+  # xcmsObj@phenoData@data$class = c('sample', 'sample')
   # xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
   # pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
   # xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
