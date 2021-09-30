@@ -182,7 +182,7 @@ setMethod(f="frag4feature", signature="purityA",
     allpeaks$filename = xcmsObj$sampleName[allpeaks$sample]
   }else{
     allpeaks <- data.frame(xcmsObj@peaks)
-    allpeaks$filename <- sampnames(xcmsObj)[allpeaks$sample]
+    allpeaks$filename <- xcms::sampnames(xcmsObj)[allpeaks$sample]
     allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xcmsObj=xcmsObj)
   }
 
