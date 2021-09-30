@@ -197,6 +197,8 @@ test_that("checking filterFragSpectra purityA", {
   expect_equal(pa@grped_ms2[[18]][[1]][,'pass_flag'], c(0, 1, 0, 0, 1, 0, 0))
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "3_filterFragSpectra_pa.rds", package="msPurity"))
+  pa_saved@fileList <- basename(pa_saved@fileList)
+  pa@fileList <- basename(pa@fileList)
   expect_equal(pa, pa_saved)
 
 })
@@ -230,6 +232,8 @@ test_that("checking averageIntraFragSpectra (no filter) purityA", {
                                                                 9440187.00, 92384.07, 1694299.12, 22783.27))
 
   pa_saved <- readRDS(system.file("extdata","tests", "purityA", "4_averageIntraFragSpectra_no_filter_pa.rds", package="msPurity"))
+  pa_saved@fileList <- basename(pa_saved@fileList)
+  pa@fileList <- basename(pa@fileList)
   expect_equal(pa, pa_saved)
 
 
@@ -254,6 +258,7 @@ test_that("checking averageInterFragSpectra (no filter) purityA", {
                                                            30549.83, 92384.07, 3667624.62, 22783.27))
 
   pa_saved <- readRDS(system.file("extdata","tests", "purityA", "5_averageInterFragSpectra_no_filter_pa.rds", package="msPurity"))
+
   expect_equal(pa, pa_saved)
 
 })

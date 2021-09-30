@@ -29,13 +29,29 @@ test_that("checking flag and remove peaks", {
   # pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
   # xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
   # saveRDS(xcmsObj, system.file("extdata", "tests", "purityA", "10_filterflagremove.rds", package="msPurity"))
-
+  msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MS")
   xcmsObj = readRDS(system.file("extdata", "tests", "purityA", "10_input_filterflagremove.rds", package="msPurity"))
 
   #check that this works for both xcmsObj of class 'XCMSnExp' and 'xcmsSet'
   xcmsObjs = list(xcmsObj, as(xcmsObj,'xcmsSet'))
 
   for(xcmsObj in xcmsObjs){
+
+    if('XCMSnExp' == class(xcmsObj)[1]){
+      #xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = ChromPeakAreaParam())
+      xcmsObj@processingData@files[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
+      xcmsObj@processingData@files[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
+      xcmsObj@processingData@files[3] <- msPths[basename(msPths)=="LCMSMS_1.mzML"]
+      xcmsObj@processingData@files[4] <- msPths[basename(msPths)=="LCMSMS_2.mzML"]
+    }else if('xcmsSet' == class(xcmsObj)[1]){
+      xcmsObj@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
+      xcmsObj@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
+      xcmsObj@filepaths[3] <- msPths[basename(msPths)=="LCMSMS_1.mzML"]
+      xcmsObj@filepaths[4] <- msPths[basename(msPths)=="LCMSMS_2.mzML"]
+    }else{
+      stop('obj is not of class XCMSnExp or xcmsSet')
+    }
+
     if(class(xcmsObj) == 'xcmsSet'){
       xcmsObj@phenoData[,1] <- c('blank', 'blank', 'sample', 'sample')
     }
