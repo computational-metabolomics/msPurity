@@ -49,8 +49,10 @@
 #'
 #'  * Purity assessments
 #'    +  (mzML files) -> purityA -> (pa)
-#'  * XCMS processing
+#'  * XCMS processing (versions 3+)
 #'    +  (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+#'  * XCMS processing (versions < 3)
+#'    +  (mzML files) -> xcms.xcmsSet -> xcms.retcor -> xcms.group -> (xcmsObj)
 #'  * Fragmentation processing
 #'    + (xcmsObj, pa) -> **frag4feature** -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
@@ -79,15 +81,8 @@
 #' @param create_db boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results
 #' @param grp_peaklist dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @param db_name character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-#' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA objec
-=======
 #' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
->>>>>>> Stashed changes
-=======
-#' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
->>>>>>> Stashed changes
+#'
 #' @return Returns a purityA object (pa) with the following slots populated:
 #'
 #' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
@@ -100,7 +95,7 @@
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 #'
-#' ## For xcms version 3.X
+#' ## For xcms version 3+
 #'
 #' #find peaks in each file
 #' cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
@@ -114,11 +109,25 @@
 #' pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
 #' xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 #'
-#' ## For xcms versions < 3.X
+#' ## For xcms versions < 3
 #' xcmsObj <- xcms::xcmsSet(msmsPths)
 #' xcmsObj <- xcms::group(xcmsObj)
 #' xcmsObj <- xcms::retcor(xcmsObj)
 #' xcmsObj <- xcms::group(xcmsObj)
+#'
+#' ## For xcms versions < 3
+#' ## xset = xcms::xcmsSet(msPths, method = 'centWave',
+#' #library(msPurity)
+#' #library(xcms)
+#' #mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+#' ### read in the data
+#' #xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#' ## for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
+#' #xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
+#' #xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+#' ## group features across samples
+#' #xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+#' #xcmsObj = xset
 #'
 #' ## generate purityA object and run frag4feature
 #' pa  <- purityA(msmsPths)
@@ -128,19 +137,6 @@ setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA){
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-
-  if(!is.na(xset)){
-    xcmsObj <- xset
-  }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
   if(!is.na(xset)){
     message('The param xset is deprecated - please use xcmsObj instead')
@@ -153,18 +149,22 @@ setMethod(f="frag4feature", signature="purityA",
   }
 
   if(!is.na(out_dir)){
+    message('The param out_dir is deprecated - please use outDir instead')
     outDir <- out_dir
   }
 
   if(!is.na(create_db)){
+    message('The param create_db is deprecated - please use createDb instead')
     createDb <- create_db
   }
 
   if(!is.na(grp_peaklist)){
+    message('The param grp_peaklist is deprecated - please use grpPeaklist instead')
     grpPeaklist <- grp_peaklist
   }
 
   if(!is.na(db_name)){
+    message('The param db_name is deprecated - please use dbName instead')
     dbName <- db_name
   }
 
@@ -486,68 +486,19 @@ convert2Raw <- function(all_peaks, xcmsObj, XCMSnExp_bool){
   return(all_peaks)
 }
 
-
-# get_full_peak_widths <- function(peaklist, obj, XCMSnExp_bool=TRUE){
-#   ###########################################
-#   # Get full peak width
-#   ###########################################
-#   # Args:
-#   #   peaklist: the peak list generated from either XCMS or CAMERA.
-#   #              Use the CAMERA peak list for this piplein
-#   #   xsa: The CAMERA annotation object
-#   #
-#   # Returns:
-#   #   An updated peaklist with the full retention window ranges (and full mz ranges)
-#   #
-#   # See also:
-#   #   full_minmax, getpeaks, ldply (from the plyr library)
-#
-#   message("Getting full peak widths")
-#   # Get 'peaks' (xcms features) from the XCMSnSet object
-#   # in the camera annotation object
-#
-#   message("Get 'individual' peaks from camera-xcms object")
-#
-#   if(attributes(obj)$class[1] == 'xsAnnotate'){
-#    obj = xsa@xcmsSet
-#    XCMSnExp_bool = FALSE
-#   }
-#
-#   if(XCMSnExp_bool && (class(obj) == 'XCMSnExp')){
-#     rt.min = xcms::featureValues(obj, method = "medret", value = "rtmin", intensity = "into")
-#     rt.max = xcms::featureValues(obj, method = "medret", value = "rtmax", intensity = "into")
-#     mz.min = xcms::featureValues(obj, method = "medret", value = "mzmin", intensity = "into")
-#     mz.max = xcms::featureValues(obj, method = "medret", value = "mzmax", intensity = "into")
-#   }else if (XCMSnExp_bool==FALSE && (class(obj) == 'xcmsSet')){
-#     rt.min = xcms::groupval(obj, method = "medret", value = "rtmin", intensity = "into")
-#     rt.max = xcms::groupval(obj, method = "medret", value = "rtmax", intensity = "into")
-#     mz.min = xcms::groupval(obj, method = "medret", value = "mzmin", intensity = "into")
-#     mz.max = xcms::groupval(obj, method = "medret", value = "mzmax", intensity = "into")
-#   }
-#
-#   rt.min = apply(rt.min, 1, min, na.rm = TRUE)
-#   rt.max = apply(rt.max, 1, max, na.rm = TRUE)
-#   mz.min = apply(mz.min, 1, min, na.rm = TRUE)
-#   mz.max = apply(mz.max, 1, max, na.rm = TRUE)
-#
-#   peaklist_full = cbind(peaklist, "mzmin_full" = mz.min, "mzmax_full" = mz.max, "rtmin_full" = rt.min, "rtmax_full" = rt.max)
-#   return(peaklist_full)
-#
-# }
-
 # This function retrieve a xset like object
-getxcmsSetObject <- function(xcmsObj) {
-    # XCMS 1.x
-    if (class(xcmsObj) == "xcmsSet")
-        return (xcmsObj)
-    # XCMS 3.x
-    if (class(xcmsObj) == "XCMSnExp") {
-        # Get the legacy xcmsSet object
-        suppressWarnings(xset <- as(xcmsObj, 'xcmsSet'))
-        if (!is.null(xcmsObj@phenoData$sample_group))
-            sampclass(xset) <- xcmsObj@phenoData$sample_group
-        else
-            sampclass(xset) <- "."
-        return (xset)
-    }
-}
+#getxcmsSetObject <- function(xcmsObj) {
+#    # XCMS 1.x
+#    if (class(xcmsObj) == "xcmsSet")
+#        return (xcmsObj)
+#    # XCMS 3.x
+#    if (class(xcmsObj) == "XCMSnExp") {
+#        # Get the legacy xcmsSet object
+#        suppressWarnings(xset <- as(xcmsObj, 'xcmsSet'))
+#        if (!is.null(xcmsObj@phenoData$sample_group))
+#            sampclass(xset) <- xcmsObj@phenoData$sample_group
+#        else
+#            sampclass(xset) <- "."
+#        return (xset)
+#    }
+#}
