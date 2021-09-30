@@ -30,7 +30,7 @@ The msPurity package can be used with XCMS as part of a data processing and anno
 * Fragmentation processing
     + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 
-## original XCMS  processing workflow
+## XCMS (versions < 3)  processing workflow
 We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
 
 (Please use the appropiate settings for your data)
@@ -53,7 +53,7 @@ xcmsObj = xset
 ```
 
 
-## XCMS v3+ processing
+## XCMS (versions 3+) processing workflow
 We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
 
 (Please use the appropiate settings for your data)

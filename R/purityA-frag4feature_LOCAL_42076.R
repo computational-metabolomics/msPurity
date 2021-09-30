@@ -80,11 +80,7 @@
 #' @param grp_peaklist dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @param db_name character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
 #' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA objec
-=======
-#' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
->>>>>>> Stashed changes
 =======
 #' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
 >>>>>>> Stashed changes
@@ -129,17 +125,11 @@ setMethod(f="frag4feature", signature="purityA",
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA){
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
 =======
-=======
->>>>>>> Stashed changes
 
   if(!is.na(xset)){
     xcmsObj <- xset
   }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
 >>>>>>> Stashed changes
 
   if(!is.na(xset)){

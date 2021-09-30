@@ -1,17 +1,7 @@
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
 library(msPurity)
 msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-#msmspths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 
-<<<<<<< Updated upstream
-## -----------------------------------------------------------------------------
-pa <- purityA(mzMLpths)
-print(pa@puritydf[1:3,])
-
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-pa_norm <- purityA(msmsPths[1], iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=0.5))
-=======
 ## ------------------------------------------------------------------------
 pa <- purityA(msPths)
 for(i in 1:length(msPths)){
@@ -21,30 +11,43 @@ for(i in 1:length(msPths)){
 print(pa@puritydf[1:3,])
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE----------
-pa_norm <- purityA(msPths[3], iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=0.5))
->>>>>>> Stashed changes
+msmspths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+pa_norm <- purityA(msmsPths[1], iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=0.5))
+print(pa@puritydf[1:3,])
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE----------
+### original XCMS approach
+# xset = xcms::xcmsSet(msPths, method = 'centWave',
+#library(msPurity)
+#library(xcms)
+#mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+### read in the data
+#xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+## for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
+#xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
+#xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+## group features across samples
+#xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+#xcmsObj = xset
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
 
+## process data using XCMS v3+
 suppressPackageStartupMessages(library(xcms))
-<<<<<<< Updated upstream
-
-xset <- xcms::xcmsSet(mzMLpths)
-xset <- xcms::group(xset)
-=======
 suppressPackageStartupMessages(library(MSnbase))
 suppressPackageStartupMessages(library(magrittr))
 
-#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
+##read in data
 msdata = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
+##subset to use data between 30 and 90 seconds and 100 and 200 m/z
 rtr = c(30, 90)
 mzr = c(100, 200)
 msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
 
-#perform feature detection in individual files
+##perform feature detection in individual files
 cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
 xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-#update metadata
+##update metadata
 for(i in 1:length(msPths)){
   xcmsObj@processingData@files[i] <- msPths[i]
 }
@@ -89,44 +92,23 @@ result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), cores=1, l_accessions
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE----------
 msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
 
-## run xcms (version 3+)
-# suppressPackageStartupMessages(library(xcms))
-# suppressPackageStartupMessages(library(MSnbase))
-# suppressPackageStartupMessages(library(magrittr))
-#
-# #read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-# msdata = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
-# rtr = c(30, 90)
-# mzr = c(100, 200)
-# msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
-#
-# #perform feature detection in individual files
-# cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-# xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-# #update metadata
-# for(i in 1:length(msPths)){
-#   xcmsObj@processingData@files[i] <- msPths[i]
-# }
-#
-# xcmsObj@phenoData@data$class = c('sample', 'sample')
-# xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
-# #group chromatographic peaks across samples (correspondence analysis)
-# pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-# xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
-
 ## Or load an XCMS xcmsSet object saved earlier
-xcmsObj <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xcmsnexp.rds", package="msPurity"))
+xcmsObj <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xcmsnexp.rds", package="msPurity")) #XCMS versions 3+
+#xcmsObj <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset_OLD.rds", package="msPurity")) #XCMS versions < 3
 
 ## Make sure the file paths are correct
-xcmsObj@processingData@files[1] = msPths[basename(msPths)=="LCMS_1.mzML"]
-xcmsObj@processingData@files[2] = msPths[basename(msPths)=="LCMS_2.mzML"]
-
-##xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset_OLD.rds", package="msPurity"))
-##xset@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
-##xset@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
+xcmsObj@processingData@files[1] = msPths[basename(msPths)=="LCMS_1.mzML"] #XCMS versions 3+
+xcmsObj@processingData@files[2] = msPths[basename(msPths)=="LCMS_2.mzML"] #XCMS versions 3+
+#xcmsObj@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"] #XCMS versions < 3
+#xcmsObj@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"] #XCMS versions < 3
 
 ## ------------------------------------------------------------------------
-px <- purityX(xset = as(xcmsObj, 'xcmsSet'), cores = 1, xgroups = c(1, 2), ilim=0)
+if('XCMSnExp' == class(xcmsObj)){
+  xcmsObj = as(xcmsObj, 'xcmsSet')
+}
+
+## estimate purity of LC-MS features for MS/MS analysis, based only LC-MS data
+px <- purityX(xset = xcmsObj, cores = 1, xgroups = c(1, 2), ilim=0)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE----------
 datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
@@ -151,5 +133,3 @@ print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))
 mzpth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
 predicted <- dimsPredictPuritySingle(filepth = mzpth, mztargets = c(111.0436, 113.1069))
 print(predicted)
->>>>>>> Stashed changes
-

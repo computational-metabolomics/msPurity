@@ -79,15 +79,7 @@
 #' @param create_db boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results
 #' @param grp_peaklist dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @param db_name character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-#' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA objec
-=======
 #' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
->>>>>>> Stashed changes
-=======
-#' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
->>>>>>> Stashed changes
 #' @return Returns a purityA object (pa) with the following slots populated:
 #'
 #' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
@@ -128,27 +120,13 @@ setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA){
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
 
   if(!is.na(xset)){
     xcmsObj <- xset
   }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
-  if(!is.na(xset)){
-    message('The param xset is deprecated - please use xcmsObj instead')
-    xcmsObj <- xset
-  }
 
   if(!is.na(use_group)){
-    message('The param use_group is deprecated - please use useGroup instead')
     useGroup <- use_group
   }
 
