@@ -77,16 +77,30 @@ The dataframe must contain the column "grpid" corresponding to the XCMS grouped 
 }
 \examples{
 
+#====== XCMS =================================
+## Read in MS data
 #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
-#                package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-#xset <- xcms::group(xset)
-#xset <- xcms::retcor(xset)
-#xset <- xcms::group(xset)
+#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
+## Find peaks in each file
+#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
+
+## Optionally adjust retention time
+#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+
+## Group features across samples
+#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+
+#====== msPurity ============================
 #pa  <- purityA(msmsPths)
-#pa <- frag4feature(pa, xset)
+#pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+#pa <- filterFragSpectra(pa, allfrag=TRUE)
 #pa <- averageAllFragSpectra(pa)
+#createMSP(pa)
+
 pa <- readRDS(system.file("extdata", "tests", "purityA",
                           "9_averageAllFragSpectra_with_filter_pa.rds",
                           package="msPurity"))

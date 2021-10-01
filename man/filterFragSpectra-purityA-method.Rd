@@ -70,26 +70,27 @@ Flag and filter features based on signal-to-noise ratio, relative abundance, int
 \examples{
 #====== XCMS =================================
 ## Read in MS data
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
 ## Find peaks in each file
 #cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
 #xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 
-##optionally adjust retention time
+## Optionally adjust retention time
 #xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
 
-##group features across samples
-#sg = rep(1, length(xcmsObj $sampleNames))
-#pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
+## Group features across samples
+#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
 #xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
 
-#====== msPurity ==========================
+#====== msPurity ============================
 #pa  <- purityA(msmsPths)
 #pa <- frag4feature(pa, xcmsObj)
+#pa <- filterFragSpectra(pa)
 
-# Run from previously generated data (where class(xcmsObj) == 'XCMSnExp'):
+## Run from previously generated data
 pa <- readRDS(system.file("extdata", "tests", "purityA",
                           "2_frag4feature_pa.rds", package="msPurity"))
 pa <- filterFragSpectra(pa)

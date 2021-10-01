@@ -122,51 +122,38 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 }
 }
 \examples{
-#read in MS data
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
+#====== XCMS =================================
+## Read in MS data
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-## For xcms version 3+
+## Find peaks in each file
+#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 
-#find peaks in each file
-cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
-xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
+## Optionally adjust retention time
+#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
 
-#optionally adjust retention time
-xcmsObj <- adjustRtime(xcmsObj, param = ObiwarpParam(binSize = 0.6))
+## Group features across samples
+#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
 
-#add metadata
-for(i in 1:length(msmsPths)){
-  xcmsObj@processingData@files[i] <- msmsPths[i]
-}
-xcmsObj@phenoData@data$class = c('sample', 'sample')
-xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
+## Or if using the old XCMS functions
+#xcmsObj <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#xcmsObj <- xcms::group(xcmsObj)
+#xcmsObj <- xcms::retcor(xcmsObj)
+#xcmsObj <- xcms::group(xcmsObj)
 
-#group features across samples
-pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 30)
-xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+#====== msPurity ============================
+#pa <- purityA(msmsPths)
+#pa <- frag4feature(pa, xcmsObj)
 
-## For xcms versions < 3
-#library(msPurity)
-#library(xcms)
-#mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-### read in the data
-#xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-## for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
-#xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
-#xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
-## add some metadata
-#for(i in 1:length(mzMLpths)){
-#  xset@filepaths[i] = mzMLpths[i]
-#}
-#sampclass(xset) = ''
-#sampclass(xset) <- as.factor(as.character(c('blank', 'blank','sample','sample')))
-## group features across samples
-#xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+## Run from previously generated data
+pa <- readRDS(system.file("extdata", "tests", "purityA",
+                          "1_purityA_pa.rds", package="msPurity"))
+xcmsObj <- readRDS(system.file("extdata","tests", "xcms",
+                "msms_only_xcmsnexp.rds", package="msPurity"))
 
-#xcmsObj = xset
-
-## generate purityA object and run frag4feature
-pa  <- purityA(msmsPths)
 pa <- frag4feature(pa, xcmsObj)
 }

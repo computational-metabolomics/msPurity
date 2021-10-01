@@ -63,27 +63,24 @@ Schema details can be found \href{https://bioconductor.org/packages/release/bioc
 }
 }
 \examples{
-#library(msPurity)
-#library(xcms)
-#library(magrittr)
-##read in files and data
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = 'LCMSMS')
+#====== XCMS =================================
+## Read in MS data
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-##subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
-#rtr = c(30, 90)
-#mzr = c(100, 200)
-#ms_data = ms_data \%>\%  filterRt(rt = rtr) \%>\%  filterMz(mz = mzr)
+## Find peaks in each file
+#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 
-##### perform feature detection in individual files
-#cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-#xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
-#xcmsObj@phenoData@data$class = c('sample', 'sample')
-#xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
-#pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-#xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+## Optionally adjust retention time
+#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
 
-###### use msPurity to link MS^2 scans to MS1 grouped features and export database ######
+## Group features across samples
+#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+
+#====== msPurity ============================
 #pa  <- purityA(msmsPths)
 #pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
 #pa <- filterFragSpectra(pa, allfrag=TRUE)
@@ -91,8 +88,7 @@ Schema details can be found \href{https://bioconductor.org/packages/release/bioc
 #dbPth <- createDatabase(pa, xcmsObj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
 
 
-#######
-# Run from previously generated data (where class(xcmsObj) == 'XCMSnExp'):
+## Run from previously generated data
 pa <- readRDS(system.file("extdata", "tests", "purityA",
           "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
 xcmsObj <- readRDS(system.file("extdata","tests", "xcms",
