@@ -105,9 +105,7 @@ Note that if there are any mzML files that do not have MS/MS scans - then an ID 
 
 ```{r}
 pa <- purityA(msPths)
-for(i in 1:length(msPths)){
-  pa@fileList[i] = msPths[i]
-}
+
 print(pa@puritydf[1:3,])
 ```
 
@@ -161,9 +159,9 @@ msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr
 cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
 xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
 #update metadata
-for(i in 1:length(msPths)){
-  xcmsObj@processingData@files[i] <- msPths[i]
-}
+#for(i in 1:length(msPths)){
+#  xcmsObj@processingData@files[i] <- msPths[i]
+#}
 
 xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
 xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
@@ -256,7 +254,7 @@ createMSP(pa, msp_file_pth = file.path(td, 'out.msp'))
 
 ## createDatabase - create a spectral database
 
-A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html). This replaces the old schema used by the deprecated function spectral_matching.
+A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-database-vignette.html). This replaces the old schema used by the deprecated function spectral_matching.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 q_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'test-mspurity-vignette.sqlite')
@@ -335,7 +333,7 @@ xcmsObj@processingData@files[2] = msPths[basename(msPths)=="LCMS_2.mzML"]
 
 _Perform purity calculations_
 ```{r}
-px <- purityX(xset = as(xcmsObj, 'xcmsSet'), cores = 1, xgroups = c(1, 2), ilim=0)
+px <- purityX(xset =  as(xcmsObj, 'xcmsSet'), cores = 1, xgroups = c(1, 2), ilim=0)
 ```
 
 
@@ -374,7 +372,7 @@ ppDIMS <- purityD(inDF, mzML=TRUE)
 ```
 
 **Average spectra**:
-The default averaging will use a Hierarchal clustering approach. Noise filtering is also performed here.
+The default averaging will use a Hierarchical clustering approach. Noise filtering is also performed here.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 ppDIMS <- averageSpectra(ppDIMS, snMeth = "median", snthr = 5)
@@ -386,7 +384,9 @@ ppDIMS <- filterp(ppDIMS, thr=5000, rsd = 10)
 ```
 
 **Subtract blank**
+Be aware that the package `magrittr` can not be loaded when performing subtract.
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+detach("package:magrittr", unload=TRUE)
 ppDIMS <- subtract(ppDIMS)
 ```
 
@@ -400,7 +400,7 @@ print(head(ppDIMS@avPeaks$processed$B02_Daph_TEST_pos))
 
 ## Calculating the anticipated (predicted) purity from a known _m/z_ target list for DIMS
 
-The data processing steps carried out through purityPD can be bypassed if the peaks (_m/z_ values) of interest are already known. The function `dimsPredictPuritySingle()` can be used to predict the purity of a list of _m/z_ values in a chosen mzML file.
+The data processing steps carried out through purityD can be bypassed if the peaks (_m/z_ values) of interest are already known. The function `dimsPredictPuritySingle()` can be used to predict the purity of a list of _m/z_ values in a chosen mzML file.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 mzpth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")

@@ -140,19 +140,18 @@ xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
 #optionally adjust retention time
 xcmsObj <- adjustRtime(xcmsObj, param = ObiwarpParam(binSize = 0.6))
 
+#add metadata
+for(i in 1:length(msmsPths)){
+  xcmsObj@processingData@files[i] <- msmsPths[i]
+}
+xcmsObj@phenoData@data$class = c('sample', 'sample')
+xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
+
 #group features across samples
-sg = rep(1, length(xcmsObj$sampleNames))
-pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
+pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 30)
 xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
 ## For xcms versions < 3
-xcmsObj <- xcms::xcmsSet(msmsPths)
-xcmsObj <- xcms::group(xcmsObj)
-xcmsObj <- xcms::retcor(xcmsObj)
-xcmsObj <- xcms::group(xcmsObj)
-
-## For xcms versions < 3
-## xset = xcms::xcmsSet(msPths, method = 'centWave',
 #library(msPurity)
 #library(xcms)
 #mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
@@ -161,8 +160,15 @@ xcmsObj <- xcms::group(xcmsObj)
 ## for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
 #xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
 #xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+## add some metadata
+#for(i in 1:length(mzMLpths)){
+#  xset@filepaths[i] = mzMLpths[i]
+#}
+#sampclass(xset) = ''
+#sampclass(xset) <- as.factor(as.character(c('blank', 'blank','sample','sample')))
 ## group features across samples
 #xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+
 #xcmsObj = xset
 
 ## generate purityA object and run frag4feature
