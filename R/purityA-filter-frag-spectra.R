@@ -16,7 +16,7 @@
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
 
-#' @title Filter fragmentations spectra associated with an XCMS feature
+#' @title Filter fragmentation spectra associated with an XCMS feature
 #' @aliases filterFragSpectra
 #' @description
 #' **General**
@@ -26,15 +26,13 @@
 #'
 #' **Example LC-MS/MS processing workflow**
 #'
-#' The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
-#'
 #'  * Purity assessments
 #'    +  (mzML files) -> purityA -> (pa)
 #'  * XCMS processing
-#'    +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (XCMSnExp)
-#'    +  \[older versions of xcms\] (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'    +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+#'    +  --- *Older versions of XCMS* --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 #'  * Fragmentation processing
-#'    + (\[xset/XCMSnExp\], pa) -> frag4feature -> **filterFragSpectra** -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+#'    + (xcmsObj, pa) -> frag4feature -> **filterFragSpectra** -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
 #' @param pa object; purityA object
 #' @param ilim numeric; min intensity of a peak
@@ -46,29 +44,29 @@
 #' @param allfrag boolean; Whether to filter on all fragmentation spectra or just the fragmentation spectra grouped to XCMS feature
 #'
 #' @examples
+#' #====== XCMS =================================
+#' ## Read in MS data
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#' #           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 #'
-#' #read in MS data
-#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
+#' ## Find peaks in each file
+#' #cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#' #xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 #'
-#' #find peaks in each file
-#' cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
-#' obj <- xcms::findChromPeaks(ms_data, param = cwp)
-#' #obj <- xcms::xcmsSet(msmsPths)
+#' ## Optionally adjust retention time
+#' #xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
 #'
-#' #optionally adjust retention time
-#' obj <- adjustRtime(obj, param = ObiwarpParam(binSize = 0.6))
-#' #obj <- xcms::group(obj)
-#' #obj <- xcms::retcor(obj)
+#' ## Group features across samples
+#' #pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#' #xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
 #'
-#' #group features across samples
-#' sg = rep(1, length(obj$sampleNames))
-#' pdp <- PeakDensityParam(sampleGroups = sg, minFraction = 0, bw = 30)
-#' obj <- groupChromPeaks(obj, param = pdp)
-#' #obj <- xcms::group(obj)
-#'
+#' #====== msPurity ============================
 #' #pa  <- purityA(msmsPths)
-#' #pa <- frag4feature(pa, xset)
+#' #pa <- frag4feature(pa, xcmsObj)
+#' #pa <- filterFragSpectra(pa)
+#'
+#' ## Run from previously generated data
 #' pa <- readRDS(system.file("extdata", "tests", "purityA",
 #'                           "2_frag4feature_pa.rds", package="msPurity"))
 #' pa <- filterFragSpectra(pa)

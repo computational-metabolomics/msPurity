@@ -22,13 +22,12 @@ vignette: >
 The msPurity package can be used with XCMS as part of a data processing and annotation workflow for LC-MS/MS data
 
 * Purity assessments
-    +  (mzML files) -> purityA -> (pa)
-* XCMS processing 
-    +  (mzML files) -> xcms.xcmsSet  -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
-* XCMS processing (version >= 3)
-    +  (mzML files) -> MSnBase.readMSdata -> xcms.findChromPeaks -> xcms.groupChromPeaks-> xcms.adjustRtime -> xcms.groupChromPeaks -> convert to xset format as(x, "xcmsSet")
+   +  (mzML files) -> purityA -> (pa)
+* XCMS processing
+   +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+   +  --- *Older versions of XCMS* --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 * Fragmentation processing
-    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+   + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> **spectralMatching** -> (sqlite spectral database)
 
 
 ## XCMS processing

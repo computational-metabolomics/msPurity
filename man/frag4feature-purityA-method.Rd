@@ -95,20 +95,15 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 }
 
 \subsection{Example LC-MS/MS processing workflow}{
-
-The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
 \itemize{
 \item Purity assessments
 \itemize{
 \item (mzML files) -> purityA -> (pa)
 }
-\item XCMS processing (versions 3+)
+\item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.findChromPeaks -> xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
-}
-\item XCMS processing (versions < 3)
-\itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.retcor -> xcms.group -> (xcmsObj)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+\item --- \emph{Older versions of XCMS} --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{

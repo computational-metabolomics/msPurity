@@ -81,11 +81,15 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
+}
+\item XCMS processing (version >= 3)
+\itemize{
+\item (mzML files) -> MSnBase.readMSdata -> xcms.findChromPeaks -> xcms.groupChromPeaks-> xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> filterFragSpectra -> \strong{averageIntraFragSpectra} -> averageIntraFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> \strong{averageIntraFragSpectra} -> averageIntraFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }

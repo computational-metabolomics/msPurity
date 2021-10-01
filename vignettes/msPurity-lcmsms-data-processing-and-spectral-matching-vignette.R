@@ -1,5 +1,21 @@
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
 library(msPurity)
+library(xcms)
+mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+
+#read in the data
+xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+
+#for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
+xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
+xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+
+#group features across samples
+xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+xcmsObj = xset
+
+## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
+library(msPurity)
 library(magrittr)
 library(xcms)
 library(MSnbase)
@@ -21,6 +37,20 @@ xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames',
 pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
 xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
+
+### For xcms versions < 3
+#library(msPurity)
+#library(xcms)
+#mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+### read in the data
+#xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+## for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
+#xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
+#xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+## group features across samples
+#xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+#xcmsObj = xset
+
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
 pa  <- purityA(mzMLpths)
 pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
@@ -29,11 +59,11 @@ pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
 pa <- filterFragSpectra(pa = pa)
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra
+pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra 
 pa <- averageInterFragSpectra(pa = pa) # use parameters specific to inter spectra
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa <- averageAllFragSpectra(pa = pa)
+pa <- averageAllFragSpectra(pa = pa) 
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
 td <- tempdir()

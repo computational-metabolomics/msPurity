@@ -256,11 +256,12 @@ See the vigenttes for more details regarding matching algorithms used.
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+\item --- \emph{Older versions of XCMS} --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> \strong{spectralMatching} -> (sqlite spectral database)
+\item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> \strong{spectralMatching} -> (sqlite spectral database)
 }
 }
 }

@@ -21,7 +21,7 @@
 #'
 #' @description
 #'
-#' ** General **
+#' **General**
 #'
 #' Create an SQLite database of an LC-MS(/MS) experiment (replaces the create_database function).
 #'
@@ -32,9 +32,10 @@
 #'  * Purity assessments
 #'    +  (mzML files) -> purityA -> (pa)
 #'  * XCMS processing
-#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'    +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+#'    +  --- *Older versions of XCMS* --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 #'  * Fragmentation processing
-#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> **createDatabase** -> spectralMatching -> (sqlite spectral database)
+#'    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> **createDatabase** -> spectralMatching -> (sqlite spectral database)
 #'
 #' @param pa purityA object; Needs to be the same used for frag4feature function
 #' @param xcmsObj xcms object of class XCMSnExp or xcmsSet; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)
@@ -50,36 +51,32 @@
 #' @return path to SQLite database and database name
 #'
 #' @examples
-#' library(msPurity)
-#' library(xcms)
-#' library(magrittr)
-#' #read in files and data
-#' msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = 'LCMSMS')
-#' ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
+#' #====== XCMS =================================
+#' ## Read in MS data
+#' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#' #           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 #'
-#' #subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
-#' rtr = c(30, 90)
-#' mzr = c(100, 200)
-#' ms_data = ms_data %>%  filterRt(rt = rtr) %>%  filterMz(mz = mzr)
+#' ## Find peaks in each file
+#' #cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#' #xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 #'
-#' ##### perform feature detection in individual files
-#' cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-#' xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
-#' xcmsObj@phenoData@data$class = c('sample', 'sample')
-#' xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
-#' pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-#' xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+#' ## Optionally adjust retention time
+#' #xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
 #'
-#' ###### use msPurity to link MS^2 scans to MS1 grouped features and export database ######
-#' pa  <- purityA(msmsPths)
-#' pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
-#' pa <- filterFragSpectra(pa, allfrag=TRUE)
-#' pa <- averageAllFragSpectra(pa)
-#' dbPth <- createDatabase(pa, obj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
+#' ## Group features across samples
+#' #pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#' #xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+#'
+#' #====== msPurity ============================
+#' #pa  <- purityA(msmsPths)
+#' #pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+#' #pa <- filterFragSpectra(pa, allfrag=TRUE)
+#' #pa <- averageAllFragSpectra(pa)
+#' #dbPth <- createDatabase(pa, xcmsObj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
 #'
 #'
-#' #######
-#' # Run from previously generated data (where class(xcmsObj) == 'XCMSnExp'):
+#' ## Run from previously generated data
 #' pa <- readRDS(system.file("extdata", "tests", "purityA",
 #'           "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
 #' xcmsObj <- readRDS(system.file("extdata","tests", "xcms",
@@ -88,8 +85,8 @@
 #'                package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 #' pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
 #' pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-#' obj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-#' obj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+#' xcmsObj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+#' xcmsObj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 #' td <- tempdir()
 #' db_pth = createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td)
 #'

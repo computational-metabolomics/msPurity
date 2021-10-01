@@ -62,15 +62,16 @@ The dataframe must contain the column "grpid" corresponding to the XCMS grouped 
 \itemize{
 \item Purity assessments
 \itemize{
-\item (mzML files) -> purityA -> (pa)
+\item (mzML files) -> \strong{purityA} -> (pa)
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+\item --- \emph{Older versions of XCMS} --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> averageIntraFragSpectra -> \strong{createMSP} -> (MSP file)
+\item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> averageIntraFragSpectra -> \strong{createMSP} -> (MSP file)
 }
 }
 }
