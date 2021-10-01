@@ -66,6 +66,21 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
   ########################################################
   # Export the target data into sqlite database
   ########################################################
+  getxcmsSetObject <- function(xcmsObj) {
+     # XCMS 1.x
+     if (class(xcmsObj) == "xcmsSet")
+         return (xcmsObj)
+     # XCMS 3.x
+     if (class(xcmsObj) == "XCMSnExp") {
+         # Get the legacy xcmsSet object
+         suppressWarnings(xset <- as(xcmsObj, 'xcmsSet'))
+         if (!is.null(xcmsObj@phenoData$sample_group))
+             sampclass(xset) <- xcmsObj@phenoData$sample_group
+         else
+             sampclass(xset) <- "."
+         return (xset)
+     }
+  }
   if(!is.null(xset)){
     xset <- getxcmsSetObject(xset)
   }

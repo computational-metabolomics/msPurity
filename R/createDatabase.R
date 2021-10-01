@@ -340,7 +340,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   # Add s_peaks (all fragmentation spectra either scans or averaged)
   ###############################################
   # get all the fragmentation from the scans
-  if(pa@filter_frag_params$allfrag){
+  if((!is.null(pa@filter_frag_params[["allfrag"]])) && (pa@filter_frag_params$allfrag)){
     speaks <- pa@all_frag_scans
   }else{
     speaks <- getScanPeaks(pa)

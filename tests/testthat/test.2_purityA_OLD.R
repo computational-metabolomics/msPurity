@@ -42,9 +42,9 @@ test_that("checking frag4feature (xcms v2 functions)", {
 
 test_that("checking frag4feature (fillpeaks) (xcms v2 functions)", {
   print("\n")
-  print("########################################################")
-  print("## Checking frag4feature  (xcms v2 functions)         ##")
-  print("########################################################")
+  print("####################################################################")
+  print("## Checking frag4feature (fillpeaks)  (xcms v2 functions)         ##")
+  print("####################################################################")
   library(xcms)
   #msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
   #pa  <- purityA(msmsPths)

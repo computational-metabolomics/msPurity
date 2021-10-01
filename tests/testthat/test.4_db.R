@@ -1,51 +1,5 @@
 context ("checking database functions")
 
-test_that("checking create-database", {
-  print ("\n")
-  print("########################################################")
-  print("## Checking database (old schema)                     ##")
-  print("########################################################")
-
-  pa <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
-  xcmsObj <- readRDS(system.file("extdata","tests", "xcms", "msms_only_xset_OLD.rds", package="msPurity"))
-
-  msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-  pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-
-  td <- tempdir()
-  db_pth = create_database(pa, xset = xcmsObj, out_dir = td)
-
-  con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
-
-  cpg <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_groups')
-  expect_equal(nrow(cpg), 375)
-
-  cpgX <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_X_c_peak_group')
-  expect_equal(nrow(cpgX), 780)
-
-  csX <- DBI::dbGetQuery(con, 'SELECT * FROM c_peak_X_s_peak_meta')
-  expect_equal(nrow(csX), 75)
-
-  c_peaks <- DBI::dbGetQuery(con, 'SELECT * FROM c_peaks')
-  expect_equal(nrow(c_peaks), 780)
-
-  cpg <- DBI::dbGetQuery(con, 'SELECT * FROM av_peaks')
-  expect_equal(nrow(cpg), 339)
-
-  ####################################
-  # Check EIC database from purityX
-  ####################################
-  msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-  xcmsObj@filepaths[1] = msmsPths[1]
-  xcmsObj@filepaths[2] = msmsPths[2]
-  px  <- purityX(xset=xcmsObj, saveEIC = TRUE, sqlitePth = db_pth, plotP = TRUE, xgroups=c(1,2,3))
-  eics <- DBI::dbGetQuery(con, 'SELECT * FROM eics')
-  expect_equal(nrow(eics), 211)
-
-})
-
-
 test_that("checking createDatabase functions (new schema)", {
   print ("\n")
   print("#######################################################")
@@ -64,6 +18,8 @@ test_that("checking createDatabase functions (new schema)", {
     if('XCMSnExp' == class(xcmsObj)){
       xcmsObj@phenoData@data[1,] = msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
       xcmsObj@phenoData@data[2,] = msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
+      xcmsObj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
+      xcmsObj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
     }else if('xcmsSet' == class(xcmsObj)){
       xcmsObj@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
       xcmsObj@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
