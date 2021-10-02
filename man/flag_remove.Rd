@@ -85,7 +85,9 @@ The function then checks if any blank peaks are still present and the process is
 The output is a list object containing: 1) the updated xcms object, 2) the grouped peaklist and 3) the blank removed peaks
 }
 \examples{
-
+library(xcms)
+library(MSnbase)
+library(magrittr)
 #read in files and data
 msPths <- dirname(list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE))
 msPths[1] <- file.path(msPths[1], 'LCMS_1.mzML')
@@ -108,7 +110,7 @@ pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction
 xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 
 #### flag, filter and remove peaks, returning an updated xcmsObj (XCMSnExp or xcmsSet class), grouped_peaklist (data.frame) and removed_peaks (data.frame)
-fr <- flag_remove(xcmsObj = xcmsObj)
+fr <- flag_remove(xcmsObj)
 
 ##### load from existing data
 xcmsObj = readRDS(system.file("extdata", "tests", "purityA", "10_input_filterflagremove.rds", package="msPurity"))

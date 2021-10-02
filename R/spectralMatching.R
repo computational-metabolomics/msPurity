@@ -37,7 +37,7 @@
 #' A larger database can be downloaded from [here](https://github.com/computational-metabolomics/msp2db/releases).
 #' To create a user generated library SQLite database the following tool can be used to generate a SQLite database
 #' from a collection of MSP files: [msp2db](https://github.com/computational-metabolomics/msp2db/releases).
-#' It should be noted though, that as long as the schema of the spectral-database is as described here, then any database can be used
+#' It should be noted though, that as long as the schema of the spectral-database is as described [here ](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-database-vignette.html), then any database can be used
 #' for either the library or query -  even allowing for the same database to be used.
 #'
 #' The spectral matching functionality has four main components, spectral filtering, spectral alignment, spectral matching,
@@ -201,15 +201,20 @@
 #' #pa <- filterFragSpectra(pa, allfrag=TRUE)
 #' #pa <- averageAllFragSpectra(pa)
 #' #q_dbPth <- createDatabase(pa, xcmsObj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
-#' sm_result <- spectralMatching(q_dbPth, cores=4, l_pol='positive')
+#' #sm_result <- spectralMatching(q_dbPth, cores=4, l_pol='positive')
 #'
-#' q_dbPth <- system.file("extdata", "tests", "db",
-#'                        "createDatabase_example.sqlite", package="msPurity")
-#' result <- spectralMatching(q_dbPth,
-#'                            q_xcmsGroups = c(53, 89, 410),
-#'                            cores=1,
-#'                            l_accessions = c('CCMSLIB00000479720', 'KNA00052', 'PR100407'),
-#'                            q_spectraTypes = 'av_all')
+#' td <- tempdir()
+#' q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
+#'
+#' rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
+#' sm_out_pth <- file.path(td, rid)
+#'
+#' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('PR100407', 'ML005101', 'CCMSLIB00003740024'),
+#'                           q_spectraTypes = 'av_all',
+#'                           updateDb = TRUE,
+#'                           copyDb = TRUE,
+#'                           outPth = sm_out_pth)
+#'
 #'
 #' @md
 #' @export

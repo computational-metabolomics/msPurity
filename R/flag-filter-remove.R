@@ -55,7 +55,9 @@
 #'
 #' @return list(xset, grp_peaklist, removed_peaks)
 #' @examples
-#'
+#' library(xcms)
+#' library(MSnbase)
+#' library(magrittr)
 #' #read in files and data
 #' msPths <- dirname(list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE))
 #' msPths[1] <- file.path(msPths[1], 'LCMS_1.mzML')
@@ -78,7 +80,7 @@
 #' xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 #'
 #' #### flag, filter and remove peaks, returning an updated xcmsObj (XCMSnExp or xcmsSet class), grouped_peaklist (data.frame) and removed_peaks (data.frame)
-#' fr <- flag_remove(xcmsObj = xcmsObj)
+#' fr <- flag_remove(xcmsObj)
 #'
 #' ##### load from existing data
 #' xcmsObj = readRDS(system.file("extdata", "tests", "purityA", "10_input_filterflagremove.rds", package="msPurity"))
