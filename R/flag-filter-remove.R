@@ -108,7 +108,7 @@ flag_remove <- function(xcmsObj, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
     XCMSnExp_bool = FALSE
     xcmsObj = xcmsObj@xcmsSet
   }else{
-    cat('unrecognised class for xcmsObj object')
+    stop('unrecognised class for xcmsObj object')
   }
 
   ################################
@@ -582,8 +582,8 @@ get_full_peak_width <- function(peaklist, xcmsObj){
     XCMSnExp_bool = FALSE
     xcmsObj = xcmsObj@xcmsSet
   }else{
-    cat('unrecognised class for "xcmsObj", should be either "XCMSnExp", "xcmsSet", "xsAnnotate"')
-    break
+    stop('unrecognised class for "xcmsObj", should be either "XCMSnExp", "xcmsSet", "xsAnnotate"')
+
   }
 
   if(XCMSnExp_bool && (class(xcmsObj) == 'XCMSnExp')){
