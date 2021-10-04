@@ -11,7 +11,7 @@
 
 <meta name="author" content="Thomas N. Lawson" />
 
-<meta name="date" content="2021-10-01" />
+<meta name="date" content="2021-10-03" />
 
 <title>LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS</title>
 
@@ -270,7 +270,7 @@ function toggle_visibility(id1) {
 
 <h1 class="title toc-ignore">LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS</h1>
 <p class="author-name">Thomas N. Lawson</p>
-<h4 class="date">2021-10-01</h4>
+<h4 class="date">2021-10-03</h4>
 
 </div>
 
@@ -299,7 +299,7 @@ function toggle_visibility(id1) {
 <div id="xcms-versions-3-processing-workflow" class="section level2" number="1.2">
 <h2><span class="header-section-number">1.2</span> XCMS (versions &lt; 3) processing workflow</h2>
 <p>We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.</p>
-<p>(Please use the appropiate settings for your data)</p>
+<p>(Please use the appropriate settings for your data)</p>
 <pre class="r"><code>library(msPurity)
 library(xcms)
 mzMLpths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE)
@@ -318,7 +318,7 @@ xcmsObj = xset</code></pre>
 <div id="xcms-versions-3-processing-workflow-1" class="section level2" number="1.3">
 <h2><span class="header-section-number">1.3</span> XCMS (versions 3+) processing workflow</h2>
 <p>We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.</p>
-<p>(Please use the appropiate settings for your data)</p>
+<p>(Please use the appropriate settings for your data)</p>
 <pre class="r"><code>library(msPurity)
 library(magrittr)
 library(xcms)
@@ -339,21 +339,7 @@ xcmsObj@phenoData@data$class = c(&#39;blank&#39;, &#39;blank&#39;, &#39;sample&#
 xcmsObj@phenoData@varMetadata = data.frame(&#39;labelDescription&#39; = c(&#39;sampleNames&#39;, &#39;class&#39;))
 #group chromatographic peaks across samples (correspondence analysis)
 pdp &lt;- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-xcmsObj &lt;- groupChromPeaks(xcmsObj, param = pdp)
-
-
-### For xcms versions &lt; 3
-#library(msPurity)
-#library(xcms)
-#mzMLpths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE)
-### read in the data
-#xset = xcms::xcmsSet(mzMLpths, method = &#39;centWave&#39;, mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-## for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
-#xset@peaks = xset@peaks[xset@peaks[,4] &gt;= 30 &amp; xset@peaks[,4] &lt;= 90,] #retention time filter
-#xset@peaks = xset@peaks[xset@peaks[,1] &gt;= 100 &amp; xset@peaks[,1] &lt;= 200,] #m/z filter
-## group features across samples
-#xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
-#xcmsObj = xset</code></pre>
+xcmsObj &lt;- groupChromPeaks(xcmsObj, param = pdp)</code></pre>
 </div>
 <div id="purity-assesments-and-linking-fragmentation-to-xcms-features" class="section level2" number="1.4">
 <h2><span class="header-section-number">1.4</span> Purity assesments and linking fragmentation to XCMS features</h2>
@@ -405,7 +391,7 @@ q_dbPth &lt;- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = &
 <pre><code>## Summarising LC feature annotations</code></pre>
 <pre class="r"><code>print(result)</code></pre>
 <pre><code>## $q_dbPth
-## [1] &quot;/tmp/RtmpTJuoFP/lcmsms-processing.sqlite&quot;
+## [1] &quot;/tmp/Rtmpptu68i/lcmsms-processing.sqlite&quot;
 ## 
 ## $matchedResults
 ##    lpid qpid mid      dpc     rdpc      cdpc mcount allcount  mpercent
