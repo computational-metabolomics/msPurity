@@ -117,7 +117,7 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 #pa <- frag4feature(pa, xcmsObj)
 #pa <- averageIntraFragSpectra(pa)
 
-# Run from previously generated data (where class(xcmsObj) == 'XCMSnExp'):
+# Run from previously generated data (where class is 'XCMSnExp'):
 pa <- readRDS(system.file("extdata", "tests", "purityA",
               "2_frag4feature_pa.rds", package="msPurity"))
 pa <- averageIntraFragSpectra(pa)

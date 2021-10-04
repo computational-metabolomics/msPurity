@@ -109,9 +109,9 @@ createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, d
   #if a peaklist was not supplied to function, extract from xsa or obj.
   if (!is.data.frame(grpPeaklist)){
     if (is.null(xsa)){
-      if(class(xcmsObj) == 'XCMSnExp'){
+      if(is(xcmsObj, 'XCMSnExp')){
         grpPeaklist <- cbind(xcms::featureDefinitions(xcmsObj), featureValues(xcmsObj))
-      }else if(class(xcmsObj) == 'xcmsSet'){
+      }else if(is(xcmsObj, 'xcmsSet')){
         grpPeaklist <- xcms::peakTable(xcmsObj)
       }else{
         stop('createDatabase stopped as the "xcmsObj" (or "xset" if specified) argument is not of class "XCMSnExp" or "xcmsSet"')

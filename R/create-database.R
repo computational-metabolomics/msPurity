@@ -68,10 +68,11 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
   ########################################################
   getxcmsSetObject <- function(xcmsObj) {
      # XCMS 1.x
-     if (class(xcmsObj) == "xcmsSet")
+     if (is(xcmsObj, "xcmsSet")){
          return (xcmsObj)
+     }
      # XCMS 3.x
-     if (class(xcmsObj) == "XCMSnExp") {
+     if (is(xcmsObj, "XCMSnExp")) {
          # Get the legacy xcmsSet object
          suppressWarnings(xset <- as(xcmsObj, 'xcmsSet'))
          if (!is.null(xcmsObj@phenoData$sample_group))

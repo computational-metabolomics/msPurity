@@ -159,15 +159,15 @@ setMethod(f="frag4feature", signature="purityA",
     dbName <- db_name
   }
 
-  if('XCMSnExp' == class(xcmsObj)[1]){
+  if(is(xcmsObj, 'XCMSnExp')){
     XCMSnExp_bool = TRUE
-  }else if('xcmsSet' == class(xcmsObj)[1]){
+  }else if(is(xcmsObj, 'xcmsSet')){
     XCMSnExp_bool = FALSE
-  }else if('xsAnnotate' == class(xcmsObj)){
+  }else if(is(xcmsObj, 'xsAnnotate')){
     XCMSnExp_bool = FALSE
     xcmsObj = xcmsObj@xcmsSet
   }else{
-    stop('obj is not of class XCMSnExp, xcmsSet or xsAnnotate')
+    stop('xcmsObj is not of class XCMSnExp, xcmsSet or xsAnnotate')
   }
 
   # Makes sure the same files are being used
@@ -451,16 +451,6 @@ grpByXCMS <- function(x, matched){
   matched[matched$cid %in% x,]
 }
 
-#convert2Raw <- function(x, xset){
-#  sid <- unique(x$sample)
-#  # for each file get list of peaks
-#  x$rtmin <- xset@rt$raw[[sid]][match(x$rtmin, xset@rt$corrected[[sid]])]
-#  x$rtmax <- xset@rt$raw[[sid]][match(x$rtmax, xset@rt$corrected[[sid]])]
-#  return(x)
-#
-#}
-
-
 convert2Raw <- function(all_peaks, xcmsObj, XCMSnExp_bool){
   ## all_peaks = dataframe of chrompeaks
   ## xcmsObj = object of class XCMSnExp, xcmsSet or xsAnnotaiton.
@@ -468,28 +458,11 @@ convert2Raw <- function(all_peaks, xcmsObj, XCMSnExp_bool){
   sid <- unique(all_peaks$sample)
   # for each file get list of peaks
   if(XCMSnExp_bool==1 && (class(xcmsObj) == 'XCMSnExp')){
-      all_peaks$rtmin <- rtime(xcmsObj, adjusted=FALSE, bySample=T)[[sid]][match(all_peaks$rtmin, rtime(xcmsObj, adjusted = T, bySample = T)[[sid]])]
-      all_peaks$rtmax <- rtime(xcmsObj, adjusted=FALSE, bySample=T)[[sid]][match(all_peaks$rtmax, rtime(xcmsObj, adjusted = T, bySample = T)[[sid]])]
+      all_peaks$rtmin <- xcms::rtime(xcmsObj, adjusted=FALSE, bySample=TRUE)[[sid]][match(all_peaks$rtmin, xcms::rtime(xcmsObj, adjusted = TRUE, bySample = TRUE)[[sid]])]
+      all_peaks$rtmax <- xcms::rtime(xcmsObj, adjusted=FALSE, bySample=TRUE)[[sid]][match(all_peaks$rtmax, xcms::rtime(xcmsObj, adjusted = TRUE, bySample = TRUE)[[sid]])]
   }else if(XCMSnExp_bool==0 && (class(xcmsObj) == 'xcmsSet')){
       all_peaks$rtmin <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmin, xcmsObj@rt$corrected[[sid]])]
       all_peaks$rtmax <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmax, xcmsObj@rt$corrected[[sid]])]
   }
   return(all_peaks)
 }
-
-# This function retrieve a xset like object
-#getxcmsSetObject <- function(xcmsObj) {
-#    # XCMS 1.x
-#    if (class(xcmsObj) == "xcmsSet")
-#        return (xcmsObj)
-#    # XCMS 3.x
-#    if (class(xcmsObj) == "XCMSnExp") {
-#        # Get the legacy xcmsSet object
-#        suppressWarnings(xset <- as(xcmsObj, 'xcmsSet'))
-#        if (!is.null(xcmsObj@phenoData$sample_group))
-#            sampclass(xset) <- xcmsObj@phenoData$sample_group
-#        else
-#            sampclass(xset) <- "."
-#        return (xset)
-#    }
-#}

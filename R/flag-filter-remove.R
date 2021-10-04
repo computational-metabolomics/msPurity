@@ -100,11 +100,11 @@ flag_remove <- function(xcmsObj, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
     xcmsObj = xset
   }
 
-  if('XCMSnExp' == class(xcmsObj)){
+  if(is(xcmsObj, 'XCMSnExp')){
     XCMSnExp_bool = TRUE
-  }else if('xcmsSet' == class(xcmsObj)){
+  }else if(is(xcmsObj, 'xcmsSet')){
     XCMSnExp_bool = FALSE
-  }else if('xsAnnotation' == class(xcmsObj)){
+  }else if(is(xcmsObj, 'xsAnnotation')){
     XCMSnExp_bool = FALSE
     xcmsObj = xcmsObj@xcmsSet
   }else{
