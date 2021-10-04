@@ -52,6 +52,7 @@ Imports:
     uuid,
     jsonlite
 Suggests:
+    MSnbase,
     testthat,
     xcms,
     BiocStyle,

@@ -103,7 +103,7 @@ ms_data = ms_data \%>\%  filterRt(rt = rtr) \%>\%  filterMz(mz = mzr)
 
 ##### perform feature detection in individual files
 cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-xcmsObj <- xcms::findChromPeaks(ms_data, param = cwp)
+xcmsObj <- findChromPeaks(ms_data, param = cwp)
 xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
 xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
 pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)

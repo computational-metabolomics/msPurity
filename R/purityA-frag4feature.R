@@ -107,7 +107,7 @@
 #' #xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
 #'
 #' ## Or if using the old XCMS functions
-#' #xcmsObj <- xcms::xcmsSet(msmsPths, nSlaves = 1)
+#' #xcmsObj <- xcms::xcmsSet(msmsPths)
 #' #xcmsObj <- xcms::group(xcmsObj)
 #' #xcmsObj <- xcms::retcor(xcmsObj)
 #' #xcmsObj <- xcms::group(xcmsObj)

@@ -18,7 +18,7 @@ suppressPackageStartupMessages(library(MSnbase))
 suppressPackageStartupMessages(library(magrittr))
 
 #read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-msdata = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
+msdata = MSnbase::readMSData(msPths, mode = 'onDisk', msLevel. = 1)
 rtr = c(30, 90)
 mzr = c(100, 200)
 msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
