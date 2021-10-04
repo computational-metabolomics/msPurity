@@ -210,7 +210,7 @@ setMethod(f="frag4feature", signature="purityA",
     conv_check = FALSE
 
     if(XCMSnExp_bool){
-      if(hasAdjustedRtime(xcmsObj)){
+      if(xcms::hasAdjustedRtime(xcmsObj)){
         conv_check = TRUE
       }
     }else{

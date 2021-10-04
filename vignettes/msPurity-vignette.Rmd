@@ -117,7 +117,7 @@ We define here "isolation efficiency"" as the effect of the position of an ion w
 ![isolation window example](isolation.png)
 
 
-The isolation efficiency can be estimated by looking at a single precursor with a sliding window - see below for an example deomonstrating a sliding window around a target m/z of 200. 
+The isolation efficiency can be estimated by looking at a single precursor with a sliding window - see below for an example demonstrating a sliding window around a target m/z of 200. 
 
 ![sliding window example](isolation_exp.png)
 
@@ -274,8 +274,6 @@ result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), cores=1, l_accessions
 
 
 ## Assessing anticipated purity of XCMS features from an LC-MS run
-
-NOTE ON TERMINOLOGY: The term 'anticipated purity' and 'predicted purity' are used interchangeably
 
 A processed xcmsSet object is required to determine the anticipated (predicted) precursor purity score from an LC-MS dataset. The offsets chosen in the parameters should reflect what settings would be used in a hypothetical fragmentation experiment.
 
