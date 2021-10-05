@@ -453,10 +453,10 @@ convert2Raw <- function(all_peaks, xcmsObj, XCMSnExp_bool){
   ## XCMSnExp_bol = boolean, where 1 means xcmsObj class == XCMSnExp, 0 means obj class == xcmsSet
   sid <- unique(all_peaks$sample)
   # for each file get list of peaks
-  if(XCMSnExp_bool==1 && (class(xcmsObj) == 'XCMSnExp')){
+  if(XCMSnExp_bool==1 && (is(xcmsObj,  'XCMSnExp'))){
       all_peaks$rtmin <- xcms::rtime(xcmsObj, adjusted=FALSE, bySample=TRUE)[[sid]][match(all_peaks$rtmin, xcms::rtime(xcmsObj, adjusted = TRUE, bySample = TRUE)[[sid]])]
       all_peaks$rtmax <- xcms::rtime(xcmsObj, adjusted=FALSE, bySample=TRUE)[[sid]][match(all_peaks$rtmax, xcms::rtime(xcmsObj, adjusted = TRUE, bySample = TRUE)[[sid]])]
-  }else if(XCMSnExp_bool==0 && (class(xcmsObj) == 'xcmsSet')){
+  }else if(XCMSnExp_bool==0 && (is(xcmsObj, 'xcmsSet'))){
       all_peaks$rtmin <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmin, xcmsObj@rt$corrected[[sid]])]
       all_peaks$rtmax <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmax, xcmsObj@rt$corrected[[sid]])]
   }
