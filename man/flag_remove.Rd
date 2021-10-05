@@ -89,11 +89,7 @@ library(xcms)
 library(MSnbase)
 library(magrittr)
 #read in files and data
-msPths <- dirname(list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE))
-msPths[1] <- file.path(msPths[1], 'LCMS_1.mzML')
-msPths[2] <- file.path(msPths[2], 'LCMS_2.mzML')
-msPths[3] <- file.path(msPths[3], 'LCMSMS_1.mzML')
-msPths[4] <- file.path(msPths[4], 'LCMSMS_2.mzML')
+msPths <-list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
 ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
 
 #subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.

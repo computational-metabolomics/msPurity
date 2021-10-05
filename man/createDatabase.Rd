@@ -63,42 +63,33 @@ Schema details can be found \href{https://bioconductor.org/packages/release/bioc
 }
 }
 \examples{
+library(xcms)
+library(MSnbase)
+library(magrittr)
 #====== XCMS =================================
 ## Read in MS data
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
-#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
 ## Find peaks in each file
-#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
-#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
+cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 
 ## Optionally adjust retention time
-#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
 
 ## Group features across samples
-#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
-#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
 
 #====== msPurity ============================
-#pa  <- purityA(msmsPths)
-#pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
-#pa <- filterFragSpectra(pa, allfrag=TRUE)
-#pa <- averageAllFragSpectra(pa)
-#dbPth <- createDatabase(pa, xcmsObj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
+pa  <- purityA(msmsPths)
+pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+pa <- filterFragSpectra(pa, allfrag=TRUE)
+pa <- averageAllFragSpectra(pa)
+dbPth <- createDatabase(pa, xcmsObj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
 
-
-## Run from previously generated data
-pa <- readRDS(system.file("extdata", "tests", "purityA",
-          "9_averageAllFragSpectra_with_filter_pa.rds", package="msPurity"))
-xcmsObj <- readRDS(system.file("extdata","tests", "xcms",
-                "msms_only_xcmsnexp.rds", package="msPurity"))
-msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
-               package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-xcmsObj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
-xcmsObj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 td <- tempdir()
 db_pth = createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td)
 

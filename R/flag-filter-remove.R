@@ -59,11 +59,7 @@
 #' library(MSnbase)
 #' library(magrittr)
 #' #read in files and data
-#' msPths <- dirname(list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE))
-#' msPths[1] <- file.path(msPths[1], 'LCMS_1.mzML')
-#' msPths[2] <- file.path(msPths[2], 'LCMS_2.mzML')
-#' msPths[3] <- file.path(msPths[3], 'LCMSMS_1.mzML')
-#' msPths[4] <- file.path(msPths[4], 'LCMSMS_2.mzML')
+#' msPths <-list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
 #' ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
 #'
 #' #subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
@@ -574,11 +570,11 @@ get_full_peak_width <- function(peaklist, xcmsObj){
 
   message("Get 'individual' peaks from camera-xcms object")
 
-  if('XCMSnExp' == class(xcmsObj)){
+  if(is(xcmsObj,'XCMSnExp')){
     XCMSnExp_bool = TRUE
-  }else if('xcmsSet' == class(xcmsObj)){
+  }else if(is(xcmsObj, 'xcmsSet')){
     XCMSnExp_bool = FALSE
-  }else if('xsAnnotate' == class(xcmsObj)){
+  }else if(is(xcmsObj, 'xsAnnotate')){
     XCMSnExp_bool = FALSE
     xcmsObj = xcmsObj@xcmsSet
   }else{
@@ -586,12 +582,12 @@ get_full_peak_width <- function(peaklist, xcmsObj){
 
   }
 
-  if(XCMSnExp_bool && (class(xcmsObj) == 'XCMSnExp')){
+  if(XCMSnExp_bool && (is(xcmsObj,'XCMSnExp'))){
     rt.min = xcms::featureValues(xcmsObj, method = "medret", value = "rtmin", intensity = "into")
     rt.max = xcms::featureValues(xcmsObj, method = "medret", value = "rtmax", intensity = "into")
     mz.min = xcms::featureValues(xcmsObj, method = "medret", value = "mzmin", intensity = "into")
     mz.max = xcms::featureValues(xcmsObj, method = "medret", value = "mzmax", intensity = "into")
-  }else if (XCMSnExp_bool==FALSE && (class(xcmsObj) == 'xcmsSet')){
+  }else if (XCMSnExp_bool==FALSE && (is(xcmsObj, 'xcmsSet'))){
     rt.min = xcms::groupval(xcmsObj, method = "medret", value = "rtmin", intensity = "into")
     rt.max = xcms::groupval(xcmsObj, method = "medret", value = "rtmax", intensity = "into")
     mz.min = xcms::groupval(xcmsObj, method = "medret", value = "mzmin", intensity = "into")

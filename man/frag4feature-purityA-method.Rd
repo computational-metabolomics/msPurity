@@ -122,22 +122,25 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 }
 }
 \examples{
+library(xcms)
+library(MSnbase)
+library(magrittr)
 #====== XCMS =================================
 ## Read in MS data
-#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
-#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
 ## Find peaks in each file
-#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
-#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
+cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 
 ## Optionally adjust retention time
-#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
 
 ## Group features across samples
-#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
-#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
 
 ## Or if using the old XCMS functions
 #xcmsObj <- xcms::xcmsSet(msmsPths)
@@ -146,14 +149,7 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 #xcmsObj <- xcms::group(xcmsObj)
 
 #====== msPurity ============================
-#pa <- purityA(msmsPths)
-#pa <- frag4feature(pa, xcmsObj)
-
-## Run from previously generated data
-pa <- readRDS(system.file("extdata", "tests", "purityA",
-                          "1_purityA_pa.rds", package="msPurity"))
-xcmsObj <- readRDS(system.file("extdata","tests", "xcms",
-                "msms_only_xcmsnexp.rds", package="msPurity"))
-
+pa <- purityA(msmsPths)
 pa <- frag4feature(pa, xcmsObj)
+
 }
