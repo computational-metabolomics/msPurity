@@ -90,11 +90,11 @@ Ref
 [1] Lawson, T.N., Weber, R.J., Jones, M.R., Chetwynd, A.J., Rodriguez Blanco, G.A., Di Guida, R., Viant, M.R. and Dunn, W.B., 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based Fragmentation in Metabolomics. Analytical Chemistry.
 
 
-.. |Bioconductor release availability| image:: https://bioconductor.org/shields/availability/3.8/msPurity.svg
+.. |Bioconductor release availability| image:: https://bioconductor.org/shields/availability/release/msPurity.svg
    :target: https://bioconductor.org/packages/release/bioc/html/msPurity.html#archives
 
 
-.. |Bioconductor devel availability| image:: https://bioconductor.org/shields/availability/3.9/msPurity.svg
+.. |Bioconductor devel availability| image:: https://bioconductor.org/shields/availability/devel/msPurity.svg
    :target: https://bioconductor.org/packages/devel/bioc/html/msPurity.html#archives
 
 .. |Bioconductor release downloads| image:: https://bioconductor.org/shields/downloads/release/msPurity.svg
