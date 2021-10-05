@@ -5,7 +5,7 @@
 \title{Flag and remove unwanted peaks}
 \usage{
 flag_remove(
-  xset,
+  xcmsObj,
   pol = NA,
   rsd_i_blank = NA,
   minfrac_blank = 0.5,
@@ -19,16 +19,17 @@ flag_remove(
   rsd_rt_sample = NA,
   ithres_sample = NA,
   minfrac_xcms = 0.7,
-  mzwid = 0.025,
+  mzwid = 0.017,
   bw = 5,
   out_dir = ".",
   temp_save = FALSE,
-  remove_spectra = TRUE,
-  grp_rm_ids = NA
+  remove_spectra_bool = TRUE,
+  grp_rm_ids = NA,
+  xset = NA
 )
 }
 \arguments{
-\item{xset}{object; xcmsSet object}
+\item{xcmsObj}{object; XCMSnExp, xcmsSet or xsAnnotate object}
 
 \item{pol}{str; polarity (just used for naming purpose for files being saved) [positive, negative, NA]}
 
@@ -59,7 +60,7 @@ if the verbose option was set for XCMS;}
 
 \item{minfrac_xcms}{numeric; minfrac for xcms  grouping}
 
-\item{mzwid}{numeric; xcms grouping parameter}
+\item{mzwid}{numeric; xcms grouping parameter (corresponds to variable 'binSize' in XCMS3)}
 
 \item{bw}{numeric; xcms grouping parameter}
 
@@ -67,26 +68,50 @@ if the verbose option was set for XCMS;}
 
 \item{temp_save}{boolean; Assign True if files for each step saved (for testing purpsoses)}
 
-\item{remove_spectra}{bool; TRUE if flagged spectra is to be removed}
+\item{remove_spectra_bool}{bool; TRUE if flagged spectra is to be removed}
 
-\item{grp_rm_ids}{vector; vector of grouped_xcms peaks to remove (coresponds to the row from xcms::group output)}
+\item{grp_rm_ids}{vector; vector of grouped_xcms peaks to remove (corresponds to the row from xcms::group output)}
+
+\item{xset}{object, DEPRECATED; xcmsSet object}
 }
 \value{
 list(xset, grp_peaklist, removed_peaks)
 }
 \description{
-On an xcmsSet object, filter flag and remove unwanted peaks. When the peaks are removed, the
-the xcmsSet object can be regrouped using xcms::group. The function then checks if any blank
-peaks are still present and the process is repeated.
+Filter, flag and remove unwanted peaks from xcms object (xcmsObj) of class XCMSnExp, xcmsSet or xsAnnotate.
+When the peaks are removed, the xcmsObj object can be regrouped (originally using xcms::group, now using xcms::groupChromPeaks).
+The function then checks if any blank peaks are still present and the process is repeated.
 
-The output is a list of the updated xcmsSet object, grouped peaklist and the blank removed peaks
+The output is a list object containing: 1) the updated xcms object, 2) the grouped peaklist and 3) the blank removed peaks
 }
 \examples{
+library(xcms)
+library(MSnbase)
+library(magrittr)
+#read in files and data
+msPths <-list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
 
-msPths <- list.files(system.file("extdata", "lcms", "mzML",
-                     package="msPurityData"), full.names = TRUE)
-xset <- xcms::xcmsSet(msPths)
-xset@phenoData[,1] <- c('blank', 'blank', 'sample', 'sample')
-xset <- xcms::group(xset)
-fr = flag_remove(xset)
+#subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
+rtr = c(30, 90)
+mzr = c(100, 200)
+ms_data = ms_data \%>\%  filterRt(rt = rtr) \%>\%  filterMz(mz = mzr)
+
+##### perform feature detection in individual files
+cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+xcmsObj <- findChromPeaks(ms_data, param = cwp)
+xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
+xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
+pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
+xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+
+#### flag, filter and remove peaks, returning an updated xcmsObj (XCMSnExp or xcmsSet class), grouped_peaklist (data.frame) and removed_peaks (data.frame)
+fr <- flag_remove(xcmsObj)
+
+##### load from existing data
+xcmsObj = readRDS(system.file("extdata", "tests", "purityA", "10_input_filterflagremove.rds", package="msPurity"))
+
+
+
+
 }

@@ -22,11 +22,12 @@ vignette: >
 The msPurity package can be used with XCMS as part of a data processing and annotation workflow for LC-MS/MS data
 
 * Purity assessments
-    +  (mzML files) -> purityA -> (pa)
+   +  (mzML files) -> purityA -> (pa)
 * XCMS processing
-    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+   +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+   +  --- *Older versions of XCMS* --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 * Fragmentation processing
-    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+   + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> **spectralMatching** -> (sqlite spectral database)
 
 
 ## XCMS processing
@@ -37,11 +38,26 @@ We first need to run XCMS so that we can later link the spectral matching result
 
 ```r
 library(msPurity)
+library(magrittr)
+library(xcms)
+library(MSnbase)
 mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-xset <- xcms::xcmsSet(mzMLpths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+
+#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
+msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)
+rtr = c(30, 90)
+mzr = c(100, 200)
+msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
+
+#perform feature detection in individual files
+cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
+#update metadata
+xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
+xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
+#group chromatographic peaks across samples (correspondence analysis)
+pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
+xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 ```
 
 
@@ -53,7 +69,7 @@ fragmentation data back to the XCMS feature.
 
 ```r
 pa  <- purityA(mzMLpths)
-pa <- frag4feature(pa, xset)
+pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
 ```
 
 ## Filtering and averaging
@@ -62,7 +78,7 @@ The fragmentation can be filtered prior to averaging using the “filterFragSpec
 
 
 ```r
-pa <- filterFragSpectra(pa)
+pa <- filterFragSpectra(pa = pa)
 ```
 
 
@@ -72,15 +88,15 @@ If the inter and intra fragmentation scans are to be treated differently the fol
 
 
 ```r
-pa <- averageIntraFragSpectra(pa) # use parameters specific to intra spectra 
-pa <- averageInterFragSpectra(pa) # use parameters specific to inter spectra
+pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra 
+pa <- averageInterFragSpectra(pa = pa) # use parameters specific to inter spectra
 ```
 
 If the inter and intra fragmentation scans are to be treated the same the following workflow should be used.
 
 
 ```r
-pa <- averageAllFragSpectra(pa) 
+pa <- averageAllFragSpectra(pa = pa) 
 ```
 
 ## Creating a spectral-database
@@ -90,7 +106,7 @@ An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema
 
 ```r
 td <- tempdir()
-q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'lcmsms-processing.sqlite')
+q_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'lcmsms-processing.sqlite')
 ```
 
 ## Spectral matching
@@ -129,7 +145,7 @@ The following example shows how to match two xcms groups against two of the libr
 
 
 ```r
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(17, 41), l_accessions=c('CCMSLIB00000577898','CE000616'))
+result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), l_accessions=c('CCMSLIB00003740033'))
 ```
 
 ```
@@ -158,71 +174,32 @@ print(result)
 
 ```
 ## $q_dbPth
-## [1] "/tmp/RtmpodCsKs/lcmsms-processing.sqlite"
+## [1] "C:\\Users\\jonesmr\\AppData\\Local\\Temp\\RtmpiWuMIx/lcmsms-processing.sqlite"
 ## 
 ## $matchedResults
-##    lpid qpid mid       dpc rdpc      cdpc mcount allcount   mpercent
-## 1  5325 1661   1 0.8739497    1 0.8359519      1       22 0.04545455
-## 2  5325 1662   2 0.8739497    1 0.8359519      1       22 0.04545455
-## 3 53807 1664   3 0.9408905    1 0.8960862      1       20 0.05000000
-## 4 53807 1665   4 0.9408905    1 0.8960862      1       20 0.05000000
-##   library_rt query_rt rtdiff library_precursor_mz query_precursor_mz
-## 1       <NA> 44.45066     NA               116.07           116.0705
-## 2       <NA> 44.45066     NA               116.07           116.0705
-## 3       <NA> 70.39686     NA            132.10191           132.1018
-## 4       <NA> 70.39686     NA            132.10191           132.1018
-##   library_precursor_ion_purity query_precursor_ion_purity
-## 1                         <NA>                   0.997344
-## 2                         <NA>                   1.000000
-## 3                         <NA>                   1.000000
-## 4                         <NA>                   1.000000
-##    library_accession library_precursor_type library_entry_name
-## 1 CCMSLIB00000577898                    M+H          L-PROLINE
-## 2 CCMSLIB00000577898                    M+H          L-PROLINE
-## 3           CE000616                 [M+H]+         Isoleucine
-## 4           CE000616                 [M+H]+         Isoleucine
-##                      inchikey library_source_name library_compound_name
-## 1 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
-## 2 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
-## 3 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
-## 4 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
+##    lpid qpid mid      dpc     rdpc      cdpc mcount allcount  mpercent library_rt query_rt rtdiff library_precursor_mz
+## 1 14082 1700   1 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364     NA              150.058
+## 2 14082 1701   2 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364     NA              150.058
+##   query_precursor_mz library_precursor_ion_purity query_precursor_ion_purity  library_accession library_precursor_type
+## 1           150.0581                         <NA>                          1 CCMSLIB00003740033                    M+H
+## 2           150.0581                         <NA>                          1 CCMSLIB00003740033                    M+H
+##   library_entry_name                    inchikey library_source_name library_compound_name
+## 1         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
+## 2         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
 ## 
 ## $xcmsMatchedResults
-##    pid grpid       mz    mzmin    mzmax       rt    rtmin    rtmax npeaks
-## 1 1661    17 116.0705 116.0703 116.0706 44.45066 43.95639 44.90363      4
-## 2 1662    17 116.0705 116.0703 116.0706 44.45066 43.95639 44.90363      4
-## 3 1664    41 132.1018 132.1017 132.1018 70.39686 69.81528 70.75930      4
-## 4 1665    41 132.1018 132.1017 132.1018 70.39686 69.81528 70.75930      4
-##   mzML   LCMSMS_1   LCMSMS_2     LCMS_1     LCMS_2 grp_name  lpid mid
-## 1    4  130337063  124086404  230819937  234755462  M116T44  5325   1
-## 2    4  130337063  124086404  230819937  234755462  M116T44  5325   2
-## 3    4 2879676651 2794252073 3455044747 3379259900  M132T70 53807   3
-## 4    4 2879676651 2794252073 3455044747 3379259900  M132T70 53807   4
-##         dpc rdpc      cdpc mcount allcount   mpercent library_rt query_rt
-## 1 0.8739497    1 0.8359519      1       22 0.04545455       <NA> 44.45066
-## 2 0.8739497    1 0.8359519      1       22 0.04545455       <NA> 44.45066
-## 3 0.9408905    1 0.8960862      1       20 0.05000000       <NA> 70.39686
-## 4 0.9408905    1 0.8960862      1       20 0.05000000       <NA> 70.39686
-##   rtdiff library_precursor_mz query_precursor_mz
-## 1     NA               116.07           116.0705
-## 2     NA               116.07           116.0705
-## 3     NA            132.10191           132.1018
-## 4     NA            132.10191           132.1018
-##   library_precursor_ion_purity query_precursor_ion_purity
-## 1                         <NA>                   0.997344
-## 2                         <NA>                   1.000000
-## 3                         <NA>                   1.000000
-## 4                         <NA>                   1.000000
-##    library_accession library_precursor_type library_entry_name
-## 1 CCMSLIB00000577898                    M+H          L-PROLINE
-## 2 CCMSLIB00000577898                    M+H          L-PROLINE
-## 3           CE000616                 [M+H]+         Isoleucine
-## 4           CE000616                 [M+H]+         Isoleucine
-##                      inchikey library_source_name library_compound_name
-## 1 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
-## 2 ONIBWKKTOPOVIA-UHFFFAOYSA-N                gnps             L-PROLINE
-## 3 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
-## 4 AGPKZVBTJJNPAG-UHFFFAOYSA-N            massbank          L-ISOLEUCINE
+##    pid grpid       mz   mzmin    mzmax       rt    rtmin    rtmax npeaks blank sample                peakidx ms_level LCMS_1_mzML
+## 1 1700   432 150.0581 150.058 150.0582 59.83364 57.10389 63.07817      4     2      2 1046, 2158, 2619, 2995        1   642676169
+## 2 1701   432 150.0581 150.058 150.0582 59.83364 57.10389 63.07817      4     2      2 1046, 2158, 2619, 2995        1   642676169
+##   LCMS_2_mzML LCMSMS_1_mzML LCMSMS_2_mzML grp_name  lpid mid      dpc     rdpc      cdpc mcount allcount  mpercent library_rt query_rt
+## 1   643826651     455365992     461585449   FT0432 14082   1 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364
+## 2   643826651     455365992     461585449   FT0432 14082   2 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364
+##   rtdiff library_precursor_mz query_precursor_mz library_precursor_ion_purity query_precursor_ion_purity  library_accession
+## 1     NA              150.058           150.0581                         <NA>                          1 CCMSLIB00003740033
+## 2     NA              150.058           150.0581                         <NA>                          1 CCMSLIB00003740033
+##   library_precursor_type library_entry_name                    inchikey library_source_name library_compound_name
+## 1                    M+H         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
+## 2                    M+H         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
 ```
 
 

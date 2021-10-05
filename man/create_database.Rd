@@ -51,10 +51,10 @@ msPurity::create_database is deprecated. Please use msPurity::createDatabase for
 
 # Run from previously generated data
 pa <- readRDS(system.file("extdata", "tests", "purityA",
-                          "9_averageAllFragSpectra_with_filter_pa.rds",
+                          "9_averageAllFragSpectra_with_filter_pa_OLD.rds",
                           package="msPurity"))
 xset <- readRDS(system.file("extdata","tests", "xcms",
-                            "msms_only_xset.rds", package="msPurity"))
+                            "msms_only_xset_OLD.rds", package="msPurity"))
 
 # Need to ensure the filelists are matching
 msmsPths <- list.files(system.file("extdata", "lcms", "mzML",

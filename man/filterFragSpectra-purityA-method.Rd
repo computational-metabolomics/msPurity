@@ -3,7 +3,7 @@
 \name{filterFragSpectra,purityA-method}
 \alias{filterFragSpectra,purityA-method}
 \alias{filterFragSpectra}
-\title{Filter fragmentations spectra associated with an XCMS feature}
+\title{Filter fragmentation spectra associated with an XCMS feature}
 \usage{
 \S4method{filterFragSpectra}{purityA}(
   pa,
@@ -25,13 +25,13 @@
 
 \item{ra}{numeric; minimum relative abundance of a peak}
 
-\item{snr}{numeric; minimum signal-to-noise of a peak  peak within each file}
+\item{snr}{numeric; minimum signal-to-noise of a peak within each file}
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 
 \item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
 
-\item{allfrag}{boolean; Whether to filter on all fragmentation spectra or or just the fragmentation spectra grouped to XCMS feature}
+\item{allfrag}{boolean; Whether to filter on all fragmentation spectra or just the fragmentation spectra grouped to XCMS feature}
 }
 \value{
 Returns a purityA object with the pa@grped_msms spectra matrices are updated with the following columns
@@ -48,11 +48,9 @@ Returns a purityA object with the pa@grped_msms spectra matrices are updated wit
 \description{
 \strong{General}
 
-Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of precursor.
+Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and purity of the precursor ion.
 
 \strong{Example LC-MS/MS processing workflow}
-
-The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
 \itemize{
 \item Purity assessments
 \itemize{
@@ -60,26 +58,39 @@ The purityA object can be used for further processing including linking the frag
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+\item --- \emph{Older versions of XCMS} --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> \strong{filterFragSpectra} -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item (xcmsObj, pa) -> frag4feature -> \strong{filterFragSpectra} -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }
 \examples{
+#====== XCMS =================================
+## Read in MS data
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-#msmsPths <- list.files(system.file("extdata", "lcms",
-#                        "mzML", package="msPurityData"), full.names = TRUE,
-#                         pattern = "MSMS")
-#xset <- xcms::xcmsSet(msmsPths)
-#xset <- xcms::group(xset)
-#xset <- xcms::retcor(xset)
-#xset <- xcms::group(xset)
+## Find peaks in each file
+#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 
+## Optionally adjust retention time
+#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+
+## Group features across samples
+#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+
+#====== msPurity ============================
 #pa  <- purityA(msmsPths)
-#pa <- frag4feature(pa, xset)
+#pa <- frag4feature(pa, xcmsObj)
+#pa <- filterFragSpectra(pa)
+
+## Run from previously generated data
 pa <- readRDS(system.file("extdata", "tests", "purityA",
                           "2_frag4feature_pa.rds", package="msPurity"))
 pa <- filterFragSpectra(pa)

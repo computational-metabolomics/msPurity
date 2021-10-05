@@ -47,10 +47,10 @@
 #'
 #' # Run from previously generated data
 #' pa <- readRDS(system.file("extdata", "tests", "purityA",
-#'                           "9_averageAllFragSpectra_with_filter_pa.rds",
+#'                           "9_averageAllFragSpectra_with_filter_pa_OLD.rds",
 #'                           package="msPurity"))
 #' xset <- readRDS(system.file("extdata","tests", "xcms",
-#'                             "msms_only_xset.rds", package="msPurity"))
+#'                             "msms_only_xset_OLD.rds", package="msPurity"))
 #'
 #' # Need to ensure the filelists are matching
 #' msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
@@ -66,6 +66,22 @@ create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, d
   ########################################################
   # Export the target data into sqlite database
   ########################################################
+  getxcmsSetObject <- function(xcmsObj) {
+     # XCMS 1.x
+     if (is(xcmsObj, "xcmsSet")){
+         return (xcmsObj)
+     }
+     # XCMS 3.x
+     if (is(xcmsObj, "XCMSnExp")) {
+         # Get the legacy xcmsSet object
+         suppressWarnings(xset <- as(xcmsObj, 'xcmsSet'))
+         if (!is.null(xcmsObj@phenoData$sample_group))
+             sampclass(xset) <- xcmsObj@phenoData$sample_group
+         else
+             sampclass(xset) <- "."
+         return (xset)
+     }
+  }
   if(!is.null(xset)){
     xset <- getxcmsSetObject(xset)
   }

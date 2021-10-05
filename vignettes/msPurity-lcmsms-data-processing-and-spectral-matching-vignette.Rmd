@@ -22,28 +22,64 @@ vignette: >
 The msPurity package can be used with XCMS as part of a data processing and annotation workflow for LC-MS/MS data
 
 * Purity assessments
-    +  (mzML files) -> purityA -> (pa)
-* XCMS processing 
-    +  (mzML files) -> xcms.xcmsSet  -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
-* XCMS processing (version >= 3)
-    +  (mzML files) -> MSnBase.readMSdata -> xcms.findChromPeaks -> xcms.groupChromPeaks-> xcms.adjustRtime -> xcms.groupChromPeaks -> convert to xset format as(x, "xcmsSet")
+   +  (mzML files) -> purityA -> (pa)
+* XCMS processing
+   +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+   +  --- *Older versions of XCMS* --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 * Fragmentation processing
-    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+  + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 
-
-
-## XCMS processing
+## XCMS (versions < 3)  processing workflow
 We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
 
-(Please use the appropiate settings for your data)
+(Please use the appropriate settings for your data)
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 library(msPurity)
+library(xcms)
 mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-xset <- xcms::xcmsSet(mzMLpths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+
+#read in the data
+xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+
+#for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
+xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
+xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+
+#group features across samples
+xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+xcmsObj = xset
+```
+
+
+## XCMS (versions 3+) processing workflow
+We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
+
+(Please use the appropriate settings for your data)
+
+```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+library(msPurity)
+library(magrittr)
+library(xcms)
+library(MSnbase)
+mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+
+#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
+msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)
+rtr = c(30, 90)
+mzr = c(100, 200)
+msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
+
+#perform feature detection in individual files
+cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
+#update metadata
+xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
+xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
+#group chromatographic peaks across samples (correspondence analysis)
+pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
+xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+
 ```
 
 
@@ -54,7 +90,7 @@ fragmentation data back to the XCMS feature.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 pa  <- purityA(mzMLpths)
-pa <- frag4feature(pa, xset)
+pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
 ```
 
 ## Filtering and averaging
@@ -62,7 +98,7 @@ pa <- frag4feature(pa, xset)
 The fragmentation can be filtered prior to averaging using the “filterFragSpectra” function
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-pa <- filterFragSpectra(pa)
+pa <- filterFragSpectra(pa = pa)
 ```
 
 
@@ -71,14 +107,14 @@ Averaging of the fragmentation spectra can be done with either “averageAllFrag
 If the inter and intra fragmentation scans are to be treated differently the following should be followed:
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-pa <- averageIntraFragSpectra(pa) # use parameters specific to intra spectra 
-pa <- averageInterFragSpectra(pa) # use parameters specific to inter spectra
+pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra 
+pa <- averageInterFragSpectra(pa = pa) # use parameters specific to inter spectra
 ```
 
 If the inter and intra fragmentation scans are to be treated the same the following workflow should be used.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-pa <- averageAllFragSpectra(pa) 
+pa <- averageAllFragSpectra(pa = pa) 
 ```
 
 ## Creating a spectral-database
@@ -87,7 +123,7 @@ An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 td <- tempdir()
-q_dbPth <- createDatabase(pa, xset, outDir = td, dbName = 'lcmsms-processing.sqlite')
+q_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'lcmsms-processing.sqlite')
 ```
 
 ## Spectral matching
@@ -122,10 +158,10 @@ $$ F_{rel} = \Bigg( \frac{1}{N_{L\&Q}-1} \Bigg) \cdot \sum_{i=2}^{N_{L\&Q}} \Big
 
 $$ F_{cpdc} = \frac{1000}{N_{Q} + N_{L\&Q}} \cdot (N_{Q} \cdot F_{dpc} + N_{L\&Q} \cdot F_{rel}) $$
 
-The following example shows how to match two xcms groups against two of the library spectral filtered by their MoNA/MassBank accession ids.
+The following example shows how to match one xcms groupsagainst library spectra filtered by their MoNA/MassBank accession id.
 
 ```{r}
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(17, 41), l_accessions=c('CCMSLIB00000577898','CE000616'))
+result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), l_accessions=c('CCMSLIB00003740033'))
 print(result)
 ```
 

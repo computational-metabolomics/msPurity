@@ -221,7 +221,7 @@ The library SQLite database by default contains data from MoNA including Massban
 A larger database can be downloaded from \href{https://github.com/computational-metabolomics/msp2db/releases}{here}.
 To create a user generated library SQLite database the following tool can be used to generate a SQLite database
 from a collection of MSP files: \href{https://github.com/computational-metabolomics/msp2db/releases}{msp2db}.
-It should be noted though, that as long as the schema of the spectral-database is as described here, then any database can be used
+It should be noted though, that as long as the schema of the spectral-database is as described \href{https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-database-vignette.html}{here }, then any database can be used
 for either the library or query -  even allowing for the same database to be used.
 
 The spectral matching functionality has four main components, spectral filtering, spectral alignment, spectral matching,
@@ -256,31 +256,52 @@ See the vigenttes for more details regarding matching algorithms used.
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+\item --- \emph{Older versions of XCMS} --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> \strong{spectralMatching} -> (sqlite spectral database)
+\item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> \strong{spectralMatching} -> (sqlite spectral database)
 }
 }
 }
 \examples{
+#====== XCMS =================================
+## Read in MS data
 #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
-#                        package="msPurityData"), full.names = TRUE,
-#                         pattern = "MSMS")
-#xset <- xcms::xcmsSet(msmsPths)
-#xset <- xcms::group(xset)
-#xset <- xcms::retcor(xset)
-#xset <- xcms::group(xset)
+#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
+## Find peaks in each file
+#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
+
+## Optionally adjust retention time
+#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+
+## Group features across samples
+#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+
+#====== msPurity ============================
 #pa  <- purityA(msmsPths)
-#pa <- frag4feature(pa, xset)
+#pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
 #pa <- filterFragSpectra(pa, allfrag=TRUE)
 #pa <- averageAllFragSpectra(pa)
-#q_dbPth <- createDatabase(pa, xset)
-q_dbPth <- system.file("extdata", "tests", "db",
-                       "createDatabase_example.sqlite", package="msPurity")
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(12, 27), cores=1,
-                           l_accessions=c('CCMSLIB00000577898','CE000616'))
+#q_dbPth <- createDatabase(pa, xcmsObj, metadata=list('polarity'='positive','instrument'='Q-Exactive'))
+#sm_result <- spectralMatching(q_dbPth, cores=4, l_pol='positive')
+
+td <- tempdir()
+q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
+
+rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
+sm_out_pth <- file.path(td, rid)
+
+result <- spectralMatching(q_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('PR100407', 'ML005101', 'CCMSLIB00003740024'),
+                          q_spectraTypes = 'av_all',
+                          updateDb = TRUE,
+                          copyDb = TRUE,
+                          outPth = sm_out_pth)
+
 
 }

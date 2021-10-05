@@ -82,26 +82,41 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+\item --- \emph{Older versions of XCMS} --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> \strong{averageInterFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> \strong{averageInterFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }
 \examples{
 
-#msmsPths <- list.files(system.file("extdata",
-#"lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-#xset <- xcms::group(xset)
-#xset <- xcms::retcor(xset)
-#xset <- xcms::group(xset)
+#====== XCMS =====================================
+## Read in MS data
+#msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+#           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-#pa  <- purityA(msmsPths, interpol = "linear")
-#pa <- frag4feature(pa, xset)
+## Find peaks in each file
+#cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
+
+## Optionally adjust retention time
+#xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+
+## Group features across samples
+#pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+
+#====== msPurity =================================
+#pa  <- purityA(msmsPths)
+#pa <- frag4feature(pa, xcmsObj)
 #pa <- averageIntraFragSpectra(pa)
+#pa <- averageInterFragSpectra(pa)
+
+## Run from previously generated data
 pa <- readRDS(system.file("extdata", "tests", "purityA",
                           "4_averageIntraFragSpectra_no_filter_pa.rds",
                           package="msPurity"))

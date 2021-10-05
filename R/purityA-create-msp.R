@@ -31,11 +31,12 @@
 #' **Example LC-MS/MS processing workflow**
 #'
 #'  * Purity assessments
-#'    +  (mzML files) -> purityA -> (pa)
+#'    +  (mzML files) -> **purityA** -> (pa)
 #'  * XCMS processing
-#'    +  (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+#'    +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+#'    +  --- *Older versions of XCMS* --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 #'  * Fragmentation processing
-#'    + (xset, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> averageIntraFragSpectra -> **createMSP** -> (MSP file)
+#'    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> averageIntraFragSpectra -> **createMSP** -> (MSP file)
 #'
 #' @aliases createMSP
 #
@@ -57,16 +58,30 @@
 #' @return Returns a MSP file with the selected spectra and metadata
 #' @examples
 #'
+#' #====== XCMS =================================
+#' ## Read in MS data
 #' #msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
-#' #                package="msPurityData"), full.names = TRUE, pattern = "MSMS")
-#' #xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-#' #xset <- xcms::group(xset)
-#' #xset <- xcms::retcor(xset)
-#' #xset <- xcms::group(xset)
+#' #           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+#' #ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 #'
+#' ## Find peaks in each file
+#' #cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#' #xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
+#'
+#' ## Optionally adjust retention time
+#' #xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+#'
+#' ## Group features across samples
+#' #pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+#' #xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+#'
+#' #====== msPurity ============================
 #' #pa  <- purityA(msmsPths)
-#' #pa <- frag4feature(pa, xset)
+#' #pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+#' #pa <- filterFragSpectra(pa, allfrag=TRUE)
 #' #pa <- averageAllFragSpectra(pa)
+#' #createMSP(pa)
+#'
 #' pa <- readRDS(system.file("extdata", "tests", "purityA",
 #'                           "9_averageAllFragSpectra_with_filter_pa.rds",
 #'                           package="msPurity"))

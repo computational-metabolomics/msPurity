@@ -7,23 +7,28 @@
 \usage{
 \S4method{frag4feature}{purityA}(
   pa,
-  xset,
+  xcmsObj,
   ppm = 5,
   plim = NA,
   intense = TRUE,
   convert2RawRT = TRUE,
   useGroup = FALSE,
-  create_db = FALSE,
-  out_dir = ".",
-  db_name = NA,
+  createDb = FALSE,
+  outDir = ".",
+  dbName = NA,
+  grpPeaklist = NA,
+  use_group = NA,
+  out_dir = NA,
+  create_db = NA,
   grp_peaklist = NA,
-  use_group = NA
+  db_name = NA,
+  xset = NA
 )
 }
 \arguments{
 \item{pa}{object; purityA object}
 
-\item{xset}{object; xcmsSet object derived from the same files as those used to create the purityA object}
+\item{xcmsObj}{object; XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object}
 
 \item{ppm}{numeric; ppm tolerance between precursor mz and XCMS feature mz}
 
@@ -35,15 +40,25 @@
 
 \item{useGroup}{boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature}
 
-\item{create_db}{boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results}
+\item{createDb}{boolean; if yes, generate a database of MS2 spectra}
+
+\item{outDir}{string; path where (optionally generated) database file should be saved}
+
+\item{dbName}{character; name to assign to (optionally exported) database.}
+
+\item{grpPeaklist}{dataframe; Can use any peak dataframe to add to databse. Still needs to be derived from the "obj" object though}
+
+\item{use_group}{boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)}
 
 \item{out_dir}{character; (Deprecated, to be removed - use createDatabase function) Path where database will be created}
 
-\item{db_name}{character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp}
+\item{create_db}{boolean; (Deprecated, to be removed - use createDatabase function) SQLite database will be created of the results}
 
 \item{grp_peaklist}{dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though}
 
-\item{use_group}{boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)}
+\item{db_name}{character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp}
+
+\item{xset}{object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object}
 }
 \value{
 Returns a purityA object (pa) with the following slots populated:
@@ -58,8 +73,8 @@ Returns a purityA object (pa) with the following slots populated:
 
 Assign fragmentation spectra (MS/MS) stored within a purityA class object to grouped features within an XCMS xset object.
 
-XCMS calculates individual chromatographic peaks for each mzML file (saved in xset@peaks), these are then grouped together
-(using xcms.group). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
+XCMS calculates individual chromatographic peaks for each mzML file (retrieved using xcms::chromPeaks(xcmsObj)), these are then grouped together
+(using xcms::groupChromPeaks). Ideally the mzML files that contain the MS/MS spectra also contain sufficient MS1 scans for XCMS to detect
 MS1 chromatographic features. If this is the case, to determine if a MS2 spectra is to be linked to an XCMS grouped feature,
 the associated acquisition time of the MS/MS event has to be within the retention time window defined for the individual peaks
 associated for each file. The precursor m/z value also has to be within the user ppm tolerance to XCMS feature.
@@ -80,8 +95,6 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 }
 
 \subsection{Example LC-MS/MS processing workflow}{
-
-The purityA object can be used for further processing including linking the fragmentation spectra to XCMS features, averaging fragmentation, database creation and spectral matching (from the created database). See below for an example workflow
 \itemize{
 \item Purity assessments
 \itemize{
@@ -89,11 +102,12 @@ The purityA object can be used for further processing including linking the frag
 }
 \item XCMS processing
 \itemize{
-\item (mzML files) -> xcms.xcmsSet -> xcms.merge -> xcms.group -> xcms.retcor -> xcms.group -> (xset)
+\item (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
+\item --- \emph{Older versions of XCMS} --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
 }
 \item Fragmentation processing
 \itemize{
-\item (xset, pa) -> \strong{frag4feature} -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
+\item (xcmsObj, pa) -> \strong{frag4feature} -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
 }
@@ -108,15 +122,34 @@ The purityA object can be used for further processing including linking the frag
 }
 }
 \examples{
+library(xcms)
+library(MSnbase)
+library(magrittr)
+#====== XCMS =================================
+## Read in MS data
+msmsPths <- list.files(system.file("extdata", "lcms", "mzML",
+           package="msPurityData"), full.names = TRUE, pattern = "MSMS")
+ms_data = readMSData(msmsPths, mode = 'onDisk', msLevel. = 1)
 
-msmsPths <- list.files(system.file("extdata", "lcms",
-                       "mzML", package="msPurityData"), full.names = TRUE,
-                       pattern = "MSMS")
-xset <- xcms::xcmsSet(msmsPths, nSlaves = 1)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
+## Find peaks in each file
+cwp <- CentWaveParam(snthresh = 5, noise = 100, ppm = 10, peakwidth = c(3, 30))
+xcmsObj  <- xcms::findChromPeaks(ms_data, param = cwp)
 
-pa  <- purityA(msmsPths)
-pa <- frag4feature(pa, xset)
+## Optionally adjust retention time
+xcmsObj  <- adjustRtime(xcmsObj , param = ObiwarpParam(binSize = 0.6))
+
+## Group features across samples
+pdp <- PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0, bw = 30)
+xcmsObj <- groupChromPeaks(xcmsObj , param = pdp)
+
+## Or if using the old XCMS functions
+#xcmsObj <- xcms::xcmsSet(msmsPths)
+#xcmsObj <- xcms::group(xcmsObj)
+#xcmsObj <- xcms::retcor(xcmsObj)
+#xcmsObj <- xcms::group(xcmsObj)
+
+#====== msPurity ============================
+pa <- purityA(msmsPths)
+pa <- frag4feature(pa, xcmsObj)
+
 }

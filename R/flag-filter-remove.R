@@ -20,13 +20,13 @@
 #' @title Flag and remove unwanted peaks
 #'
 #' @description
-#' On an xcmsSet object, filter flag and remove unwanted peaks. When the peaks are removed, the
-#' the xcmsSet object can be regrouped using xcms::group. The function then checks if any blank
-#' peaks are still present and the process is repeated.
+#' Filter, flag and remove unwanted peaks from xcms object (xcmsObj) of class XCMSnExp, xcmsSet or xsAnnotate.
+#' When the peaks are removed, the xcmsObj object can be regrouped (originally using xcms::group, now using xcms::groupChromPeaks).
+#' The function then checks if any blank peaks are still present and the process is repeated.
 #'
-#' The output is a list of the updated xcmsSet object, grouped peaklist and the blank removed peaks
+#' The output is a list object containing: 1) the updated xcms object, 2) the grouped peaklist and 3) the blank removed peaks
 #'
-#' @param xset object; xcmsSet object
+#' @param xcmsObj object; XCMSnExp, xcmsSet or xsAnnotate object
 #' @param pol str; polarity (just used for naming purpose for files being saved) \[positive, negative, NA\]
 #' @param rsd_i_blank numeric; RSD threshold for the blank
 #' @param minfrac_blank numeric; minimum fraction of files for features needed for the blank
@@ -42,50 +42,90 @@
 #' @param minfrac_sample numeric; minimum fraction of files for features needed for the sample
 #' @param rsd_rt_sample numeric; RSD threshold for the RT of the sample
 #' @param ithres_sample numeric; Intensity threshold for the sample
-#' @param grp_rm_ids vector; vector of grouped_xcms peaks to remove (coresponds to the row from xcms::group output)
+#' @param grp_rm_ids vector; vector of grouped_xcms peaks to remove (corresponds to the row from xcms::group output)
 #'
-#' @param remove_spectra bool; TRUE if flagged spectra is to be removed
+#' @param remove_spectra_bool bool; TRUE if flagged spectra is to be removed
 #'
 #' @param minfrac_xcms numeric; minfrac for xcms  grouping
-#' @param mzwid numeric; xcms grouping parameter
+#' @param mzwid numeric; xcms grouping parameter (corresponds to variable 'binSize' in XCMS3)
 #' @param bw numeric; xcms grouping parameter
 #' @param out_dir str; out directory
 #' @param temp_save boolean; Assign True if files for each step saved (for testing purpsoses)
+#' @param xset object, DEPRECATED; xcmsSet object
 #'
 #' @return list(xset, grp_peaklist, removed_peaks)
 #' @examples
+#' library(xcms)
+#' library(MSnbase)
+#' library(magrittr)
+#' #read in files and data
+#' msPths <-list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+#' ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
 #'
-#' msPths <- list.files(system.file("extdata", "lcms", "mzML",
-#'                      package="msPurityData"), full.names = TRUE)
-#' xset <- xcms::xcmsSet(msPths)
-#' xset@phenoData[,1] <- c('blank', 'blank', 'sample', 'sample')
-#' xset <- xcms::group(xset)
-#' fr = flag_remove(xset)
+#' #subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
+#' rtr = c(30, 90)
+#' mzr = c(100, 200)
+#' ms_data = ms_data %>%  filterRt(rt = rtr) %>%  filterMz(mz = mzr)
+#'
+#' ##### perform feature detection in individual files
+#' cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#' xcmsObj <- findChromPeaks(ms_data, param = cwp)
+#' xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
+#' xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
+#' pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
+#' xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+#'
+#' #### flag, filter and remove peaks, returning an updated xcmsObj (XCMSnExp or xcmsSet class), grouped_peaklist (data.frame) and removed_peaks (data.frame)
+#' fr <- flag_remove(xcmsObj)
+#'
+#' ##### load from existing data
+#' xcmsObj = readRDS(system.file("extdata", "tests", "purityA", "10_input_filterflagremove.rds", package="msPurity"))
+#'
+#'
+#'
+#'
 #' @export
-flag_remove <- function(xset, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
+flag_remove <- function(xcmsObj, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
                         rsd_rt_blank=NA, ithres_blank=NA, s2b=10, ref.class='blank',
                         egauss_thr=NA, rsd_i_sample=NA, minfrac_sample=0.7,
                         rsd_rt_sample=NA, ithres_sample=NA, minfrac_xcms=0.7,
-                        mzwid=0.025, bw=5, out_dir='.', temp_save=FALSE, remove_spectra=TRUE, grp_rm_ids=NA){
+                        mzwid=0.017, bw=5, out_dir='.', temp_save=FALSE, remove_spectra_bool=TRUE,
+                        grp_rm_ids=NA, xset=NA){
+
+  if(!is.na(xset)){
+    xcmsObj = xset
+  }
+
+  if(is(xcmsObj, 'XCMSnExp')){
+    XCMSnExp_bool = TRUE
+  }else if(is(xcmsObj, 'xcmsSet')){
+    XCMSnExp_bool = FALSE
+  }else if(is(xcmsObj, 'xsAnnotation')){
+    XCMSnExp_bool = FALSE
+    xcmsObj = xcmsObj@xcmsSet
+  }else{
+    stop('unrecognised class for xcmsObj object')
+  }
 
   ################################
   # Get enriched peaklist
   ################################
   # Get a peaklist with additional information e.g. RSD, coverage, 'valid' columns
-  grp_peaklist <- create_enriched_peaklist(xset, rsd_i_blank, minfrac_blank,
+  grp_peaklist <- create_enriched_peaklist(xcmsObj, rsd_i_blank, minfrac_blank,
                                            rsd_rt_blank, ithres_blank, s2b, ref.class,
-                                           rsd_i_sample, minfrac_sample, rsd_rt_sample, ithres_sample)
+                                           rsd_i_sample, minfrac_sample, rsd_rt_sample, ithres_sample,
+                                           XCMSnExp_bool)
 
   # Save the original peaklist for reference
   grp_peaklist_orig <- grp_peaklist
-  grp_peaklist <- get_full_peak_width(grp_peaklist_orig, xset)
+  grp_peaklist <- get_full_peak_width(grp_peaklist_orig, xcmsObj)
 
   ##################################
   # Remove blank and invalid peaks
   ##################################
-  xset.count <- 1
+  obj.count <- 1
 
-  if(remove_spectra){
+  if(remove_spectra_bool){
     message('########## REMOVING FLAGGED PEAKS ###########')
 
     # Remove any grouped peaks that have been specifically selected
@@ -98,47 +138,73 @@ flag_remove <- function(xset, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
     removed_peaks = data.frame()
     while(sum(grp_peaklist[,paste(ref.class, '_valid', sep='')])>0){
       # Remove blank peaks and invalid sample peaks from xcms object (then regroup)
-      message(paste('xset', xset.count,sep=''))
+      message(paste('xcmsObj', obj.count,sep=''))
 
-      rms <- remove_spectra(xset, grp_peaklist, rclass=ref.class, rm_peak_out=TRUE)
-      xset <- rms[[1]]
+      rms <- remove_spectra(xcmsObj, grp_peaklist, rclass=ref.class, rm_peak_out=TRUE, XCMSnExp_bool = XCMSnExp_bool)
+      xcmsObj <- rms[[1]]
       remPeaksTemp <- data.frame(rms[[2]])
-      remPeaksTemp$xcmsIDx <- xset.count
+      remPeaksTemp$xcmsIDx <- obj.count
 
 
-      if(xset.count==1){
+      if(obj.count==1){
         removed_peaks <- remPeaksTemp
       }else{
         removed_peaks <- rbind(remPeaksTemp, removed_peaks)
       }
+
+
       # need to regroup the xcms object
-      xset <- xcms::group(xset, bw = bw, mzwid = mzwid, minfrac = minfrac_xcms)
+      if(XCMSnExp_bool){
+        pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = minfrac_xcms, bw = bw, binSize = mzwid)
+        xcmsObj <- xcms::groupChromPeaks(xcmsObj, param = pdp)
+      }else{
+        xcmsObj <- xcms::group(xcmsObj, bw = bw, mzwid = mzwid, minfrac = minfrac_xcms)
+      }
 
       # Update the grouped_peaklist
-      grp_peaklist <- create_enriched_peaklist(xset, rsd_i_blank, minfrac_blank,
+      grp_peaklist <- create_enriched_peaklist(xcmsObj, rsd_i_blank, minfrac_blank,
                                                rsd_rt_blank, ithres_blank, s2b, ref.class,
-                                               rsd_i_sample, minfrac_sample, rsd_rt_sample, ithres_sample)
+                                               rsd_i_sample, minfrac_sample, rsd_rt_sample, ithres_sample,
+                                               XCMSnExp_bool = XCMSnExp_bool)
 
-      grp_peaklist <- get_full_peak_width(grp_peaklist, xsa = xset)
+      grp_peaklist <- get_full_peak_width(grp_peaklist, xcmsObj = xcmsObj)
 
-      xset.count <- xset.count + 1
+      obj.count <- obj.count + 1
 
       if(temp_save){
-        saveRDS(xset, file.path(out_dir, paste(pol, 'xset', xset.count, '.rds', sep='_')))
+        saveRDS(xcmsObj, file.path(out_dir, paste(pol, 'xcmsnexp', obj.count, '.rds', sep='_')))
       }
 
     }
 
     # Remove all individual where the egauss (RSM of the Gaussian fit to curve) is too high
     if (!is.na(egauss_thr)){
-      xset@peaks <- xset@peaks[(xset@peaks[,'egauss']<=egauss_thr) & (!is.na(xset@peaks[,'egauss'])) ,]
-      # need to regroup the xcms object
-      xset <- xcms::group(xset, bw = bw, mzwid = mzwid, minfrac = minfrac_xcms)
-      grp_peaklist <- create_enriched_peaklist(xset, rsd_i_blank, minfrac_blank,
+      if(XCMSnExp_bool){
+        if('egauss' %in% colnames(xcms::chromPeaks(xcmsObj))){
+          chromPeaks(xcmsObj) <- chromPeaks(xcmsObj)[(chromPeaks(xcmsObj)[,'egauss']<=egauss_thr) & (!is.na(chromPeaks(xcmsObj)[,'egauss'])) ,]
+          # need to regroup the xcms object
+          pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = minfrac_xcms, bw = bw, binSize = mzwid)
+          xcmsObj <- xcms::groupChromPeaks(xcmsObj, param = pdp)
+        }else{
+          message('"egauss_thr" specified but no column "egauss" in xcms::chromPeaks(xcmsObj) - continuing without filtering based on egauss' )
+        }
+
+      }else{
+        if('egauss' %in% colnames(xcmsObj@peaks)){
+          xcmsObj@peaks <- xcmsObj@peaks[(xcmsObj@peaks[,'egauss']<=egauss_thr) & (!is.na(xcmsObj@peaks[,'egauss'])) ,]
+          xcmsObj <- xcms::group(xcmsObj, bw = bw, mzwid = mzwid, minfrac = minfrac_xcms)
+        }else{
+          message('"egauss_thr" specified but no column "egauss" in xcmsObj@peaks (xcmsSet) - continuing without filtering based on egauss' )
+        }
+      }
+
+      grp_peaklist <- create_enriched_peaklist(xcmsObj, rsd_i_blank, minfrac_blank,
                                                rsd_rt_blank, ithres_blank, s2b, ref.class,
-                                               rsd_i_sample, minfrac_sample, rsd_rt_sample, ithres_sample)
-      grp_peaklist <- get_full_peak_width(grp_peaklist, xset)
+                                               rsd_i_sample, minfrac_sample, rsd_rt_sample, ithres_sample,
+                                               XCMSnExp_bool = XCMSnExp_bool)
+      grp_peaklist <- get_full_peak_width(grp_peaklist, xcmsObj = xcmsObj)
     }
+
     if (nrow(removed_peaks)>0){
       if (temp_save){
         write.csv(removed_peaks, file.path(out_dir, paste('removed_peaks_', pol, '.csv', sep='')))
@@ -153,17 +219,19 @@ flag_remove <- function(xset, pol=NA, rsd_i_blank=NA, minfrac_blank=0.5,
   if(temp_save){
     write.csv(grp_peaklist, file.path(out_dir, paste(pol, 'grp_peaklist_blanksRemoved.csv', sep='_')))
   }
-  grp_peaklist <- data.frame(cbind(grp_peaklist, 'grp_names'=xcms::groupnames(xset)))
 
-  return(list('xset'=xset, 'grp_peaklist'=grp_peaklist, 'removed_peaks'=removed_peaks))
+
+  grp_peaklist <- data.frame(cbind(grp_peaklist, 'grp_names'=xcms::groupnames(xcmsObj)))
+
+  return(list('xcmsObj'= xcmsObj, 'grp_peaklist'= grp_peaklist, 'removed_peaks'= removed_peaks))
 
 
 }
 
 
-create_enriched_peaklist <- function(xset,rsd_i_blank, minfrac_blank,rsd_rt_blank,
+create_enriched_peaklist <- function(xcmsObj,rsd_i_blank, minfrac_blank,rsd_rt_blank,
                                      ithres_blank, s2b, ref.class, rsd_i_sample,
-                                     minfrac_sample, rsd_rt_sample, ithres_sample){
+                                     minfrac_sample, rsd_rt_sample, ithres_sample, XCMSnExp_bool){
   ###########################################
   # Create enriched peaklist
   ###########################################
@@ -180,12 +248,22 @@ create_enriched_peaklist <- function(xset,rsd_i_blank, minfrac_blank,rsd_rt_blan
   #
 
   # Add all the summary stats for each class
-  grp_peaklist <- sum_calc_peaklist(xset)
+  grp_peaklist <- sum_calc_peaklist(xcmsObj, XCMSnExp_bool)
+
+
+
 
   ##################################################
   # THIS IS FOR THE BLANK
-  # Flag peaks valid peaks to be used for the blank
+  # Flag valid peaks to be used for the blank
   #################################################
+
+  if(XCMSnExp_bool){
+    classes <- as.character(unique(xcms::phenoData(xcmsObj)@data$class))
+  }else{
+    classes <- as.character(unique(xcms::phenoData(xcmsObj)$class))
+  }
+
   grp_peaklist <- flag_peaks(peaklist = grp_peaklist,
                              RSD_I_filter = rsd_i_blank,
                              minfrac_filter = minfrac_blank,
@@ -193,10 +271,8 @@ create_enriched_peaklist <- function(xset,rsd_i_blank, minfrac_blank,rsd_rt_blan
                              i_thre_filter = ithres_blank,
                              s2b = s2b,
                              fclass = ref.class,
-                             xset=xset)
+                             classes = classes)
 
-  # Filter peaks for the other classes
-  classes <- as.character(unique(xset@phenoData$class))
 
   ##################################################
   # THIS IS FOR ALL OTHER NON BLANK CLASSES
@@ -215,7 +291,7 @@ create_enriched_peaklist <- function(xset,rsd_i_blank, minfrac_blank,rsd_rt_blan
                                i_thre_filter = ithres_sample,
                                s2b = 0,
                                fclass = c,
-                               xset=NA)
+                               classes = classes)
 
     valids <- c(valids, paste(c, 'valid', sep='_'))
   }
@@ -233,7 +309,7 @@ create_enriched_peaklist <- function(xset,rsd_i_blank, minfrac_blank,rsd_rt_blan
 
 }
 
-sum_calc_peaklist <- function(xset){
+sum_calc_peaklist <- function(xcmsObj, XCMSnExp_bool){
   ###########################################
   # Calculates summary information for XCMS peaks
   ###########################################
@@ -251,16 +327,28 @@ sum_calc_peaklist <- function(xset){
   #   updated peaklist
 
   # Get the group peaklist
-  grp_peaklist <- xcms::groups(xset)
+  if(XCMSnExp_bool){
+    grp_peaklist <- data.frame(xcms::featureDefinitions(xcmsObj))
+  }else{
+    grp_peaklist <- data.frame(xcms::groups(xcmsObj))
+    grp_peaklist[,'ms_level'] = xcms::mslevel(xcmsObj)
+  }
+
+
+
   rownames(grp_peaklist) <- seq(1, nrow(grp_peaklist))
 
-  # Get the itensity values
-  indiv_peaks <- xcms::groupval(xset, 'medret', intensity="into", value='into')
+  # Get the intensity values
+  if(XCMSnExp_bool == TRUE){
+    indiv_peaks <- xcms::featureValues(xcmsObj, 'medret', intensity = 'into', value = 'into')
+  }else{
+    indiv_peaks <- xcms::groupval(xcmsObj, 'medret', intensity="into", value='into')
+  }
+
   grp_peaklist <- cbind(grp_peaklist, indiv_peaks)
 
-
   # Calculate summary stats for each class
-  classes <- xset@phenoData
+  classes = as(phenoData(xcmsObj), 'data.frame')
   classes$fileid  <- rownames(classes)
   classes$class <- as.character(classes$class)
 
@@ -273,8 +361,6 @@ sum_calc_peaklist <- function(xset){
   coverage_m <- med_i_m
 
   # Intensity: RSD and median (and coverage)
-
-
 
   for (c in unique(classes$class)){
 
@@ -301,7 +387,12 @@ sum_calc_peaklist <- function(xset){
 
 
   # Get the retention time values
-  grouprt <- xcms::groupval(xset, method='medret', value = 'rt')
+
+  if(XCMSnExp_bool){
+    grouprt <- xcms::featureValues(xcmsObj, method='medret', value = 'rt')
+  }else{
+    grouprt <- xcms::groupval(xcmsObj, method='medret', value = 'rt')
+  }
 
   # retention time RSD
   for (c in unique(classes$class)){
@@ -331,7 +422,7 @@ sum_calc_peaklist <- function(xset){
   return(grp_peaklist)
 }
 
-flag_peaks <- function(peaklist, RSD_I_filter, minfrac_filter, RSD_RT_filter, i_thre_filter, fclass, s2b, xset){
+flag_peaks <- function(peaklist, RSD_I_filter, minfrac_filter, RSD_RT_filter, i_thre_filter, fclass, s2b, classes){
   ###########################################
   # Flag peaks that pass the 'valid' criteria
   ###########################################
@@ -386,7 +477,7 @@ flag_peaks <- function(peaklist, RSD_I_filter, minfrac_filter, RSD_RT_filter, i_
     # if the intensity is n times less than any other sample class intensity
     # we do not use (for blank subtraction)
     blankI <- peaklist[,paste(fclass, 'median_I', sep="_")]
-    classes <- as.character(unique(xset@phenoData$class))
+    #classes <- as.character(unique(xset@phenoData$class))
     classes <- classes[!classes==fclass]
     s2b_sum <- sapply(classes, function(c){
       targetI <- peaklist[,paste(c, 'median_I', sep="_")]
@@ -429,10 +520,10 @@ flag_peaks <- function(peaklist, RSD_I_filter, minfrac_filter, RSD_RT_filter, i_
 
 rsd <- function(x){ (sd(x,na.rm = TRUE)/mean(x, na.rm=TRUE))*100 }
 
-remove_spectra <- function(xset, peaklist, rclass, rm_peak_out=FALSE){
+remove_spectra <- function(xcmsObj, peaklist, rclass, rm_peak_out=FALSE, XCMSnExp_bool){
   # remove the valid peaks of one selected class from an xcms object
 
-  peaklist = get_full_peak_width(peaklist, xset)
+  peaklist = get_full_peak_width(peaklist, xcmsObj)
 
   valid_blank_bool <- peaklist[,paste(rclass, 'valid', sep='_')]==1
   invalid_sample_bool <- peaklist[,'all_sample_valid']==0
@@ -442,27 +533,30 @@ remove_spectra <- function(xset, peaklist, rclass, rm_peak_out=FALSE){
 
   grp_ids_rm <- unlist(removed_peaks[,'grpid'])
 
-  peak_ids_rm <- unlist(xset@groupidx[grp_ids_rm])
-
-  xset@peaks <- xset@peaks[-peak_ids_rm,]
-
-  if( rm_peak_out){
-    return(list(xset, removed_peaks))
+  if(XCMSnExp_bool){
+    peak_ids_rm <- unlist(xcms::featureDefinitions(xcmsObj)$peakidx[grp_ids_rm])
+    xcms::chromPeaks(xcmsObj) <- xcms::chromPeaks(xcmsObj)[-peak_ids_rm,]
   }else{
-    return(xset)
+    peak_ids_rm <- unlist(xcmsObj@groupidx[grp_ids_rm])
+    xcmsObj@peaks <- xcmsObj@peaks[-peak_ids_rm,]
   }
 
+  if( rm_peak_out){
+    return(list(xcmsObj, removed_peaks))
+  }else{
+    return(xcmsObj)
+  }
 
 }
 
-get_full_peak_width <- function(peaklist, xsa){
+get_full_peak_width <- function(peaklist, xcmsObj){
   ###########################################
   # Get full peak width
   ###########################################
   # Args:
   #   peaklist: the peak list generated from either XCMS or CAMERA.
   #              Use the CAMERA peak list for this piplein
-  #   xsa: The CAMERA annotation object
+  #   xcmsObj: xcms object of class XCMSnExp, xcmsSet or xsAnnotate
   #
   # Returns:
   #   An updated peaklist with the full retention window ranges (and full mz ranges)
@@ -476,25 +570,35 @@ get_full_peak_width <- function(peaklist, xsa){
 
   message("Get 'individual' peaks from camera-xcms object")
 
-  #Modification by M Jones to allow for retrieving full chromatographic peak widths of the excluded peaks before removal from peaklist.
-  if(attributes(xsa)$class[1] != "xcmsSet"){
-    obj = xsa@xcmsSet
+  if(is(xcmsObj,'XCMSnExp')){
+    XCMSnExp_bool = TRUE
+  }else if(is(xcmsObj, 'xcmsSet')){
+    XCMSnExp_bool = FALSE
+  }else if(is(xcmsObj, 'xsAnnotate')){
+    XCMSnExp_bool = FALSE
+    xcmsObj = xcmsObj@xcmsSet
   }else{
-    obj = xsa
+    stop('unrecognised class for "xcmsObj", should be either "XCMSnExp", "xcmsSet", "xsAnnotate"')
+
   }
 
+  if(XCMSnExp_bool && (is(xcmsObj,'XCMSnExp'))){
+    rt.min = xcms::featureValues(xcmsObj, method = "medret", value = "rtmin", intensity = "into")
+    rt.max = xcms::featureValues(xcmsObj, method = "medret", value = "rtmax", intensity = "into")
+    mz.min = xcms::featureValues(xcmsObj, method = "medret", value = "mzmin", intensity = "into")
+    mz.max = xcms::featureValues(xcmsObj, method = "medret", value = "mzmax", intensity = "into")
+  }else if (XCMSnExp_bool==FALSE && (is(xcmsObj, 'xcmsSet'))){
+    rt.min = xcms::groupval(xcmsObj, method = "medret", value = "rtmin", intensity = "into")
+    rt.max = xcms::groupval(xcmsObj, method = "medret", value = "rtmax", intensity = "into")
+    mz.min = xcms::groupval(xcmsObj, method = "medret", value = "mzmin", intensity = "into")
+    mz.max = xcms::groupval(xcmsObj, method = "medret", value = "mzmax", intensity = "into")
+  }
 
-  rt.min = xcms::groupval(obj, method = "medret", value = "rtmin", intensity = "into")
   rt.min = apply(rt.min, 1, min, na.rm = TRUE)
-
-  rt.max = xcms::groupval(obj, method = "medret", value = "rtmax", intensity = "into")
   rt.max = apply(rt.max, 1, max, na.rm = TRUE)
-
-  mz.min = xcms::groupval(obj, method = "medret", value = "mzmin", intensity = "into")
   mz.min = apply(mz.min, 1, min, na.rm = TRUE)
-
-  mz.max = xcms::groupval(obj, method = "medret", value = "mzmax", intensity = "into")
   mz.max = apply(mz.max, 1, max, na.rm = TRUE)
+
 
   peaklist_full = cbind(peaklist, "mzmin_full" = mz.min, "mzmax_full" = mz.max, "rtmin_full" = rt.min, "rtmax_full" = rt.max)
   return(peaklist_full)
