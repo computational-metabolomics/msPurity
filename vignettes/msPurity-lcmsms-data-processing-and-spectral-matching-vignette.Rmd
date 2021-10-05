@@ -158,7 +158,7 @@ $$ F_{rel} = \Bigg( \frac{1}{N_{L\&Q}-1} \Bigg) \cdot \sum_{i=2}^{N_{L\&Q}} \Big
 
 $$ F_{cpdc} = \frac{1000}{N_{Q} + N_{L\&Q}} \cdot (N_{Q} \cdot F_{dpc} + N_{L\&Q} \cdot F_{rel}) $$
 
-The following example shows how to match two xcms groups against two of the library spectral filtered by their MoNA/MassBank accession ids.
+The following example shows how to match one xcms groupsagainst library spectra filtered by their MoNA/MassBank accession id.
 
 ```{r}
 result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), l_accessions=c('CCMSLIB00003740033'))
