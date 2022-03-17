@@ -170,7 +170,7 @@ setMethod(f="frag4feature", signature="purityA",
   if (!useGroup){
     pa@f4f_link_type = 'individual'
     for(i in 1:length(pa@fileList)){
-      f_nms =
+      
       if(XCMSnExp_bool){
         f_nms = basename(xcmsObj@processingData@files[i])
       }else{
