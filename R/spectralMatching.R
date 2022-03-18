@@ -15,10 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
-
+# Note that jsonlite and uuid could potentially be removed from
+# imports now - but keeping just incase and to not change dependencies 
+# of previous msPurity versions
 
 #' @title Spectral matching for LC-MS/MS datasets
 #' @aliases spectralMatching
+#' @import dbplyr
+#' @import jsonlite
+#' @import uuid
 #' @description
 #' **General**
 #'
