@@ -21,9 +21,6 @@
 
 #' @title Spectral matching for LC-MS/MS datasets
 #' @aliases spectralMatching
-#' @import dbplyr
-#' @import jsonlite
-#' @import uuid
 #' @description
 #' **General**
 #'
@@ -223,6 +220,9 @@
 #'
 #' @md
 #' @export
+#' @import dbplyr
+#' @import jsonlite
+#' @import uuid
 spectralMatching <- function(
                               q_dbPth,
                               l_dbPth=NA,
