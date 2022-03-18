@@ -48,9 +48,7 @@ Imports:
     fastcluster,
     ggplot2,
     DBI,
-    RSQLite,
-    uuid,
-    jsonlite
+    RSQLite
 Suggests:
     MSnbase,
     testthat,
