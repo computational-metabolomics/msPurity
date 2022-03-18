@@ -192,7 +192,8 @@ setMethod(f="frag4feature", signature="purityA",
 
   if(XCMSnExp_bool){
     allpeaks <- data.frame(xcms::chromPeaks(xcmsObj))
-    allpeaks$filename = xcmsObj$sampleName[allpeaks$sample]
+    allpeaks$filename = basename(xcmsObj@processingData$files)[allpeaks$sample]
+    #allpeaks$filename = basename(xcmsObj$sampleName)[allpeaks$sample]
   }else{
     allpeaks <- data.frame(xcmsObj@peaks)
     allpeaks$filename <- basename(xcmsObj@filepaths)[allpeaks$sample]
