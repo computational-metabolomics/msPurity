@@ -280,6 +280,9 @@ spectralMatching <- function(
                               copyDb=FALSE,
                               outPth='sm_result.sqlite'){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
+  # Call dbplyr explicitly here (so that the bioconductor checks know that we use it)
+  dbplyre <- dbplyr::dbplyr_edition()
+  
   if(updateDb && copyDb){
     file.copy(from = q_dbPth, to=outPth)
     q_dbPth <- outPth
