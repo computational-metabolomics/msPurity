@@ -242,7 +242,7 @@ jobs:
               `no-check-pkg-size` = TRUE,
               `no-check-file-size` = TRUE,
               `no-check-version-num` = TRUE,
-              `no-check-R-ver` = FALSE,
+              `no-check-R-ver` = TRUE,
               `no-check-bioc-help` = TRUE
           )
         shell: Rscript {0}
