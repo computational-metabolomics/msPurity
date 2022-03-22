@@ -221,8 +221,6 @@
 #' @md
 #' @export
 #' @import dbplyr
-#' @import jsonlite
-#' @import uuid
 spectralMatching <- function(
                               q_dbPth,
                               l_dbPth=NA,
