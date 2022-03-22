@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.21.1
+=========================
+* Bugfix for frag4feature for XCMS 3 compatability https://github.com/computational-metabolomics/msPurity/pull/93
+
 CHANGES IN VERSION 1.19.2
 =========================
 * XCMS 3 compatability update (M-R-JONES) https://github.com/computational-metabolomics/msPurity/pull/91
