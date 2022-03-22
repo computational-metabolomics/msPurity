@@ -243,7 +243,9 @@ jobs:
               `no-check-file-size` = TRUE,
               `no-check-version-num` = TRUE,
               `no-check-R-ver` = TRUE,
-              `no-check-bioc-help` = TRUE
+              `no-check-bioc-help` = TRUE,
+              `no-check-dependencies` = TRUE
+              
           )
         shell: Rscript {0}
 
