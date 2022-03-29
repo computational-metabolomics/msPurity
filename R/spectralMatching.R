@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
-
+# Note that jsonlite and uuid could potentially be removed from
+# imports now - but keeping just incase and to not change dependencies 
+# of previous msPurity versions
 
 #' @title Spectral matching for LC-MS/MS datasets
 #' @aliases spectralMatching
@@ -218,6 +220,7 @@
 #'
 #' @md
 #' @export
+#' @import dbplyr
 spectralMatching <- function(
                               q_dbPth,
                               l_dbPth=NA,
@@ -275,6 +278,9 @@ spectralMatching <- function(
                               copyDb=FALSE,
                               outPth='sm_result.sqlite'){
   message("Running msPurity spectral matching function for LC-MS(/MS) data")
+  # Call dbplyr explicitly here (so that the bioconductor checks know that we use it)
+  dbplyre <- dbplyr::dbplyr_edition()
+  
   if(updateDb && copyDb){
     file.copy(from = q_dbPth, to=outPth)
     q_dbPth <- outPth

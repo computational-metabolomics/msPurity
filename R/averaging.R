@@ -129,7 +129,7 @@ averageCluster <- function(x, av="median", minnum=1,
   if(av=="median"){
     mz <- stats::median(x$mz)
   }else{
-    mz <- stats::mean(x$mz)
+    mz <- base::mean(x$mz)
   }
 
   # Zero any missing values for intensity and SNR (this is the thermo approach,
