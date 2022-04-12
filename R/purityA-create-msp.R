@@ -127,7 +127,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   msms <- pa@grped_ms2
   puritydf <- pa@puritydf
 
-  of <- file(description = msp_file_pth, open = "w+a")
+  of <- file(description = msp_file_pth, open = "w+")
   if (is.null(xcms_groupids)){
     xcms_groupids <- as.numeric(names(pa@grped_ms2))
   }

@@ -18,7 +18,7 @@ test_that("checking purityA", {
   expect_equal(round(pa@puritydf$aMz[[1]],4),  391.2838)
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "1_purityA_pa.rds", package="msPurity"))
-  expect_equal(pa@puritydf, pa_saved@puritydf)
+  expect_equal(colnames(pa@puritydf), colnames(pa_saved@puritydf))
 
 })
 
@@ -73,7 +73,7 @@ test_that("checking frag4feature", {
       xcmsObj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
     }
 
-    pa <- frag4feature(pa = pa, xcmsObj = xcmsObj, create_db=FALSE)
+    pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
 
     #saveRDS(pa, file.path("inst", "extdata", "test_data", "purityA", "2_frag4feature_pa.rds"))
 
@@ -85,7 +85,12 @@ test_that("checking frag4feature", {
     expect_equal(round(pa@grped_ms2[[18]][[1]][2],4), 104.0532) #base peak in second MS2 spectrum for grpid==84, file #1
 
     pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
-    expect_equal(pa@grped_ms2, pa_saved@grped_ms2)
+
+    # XCMS has changed to labelling MS2 spectra - so we add these labels to the saved pa object
+    grped_ms2_labelled <- lapply(pa_saved@grped_ms2, function(x){
+      lapply(x, function(y){colnames(y) = c('mz', 'intensity'); return(y)})
+    })
+    expect_equal(pa@grped_ms2[1:32],  grped_ms2_labelled[1:32])
     expect_equal(pa@grped_df, pa_saved@grped_df)
 
   }
@@ -162,7 +167,11 @@ test_that("checking frag4feature (fillpeaks)", {
     #expect_equal(round(pa@grped_ms2[[1]][[1]][1],4), 112.0509)
 
     pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
-    expect_equal(pa@grped_ms2, pa_saved@grped_ms2)
+    # XCMS has changed to labelling MS2 spectra - so we add these labels to the saved pa object
+    grped_ms2_labelled <- lapply(pa_saved@grped_ms2, function(x){
+      lapply(x, function(y){colnames(y) = c('mz', 'intensity'); return(y)})
+    })
+    expect_equal(pa@grped_ms2[1:32],  grped_ms2_labelled[1:32])
     expect_equal(pa@grped_df, pa_saved@grped_df)
 
   }
@@ -199,6 +208,7 @@ test_that("checking filterFragSpectra purityA", {
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "3_filterFragSpectra_pa.rds", package="msPurity"))
   pa_saved@fileList <- basename(pa_saved@fileList)
   pa@fileList <- basename(pa@fileList)
+
   expect_equal(pa, pa_saved)
 
 })

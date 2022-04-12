@@ -450,7 +450,7 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
   }
 
   # The centered peak
-  aMz <- target[1]
+  aMz <- unname(target[1])
 
   #==================================================
   # Get most intense peak within isolation window
@@ -467,7 +467,7 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
   }
 
   # the most intense peak
-  iMz <- iTarget[1]
+  iMz <- unname(iTarget[1])
 
   #==================================================
   # Calculate initial purity
