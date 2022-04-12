@@ -388,7 +388,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   ##############################################################################
   # Get the appropiate details for the xcms grouped feature from purityA object
   ##############################################################################
-  grped_info <- pa@grped_df[pa@grped_df==as.numeric(grp_idx),]
+  grped_info <- pa@grped_df[pa@grped_df$grpid==as.numeric(grp_idx),]
   grped_spectra <- pa@grped_ms2[as.character(grp_idx)][[1]]
 
   grped_info$index <- 1:nrow(grped_info)

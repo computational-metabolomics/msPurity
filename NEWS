@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.21.2
+=========================
+* Fixes due to mz and intensity being named in columns for mzR and XCMS
+* Fixes for connection{base} file() opening changes (no longer accept w+a in function in R v4.2)
+* Update tests for the above
+* Update a reference of grpid in averageXFragSpectra functions more explicit (no change in functionality)
+* Typo fix in vignette
+
 CHANGES IN VERSION 1.21.1
 =========================
 * Bugfix for frag4feature for XCMS 3 compatability https://github.com/computational-metabolomics/msPurity/pull/93
