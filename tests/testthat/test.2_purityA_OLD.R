@@ -71,11 +71,17 @@ test_that("checking frag4feature (fillpeaks) (xcms v2 functions)", {
   expect_equal(round(pa@grped_ms2[[1]][[1]][1],4), 112.0509)
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa_OLD.rds", package="msPurity"))
-  # XCMS has changed to labelling MS2 spectra - so we add these labels to the saved pa object
-  grped_ms2_labelled <- lapply(pa_saved@grped_ms2, function(x){
-    lapply(x, function(y){colnames(y) = c('mz', 'intensity'); return(y)})
-  })
-  expect_equal(pa@grped_ms2[1:77],  grped_ms2_labelled[1:77])
+
+  if (length(colnames(pa@grped_ms2[[1]][[1]]))>0){
+    # From R v4.2 onwards XCMS has changed to labelling MS2 spectra - so we add these labels to the saved pa object
+    grped_ms2_labelled <- lapply(pa_saved@grped_ms2, function(x){
+      lapply(x, function(y){colnames(y) = c('mz', 'intensity'); return(y)})
+    })
+    expect_equal(pa@grped_ms2[1:32],  grped_ms2_labelled[1:32])
+  }else{
+    expect_equal(pa@grped_ms2,  pa@grped_ms2)
+  }
+
 
 
   # Saved object is from an old version of msPurity where we stored the rtminCorrected differently (no correction used here
