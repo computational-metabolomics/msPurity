@@ -206,7 +206,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
         if (!is.null(av_inter) && nrow(av_inter)>0){
-          write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_inter, metadata, metadata_cols, of, method,
+          write.msp(median(grpd$mz), median(grpd$rt), grpid, NA, av_inter, metadata, metadata_cols, of, method,
                     adduct_split, msp_schema, intensity_ra, include_adducts)
         }
 
@@ -230,7 +230,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
           if (!is.null(av_intra_j) && nrow(av_intra_j)>0){
-            write.msp(grpd$mz[1], grpd$rt[1], grpid, fileid, av_intra_j, metadata, metadata_cols,
+            write.msp(median(grpd$mz), median(grpd$rt), grpid, fileid, av_intra_j, metadata, metadata_cols,
                       of, method, adduct_split, msp_schema, intensity_ra, include_adducts)
           }
 
@@ -248,7 +248,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
         if (!is.null(av_all) && nrow(av_all)>0){
 
-          write.msp(grpd$mz[1], grpd$rt[1], grpid, NA, av_all, metadata, metadata_cols, of,
+          write.msp(median(grpd$mz), median(grpd$rt), grpid, NA, av_all, metadata, metadata_cols, of,
                     method, adduct_split, msp_schema, intensity_ra, include_adducts)
         }
 
