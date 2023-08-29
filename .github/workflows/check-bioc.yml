@@ -221,6 +221,12 @@ jobs:
           remotes::install_github("r-lib/pkgdown")
         shell: Rscript {0}
 
+      - name: Install suggested packages
+        run: |
+          BiocManager::install(c("MSnbase", "xcms", "BiocStyle", "msPurityData", "CAMERA"))
+          install.packages(c("rmarkdown", "RPostgres", "RMySQL"))
+        shell: Rscript {0}
+
       - name: Session info
         run: |
           options(width = 100)
