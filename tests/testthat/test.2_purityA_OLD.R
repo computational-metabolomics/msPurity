@@ -305,7 +305,6 @@ test_that("checking createMSP based functions (xcms v2 functions)", {
 
   tmp_dir <- tempdir()
 
-
   ################################
   # Check all method
   ################################
