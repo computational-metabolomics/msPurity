@@ -1,219 +1,180 @@
+CHANGES IN VERSION 1.27.1
++ createMSP fix - now uses outputs the median precursor MZ and precursor RT in the MSP file
+
 CHANGES IN VERSION 1.21.2
-=========================
-* Fixes due to mz and intensity being named in columns for mzR and XCMS
-* Fixes for connection{base} file() opening changes (no longer accept w+a in function in R v4.2)
-* Update tests for the above
-* Update a reference of grpid in averageXFragSpectra functions more explicit (no change in functionality)
-* Typo fix in vignette
++ Fixes due to mz and intensity being named in columns for mzR and XCMS
++ Fixes for connection{base} file() opening changes (no longer accept w+a in function in R v4.2)
++ Update tests for the above
++ Update a reference of grpid in averageXFragSpectra functions more explicit (no change in functionality)
++ Typo fix in vignette
 
 CHANGES IN VERSION 1.21.1
-=========================
-* Bugfix for frag4feature for XCMS 3 compatability https://github.com/computational-metabolomics/msPurity/pull/93
-* Remove imports that are no longer used
++ Bugfix for frag4feature for XCMS 3 compatability https://github.com/computational-metabolomics/msPurity/pull/93
++ Remove imports that are no longer used
 
 CHANGES IN VERSION 1.19.2
-=========================
-* XCMS 3 compatability update (M-R-JONES) https://github.com/computational-metabolomics/msPurity/pull/91
++ XCMS 3 compatability update (M-R-JONES) https://github.com/computational-metabolomics/msPurity/pull/91
 
 CHANGES IN VERSION 1.19.1
-=========================
-* Bug fix for flagRemove (full width was not calculated as expected)
++ Bug fix for flagRemove (full width was not calculated as expected)
 
 CHANGES IN VERSION 1.17.2
-=========================
-* Update dev to match bug fixes in master
++ Update dev to match bug fixes in master
 
 CHANGES IN VERSION 1.16.2
-=========================
-* Author list updated
++ Author list updated
 
 CHANGES IN VERSION 1.17.1
-=========================
-* Update dev to match bug fixes in master
++ Update dev to match bug fixes in master
 
 CHANGES IN VERSION 1.16.1
-=========================
-* Update of createDatabase to record all intra average spectra in database
-* Add license and copyright info to code
-* Add github workflow CI (and subsequent formatting updates to pass tests)
++ Update of createDatabase to record all intra average spectra in database
++ Add license and copyright info to code
++ Add github workflow CI (and subsequent formatting updates to pass tests)
 
 CHANGES IN VERSION 1.15.1
-=========================
-* Update dev to match bug fixes in master
++ Update dev to match bug fixes in master
 
 CHANGES IN VERSION 1.14.1
-=========================
-* Update of rdpc algorithm (see https://github.com/computational-metabolomics/msPurity/issues/78)
-* Update of align algorithm (see https://github.com/computational-metabolomics/msPurity/issues/79)
-* Fix for spectralMatching of type 'scan' previously incorrectly outputing no matches
++ Update of rdpc algorithm (see https://github.com/computational-metabolomics/msPurity/issues/78)
++ Update of align algorithm (see https://github.com/computational-metabolomics/msPurity/issues/79)
++ Fix for spectralMatching of type 'scan' previously incorrectly outputing no matches
 
 CHANGES IN VERSION 1.13.2
-=========================
-* Update dev to match bug fixes in master
++ Update dev to match bug fixes in master
 
 CHANGES IN VERSION 1.12.2
-=========================
-* Fix to allow large files to be processed with combineAnnotation (in some cases the summary report should be excluded)
++ Fix to allow large files to be processed with combineAnnotation (in some cases the summary report should be excluded)
 
 CHANGES IN VERSION 1.13.1
-=========================
-* Update dev to match bug fixes in master
++ Update dev to match bug fixes in master
 
 CHANGES IN VERSION 1.12.1
-=========================
-* Bug fix for combineAnnotations - MS1 lookup not handling CAMERA adducts correctly
-* Fillpeaks bug fix see github #68
-* Documentation fixes
++ Bug fix for combineAnnotations - MS1 lookup not handling CAMERA adducts correctly
++ Fillpeaks bug fix see github #68
++ Documentation fixes
 
 CHANGES IN VERSION 1.13.0
-=========================
-* Bioconductor dev (automatic version bump)
++ Bioconductor dev (automatic version bump)
 
 CHANGES IN VERSION 1.12.0
-=========================
-* Bioconductor release (automatic version bump)
++ Bioconductor release (automatic version bump)
 
 CHANGES IN VERSION 1.11.5
-=========================
-* frag4feature fileid fix for conversion from factor to character
-* Add missing plyr:: reference (thanks jsaintvanne)
++ frag4feature fileid fix for conversion from factor to character
++ Add missing plyr:: reference (thanks jsaintvanne)
 
 CHANGES IN VERSION 1.11.3/4
-=========================
-* Overhaul of combineAnnotation function. Uses local database now as previously
++ Overhaul of combineAnnotation function. Uses local database now as previously
   API calls would take too much time to finish and was not usable
-* Various updates of createMSP to make compatible with Galaxy workflows
-* Parameter added to purityA to allow user to change the PPM tolerance for MZ
++ Various updates of createMSP to make compatible with Galaxy workflows
++ Parameter added to purityA to allow user to change the PPM tolerance for MZ
   values between scans when calculated the interpolated precursor ion purity
-* Update of spectralMatching results columns to include additional details
++ Update of spectralMatching results columns to include additional details
   (e.g. retention time)
-* Update of spectralMatching so that either PostgreSQL or MySQL database can be
++ Update of spectralMatching so that either PostgreSQL or MySQL database can be
   used as input to either query or library
 
 CHANGES IN VERSION 1.11.2
-=========================
-* Bug fix for EIC with MSMS data
++ Bug fix for EIC with MSMS data
 
 CHANGES IN VERSION 1.11.1
-=========================
-* Bug fix for duplicate MSP spectra when not using metadata table
-* Added xcms3 to xcmsSet conversion for "create database" code
-* Fix for sirius combine annotations (incorrect column format)
++ Bug fix for duplicate MSP spectra when not using metadata table
++ Added xcms3 to xcmsSet conversion for "create database" code
++ Fix for sirius combine annotations (incorrect column format)
 
 CHANGES IN VERSION 1.11.0
-=========================
-* Bioconductor dev (automatic version bump)
++ Bioconductor dev (automatic version bump)
 
 CHANGES IN VERSION 1.10.0
-=========================
-* Bioconductor release (automatic version bump)
++ Bioconductor release (automatic version bump)
 
 CHANGES IN VERSION 1.9.12
-=========================
-* Troublshoot mac "[MSData::Spectrum::getMZIntensityPairs()] Sizes do not match" error
++ Troublshoot mac "[MSData::Spectrum::getMZIntensityPairs()] Sizes do not match" error
 
 CHANGES IN VERSION 1.9.11
-=========================
-* Bug fix for createMSP - now handles metadata with duplicate grpids
++ Bug fix for createMSP - now handles metadata with duplicate grpids
 
 CHANGES IN VERSION 1.9.10
-=========================
-* Documentation updates
++ Documentation updates
 
 CHANGES IN VERSION 1.9.9
-=========================
-* NEW FUNCTION: createDatabase
-    + Updated version of create_database that uses an updated schema
-* NEW FUNCTION: spectralMatching
-    + Updated version spectral_matching that allows for more flexibility
-* Vignettes and documentation update
++ NEW FUNCTION: createDatabase
+    o Updated version of create_database that uses an updated schema
++ NEW FUNCTION: spectralMatching
+    o Updated version spectral_matching that allows for more flexibility
++ Vignettes and documentation update
 
 CHANGES IN VERSION 1.9.8
-=========================
-* NEW FUNCTION: filterFragSpectra (for purityA objects)
-    + LC-MS/MS filtering of spectra (prior to averaging)
-* NEW FUNCTIONS: averageIntraFragSpectra, averageInterFragSpectra, averageAllFragSpectra (for purityA objects)
-    + LC-MS/MS averaging and filtering functionality
-* NEW FUNCTION: createMSP
-    + Create msp files from purityA objects where XCMS features have been linked to fragmentation spectra
-* Updated create_database and spectral matching to have the option to use averaged fragmentation spectra
++ NEW FUNCTION: filterFragSpectra (for purityA objects)
+    o LC-MS/MS filtering of spectra (prior to averaging)
++ NEW FUNCTIONS: averageIntraFragSpectra, averageInterFragSpectra, averageAllFragSpectra (for purityA objects)
+    o LC-MS/MS averaging and filtering functionality
++ NEW FUNCTION: createMSP
+    o Create msp files from purityA objects where XCMS features have been linked to fragmentation spectra
++ Updated create_database and spectral matching to have the option to use averaged fragmentation spectra
 
 CHANGES IN VERSION 1.9.2
-=========================
-* Bug fix for groupPeaks and groupPeaksEx (the ppm argument was not working and there was inconsistent behaviour with larger datasets). Thanks to Elliot for spotting (https://github.com/litepalmer)
-* Updated documentation for spectral matching
++ Bug fix for groupPeaks and groupPeaksEx (the ppm argument was not working and there was inconsistent behaviour with larger datasets). Thanks to Elliot for spotting (https://github.com/litepalmer)
++ Updated documentation for spectral matching
 
 CHANGES IN VERSION 1.7.6
-=========================
-* create_sql bug fix for msms spectra table. Was crashing due to incorrect ordering.
-* Add peak processing (flag remove peaks) for LC-MS XCMS data
-* Add option to for frag4feature to just link to the grouped peak rtmin and rtmax (e.g. do not need to link to individual files)
++ create_sql bug fix for msms spectra table. Was crashing due to incorrect ordering.
++ Add peak processing (flag remove peaks) for LC-MS XCMS data
++ Add option to for frag4feature to just link to the grouped peak rtmin and rtmax (e.g. do not need to link to individual files)
 
 CHANGES IN VERSION 1.6.1
-=========================
-* Bug fix. For pos/neg switching acquisition two files are can be generated when converting from RAW to mzML (1 for pos, 1 for neg).   The resulting files retention time scans were not being tracked properly in msPurity in these cases. This is now fixed. Thanks
++ Bug fix. For pos/neg switching acquisition two files are can be generated when converting from RAW to mzML (1 for pos, 1 for neg).   The resulting files retention time scans were not being tracked properly in msPurity in these cases. This is now fixed. Thanks
   to Julien (https://github.com/jsaintvanne) for spotting the bug.
 
 CHANGES IN VERSION 1.5.1
-=========================
-* Updates for database creation (can use CAMERA objects now)
-* averageSpectra parameter 'MSFileReader' deprecated MSFileReader. Should use csvFile instead, MSFileReader option will still work but a warning will be given
++ Updates for database creation (can use CAMERA objects now)
++ averageSpectra parameter 'MSFileReader' deprecated MSFileReader. Should use csvFile instead, MSFileReader option will still work but a warning will be given
 
 CHANGES IN VERSION 1.4.1/2/3
-=========================
-* Updates for Galaxy for Spectral Matching
-* Spectral matching ra_thres_t bugfix
-* Separation of sqlite database creation. Now can be called on it's own or with frag4feature
++ Updates for Galaxy for Spectral Matching
++ Spectral matching ra_thres_t bugfix
++ Separation of sqlite database creation. Now can be called on it's own or with frag4feature
   (allows the Galaxy tool to be simplified)
 
 CHANGES IN VERSION 1.3.9
-=========================
-* Added very basic SIMS stitch compatibility
-* pcalc can handle NAs
-* Update of purityX to handle obiwarp RT correction (requires recording the RT RAW at an earlier step)
-* bug fix for when library spectra is bigger than target spectra (thanks Martin)
++ Added very basic SIMS stitch compatibility
++ pcalc can handle NAs
++ Update of purityX to handle obiwarp RT correction (requires recording the RT RAW at an earlier step)
++ bug fix for when library spectra is bigger than target spectra (thanks Martin)
 
 CHANGES IN VERSION 1.3.1
-=========================
-* Add spectral matching functionality for LC-MS/MS
++ Add spectral matching functionality for LC-MS/MS
 
 CHANGES IN VERSION 1.1.1
-=========================
-* Added pcalc functions to be used by user
-* Added option to remove isotopes from calculation
++ Added pcalc functions to be used by user
++ Added option to remove isotopes from calculation
 
 CHANGES IN VERSION 0.99.10/11/12
-=========================
-* Troubleshooting windows build failure
++ Troubleshooting windows build failure
 
 
 CHANGES IN VERSION 0.99.9
-=========================
-* Offset bug fixed (previous only using extracting lower offset from mzML file)
-* Updated handling of RT corrected xcmsSet objects for frag4feature function
-* Additional column added for tracking ms/ms spectra
++ Offset bug fixed (previous only using extracting lower offset from mzML file)
++ Updated handling of RT corrected xcmsSet objects for frag4feature function
++ Additional column added for tracking ms/ms spectra
 
 CHANGES IN VERSION 0.99.8
-=========================
-* User option to change the mzR backend library
++ User option to change the mzR backend library
 
 CHANGES IN VERSION 0.99.4/5/6/7
-=========================
-* Troubleshooting mac build failure
++ Troubleshooting mac build failure
 
 CHANGES IN VERSION 0.99.3
-=========================
-* Grouping multiple peaklist into one wide dataframe
-** Peaklists can now be averaged across each class using the function groupPeaks() for the class purityD
-** A list of dataframes can also be grouped together using the function groupPeakEx()
++ Grouping multiple peaklist into one wide dataframe
++ Peaklists can now be averaged across each class using the function groupPeaks() for the class purityD
++ A list of dataframes can also be grouped together using the function groupPeakEx()
 
 CHANGES IN VERSION 0.99.2
-=========================
-* Updated class names purityPD to purityD
-* Updated class names purityLC to purityX
-* Updated vignette to reflect slightly different terminology
-* Added normalised TIC option for purityD
++ Updated class names purityPD to purityD
++ Updated class names purityLC to purityX
++ Updated vignette to reflect slightly different terminology
++ Added normalised TIC option for purityD
 
 msPurity v0.99.0 (Release date: 2016-04-08)
-=========================
-Initial release!
++ Initial release!
