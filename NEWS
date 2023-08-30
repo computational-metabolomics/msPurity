@@ -1,6 +1,5 @@
 CHANGES IN VERSION 1.27.1
-+ createMSP fix - now uses outputs the median precursor MZ and precursor intensity in the MSP file
-
++ createMSP fix - now uses outputs the median precursor MZ and precursor RT in the MSP file
 
 CHANGES IN VERSION 1.21.2
 + Fixes due to mz and intensity being named in columns for mzR and XCMS
