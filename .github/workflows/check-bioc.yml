@@ -195,9 +195,20 @@ jobs:
               BiocManager::repositories()
               ) else BiocManager::repositories()
 
-          # install suggested packages
-          BiocManager::install(c("MSnbase", "xcms", "BiocStyle", "msPurityData", "CAMERA"))
+          # Workaround for problems with cached S4objects in binary packages
+          BiocManager::install("GenomeInfoDb", force = TRUE, type = "source")
+          BiocManager::install("BiocParallel", force = TRUE, type = "source")
+          BiocManager::install("S4Vectors", force = TRUE, type = "source")
+          BiocManager::install("SummarizedExperiment", force = TRUE, type = "source")
+          ## install xcms with dependencies - to ensure dependencies are installed from source;
+          ## somehow install_local installs binary packages instead.
+          BiocManager::install("mzR", force = TRUE)
+          BiocManager::install("MSnbase", force = TRUE, type = "source")
+          BiocManager::install("xcms", force = TRUE, type = "source", dependencies = TRUE)
+
+          BiocManager::install(c("BiocStyle", "msPurityData", "CAMERA"))
           install.packages(c("rmarkdown", "RPostgres", "RMySQL"))
+
 
           ## For running the checks
           message(paste('****', Sys.time(), 'installing rcmdcheck and BiocCheck ****'))
