@@ -52,9 +52,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { os: ubuntu-latest, r: 'release', bioc: '3.19'}
-          # - { os: macOS-latest, r: 'devel', bioc: '3.20'}
-          - { os: windows-latest, r: 'release', bioc: '3.19'}
+          - { os: ubuntu-latest, r: 'devel', bioc: 'devel', cont: "bioconductor/bioconductor_docker:devel", rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest" }
+          #- { os: macOS-latest, r: 'next', bioc: '3.19'}
+          - { os: windows-latest, r: 'next', bioc: '3.19'}
           ## Check https://github.com/r-lib/actions/tree/master/examples
           ## for examples using the http-user-agent
     env:
@@ -191,7 +191,7 @@ jobs:
           gha_repos <- if(
               .Platform$OS.type == "unix" && Sys.info()["sysname"] != "Darwin"
           ) c(
-              "AnVIL" = "https://bioconductordocker.blob.core.windows.net/packages/3.17/bioc",
+              "AnVIL" = "https://bioconductordocker.blob.core.windows.net/packages/3.19/bioc",
               BiocManager::repositories()
               ) else BiocManager::repositories()
 
@@ -205,8 +205,9 @@ jobs:
           BiocManager::install("mzR", force = TRUE)
           BiocManager::install("MSnbase", force = TRUE, type = "source")
           BiocManager::install("xcms", force = TRUE, type = "source", dependencies = TRUE)
-
-          BiocManager::install(c("BiocStyle", "msPurityData", "CAMERA"))
+          BiocManager::install("msPurityData", force = TRUE, type = "source", dependencies = TRUE)
+          BiocManager::install("CAMERA", force = TRUE, type = "source", dependencies = TRUE)
+          BiocManager::install(c("BiocStyle"))
           install.packages(c("rmarkdown", "RPostgres", "RMySQL"))
 
 
