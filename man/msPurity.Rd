@@ -2,8 +2,31 @@
 % Please edit documentation in R/msPurity.R
 \docType{package}
 \name{msPurity}
+\alias{msPurity-package}
 \alias{msPurity}
 \title{\code{msPurity} package}
 \description{
 \href{https://bioconductor.org/packages/release/bioc/html/msPurity.html}{msPurity Bioconductor}
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/computational-metabolomics/msPurity/}
+  \item Report bugs at \url{https://github.com/computational-metabolomics/msPurity/issues/new}
+}
+
+}
+\author{
+\strong{Maintainer}: Thomas N. Lawson \email{thomas.nigel.lawson@gmail.com} (\href{https://orcid.org/0000-0002-5915-7980}{ORCID})
+
+Other contributors:
+\itemize{
+  \item Ralf Weber [contributor]
+  \item Martin Jones [contributor]
+  \item Julien Saint-Vanne [contributor]
+  \item Andris Jankevics [contributor]
+  \item Mark Viant [thesis advisor]
+  \item Warwick Dunn [thesis advisor]
+}
+
 }

@@ -52,9 +52,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { os: ubuntu-latest, r: 'latest', bioc: '3.17', cont: "bioconductor/bioconductor_docker:latest", rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest" }
-          - { os: macOS-latest, r: 'latest', bioc: '3.17'}
-          - { os: windows-latest, r: 'latest', bioc: '3.17'}
+          - { os: ubuntu-latest, r: 'devel', bioc: 'devel', cont: "bioconductor/bioconductor_docker:devel", rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest" }
+          #- { os: macOS-latest, r: 'next', bioc: '3.19'}
+          - { os: windows-latest, r: 'next', bioc: '3.19'}
           ## Check https://github.com/r-lib/actions/tree/master/examples
           ## for examples using the http-user-agent
     env:
@@ -141,6 +141,9 @@ jobs:
           ## For installing usethis's dependency gert
           brew install libgit2
 
+          ## Required for tcltk
+          brew install xquartz --cask
+
           ## required for ncdf4
           ## brew install netcdf ## Does not work as it is compiled with gcc
           ## Use pre-compiled libraries from https://mac.r-project.org/libs-4/
@@ -188,13 +191,25 @@ jobs:
           gha_repos <- if(
               .Platform$OS.type == "unix" && Sys.info()["sysname"] != "Darwin"
           ) c(
-              "AnVIL" = "https://bioconductordocker.blob.core.windows.net/packages/3.17/bioc",
+              "AnVIL" = "https://bioconductordocker.blob.core.windows.net/packages/3.19/bioc",
               BiocManager::repositories()
               ) else BiocManager::repositories()
 
-          # install suggested packages
-          BiocManager::install(c("MSnbase", "xcms", "BiocStyle", "msPurityData", "CAMERA"))
+          # Workaround for problems with cached S4objects in binary packages
+          BiocManager::install("GenomeInfoDb", force = TRUE, type = "source")
+          BiocManager::install("BiocParallel", force = TRUE, type = "source")
+          BiocManager::install("S4Vectors", force = TRUE, type = "source")
+          BiocManager::install("SummarizedExperiment", force = TRUE, type = "source")
+          ## install xcms with dependencies - to ensure dependencies are installed from source;
+          ## somehow install_local installs binary packages instead.
+          BiocManager::install("mzR", force = TRUE)
+          BiocManager::install("MSnbase", force = TRUE, type = "source")
+          BiocManager::install("xcms", force = TRUE, type = "source", dependencies = TRUE)
+          BiocManager::install("msPurityData", force = TRUE, type = "source", dependencies = TRUE)
+          BiocManager::install("CAMERA", force = TRUE, type = "source", dependencies = TRUE)
+          BiocManager::install(c("BiocStyle"))
           install.packages(c("rmarkdown", "RPostgres", "RMySQL"))
+
 
           ## For running the checks
           message(paste('****', Sys.time(), 'installing rcmdcheck and BiocCheck ****'))
