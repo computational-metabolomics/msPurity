@@ -69,13 +69,11 @@ Constructor for the purityX class.
 Given an XCMS object get the anticipated precursor purity of the grouped peaks
 }
 \examples{
-msPths <- list.files(system.file("extdata", "lcms", "mzML",
-                    package="msPurityData"), full.names = TRUE,
-                    pattern = "LCMS_")
-xset <- xcms::xcmsSet(msPths)
-xset <- xcms::group(xset)
-xset <- xcms::retcor(xset)
-xset <- xcms::group(xset)
-ppLCMS <- purityX(xset, cores = 1, xgroups = c(1, 2))
+
+msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
+xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset_OLD.rds", package="msPurity"))
+xset@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
+xset@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
+px <- purityX(xset, singleFile = 1)
 
 }

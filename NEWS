@@ -1,3 +1,6 @@
+CHANGES IN VERSION 1.30.1 / 1.31.1
++ Update example for purityX causing build error
+
 CHANGES IN VERSION 1.27.1
 + createMSP fix - now uses the median precursor MZ and precursor RT in the MSP file
 
