@@ -297,6 +297,9 @@ spectralMatching <- function(
 
     if (nrow(cache_hit) > 0){
       rid <- cache_hit$rid[1]
+      if (!rid %in% BiocFileCache::bfcrid(bfc)){
+        rid <- BiocFileCache::bfcadd(bfc, cache_name, cache_url)
+      }
     }else{
       rid <- BiocFileCache::bfcadd(bfc, cache_name, cache_url)
     }
