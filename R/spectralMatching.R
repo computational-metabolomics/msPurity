@@ -296,13 +296,12 @@ spectralMatching <- function(
     cache_hit <- BiocFileCache::bfcquery(bfc, cache_name, "rname")
 
     if (nrow(cache_hit) > 0){
-      rname <- cache_hit$rname[1]
+      rid <- cache_hit$rid[1]
     }else{
       rid <- BiocFileCache::bfcadd(bfc, cache_name, cache_url)
-      rname <- BiocFileCache::bfcinfo(bfc, rid = rid)$rname[1]
     }
 
-    l_dbPth <- BiocFileCache::bfcrpath(bfc, rname)
+    l_dbPth <- BiocFileCache::bfcrpath(bfc, rids = rid)
     actual_md5 <- tolower(unname(tools::md5sum(l_dbPth)))
     if (!identical(actual_md5, expected_md5)){
       stop("Downloaded library database failed MD5 verification.")
