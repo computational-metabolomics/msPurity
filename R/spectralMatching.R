@@ -295,13 +295,26 @@ spectralMatching <- function(
     expected_md5 <- "f6a4033d376278cccfc30d1911fb2fa5"
     cache_hit <- BiocFileCache::bfcquery(bfc, cache_name, "rname")
 
+    # Prefer existing cache entry to avoid re-downloading large data.
     if (nrow(cache_hit) > 0){
       rid <- cache_hit$rid[1]
-      if (!rid %in% BiocFileCache::bfcrid(bfc)){
-        rid <- BiocFileCache::bfcadd(bfc, cache_name, cache_url)
-      }
     }else{
+      # Add to cache if not present (download occurs on first use).
       rid <- BiocFileCache::bfcadd(bfc, cache_name, cache_url)
+    }
+
+    # Some BiocFileCache versions return rname in bfcadd; resolve to rid if needed.
+    if (!rid %in% BiocFileCache::bfcrid(bfc)){
+      cache_hit <- BiocFileCache::bfcquery(bfc, rid, "rname")
+      if (nrow(cache_hit) > 0){
+        rid <- cache_hit$rid[1]
+      }else{
+        # Fallback to name-based lookup if rid resolution fails.
+        cache_hit <- BiocFileCache::bfcquery(bfc, cache_name, "rname")
+        if (nrow(cache_hit) > 0){
+          rid <- cache_hit$rid[1]
+        }
+      }
     }
 
     l_dbPth <- BiocFileCache::bfcrpath(bfc, rids = rid)
