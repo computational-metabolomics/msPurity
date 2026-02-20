@@ -2,8 +2,8 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.31.1
-Date: 2024-05-09
+Version: 1.37.1
+Date: 2025-02-19
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
         email = "thomas.nigel.lawson@gmail.com", role = c("aut", "cre"),
@@ -48,7 +48,8 @@ Imports:
     fastcluster,
     ggplot2,
     DBI,
-    RSQLite
+    RSQLite,
+    BiocFileCache
 Suggests:
     MSnbase,
     testthat,
@@ -61,7 +62,7 @@ Suggests:
     RPostgres,
     RMySQL
 VignetteBuilder: knitr
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 biocViews: MassSpectrometry, Metabolomics, Software
 Collate: 

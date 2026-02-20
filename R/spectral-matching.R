@@ -84,7 +84,7 @@ spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1,
                                      pa=NA, xset=NA, grp_peaklist=NA, out_dir='.', ra_w=0.5, mz_w=2,
                                      spectra_type_q="scans", ra_thres_t=NA, target_db_pth=NA, rt_range=c(NA, NA), rttol=NA,
                                      match_alg='dpc'){
-  message("Running msPurity spectral matching function for LC-MS(/MS) data")
+  message("Running msPurity spectral matching function for LC-MS(/MS) data [this function is deprecated, please use msPurity::spectralMatching for future use]")
 
   if (!is.na(ra_thres_t)){
     message("ra_thres_t argument has been deprecated and will be remove in future versions of msPurity,
@@ -108,7 +108,7 @@ spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1,
   }
 
   if (is.na(library_db_pth)){
-    library_db_pth <- system.file("extdata", "library_spectra", "library_spectra.db", package="msPurityData")
+    stop("Default library database is no longer bundled. Download from https://zenodo.org/records/18700802/files/library_spectra.db?download=1 and pass via library_db_pth.")
   }
 
 
