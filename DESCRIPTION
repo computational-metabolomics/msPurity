@@ -2,13 +2,8 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-<<<<<<< HEAD
 Version: 1.37.1
 Date: 2025-02-19
-=======
-Version: 1.37.0
-Date: 2024-05-09
->>>>>>> upstream/devel
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
         email = "thomas.nigel.lawson@gmail.com", role = c("aut", "cre"),
