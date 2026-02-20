@@ -1,8 +1,11 @@
+CHANGES IN VERSION 1.37.2
++ Bug fix for subsetting the grouped data frame in the `average_xcms_grouped_msms_indiv` function
+
 CHANGES IN VERSION 1.37.1
 + Removed library_spectra.db direct reference from msPurityData package (too large for Bioconductor)
 + spectralMatching() now downloads default library database from Zenodo (https://zenodo.org/records/18700802) and uses BiocFileCache with MD5 verification
 + spectral_matching() (deprecated function) now requires explicit library_db_pth parameter; default library no longer available
-+ Added BiocFileCache to Imports for automatic caching of remote databases 
++ Added BiocFileCache to Imports for automatic caching of remote databases
 
 CHANGES IN VERSION 1.30.1 / 1.31.1
 + Update example for purityX causing build error
