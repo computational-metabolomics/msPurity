@@ -288,7 +288,30 @@ spectralMatching <- function(
 
 
   if (is.na(l_dbPth)){
-    l_dbPth <- system.file("extdata", "library_spectra", "library_spectra.db", package="msPurityData")
+
+    bfc <- BiocFileCache::BiocFileCache(ask = FALSE)
+    cache_name <- "msPurity_library_spectra_db"
+    cache_url <- "https://zenodo.org/records/18700802/files/library_spectra.db?download=1"
+    expected_md5 <- "f6a4033d376278cccfc30d1911fb2fa5"
+    cache_hit <- BiocFileCache::bfcquery(bfc, cache_name, "rname", exact = TRUE)
+
+    # Prefer existing cache entry to avoid re-downloading large data.
+    if (nrow(cache_hit) == 0){
+      # Add to cache if not present (download occurs on first use).
+      BiocFileCache::bfcadd(bfc, cache_name, cache_url)
+      cache_hit <- BiocFileCache::bfcquery(bfc, cache_name, "rname", exact = TRUE)
+    }
+
+    if (nrow(cache_hit) == 0){
+      stop("Unable to create or locate BiocFileCache entry for the default library database.")
+    }
+
+    rid <- cache_hit$rid[1]
+    l_dbPth <- BiocFileCache::bfcrpath(bfc, rids = rid)
+    actual_md5 <- tolower(unname(tools::md5sum(l_dbPth)))
+    if (!identical(actual_md5, expected_md5)){
+      stop("Downloaded library database failed MD5 verification.")
+    }
   }
 
   ########################################################
