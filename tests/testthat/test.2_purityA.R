@@ -261,6 +261,26 @@ test_that("checking averageIntraFragSpectra (no filter) purityA", {
 
 })
 
+test_that("checking averageIntraFragSpectra (no filter) purityA for group ID edge case", {
+  print ("\n")
+  print("########################################################")
+  print("## Checking averageIntraFragSpectra                   ##")
+  print("########################################################")
+
+  pa <- readRDS(system.file("extdata", "tests", "purityA", "2_frag4feature_pa.rds", package="msPurity"))
+
+  # Change group ID to edge case (i.e., 100000)
+  group_id <- "100000"
+  levels(pa@grped_df$grpid) <- c(levels(pa@grped_df$grpid), group_id)
+  pa@grped_df$grpid[1:2] <- group_id
+  names(pa@grped_ms2)[1] <- group_id
+
+  pa <- averageIntraFragSpectra(pa)
+
+  expect_equal(length(pa@av_spectra), 32)
+  expect_equal(names(pa@av_spectra)[1], "100000")
+})
+
 test_that("checking averageInterFragSpectra (no filter) purityA", {
   print ("\n")
   print("########################################################")

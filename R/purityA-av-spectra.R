@@ -385,11 +385,13 @@ average_xcms_grouped_msms <- function(pa, av_level){
 
 average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
 
+  grp_idx_char <- as.character(grp_idx)
+
   ##############################################################################
   # Get the appropiate details for the xcms grouped feature from purityA object
   ##############################################################################
-  grped_info <- pa@grped_df[pa@grped_df$grpid==as.numeric(grp_idx),]
-  grped_spectra <- pa@grped_ms2[as.character(grp_idx)][[1]]
+  grped_info <- pa@grped_df[as.character(pa@grped_df$grpid) == grp_idx_char,]
+  grped_spectra <- pa@grped_ms2[grp_idx_char][[1]]
 
   grped_info$index <- 1:nrow(grped_info)
   names(grped_spectra) <- 1:length(grped_spectra)
@@ -411,22 +413,22 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   spectra_to_average <- merge(df, grped_info[, c('grpid', 'sample', 'cid', 'index', 'inPurity')], by = "index")
 
   # Set return variable to empty list or already existing results
-  if (!is.null(pa@av_spectra[[as.character(grp_idx)]][["av_intra"]])){
-    av_intra = pa@av_spectra[[as.character(grp_idx)]][["av_intra"]]
+  if (!is.null(pa@av_spectra[[grp_idx_char]][["av_intra"]])){
+    av_intra = pa@av_spectra[[grp_idx_char]][["av_intra"]]
   } else {
     av_intra = NULL
   }
 
   # Set return variable to empty list or already existing results
-  if (!is.null(pa@av_spectra[[as.character(grp_idx)]][["av_inter"]])){
-    av_inter = pa@av_spectra[[as.character(grp_idx)]][["av_inter"]]
+  if (!is.null(pa@av_spectra[[grp_idx_char]][["av_inter"]])){
+    av_inter = pa@av_spectra[[grp_idx_char]][["av_inter"]]
   } else {
     av_inter = NULL
   }
 
   # Set return variable to empty list or already existing results
-  if (!is.null(pa@av_spectra[[as.character(grp_idx)]][["av_all"]])){
-    av_all = pa@av_spectra[[as.character(grp_idx)]][["av_all"]]
+  if (!is.null(pa@av_spectra[[grp_idx_char]][["av_all"]])){
+    av_all = pa@av_spectra[[grp_idx_char]][["av_all"]]
   } else {
     av_all = NULL
   }
