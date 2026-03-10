@@ -73,11 +73,11 @@ test_that("checking spectral matching functions (spectralMatching) library vs li
   rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
   sm_out_pth <- file.path(td, rid)
 
+  l_dbPth <- file.path(td, "library_spectra.db")
+  download.file("https://zenodo.org/records/18700802/files/library_spectra.db?download=1", 
+                l_dbPth, mode = "wb", quiet = TRUE)
 
-  q_dbPth <- system.file("extdata", "library_spectra", "library_spectra.db", package="msPurityData")
-  l_dbPth <- system.file("extdata", "library_spectra", "library_spectra.db", package="msPurityData")
-
-  result <- spectralMatching(q_dbPth=q_dbPth,
+  result <- spectralMatching(q_dbPth=l_dbPth,
                              l_dbPth=l_dbPth,
                              q_pids = c(1,2,3),
                              q_spectraTypes = NA,
