@@ -1,5 +1,5 @@
 CHANGES IN VERSION 1.37.3
-+ Update library database path for lvl spectral matching testing (required after local SQLite database removed from msPurityData) 
++ Update within the tests only (not within the R code base): library database path for lvl spectral matching testing (required after removal of the local SQLite database from msPurityData).
 
 CHANGES IN VERSION 1.37.2
 + Bug fix for subsetting the grouped data frame in the `average_xcms_grouped_msms_indiv` function
