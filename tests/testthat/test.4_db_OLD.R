@@ -17,7 +17,8 @@ test_that("checking createDatabase functions (new schema)", {
 
 
   td <- tempdir()
-  db_pth = createDatabase(pa, xset, outDir = td)
+  db_pth = createDatabase(pa, xset, outDir = td,
+                          dbName = paste0("test-new-schema-", as.integer(Sys.time()), "-", sample.int(1e9, 1), ".sqlite"))
 
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
 
@@ -56,7 +57,8 @@ test_that("checking create_database (old schema)", {
 
 
   td <- tempdir()
-  db_pth = create_database(pa, xset, out_dir = td)
+  db_pth = create_database(pa, xset, out_dir = td,
+                           db_name = paste0("test-old-schema-", as.integer(Sys.time()), "-", sample.int(1e9, 1), ".sqlite"))
 
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
 

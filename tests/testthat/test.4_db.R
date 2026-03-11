@@ -26,7 +26,8 @@ test_that("checking createDatabase functions (new schema)", {
     }
 
     td <- tempdir()
-    db_pth = createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td)
+    db_pth = createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td,
+                dbName = paste0("test-new-schema-", fn, "-", as.integer(Sys.time()), "-", sample.int(1e9, 1), ".sqlite"))
 
     con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
 
