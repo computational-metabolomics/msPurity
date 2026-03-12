@@ -1,5 +1,51 @@
 context ("checking spectral matching functions ")
 
+get_library_db_for_test <- function() {
+  bfc <- BiocFileCache::BiocFileCache(ask = FALSE)
+  cache_name <- "msPurity_library_spectra_db"
+  cache_url <- "https://zenodo.org/records/18700802/files/library_spectra.db?download=1"
+  expected_md5 <- "f6a4033d376278cccfc30d1911fb2fa5"
+  cache_hit <- BiocFileCache::bfcquery(bfc, cache_name, "rname", exact = TRUE)
+
+  if (nrow(cache_hit) == 0) {
+    tryCatch(
+      BiocFileCache::bfcadd(bfc, cache_name, cache_url),
+      error = function(err) {
+        testthat::skip(paste(
+          "library_spectra.db is not cached locally and could not be downloaded:",
+          conditionMessage(err)
+        ))
+      }
+    )
+    cache_hit <- BiocFileCache::bfcquery(bfc, cache_name, "rname", exact = TRUE)
+  }
+
+  if (nrow(cache_hit) == 0) {
+    testthat::skip("library_spectra.db is unavailable for spectral matching tests")
+  }
+
+  l_dbPth <- tryCatch(
+    BiocFileCache::bfcrpath(bfc, rids = cache_hit$rid[1]),
+    error = function(err) {
+      testthat::skip(paste(
+        "library_spectra.db cache entry could not be resolved:",
+        conditionMessage(err)
+      ))
+    }
+  )
+
+  if (!file.exists(l_dbPth)) {
+    testthat::skip("library_spectra.db cache path does not exist")
+  }
+
+  actual_md5 <- tolower(unname(tools::md5sum(l_dbPth)))
+  if (!identical(actual_md5, expected_md5)) {
+    testthat::skip("library_spectra.db cache entry failed MD5 verification")
+  }
+
+  l_dbPth
+}
+
 test_that("checking spectral matching functions (spectralMatching) query vs library", {
   print ("\n")
   print("########################################################")
@@ -73,9 +119,7 @@ test_that("checking spectral matching functions (spectralMatching) library vs li
   rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
   sm_out_pth <- file.path(td, rid)
 
-  l_dbPth <- file.path(td, "library_spectra.db")
-  download.file("https://zenodo.org/records/18700802/files/library_spectra.db?download=1", 
-                l_dbPth, mode = "wb", quiet = TRUE)
+  l_dbPth <- get_library_db_for_test()
 
   result <- spectralMatching(q_dbPth=l_dbPth,
                              l_dbPth=l_dbPth,
