@@ -123,6 +123,22 @@
 #' @param updateDb boolean; Update the Query SQLite database with the results
 #' @param copyDb boolean; If updating the database - perform on a copy rather thatn the original query database
 #' @param outPth character; If copying the database - the path of the new database file
+#' @param format character; \code{"sqlite"} (the default) matches SQLite databases as described above. Writing
+#'               results with \code{updateDb = TRUE} raises a deprecation warning: SQLite output is frozen.
+#'               \code{"mzstack"} (experimental) matches the averaged spectra (and, with \code{q_spectraTypes = "scan"},
+#'               the referenced MS2 scans) of an mzStack results dataset in \code{q_dbPth}, written by
+#'               \code{createDatabase(format = "mzstack")}, against an mzStack library dataset in \code{l_dbPth}
+#'               (see \code{convertLibraryToMzstack()}) or another results dataset. Scores are computed exactly as for
+#'               SQLite. With \code{updateDb = TRUE} the matches are added to the results dataset as identification
+#'               evidence, with long-form scores, compounds and per-query coverage; with \code{copyDb = TRUE} they are
+#'               added to a copy at \code{outPth} instead. Arguments that select spectra of a SQLite database only
+#'               (\code{q_pids}, \code{q_accessions}, \code{q_instruments}, \code{q_instrumentTypes}, \code{q_sources},
+#'               \code{q_raThres}, \code{l_raThres}, \code{l_pids}) are refused when set.
+#' @param topn integer (mzstack only); keep, per query spectrum, the matches ranked \code{topn} or better by dot
+#'             product cosine. Tied scores share a rank, and every match tied at the cut is kept. The cut and its
+#'             boundary score are recorded in the dataset. \code{NA} keeps every match.
+#' @param sourcePaths named character (mzstack only); source key -> location, for a study dataset that has moved since
+#'                    the results dataset was written.
 #'
 #' @param q_dbType character; Query database type for compound database can be either (sqlite, postgres or mysql)
 #' @param q_dbName character; Query database name (only applicable for postgres and mysql)
@@ -222,6 +238,81 @@
 #' @export
 #' @import dbplyr
 spectralMatching <- function(
+                              q_dbPth,
+                              l_dbPth=NA,
+
+                              q_purity=NA,
+                              q_ppmProd=10,
+                              q_ppmPrec=5,
+                              q_raThres=NA,
+                              q_pol=NA,
+                              q_instrumentTypes=NA,
+                              q_instruments=NA,
+                              q_sources=NA,
+                              q_spectraTypes=c('av_all', 'inter'),
+                              q_pids=NA,
+                              q_rtrange=c(NA, NA),
+                              q_spectraFilter=TRUE,
+                              q_xcmsGroups=NA,
+                              q_accessions=NA,
+
+                              l_purity=NA,
+                              l_ppmProd=10,
+                              l_ppmPrec=5,
+                              l_raThres=NA,
+                              l_pol='positive',
+                              l_instrumentTypes=NA,
+                              l_instruments=NA,
+                              l_sources=NA,
+                              l_spectraTypes=NA,
+                              l_pids=NA,
+                              l_rtrange=c(NA, NA),
+                              l_spectraFilter=FALSE,
+                              l_xcmsGroups=NA,
+                              l_accessions=NA,
+                              usePrecursors=TRUE,
+                              raW=0.5,
+                              mzW=2,
+                              rttol=NA,
+
+                              q_dbType='sqlite',
+                              q_dbName=NA,
+                              q_dbHost=NA,
+                              q_dbUser=NA,
+                              q_dbPass=NA,
+                              q_dbPort=NA,
+
+                              l_dbType='sqlite',
+                              l_dbName=NA,
+                              l_dbHost=NA,
+                              l_dbUser=NA,
+                              l_dbPass=NA,
+                              l_dbPort=NA,
+
+                              cores=1,
+                              updateDb=FALSE,
+                              copyDb=FALSE,
+                              outPth='sm_result.sqlite',
+                              format=c('sqlite', 'mzstack'),
+                              topn=NA,
+                              sourcePaths=NULL){
+  format <- match.arg(format)
+  a <- as.list(environment())
+  if (format == 'mzstack'){
+    return(.spectralMatching_mzstack(a))
+  }
+  if (!is.na(topn)){
+    stop("'topn' is only available with format = \"mzstack\".", call. = FALSE)
+  }
+  res <- do.call(.spectralMatching_sqlite, a[names(formals(.spectralMatching_sqlite))])
+  if (isTRUE(updateDb)){
+    .msp_deprecate_sqlite('spectralMatching(updateDb = TRUE)')
+  }
+  res
+}
+
+# The SQLite route of spectralMatching().
+.spectralMatching_sqlite <- function(
                               q_dbPth,
                               l_dbPth=NA,
 

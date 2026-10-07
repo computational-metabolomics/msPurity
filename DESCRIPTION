@@ -2,8 +2,8 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.37.3
-Date: 2025-03-10
+Version: 1.37.4
+Date: 2026-10-07
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
         email = "thomas.nigel.lawson@gmail.com", role = c("aut", "cre"),
@@ -52,7 +52,11 @@ Imports:
     ggplot2,
     DBI,
     RSQLite,
-    BiocFileCache
+    BiocFileCache,
+    methods,
+    stats,
+    tools,
+    utils
 Suggests:
     MSnbase,
     testthat,
@@ -63,9 +67,13 @@ Suggests:
     msPurityData,
     CAMERA,
     RPostgres,
-    RMySQL
+    RMySQL,
+    arrow (>= 14.0.0),
+    jsonlite,
+    MsBackendParquet (>= 0.99.7),
+    Spectra,
+    MsExperiment
 VignetteBuilder: knitr
-RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 biocViews: MassSpectrometry, Metabolomics, Software
 Collate: 
@@ -74,11 +82,25 @@ Collate:
     'combineAnnotations.R'
     'create-database.R'
     'createDatabase.R'
+    'deprecation.R'
     'flag-filter-remove.R'
     'iw-norm.R'
     'matching-algs.R'
     'meta_extract.R'
     'msPurity.R'
+    'mzstack-annotations.R'
+    'mzstack-conditions.R'
+    'mzstack-converter.R'
+    'mzstack-index.R'
+    'mzstack-library.R'
+    'mzstack-manifest.R'
+    'mzstack-matching.R'
+    'mzstack-purityA.R'
+    'mzstack-schemas.R'
+    'mzstack-sqlite.R'
+    'mzstack-validate.R'
+    'mzstack-write.R'
+    'mzstack-xcms.R'
     'pcalc.R'
     'purityA-0-class.R'
     'purityA-av-spectra.R'
@@ -100,3 +122,5 @@ Collate:
     'spectral-matching.R'
     'spectralMatching.R'
     'splinepurity.R'
+    'xcms-compat.R'
+Config/roxygen2/version: 8.0.0

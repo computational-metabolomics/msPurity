@@ -1,0 +1,111 @@
+requirement	level	covered_by	note
+B-002	MUST	test.9_mzstack_p3_provenance.R	The capability set is checked against capabilities.schema.json.
+B-004	MUST	test.9_mzstack_p3_provenance.R	The capability set declares only the routes implemented; mzSpecLib is declared refused.
+B-005	MUST	test.9_mzstack_p5_matching.R; test.9_mzstack_p6_library.R	Arguments and constructs with no mzStack meaning are refused.
+B-011	MUST	test.9_mzstack_p1_manifest.R	
+B-014	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p7_validate.R	Format, Reference, Capability, Stale, Unsupported and Semantic are each raised where specified.
+B-015	MUST	test.9_mzstack_p1_manifest.R	
+B-018	MUST	test.9_mzstack_p3_provenance.R	Missing nullable columns are written as typed nulls, each explained in the ledger.
+B-032	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p3_provenance.R	
+B-038	MUST	test.9_mzstack_p7_validate.R	No results table is written under index/; the structure check reports one.
+B-043	MUST		msPurity offers no operation that partitions a results dataset by run.
+B-044	MUST	test.9_mzstack_p5_matching.R; test.9_mzstack_p7_validate.R	
+B-074	MUST	test.9_mzstack_p1_manifest.R	Errors are matched by class only.
+D-001	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p2_derived.R	
+D-005	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p7_validate.R	
+D-007	MUST	test.9_mzstack_p1_manifest.R	Atomic manifest write, and refusal of a concurrent commit.
+D-010	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p6_library.R	uid and role are checked by the manifest schema.
+D-011	MUST	test.9_mzstack_p5_matching.R	A fork gets a new uid.
+D-012	MUST	test.9_mzstack_p1_manifest.R	A uid-less source is referenced without being given a uid.
+D-013	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p7_validate.R	Checked by validateMzstack() on every dataset written.
+D-014	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p7_validate.R	
+D-015	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p7_validate.R	
+D-018	MUST	test.9_mzstack_p2_derived.R	
+D-019	MUST	test.9_mzstack_p2_derived.R	
+D-030	MUST	test.9_mzstack_p2_derived.R	time in minutes: MsBackendParquet reads rtime back in seconds.
+D-048	MUST	test.9_mzstack_p2_derived.R	
+D-049	MUST	test.9_mzstack_p7_validate.R	Reported as INFO: arrow's R writer names the list child 'element' and cannot be told otherwise.
+D-050	MUST	test.9_mzstack_p2_derived.R	
+D-051	MUST	test.9_mzstack_p2_derived.R	
+D-057	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p7_validate.R	msPurity builds no projections; the check runs on every dataset.
+D-062	MUST	test.9_mzstack_p2_derived.R	An interrupted write leaves no dataset.
+D-063	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p7_validate.R	
+D-065	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p5_matching.R	
+D-067	MUST	test.9_mzstack_p3_provenance.R	
+D-069	MUST	test.9_mzstack_p3_provenance.R	
+D-070	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p3_provenance.R	
+D-071	MUST	test.9_mzstack_p3_provenance.R; test.9_mzstack_p5_matching.R	
+D-080	MUST	test.9_mzstack_p7_validate.R	
+D-082	MUST	test.9_mzstack_p7_validate.R	Every failure is reported, each against its requirement.
+G-007	MUST	test.9_mzstack_p7_validate.R	msPurity writes native runs only; mixed kinds are reported by the validator.
+G-009	MUST	test.9_mzstack_p1_manifest.R	
+G-011	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p5_matching.R	
+G-014	MUST	test.9_mzstack_p7_validate.R	Checked on every dataset written; no msPurity column encodes a unit.
+G-016	MUST	test.9_mzstack_p7_validate.R	
+R-005	SHOULD	test.9_mzstack_p6_library.R	
+R-006	MUST	test.9_mzstack_p6_library.R	
+R-009	MUST	test.9_mzstack_p2_derived.R	Scans are referenced in the study or by native id; none is copied.
+R-010	MUST	test.9_mzstack_p2_derived.R	
+R-011	MUST	test.9_mzstack_p2_derived.R	
+R-015	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p3_provenance.R	Surrogate keys are checked contiguous at every write.
+R-017	MUST	test.9_mzstack_p3_provenance.R	Positional ids are recorded as positional source identifiers.
+R-018	MUST	test.9_mzstack_p7_validate.R	
+R-020	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p7_validate.R	
+R-021	MUST	test.9_mzstack_p7_validate.R	Checked on every dataset written.
+R-022	MUST	test.9_mzstack_p1_manifest.R	
+R-024	MUST	test.9_mzstack_p1_manifest.R; test.9_mzstack_p7_validate.R	
+R-025	MUST	test.9_mzstack_p1_manifest.R	
+R-026	MUST	test.9_mzstack_p2_derived.R	
+R-027	MUST	test.9_mzstack_p1_manifest.R	Override, then path as given, then relative to the dataset.
+R-028	MUST	test.9_mzstack_p1_manifest.R	
+R-029	MUST	test.9_mzstack_p1_manifest.R	
+R-030	MUST	test.9_mzstack_p1_manifest.R	
+R-031	MUST	test.9_mzstack_p1_manifest.R	Sources are opened only when a reference is followed.
+R-034	MUST	test.9_mzstack_p7_validate.R	
+R-035	MUST	test.9_mzstack_p7_validate.R	
+R-037	MUST	test.9_mzstack_p7_validate.R	
+R-038	MUST	test.9_mzstack_p7_validate.R	
+R-040	MUST		The writer treats NaN as a value: NOT NULL checks exclude it. No msPurity fixture holds NaN.
+R-041	MUST		msPurity always writes chromatographic_peak; it omits no table.
+R-044	MUST	test.9_mzstack_p4_features.R	
+R-045	MUST	test.9_mzstack_p4_features.R	
+R-047	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p7_validate.R	
+R-049	MUST	test.9_mzstack_p5_matching.R; test.9_mzstack_p7_validate.R	
+R-051	MUST	test.9_mzstack_p5_matching.R; test.9_mzstack_p7_validate.R	
+R-055	MUST	test.9_mzstack_p5_matching.R	The rescaled SIRIUS score carries its rescaling scope.
+R-058	MUST	test.9_mzstack_p2_derived.R	The results index declares each run's peak-annotation columns.
+R-059	MUST	test.9_mzstack_p2_derived.R	
+R-060	SHOULD	test.9_mzstack_p3_provenance.R	frac is not stored; its ledger row says why.
+R-061	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p7_validate.R	
+R-062	MUST	test.9_mzstack_p7_validate.R	
+R-063	MUST	test.9_mzstack_p7_validate.R	Checked against the terms msPurity verified (inst/mzstack/cv/terms.tsv), not against the full ontology.
+R-064	MUST	test.9_mzstack_p7_validate.R	msPurity's own quantities are bound in the declared MSPURITY namespace.
+R-065	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p3_provenance.R	
+R-069	MUST	test.9_mzstack_p2_derived.R	
+R-070	MUST	test.9_mzstack_p5_matching.R	
+R-071	MAY	test.9_mzstack_p5_matching.R	
+R-072	MUST	test.9_mzstack_p3_provenance.R	
+R-073	MUST	test.9_mzstack_p5_matching.R	
+R-074	MUST	test.9_mzstack_p5_matching.R; test.9_mzstack_p7_validate.R	
+R-075	MUST	test.9_mzstack_p5_matching.R	
+R-076	MUST	test.9_mzstack_p5_matching.R; test.9_mzstack_p7_validate.R	
+R-080	MUST	test.9_mzstack_p3_provenance.R	
+R-081	MUST	test.9_mzstack_p3_provenance.R; test.9_mzstack_p6_library.R	
+R-082	MUST	test.9_mzstack_p3_provenance.R	
+R-083	MUST	test.9_mzstack_p3_provenance.R; test.9_mzstack_p7_validate.R	
+R-084	MUST	test.9_mzstack_p3_provenance.R; test.9_mzstack_p7_validate.R	
+R-085	MUST	test.9_mzstack_p3_provenance.R	No conversion records dropped_unmappable; lossy_conversion is not declared.
+R-088	MUST	test.9_mzstack_p3_provenance.R	
+R-089	MUST	test.9_mzstack_p3_provenance.R	
+R-090	MUST	test.9_mzstack_p3_provenance.R	
+R-091	MUST	test.9_mzstack_p3_provenance.R	
+R-092	MUST	test.9_mzstack_p3_provenance.R	Source values are read as the database's own text.
+R-093	SHOULD		SPLASH is copied where present, not computed; recorded in provenance.
+R-094	MUST	test.9_mzstack_p2_derived.R	
+R-095	MUST	test.9_mzstack_p2_derived.R	
+R-096	MUST	test.9_mzstack_p2_derived.R; test.9_mzstack_p3_provenance.R	
+R-097	MUST	test.9_mzstack_p3_provenance.R	
+R-098	MUST	test.9_mzstack_p4_features.R	
+R-099	MUST	test.9_mzstack_p7_validate.R	
+R-100	MUST	test.9_mzstack_p7_validate.R	
+R-101	MUST		A stated limit: rewritten parts cannot be detected by inspection, and validateMzstack() documents it.

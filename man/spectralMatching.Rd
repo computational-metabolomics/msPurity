@@ -54,7 +54,10 @@ spectralMatching(
   cores = 1,
   updateDb = FALSE,
   copyDb = FALSE,
-  outPth = "sm_result.sqlite"
+  outPth = "sm_result.sqlite",
+  format = c("sqlite", "mzstack"),
+  topn = NA,
+  sourcePaths = NULL
 )
 }
 \arguments{
@@ -159,6 +162,25 @@ spectra matching either q_instrumentTypes or q_instruments will be used).}
 \item{copyDb}{boolean; If updating the database - perform on a copy rather thatn the original query database}
 
 \item{outPth}{character; If copying the database - the path of the new database file}
+
+\item{format}{character; \code{"sqlite"} (the default) matches SQLite databases as described above. Writing
+results with \code{updateDb = TRUE} raises a deprecation warning: SQLite output is frozen.
+\code{"mzstack"} (experimental) matches the averaged spectra (and, with \code{q_spectraTypes = "scan"},
+the referenced MS2 scans) of an mzStack results dataset in \code{q_dbPth}, written by
+\code{createDatabase(format = "mzstack")}, against an mzStack library dataset in \code{l_dbPth}
+(see \code{convertLibraryToMzstack()}) or another results dataset. Scores are computed exactly as for
+SQLite. With \code{updateDb = TRUE} the matches are added to the results dataset as identification
+evidence, with long-form scores, compounds and per-query coverage; with \code{copyDb = TRUE} they are
+added to a copy at \code{outPth} instead. Arguments that select spectra of a SQLite database only
+(\code{q_pids}, \code{q_accessions}, \code{q_instruments}, \code{q_instrumentTypes}, \code{q_sources},
+\code{q_raThres}, \code{l_raThres}, \code{l_pids}) are refused when set.}
+
+\item{topn}{integer (mzstack only); keep, per query spectrum, the matches ranked \code{topn} or better by dot
+product cosine. Tied scores share a rank, and every match tied at the cut is kept. The cut and its
+boundary score are recorded in the dataset. \code{NA} keeps every match.}
+
+\item{sourcePaths}{named character (mzstack only); source key -> location, for a study dataset that has moved since
+the results dataset was written.}
 }
 \value{
 Returns a list containing the following elements

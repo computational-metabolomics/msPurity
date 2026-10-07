@@ -49,7 +49,8 @@
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param rtrawColumns boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
 #' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
-#' @param saveEIC boolean; If True extracted ion chromatograms will be saved to SQLite database
+#' @param saveEIC boolean; If True extracted ion chromatograms will be saved to SQLite database (deprecated: writing
+#'                SQLite raises a deprecation warning; mzStack stores no chromatograms, extract them with xcms::chromatogram())
 #' @param sqlitePth character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
@@ -66,6 +67,13 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     fileignore=NULL, cores=1, xgroups=NULL,
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
                     singleFile=0, rtrawColumns=FALSE, saveEIC=FALSE, sqlitePth=NULL){
+
+  # Warn here: EICs may be written by a parallel worker.
+  if (isTRUE(saveEIC) && singleFile <= 0){
+    .msp_deprecate_sqlite("purityX(saveEIC = TRUE)",
+                          paste("mzStack stores no chromatograms; extract EICs",
+                                "when needed with xcms::chromatogram()."))
+  }
 
   if (singleFile>0){
 

@@ -19,12 +19,18 @@ Useful links:
 \author{
 \strong{Maintainer}: Thomas N. Lawson \email{thomas.nigel.lawson@gmail.com} (\href{https://orcid.org/0000-0002-5915-7980}{ORCID})
 
+Authors:
+\itemize{
+  \item Thomas N. Lawson \email{thomas.nigel.lawson@gmail.com} (\href{https://orcid.org/0000-0002-5915-7980}{ORCID})
+}
+
 Other contributors:
 \itemize{
   \item Ralf Weber [contributor]
   \item Martin Jones [contributor]
   \item Julien Saint-Vanne [contributor]
   \item Andris Jankevics [contributor]
+  \item Ossama Edbali \email{o.edbali@bham.ac.uk} (\href{https://orcid.org/0000-0003-0132-8668}{ORCID}) [contributor]
   \item Mark Viant [thesis advisor]
   \item Warwick Dunn [thesis advisor]
 }

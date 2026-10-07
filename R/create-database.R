@@ -63,6 +63,8 @@
 #' db_pth <- create_database(pa, xset)
 #' @export
 create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, db_name=NA){
+  .msp_deprecate_sqlite("create_database()",
+                        "Use createDatabase(format = \"mzstack\") instead.")
   ########################################################
   # Export the target data into sqlite database
   ########################################################

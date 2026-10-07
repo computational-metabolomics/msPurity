@@ -56,7 +56,8 @@ purityX(
 
 \item{rtrawColumns}{boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)}
 
-\item{saveEIC}{boolean; If True extracted ion chromatograms will be saved to SQLite database}
+\item{saveEIC}{boolean; If True extracted ion chromatograms will be saved to SQLite database (deprecated: writing
+SQLite raises a deprecation warning; mzStack stores no chromatograms, extract them with xcms::chromatogram())}
 
 \item{sqlitePth}{character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics}
 }

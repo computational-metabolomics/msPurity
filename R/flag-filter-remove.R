@@ -570,7 +570,7 @@ get_full_peak_width <- function(peaklist, xcmsObj){
 
   message("Get 'individual' peaks from camera-xcms object")
 
-  if(is(xcmsObj,'XCMSnExp')){
+  if(.xcms_is_modern(xcmsObj)){
     XCMSnExp_bool = TRUE
   }else if(is(xcmsObj, 'xcmsSet')){
     XCMSnExp_bool = FALSE
@@ -578,11 +578,11 @@ get_full_peak_width <- function(peaklist, xcmsObj){
     XCMSnExp_bool = FALSE
     xcmsObj = xcmsObj@xcmsSet
   }else{
-    stop('unrecognised class for "xcmsObj", should be either "XCMSnExp", "xcmsSet", "xsAnnotate"')
+    stop('unrecognised class for "xcmsObj", should be either "XcmsExperiment", "XCMSnExp", "xcmsSet", "xsAnnotate"')
 
   }
 
-  if(XCMSnExp_bool && (is(xcmsObj,'XCMSnExp'))){
+  if(XCMSnExp_bool && .xcms_is_modern(xcmsObj)){
     rt.min = xcms::featureValues(xcmsObj, method = "medret", value = "rtmin", intensity = "into")
     rt.max = xcms::featureValues(xcmsObj, method = "medret", value = "rtmax", intensity = "into")
     mz.min = xcms::featureValues(xcmsObj, method = "medret", value = "mzmin", intensity = "into")

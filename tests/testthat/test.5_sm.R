@@ -89,11 +89,13 @@ test_that("checking spectral matching functions (spectralMatching) query vs libr
   rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
   sm_out_pth <- file.path(td, rid)
 
-  result <- spectralMatching(q_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('PR100407', 'ML005101', 'CCMSLIB00003740024'),
-                             q_spectraTypes = 'av_all',
-                             updateDb = TRUE,
-                             copyDb = TRUE,
-                             outPth = sm_out_pth)
+  expect_warning(
+    result <- spectralMatching(q_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('PR100407', 'ML005101', 'CCMSLIB00003740024'),
+                               q_spectraTypes = 'av_all',
+                               updateDb = TRUE,
+                               copyDb = TRUE,
+                               outPth = sm_out_pth),
+    class = "deprecatedWarning")
 
   expect_equal(result$xcmsMatchedResults$grpid, c(53, 89, 410))
   expect_equal(result$xcmsMatchedResults$library_accession, c("ML005101", "CCMSLIB00003740024", "PR100407" ))
@@ -121,17 +123,19 @@ test_that("checking spectral matching functions (spectralMatching) library vs li
 
   l_dbPth <- get_library_db_for_test()
 
-  result <- spectralMatching(q_dbPth=l_dbPth,
-                             l_dbPth=l_dbPth,
-                             q_pids = c(1,2,3),
-                             q_spectraTypes = NA,
-                             cores=1,
-                             q_pol = NA,
-                             l_pids = c(1,2,3),
-                             l_spectraTypes = NA,
-                             updateDb = TRUE,
-                             copyDb = TRUE,
-                             outPth = sm_out_pth)
+  expect_warning(
+    result <- spectralMatching(q_dbPth=l_dbPth,
+                               l_dbPth=l_dbPth,
+                               q_pids = c(1,2,3),
+                               q_spectraTypes = NA,
+                               cores=1,
+                               q_pol = NA,
+                               l_pids = c(1,2,3),
+                               l_spectraTypes = NA,
+                               updateDb = TRUE,
+                               copyDb = TRUE,
+                               outPth = sm_out_pth),
+    class = "deprecatedWarning")
 
   matched <- result$matchedResults
 
@@ -162,21 +166,26 @@ test_that("checking spectral matching functions (spectralMatching) query vs quer
   sm_out_pth <- file.path(td, rid)
 
 
-  result <- spectralMatching(q_dbPth=q_dbPth,
-                             l_dbPth=l_dbPth,
-                             q_xcmsGroups = c(89, 410),
-                             q_spectraTypes = 'av_all',
-                             q_spectraFilter = TRUE,
-                             q_pol = NA,
-                             l_xcmsGroups = c(89, 410),
-                             l_spectraTypes = 'av_all',
-                             l_pol = NA,
-                             l_spectraFilter = TRUE,
-                             cores=1,
-                             updateDb = TRUE,
-                             copyDb = TRUE,
-                             usePrecursors=TRUE,
-                             outPth = sm_out_pth)
+  expect_warning(
+
+    result <- spectralMatching(q_dbPth=q_dbPth,
+                               l_dbPth=l_dbPth,
+                               q_xcmsGroups = c(89, 410),
+                               q_spectraTypes = 'av_all',
+                               q_spectraFilter = TRUE,
+                               q_pol = NA,
+                               l_xcmsGroups = c(89, 410),
+                               l_spectraTypes = 'av_all',
+                               l_pol = NA,
+                               l_spectraFilter = TRUE,
+                               cores=1,
+                               updateDb = TRUE,
+                               copyDb = TRUE,
+                               usePrecursors=TRUE,
+                               outPth = sm_out_pth),
+
+
+    class = "deprecatedWarning")
 
   matched <- result$matchedResults
   expect_equal(matched$lpid, c(1661, 1677))
@@ -207,11 +216,13 @@ test_that("checking spectral matching functions (spectralMatching) query(scans) 
 
 
   # Note we get considerably better sm results when using averaged spectra for these xcms groups - this could just reflect the processing that was performed
-  result <- spectralMatching(q_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('CCMSLIB00000479720', 'KNA00052', 'PR100407'),
-                             q_spectraTypes = 'scan',
-                             updateDb = TRUE,
-                             copyDb = TRUE,
-                             outPth = sm_out_pth)
+  expect_warning(
+    result <- spectralMatching(q_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('CCMSLIB00000479720', 'KNA00052', 'PR100407'),
+                               q_spectraTypes = 'scan',
+                               updateDb = TRUE,
+                               copyDb = TRUE,
+                               outPth = sm_out_pth),
+    class = "deprecatedWarning")
 
   matched <- result$matchedResults
   expect_equal(matched$lpid, c(5203, 53964, 57016, 57016))

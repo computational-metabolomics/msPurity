@@ -28,7 +28,7 @@
 \arguments{
 \item{pa}{object; purityA object}
 
-\item{xcmsObj}{object; XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object}
+\item{xcmsObj}{object; XcmsExperiment, XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object}
 
 \item{ppm}{numeric; ppm tolerance between precursor mz and XCMS feature mz}
 

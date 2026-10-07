@@ -1,3 +1,12 @@
+CHANGES IN VERSION 1.37.4
++ New mzStack (Parquet) output, alongside SQLite. createDatabase(), spectralMatching() and combineAnnotations() take format = "mzstack"; SQLite remains the default. Needs the suggested packages arrow and jsonlite.
++ New functions: convertSqliteToMzstack() converts an msPurity SQLite database, convertLibraryToMzstack() converts an msp2db or MSP spectral library, validateMzstack() checks a dataset against the mzStack specification, and mzstackCapabilities() reports what the backend supports.
++ spectralMatching() on mzStack gives the same scores as on SQLite and runs much faster against large libraries. New argument topn keeps the best-ranked matches per query.
++ SQLite output is deprecated: every function that writes SQLite raises one deprecation warning per call. Its output is unchanged.
++ frag4feature() and createDatabase() accept XcmsExperiment objects.
++ purityA objects gain a params slot recording the arguments of purityA() and frag4feature(). Objects saved by earlier versions still work.
++ Bug fix: createDatabase() called featureValues() without the xcms:: prefix and failed unless xcms was attached.
+
 CHANGES IN VERSION 1.37.3
 + Update within the tests only (not within the R code base): library database path for lvl spectral matching testing (required after removal of the local SQLite database from msPurityData).
 

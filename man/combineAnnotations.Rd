@@ -23,7 +23,8 @@ combineAnnotations(
   compoundDbUser = NA,
   compoundDbPass = NA,
   outPth = NA,
-  summaryOutput = TRUE
+  summaryOutput = TRUE,
+  format = c("sqlite", "mzstack")
 )
 }
 \arguments{
@@ -62,9 +63,19 @@ This is only applicable if using "compoundDbType sqlite")}
 
 \item{compoundDbPass}{character; Database pass (only applicable for postgres and mysql) - Note this is not secure!}
 
-\item{outPth}{character;}
+\item{outPth}{character; For SQLite, the path of a copy of \code{sm_resultPth} to write to (the original is
+updated in place otherwise). For mzStack, the path of a copy of the results dataset to write to.}
 
 \item{summaryOutput}{boolean; If a summary dataframe is to be created}
+
+\item{format}{character; \code{"sqlite"} (the default) adds the combined annotations to the SQLite database, and
+raises a deprecation warning: SQLite output is frozen. \code{"mzstack"} (experimental) takes an mzStack
+results dataset with spectral-matching evidence (from \code{spectralMatching(format = "mzstack")} or
+\code{convertSqliteToMzstack()}) in \code{sm_resultPth}. It scores exactly as the SQLite route, and
+records the result without changing any existing row: a new revision of the compound table, the
+compounds' database references, and the per-tool and combined scores per feature and compound
+(tables \code{x_mspurity_feature_annotation} and \code{x_mspurity_combined_annotation}). The tool result
+files and the compound database are recorded as inputs, with their digests.}
 }
 \value{
 purityA object with slots for fragmentation-XCMS links

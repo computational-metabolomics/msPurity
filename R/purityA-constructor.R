@@ -158,6 +158,11 @@ purityA <- function(fileList,
 
   requireNamespace('foreach')
   pa <- new("purityA", fileList = fileList, cores = cores, mzRback=mzRback)
+  pa@params$purityA <- list(cores = cores, mostIntense = mostIntense, nearest = nearest,
+                            offsets = offsets, plotP = plotP, plotdir = plotdir,
+                            interpol = interpol, iwNorm = iwNorm, iwNormFun = iwNormFun,
+                            ilim = ilim, mzRback = mzRback, isotopes = isotopes, im = im,
+                            ppmInterp = ppmInterp)
 
   # Check cores and choose if parallel or not (do or dopar)
   if(pa@cores<=1){

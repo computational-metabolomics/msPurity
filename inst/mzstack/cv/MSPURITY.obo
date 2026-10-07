@@ -1,0 +1,137 @@
+format-version: 1.2
+data-version: 1
+ontology: mspurity
+default-namespace: MSPURITY
+remark: Local terms for quantities msPurity writes to mzStack datasets that have no PSI-MS term (mzStack-4 R-064). Pending standard accessions.
+
+[Term]
+id: MSPURITY:0000001
+name: interpolated precursor ion purity
+
+[Term]
+id: MSPURITY:0000002
+name: precursor ion purity at the recorded precursor m/z
+
+[Term]
+id: MSPURITY:0000003
+name: m/z used for purity at the recorded precursor m/z
+
+[Term]
+id: MSPURITY:0000004
+name: peaks in the isolation window at the recorded precursor m/z
+
+[Term]
+id: MSPURITY:0000005
+name: precursor ion purity of the most intense ion in the isolation window
+
+[Term]
+id: MSPURITY:0000006
+name: most intense m/z in the isolation window
+
+[Term]
+id: MSPURITY:0000007
+name: peaks in the isolation window at the most intense m/z
+
+[Term]
+id: MSPURITY:0000008
+name: peaks in the isolation window, interpolated
+
+[Term]
+id: MSPURITY:0000009
+name: nearest MS1 scan used for purity
+
+[Term]
+id: MSPURITY:0000010
+name: weighted dot product cosine
+
+[Term]
+id: MSPURITY:0000011
+name: reverse weighted dot product cosine
+
+[Term]
+id: MSPURITY:0000012
+name: composite weighted dot product cosine
+
+[Term]
+id: MSPURITY:0000013
+name: matched fragment peak count
+
+[Term]
+id: MSPURITY:0000014
+name: fragment peak count in library and query
+
+[Term]
+id: MSPURITY:0000015
+name: matched fragment peak percentage
+
+[Term]
+id: MSPURITY:0000016
+name: per-peak signal-to-noise of an averaged spectrum
+
+[Term]
+id: MSPURITY:0000017
+name: contributor count of an averaged peak
+
+[Term]
+id: MSPURITY:0000018
+name: contributor total of an averaged spectrum
+
+[Term]
+id: MSPURITY:0000019
+name: relative standard deviation of intensity across contributors
+
+[Term]
+id: MSPURITY:0000020
+name: averaged peak cluster
+
+[Term]
+id: MSPURITY:0000021
+name: median relative intensity of contributors
+
+[Term]
+id: MSPURITY:0000022
+name: median interpolated precursor purity of contributors
+
+[Term]
+id: MSPURITY:0000023
+name: signal-to-noise pass flag
+
+[Term]
+id: MSPURITY:0000024
+name: minimum contributor count pass flag
+
+[Term]
+id: MSPURITY:0000025
+name: minimum contributor fraction pass flag
+
+[Term]
+id: MSPURITY:0000026
+name: relative intensity pass flag
+
+[Term]
+id: MSPURITY:0000027
+name: combined annotation weighted score
+
+[Term]
+id: MSPURITY:0000028
+name: MetFrag score
+
+[Term]
+id: MSPURITY:0000029
+name: SIRIUS CSI:FingerID score, min-max rescaled within the feature
+
+[Term]
+id: MSPURITY:0000030
+name: ProbMetab probability
+
+[Term]
+id: MSPURITY:0000031
+name: MS1 lookup score
+
+[Term]
+id: MSPURITY:0000032
+name: maximum biological similarity score
+
+[Term]
+id: MSPURITY:0000033
+name: best weighted dot product cosine for the feature and compound

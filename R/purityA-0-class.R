@@ -44,7 +44,9 @@ setClass(
     av_inter_params = "list",
     av_all_params = "list",
     filter_frag_params = "list",
-    all_frag_scans = "data.frame"
+    all_frag_scans = "data.frame",
+    # Arguments of purityA() and frag4feature(), for provenance.
+    params = "list"
   )
 )
 
