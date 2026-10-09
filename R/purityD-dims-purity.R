@@ -51,6 +51,7 @@ setMethod(f="dimsPredictPurity", signature="purityD",
                                iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=FALSE,
                                isotopes=TRUE, im=NULL) {
             requireNamespace('foreach')
+            Object <- .pd_begin(Object)
 
             Object@purityParam$minOffset = minOffset
             Object@purityParam$maxOffset = minOffset
@@ -77,14 +78,14 @@ setMethod(f="dimsPredictPurity", signature="purityD",
             }else{
               pidx <- seq(1, nrow(Object@fileList))
             }
-            purityPeaksAll <- operator(foreach::foreach(i=1:length(pidx), .packages = "mzR"),
+            purityPeaksAll <- operator(foreach::foreach(i=1:length(pidx), .packages = "Spectra"),
                                        predictPurityExp(Object, pidx[[i]]))
 
             for (i in 1:length(pidx)){
               Object@avPeaks$processed[[pidx[i]]] <- purityPeaksAll[[i]]
             }
 
-            return(Object)
+            return(.pd_end(Object))
           })
 
 
@@ -143,7 +144,7 @@ predictPurityExp <- function(Object, fidx){
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
-#' @param mzRback character = backend to use for mzR parsing
+#' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param isotopes boolean = TRUE if isotopes are to be removed
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param sim boolean = TRUE if file is from sim stitch experiment. Default FALSE
@@ -170,18 +171,15 @@ dimsPredictPuritySingle <- function(mztargets,
 
   # open the file and get the scans
   if(mzML==TRUE){
-    # mzML files opened with mzR
-    loadNamespace('mzR')
-    mr <- mzR::openMSfile(filepth, backend=mzRback)
-    scanPeaks <- mzR::peaks(mr)
-    h <- mzR::header(mr)
+    # mzML files read through Spectra
+    sp <- .msp_read(filepth)
+    scanPeaks <- .msp_peaks(sp)
+    h <- .msp_header(sp)
 
     # only want the ms1 scans
     hms1 <- h[h$msLevel==1,]
     scans <- hms1$seqNum
     rm(h)
-    # get peaks from each scan
-    scanPeaks <- mzR::peaks(mr)
 
     if (sim){
       # if file contains sim-stitch we only want to look at sim scans

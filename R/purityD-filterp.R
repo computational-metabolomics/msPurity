@@ -41,6 +41,7 @@
 #' @return  purityD object
 #' @export
 setMethod(f="filterp", signature="purityD", definition= function(Object, thr = 5000, rsd=20, sampleOnly = TRUE) {
+  Object <- .pd_begin(Object)
   if(sampleOnly){
     Object@avPeaks$processed[Object@sampleIdx] <- lapply(Object@avPeaks$processed[Object@sampleIdx],
                                                                function(x){ x[(x$i>thr & x$rsd<rsd), ]})
@@ -48,5 +49,5 @@ setMethod(f="filterp", signature="purityD", definition= function(Object, thr = 5
   }else{
     Object@avPeaks$processed <- lapply(Object@avPeaks$processed, function(x){ x[(x$i>thr & x$rsd<rsd), ]})
   }
-  return(Object)
+  return(.pd_end(Object))
 })

@@ -54,7 +54,7 @@ the following columns c('mz', 'i', 'scanid', 'snr')}
 
 \item{normTIC}{boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
 
-\item{mzRback}{character; Backend to use for mzR parsing}
+\item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
 
 \item{MSFileReader}{boolean; Deprecapted. Use csvFile parameter}
 }

@@ -46,7 +46,7 @@ purityX(
 
 \item{plotP}{boolean; TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory}
 
-\item{mzRback}{character; backend to use for mzR parsing}
+\item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
 
 \item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
@@ -56,7 +56,8 @@ purityX(
 
 \item{rtrawColumns}{boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)}
 
-\item{saveEIC}{boolean; If True extracted ion chromatograms will be saved to SQLite database}
+\item{saveEIC}{boolean; If True extracted ion chromatograms will be saved to SQLite database (deprecated: writing
+SQLite raises a deprecation warning; Parquet output stores no chromatograms, extract them with xcms::chromatogram())}
 
 \item{sqlitePth}{character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics}
 }

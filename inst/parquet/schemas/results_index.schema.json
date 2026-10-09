@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mzstack:schema:results-index:0.2",
+  "title": "mzStack results index",
+  "description": "The results index of a results dataset, at the path the manifest declares as results.column_mapping_path, never under index/ (mzStack-4 §7.1; [R-061], [R-062]). It binds every results file and peak-annotation column to controlled-vocabulary accessions. Checks JSON Schema cannot express, such as that every bound namespace appears in cv_list and that every accession exists in the declared ontology version [R-063, R-064], belong to the validator [R-099]. Unknown keys are permitted.",
+  "type": "object",
+  "required": ["files", "cv_list"],
+  "properties": {
+    "files": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/file" }
+    },
+    "cv_list": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/cv" },
+      "description": "Every ontology any column binds to, with its version [R-061]. Local namespaces are declared here too, with a resolvable URI [R-064]."
+    }
+  },
+  "$defs": {
+    "file": {
+      "type": "object",
+      "required": ["name", "entity_type", "data_kind", "column_mapping"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "description": "The results table name, as keyed in results.tables." },
+        "entity_type": { "type": "string", "minLength": 1 },
+        "data_kind": {
+          "enum": ["table", "peak_annotation"],
+          "description": "peak_annotation declares parallel list columns on a native run [R-058]."
+        },
+        "sorted_by": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "A total sort order [R-038]. REQUIRED for data_kind table."
+        },
+        "column_mapping": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/columnBinding" }
+        }
+      },
+      "if": { "properties": { "data_kind": { "const": "table" } } },
+      "then": { "required": ["sorted_by"] }
+    },
+    "columnBinding": {
+      "type": "object",
+      "required": ["path", "accession"],
+      "properties": {
+        "name": { "type": "string", "description": "The term's label." },
+        "path": { "type": "string", "minLength": 1, "description": "The column name." },
+        "accession": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*:[A-Za-z0-9_.-]+$",
+          "description": "A CURIE whose prefix is a cv_list id."
+        },
+        "unit": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*:[A-Za-z0-9_.-]+$",
+          "description": "A unit CURIE, e.g. UO:0000010."
+        }
+      }
+    },
+    "cv": {
+      "type": "object",
+      "required": ["id", "uri", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "full_name": { "type": "string" },
+        "uri": { "type": "string", "format": "uri" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

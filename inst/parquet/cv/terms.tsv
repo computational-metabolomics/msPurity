@@ -1,0 +1,45 @@
+accession	label	verified_against
+MS:1000040	m/z	psi-ms 4.1.155 (present in 4.1.249)
+MS:1000041	charge state	psi-ms 4.1.155 (present in 4.1.249)
+MS:1000042	peak intensity	psi-ms 4.1.155 (present in 4.1.249)
+MS:1000511	ms level	psi-ms 4.1.155 (present in 4.1.249)
+MS:1000744	selected ion m/z	psi-ms 4.1.155 (present in 4.1.249)
+MS:1000894	retention time	psi-ms 4.1.155 (present in 4.1.249)
+MS:1001031	spectral library search	psi-ms 4.1.155 (present in 4.1.249)
+UO:0000010	second	uo releases/2023-05-25
+UO:0000169	parts per million	uo releases/2023-05-25
+UO:0000187	percent	uo releases/2023-05-25
+UO:0000221	dalton	uo releases/2023-05-25
+MSPURITY:0000001	interpolated precursor ion purity	MSPURITY 1
+MSPURITY:0000002	precursor ion purity at the recorded precursor m/z	MSPURITY 1
+MSPURITY:0000003	m/z used for purity at the recorded precursor m/z	MSPURITY 1
+MSPURITY:0000004	peaks in the isolation window at the recorded precursor m/z	MSPURITY 1
+MSPURITY:0000005	precursor ion purity of the most intense ion in the isolation window	MSPURITY 1
+MSPURITY:0000006	most intense m/z in the isolation window	MSPURITY 1
+MSPURITY:0000007	peaks in the isolation window at the most intense m/z	MSPURITY 1
+MSPURITY:0000008	peaks in the isolation window, interpolated	MSPURITY 1
+MSPURITY:0000009	nearest MS1 scan used for purity	MSPURITY 1
+MSPURITY:0000010	weighted dot product cosine	MSPURITY 1
+MSPURITY:0000011	reverse weighted dot product cosine	MSPURITY 1
+MSPURITY:0000012	composite weighted dot product cosine	MSPURITY 1
+MSPURITY:0000013	matched fragment peak count	MSPURITY 1
+MSPURITY:0000014	fragment peak count in library and query	MSPURITY 1
+MSPURITY:0000015	matched fragment peak percentage	MSPURITY 1
+MSPURITY:0000016	per-peak signal-to-noise of an averaged spectrum	MSPURITY 1
+MSPURITY:0000017	contributor count of an averaged peak	MSPURITY 1
+MSPURITY:0000018	contributor total of an averaged spectrum	MSPURITY 1
+MSPURITY:0000019	relative standard deviation of intensity across contributors	MSPURITY 1
+MSPURITY:0000020	averaged peak cluster	MSPURITY 1
+MSPURITY:0000021	median relative intensity of contributors	MSPURITY 1
+MSPURITY:0000022	median interpolated precursor purity of contributors	MSPURITY 1
+MSPURITY:0000023	signal-to-noise pass flag	MSPURITY 1
+MSPURITY:0000024	minimum contributor count pass flag	MSPURITY 1
+MSPURITY:0000025	minimum contributor fraction pass flag	MSPURITY 1
+MSPURITY:0000026	relative intensity pass flag	MSPURITY 1
+MSPURITY:0000027	combined annotation weighted score	MSPURITY 1
+MSPURITY:0000028	MetFrag score	MSPURITY 1
+MSPURITY:0000029	SIRIUS CSI:FingerID score, min-max rescaled within the feature	MSPURITY 1
+MSPURITY:0000030	ProbMetab probability	MSPURITY 1
+MSPURITY:0000031	MS1 lookup score	MSPURITY 1
+MSPURITY:0000032	maximum biological similarity score	MSPURITY 1
+MSPURITY:0000033	best weighted dot product cosine for the feature and compound	MSPURITY 1

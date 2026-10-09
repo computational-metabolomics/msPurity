@@ -17,6 +17,16 @@
 
 setGeneric("getP", function(x) standardGeneric("getP"))
 
+setGeneric("purityTable", function(pa, legacy = TRUE) standardGeneric("purityTable"))
+
+setGeneric("groupedSpectra", function(pa, legacy = TRUE) standardGeneric("groupedSpectra"))
+
+setGeneric("allFragSpectra", function(pa, legacy = TRUE) standardGeneric("allFragSpectra"))
+
+setGeneric("averagedSpectra", function(pa, legacy = TRUE) standardGeneric("averagedSpectra"))
+
+setGeneric("averagedPeaks", function(pd, legacy = TRUE) standardGeneric("averagedPeaks"))
+
 setGeneric("updatePeaks", function(x, newlist) standardGeneric("updatePeaks"))
 
 

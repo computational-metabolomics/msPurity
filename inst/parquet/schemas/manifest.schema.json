@@ -1,0 +1,912 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mzstack:schema:manifest:0.2",
+  "title": "mzStack dataset manifest (mzStack.json)",
+  "description": "Schema for <dataset>/mzStack.json, mzStack 0.1.0 (mzStack-1 §2; mzStack-4 §4). Unknown keys are permitted at every level and MUST be preserved by readers [G-011, D-065, D-079]. Constraints that JSON Schema cannot express (uniqueness of run_id and source keys, contiguity and disjointness of uid_base ranges [D-019], agreement of counts with what is on disk [D-062], projection freshness [D-057], no mixing of run kinds [G-007], and that counts are written as plain JSON integers with no fraction or exponent [D-008], which JSON Schema cannot distinguish from 4.0) are checked by a validator [D-080, R-099], not by this schema.",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "generation",
+    "created",
+    "runs"
+  ],
+  "properties": {
+    "format": {
+      "const": "mzStack",
+      "description": "[G-008]"
+    },
+    "version": {
+      "$ref": "#/$defs/semver",
+      "description": "mzStack format version. Compatibility is judged on the major component alone [G-009]."
+    },
+    "generation": {
+      "$ref": "#/$defs/positiveInteger",
+      "description": "Incremented on every change to the dataset [D-006]."
+    },
+    "created": {
+      "$ref": "#/$defs/timestamp",
+      "description": "Creation time, RFC 3339 UTC. Set once, when the dataset is first written."
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/run"
+      },
+      "description": "Run entries in manifest order, which is uid_base order [D-019]. run_id values MUST be unique [D-064]."
+    },
+    "uid": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+      "description": "Dataset identity, independent of location [D-009, D-011]. REQUIRED when the dataset declares sources."
+    },
+    "role": {
+      "enum": [
+        "study",
+        "library",
+        "results"
+      ],
+      "default": "study",
+      "description": "Advisory; MUST agree with contents [D-009]."
+    },
+    "usi": {
+      "$ref": "#/$defs/usi",
+      "description": "Universal Spectrum Identifier settings; where collection is declared, every spectrum exposes a derived usi variable [D-022, D-023, D-024]."
+    },
+    "library": {
+      "$ref": "#/$defs/libraryRelease",
+      "description": "Release identity of a library dataset [R-006]. REQUIRED when role is library."
+    },
+    "self_contained": {
+      "type": "boolean",
+      "default": false,
+      "description": "True where a results dataset duplicates referenced raw spectra as native runs [R-009]."
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      },
+      "description": "Datasets and external files this dataset references [R-024 to R-027, R-028]. Keys MUST be unique; none may be self."
+    },
+    "provenance": {
+      "description": "Append-only activity records [D-067 to D-072], inline or externalised to a manifest-declared file [D-072].",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/activity"
+          }
+        },
+        {
+          "$ref": "#/$defs/externalProvenance"
+        }
+      ]
+    },
+    "results": {
+      "$ref": "#/$defs/results",
+      "description": "The results layer [D-009, R-032 to R-037]. REQUIRED when role is results."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "results"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "required": [
+          "results"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "library"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "then": {
+        "required": [
+          "library"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "sources"
+        ]
+      },
+      "then": {
+        "required": [
+          "uid"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$",
+      "description": "RFC 3339, UTC."
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,128}$",
+      "description": "[D-014]"
+    },
+    "sourceKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,128}$",
+      "not": {
+        "const": "self"
+      },
+      "description": "[R-020, R-024]"
+    },
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run": {
+      "type": "object",
+      "description": "A run entry [D-013].",
+      "required": [
+        "run_id",
+        "kind",
+        "n_spectra",
+        "uid_base",
+        "ingested_at",
+        "signal",
+        "projections"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/runId"
+        },
+        "kind": {
+          "enum": [
+            "mzpeak",
+            "native"
+          ],
+          "description": "[G-005, G-006]"
+        },
+        "path": {
+          "$ref": "#/$defs/nullableString",
+          "description": "Location of the archive for an mzpeak run; for a native run, where written, the run's directory under spectra/."
+        },
+        "n_spectra": {
+          "$ref": "#/$defs/count"
+        },
+        "uid_base": {
+          "$ref": "#/$defs/positiveInteger",
+          "description": "First spectrum_id_ of the run [D-018, D-019]."
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/positiveInteger",
+          "description": "Generation at which this run's index was built [D-016]."
+        },
+        "signal": {
+          "$ref": "#/$defs/signal"
+        },
+        "projections": {
+          "type": "object",
+          "description": "Map of projection type to the generation it was built from. Empty is {} [D-008]. Unknown types are permitted and ignored [D-079].",
+          "additionalProperties": {
+            "$ref": "#/$defs/projection"
+          },
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9._-]+$"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "native"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "signal": {
+                "properties": {
+                  "layout": {
+                    "const": "list"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "mzpeak"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "signal": {
+                "properties": {
+                  "layout": {
+                    "enum": [
+                      "point",
+                      "chunk"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "signal": {
+      "type": "object",
+      "required": [
+        "layout"
+      ],
+      "properties": {
+        "layout": {
+          "enum": [
+            "list",
+            "point",
+            "chunk"
+          ],
+          "description": "list for native runs, point for mzpeak runs [D-015]. chunk is admitted by this schema so that a reader can recognise it; it MUST then be rejected as Archive."
+        },
+        "profile": {
+          "$ref": "#/$defs/nullableString",
+          "description": "Archive member holding profile signal, for an mzpeak run; null where absent [D-045]."
+        },
+        "centroid": {
+          "$ref": "#/$defs/nullableString",
+          "description": "Archive member holding centroid signal, for an mzpeak run; null where absent [D-045]."
+        },
+        "partitioning": {
+          "description": "Hive partitioning columns below the run level, in on-disk names. Informational. Writers SHOULD write an array; a single string is accepted as a one-element list.",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/nullableString",
+          "description": "The original source file or archive the run was converted from. Optional; written by both reference implementations."
+        }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "required": [
+        "generation"
+      ],
+      "properties": {
+        "generation": {
+          "$ref": "#/$defs/positiveInteger",
+          "description": "The run's ingested_at at build time. Current iff equal to the run's ingested_at [D-057]."
+        }
+      }
+    },
+    "libraryRelease": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]+:[0-9A-Fa-f]+$",
+          "description": "algorithm:hex, e.g. sha256:..."
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "version"
+          ]
+        },
+        {
+          "required": [
+            "digest"
+          ]
+        }
+      ]
+    },
+    "runFingerprint": {
+      "type": "object",
+      "description": "The per-run tuple a reference is checked against [R-028, R-029].",
+      "required": [
+        "run_id",
+        "uid_base",
+        "n_spectra",
+        "ingested_at"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/runId"
+        },
+        "uid_base": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "n_spectra": {
+          "$ref": "#/$defs/count"
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/positiveInteger"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "key",
+        "resolution"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/sourceKey"
+        },
+        "role": {
+          "enum": [
+            "study",
+            "library",
+            "results"
+          ]
+        },
+        "resolution": {
+          "enum": [
+            "dataset",
+            "external"
+          ],
+          "description": "[R-025]"
+        },
+        "uid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9._:-]{8,128}$",
+          "description": "Null for a uid-less source [D-012]."
+        },
+        "path": {
+          "$ref": "#/$defs/nullableString",
+          "description": "Used to locate, never to verify [D-011, R-027]."
+        },
+        "generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Cheap pre-check only [R-029]."
+        },
+        "n_spectra": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "version": {
+          "type": "string",
+          "description": "Release of a library source [R-006]."
+        },
+        "digest": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string",
+          "description": "Verbatim location of an external source, e.g. an mzTab-M ms_run[n]-location [R-026]."
+        },
+        "runs": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/runFingerprint"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "resolution": {
+                "const": "dataset"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "runs"
+            ],
+            "properties": {
+              "runs": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "resolution": {
+                "const": "external"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "uid": {
+                "type": "null"
+              },
+              "path": {
+                "type": "null"
+              },
+              "generation": {
+                "type": "null"
+              },
+              "runs": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "activity": {
+      "type": "object",
+      "description": "One activity record [D-067]. Numbers in parameters MUST round-trip exactly [D-070].",
+      "required": [
+        "id",
+        "generation",
+        "started",
+        "ended",
+        "action",
+        "agent",
+        "inputs",
+        "outputs",
+        "parameters"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "started": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "ended": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent": {
+          "type": "object",
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "function": {
+              "type": "string"
+            }
+          }
+        },
+        "environment": {
+          "type": "object"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "source"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "description": "A bare file with no uid [D-071].",
+                "required": [
+                  "path",
+                  "bytes",
+                  "sha256"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "bytes": {
+                    "$ref": "#/$defs/count"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "runs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/runId"
+              }
+            },
+            "tables": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Verbatim, in the tool's own parameter names [D-069]."
+        }
+      }
+    },
+    "externalProvenance": {
+      "type": "object",
+      "description": "Provenance externalised to a file reachable from the manifest [D-072].",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "records": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "results": {
+      "type": "object",
+      "required": [
+        "version",
+        "column_mapping_path",
+        "tables"
+      ],
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/semver",
+          "description": "results.version. An unknown major MUST NOT raise Format [R-034, R-035]."
+        },
+        "column_mapping_path": {
+          "type": "string",
+          "not": {
+            "pattern": "^index/"
+          },
+          "description": "Path of the results index, relative to the dataset root. MUST NOT be under index/ [R-062]."
+        },
+        "runs": {
+          "type": "object",
+          "description": "Provenance scope of each derived-spectra run, keyed by run_id [R-010, R-012].",
+          "propertyNames": {
+            "$ref": "#/$defs/runId"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "method",
+              "scope"
+            ],
+            "properties": {
+              "method": {
+                "type": "string"
+              },
+              "scope": {
+                "enum": [
+                  "run",
+                  "dataset"
+                ]
+              },
+              "source": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_run_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "run"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "source",
+                "source_run_id"
+              ],
+              "properties": {
+                "source_run_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tables": {
+          "type": "object",
+          "description": "Every results table, keyed by table name [R-037].",
+          "additionalProperties": {
+            "$ref": "#/$defs/resultsTable"
+          }
+        }
+      }
+    },
+    "resultsTable": {
+      "type": "object",
+      "required": [
+        "entity"
+      ],
+      "properties": {
+        "entity": {
+          "type": "string"
+        },
+        "omitted": {
+          "type": "boolean",
+          "default": false,
+          "description": "True declares that an OPTIONAL entity was deliberately not written, so a request for it raises Capability [R-041]."
+        },
+        "path": {
+          "type": "string",
+          "not": {
+            "pattern": "^index/"
+          },
+          "description": "Table root, relative to the dataset root. MUST NOT be under index/ [B-038]."
+        },
+        "rows": {
+          "$ref": "#/$defs/count"
+        },
+        "parts": {
+          "$ref": "#/$defs/count"
+        },
+        "generation": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "revision": {
+          "$ref": "#/$defs/positiveInteger",
+          "description": "[R-071]"
+        },
+        "supersedes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "sorted_by": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "A total sort order [R-038]."
+        },
+        "partitioning": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fill_policy": {
+          "enum": [
+            "dense",
+            "sparse"
+          ],
+          "description": "[R-043]"
+        },
+        "selection": {
+          "$ref": "#/$defs/selection"
+        },
+        "scope_predicate": {
+          "type": "string",
+          "description": "Manifest-declared predicate determining whether a spectrum was attempted, used instead of a coverage entity [R-074]."
+        }
+      },
+      "if": {
+        "properties": {
+          "omitted": {
+            "const": true
+          }
+        },
+        "required": [
+          "omitted"
+        ]
+      },
+      "then": true,
+      "else": {
+        "required": [
+          "entity",
+          "path",
+          "rows",
+          "generation",
+          "revision",
+          "sorted_by"
+        ]
+      }
+    },
+    "selection": {
+      "type": "object",
+      "description": "[R-075]",
+      "required": [
+        "policy"
+      ],
+      "properties": {
+        "policy": {
+          "enum": [
+            "complete",
+            "top_n",
+            "threshold",
+            "top_n_threshold"
+          ]
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "threshold": {
+          "type": "number"
+        },
+        "score_column": {
+          "type": "string"
+        },
+        "order": {
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        "ties": {
+          "enum": [
+            "all",
+            "arbitrary",
+            "first"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "policy": {
+                "enum": [
+                  "top_n",
+                  "top_n_threshold"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "n",
+              "score_column",
+              "order",
+              "ties"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "policy": {
+                "enum": [
+                  "threshold",
+                  "top_n_threshold"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "threshold",
+              "score_column",
+              "order"
+            ]
+          }
+        }
+      ]
+    },
+    "usi": {
+      "type": "object",
+      "required": [
+        "collection"
+      ],
+      "properties": {
+        "collection": {
+          "type": "string",
+          "pattern": "^[^:]+$",
+          "description": "USI collection identifier: no colon, SHOULD be on the USI collection identifier list (PXD, MSV, PXL, or a reprocessed form), or the placeholder USI000000 [D-023]."
+        },
+        "ms_runs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Overrides of the derived msRun, keyed by dataOrigin value. Every dataOrigin MUST yield a distinct msRun [D-024]."
+        }
+      }
+    }
+  }
+}

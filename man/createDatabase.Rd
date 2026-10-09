@@ -12,13 +12,18 @@ createDatabase(
   grpPeaklist = NA,
   dbName = NA,
   metadata = NA,
-  xset = NA
+  xset = NA,
+  format = c("sqlite", "parquet"),
+  study = NULL,
+  studyKey = "study",
+  fileMap = NULL,
+  overwrite = FALSE
 )
 }
 \arguments{
 \item{pa}{purityA object; Needs to be the same used for frag4feature function}
 
-\item{xcmsObj}{xcms object of class XCMSnExp or xcmsSet; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)}
+\item{xcmsObj}{xcms object of class XcmsExperiment, XCMSnExp or xcmsSet; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)}
 
 \item{xsa}{CAMERA object (optional); if CAMERA object is used, we ignore the xset parameter input and obtain all information
 from the xset object nested with the CAMERA xsa object. Adduct and isotope information
@@ -34,9 +39,26 @@ be the one used for the frag4feature function}
 \item{metadata}{list; A list of metadata to add to the s_peak_meta table}
 
 \item{xset}{xcms object of class XCMSnExp or xcmsSet; (Deprecated - if provided, will replace variable 'obj')}
+
+\item{format}{character; \code{"sqlite"} (the default) writes the SQLite database described above, and raises a
+deprecation warning: SQLite output is frozen and receives bug fixes only. \code{"parquet"} writes a
+Parquet dataset instead (experimental; requires the suggested packages arrow and jsonlite). See Details.}
+
+\item{study}{character (optional, parquet only); path of the Parquet dataset the mzML files were converted into, for
+example with MsBackendParquet::mzMLToParquet(). MS2 scans are then referenced by their spectrum ids in that
+dataset. Without it, every source file is recorded as an external source.}
+
+\item{studyKey}{character (parquet only); the key the study is declared under in the results dataset.}
+
+\item{fileMap}{named character (optional, parquet only); source file path (as in \code{pa@fileList}) -> run_id.
+Required when two source files share a file name, and to match files whose recorded paths
+no longer exist.}
+
+\item{overwrite}{logical (parquet only); replace an existing dataset at the destination.}
 }
 \value{
-path to SQLite database and database name
+For \code{format = "sqlite"}, the path to the SQLite database. For \code{format = "parquet"}, the path of
+the Parquet results dataset, invisibly.
 }
 \description{
 \strong{General}
@@ -61,6 +83,32 @@ Schema details can be found \href{https://bioconductor.org/packages/release/bioc
 \item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> \strong{createDatabase} -> spectralMatching -> (sqlite spectral database)
 }
 }
+}
+\details{
+\strong{Parquet output (experimental)}
+
+With \code{format = "parquet"}, the results are written as a results dataset (a directory of Parquet
+files with an \code{mzStack.json} manifest), following part 4 of the mzStack specification:
+\itemize{
+\item xcms features, chromatographic peaks and their per-sample abundances become the \code{feature},
+\code{chromatographic_peak}, \code{chromatographic_peak_feature} and \code{abundance} tables, with
+\code{assay} and \code{sample} for the source files;
+\item the links between MS2 scans and features become \code{spectrum_feature}, with the precursor m/z,
+error, retention time and purity each scan was matched at;
+\item averaged fragmentation spectra become spectra of the dataset, one run per source file for spectra
+averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
+(\code{av_inter}, \code{av_all}), with their per-peak statistics;
+\item the scans each averaged spectrum was made from are recorded in \code{merge_member};
+\item every assessed MS2 scan keeps its precursor purity measures (\code{x_mspurity_scan}); MS2 scans are
+referenced, not copied;
+\item the processing parameters, what was converted and anything that could not be mapped are recorded
+in \code{tool_provenance}, \code{conversion}, \code{source_identifier} and \code{loss_ledger}.
+}
+
+The dataset is written to \code{file.path(outDir, dbName)}; the default name ends in \code{.parquet}. It is built
+beside its destination and moved into place only once complete, so an interrupted write leaves nothing behind.
+
+CAMERA annotation (\code{xsa}) and a custom \code{grpPeaklist} are not mapped to the Parquet output and are refused.
 }
 \examples{
 library(xcms)

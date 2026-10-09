@@ -93,6 +93,7 @@ setMethod(f="createMSP", signature="purityA",
                                 xcms_groupids=NULL, method="all", adduct_split=TRUE, filter=TRUE,
                                 msp_schema='massbank', intensity_ra='intensity_ra', include_adducts=''
           ){
+  pa <- .pa_update(pa)
 
             mspurity_to_msp(pa, msp_file_pth, metadata, metadata_cols,
                             xcms_groupids, method, adduct_split, filter, msp_schema,
@@ -124,12 +125,13 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   }
 
   grped_df <- pa@grped_df
-  msms <- pa@grped_ms2
-  puritydf <- pa@puritydf
+  msms <- groupedSpectra(pa)
+  puritydf <- purityTable(pa)
+  av_spectra <- averagedSpectra(pa)
 
   of <- file(description = msp_file_pth, open = "w+")
   if (is.null(xcms_groupids)){
-    xcms_groupids <- as.numeric(names(pa@grped_ms2))
+    xcms_groupids <- as.numeric(names(msms))
   }
 
   for(grpid in xcms_groupids){
@@ -172,7 +174,8 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
       }else if (method=="max"){
 
-        prec_int <- puritydf[puritydf$pid %in% grpd$pid,'precursorIntensity']
+        # precursor intensity of each linked scan, in the order of grpd and spec
+        prec_int <- puritydf$precursorIntensity[match(grpd$pid, puritydf$pid)]
         idx <- which(prec_int==max(prec_int))[1]  # if joint place, take the first one (very unlikely to occur)
 
         grpdi <- grpd[idx,]
@@ -185,16 +188,19 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         specmax <- spec[[idx]]
 
         if ((filter) & ('pass_flag' %in% colnames(specmax))){
-          specmax <- specmax[specmax[,'pass_flag']==1,]
+          specmax <- specmax[specmax[,'pass_flag']==1,,drop=FALSE]
         }
-        specmax<- add_mzi_cols(specmax)
 
-        write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, specmax, metadata, metadata_cols, of,
-                  method, adduct_split, msp_schema, intensity_ra, include_adducts)
+        if (nrow(specmax)>0){
+          specmax<- add_mzi_cols(specmax)
+
+          write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, specmax, metadata, metadata_cols, of,
+                    method, adduct_split, msp_schema, intensity_ra, include_adducts)
+        }
 
       }else if (method=="av_inter"){
 
-        av_inter <- pa@av_spectra[[as.character(grpid)]]$av_inter
+        av_inter <- av_spectra[[as.character(grpid)]]$av_inter
 
         if (!is.null(av_inter) && length(av_inter)==0){
           next
@@ -212,7 +218,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
       }else if (method=="av_intra"){
-        av_intra <- pa@av_spectra[[as.character(grpid)]]$av_intra
+        av_intra <- av_spectra[[as.character(grpid)]]$av_intra
 
 
         if (!is.null(av_intra) && length(av_intra)==0){
@@ -238,7 +244,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
       }else if (method=="av_all"){
 
-        av_all <- pa@av_spectra[[as.character(grpid)]]$av_all
+        av_all <- av_spectra[[as.character(grpid)]]$av_all
 
         if (filter){
           av_all  <- av_all[av_all[,'pass_flag']==1,]
@@ -450,7 +456,7 @@ concat_name <- function(mz, rtmed, grpid, fileid=NA, adduct, metadata, metadata_
 
 add_mzi_cols <- function(x){
 
-  x <- data.frame(x)
+  x <- data.frame(x[, 1:2, drop = FALSE])
   colnames(x) <- c('mz', 'i')
   return(x)
 }

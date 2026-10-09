@@ -55,10 +55,13 @@
 #'
 #' @return Returns a purityA object (pa) with the following slots now with data
 #'
-#' * pa@@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@av_spectra$`1`$av_intra$`1`" would give the average spectra for grouped feature 1 and for file 1.
+#' * pa@@avSpectra: the averaged spectra as a \code{Spectra} object, one spectrum per grouped feature, averaging
+#'   level and file, with the averaging statistics as peak variables.
+#' * pa@@av_spectra: the legacy list of averaged spectra, filled while \code{options(msPurity.legacySlots = TRUE)}.
+#'   e.g. "averagedSpectra(pa)$`1`$av_intra$`1`" gives the average spectra for grouped feature 1 and for file 1.
 #' * pa@@av_intra_params: The parameters used are recorded here
 #'
-#' Each spectra in the av_spectra list contains the following columns:
+#' Each averaged spectrum in the legacy list contains the following columns (peak variables in pa@@avSpectra):
 #'
 #' * cl: id of clustered (averaged) peak
 #' * mz: average m/z
@@ -109,6 +112,7 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
                                av='median', sumi=TRUE, rmp=FALSE, cores=1
                                 ){
+            pa <- .pa_update(pa)
 
             pa@av_intra_params$minfrac = minfrac
             pa@av_intra_params$minnum = minnum
@@ -168,10 +172,13 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #'
 #' @return Returns a purityA object (pa) with the following slots now with data
 #'
-#' * pa@@av_spectra: the average spectra is recorded here stored as a list. e.g. "pa@@av_spectra$`1`$av_inter" would give the average spectra for grouped feature 1
+#' * pa@@avSpectra: the averaged spectra as a \code{Spectra} object, one spectrum per grouped feature, averaging
+#'   level and file, with the averaging statistics as peak variables.
+#' * pa@@av_spectra: the legacy list of averaged spectra, filled while \code{options(msPurity.legacySlots = TRUE)}.
+#'   e.g. "averagedSpectra(pa)$`1`$av_inter" gives the average spectra for grouped feature 1
 #' * pa@@av_intra_params: The parameters used are recorded here
 #'
-#' Each spectra in the av_spectra list contains the following columns:
+#' Each averaged spectrum in the legacy list contains the following columns (peak variables in pa@@avSpectra):
 #' *
 #' * cl: id of clustered (averaged) peak
 #' * mz: average m/z
@@ -224,6 +231,7 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
                                 av='median', sumi=TRUE,  rmp=FALSE, cores=1
           ){
+            pa <- .pa_update(pa)
 
             pa@av_inter_params$minfrac = minfrac
             pa@av_inter_params$minnum = minnum
@@ -238,7 +246,8 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
             pa@av_inter_params$cores = cores
             pa@av_inter_params$rmp = rmp
 
-            if (is.null(pa@av_spectra[[names(pa@grped_ms2)[1]]][["av_intra"]])){
+            first_grp <- unique(as.character(pa@grped_df$grpid))[1]
+            if (is.null(.pa_av_legacy(pa@avSpectra, pa@grped_df)[[first_grp]][["av_intra"]])){
               stop("Apply averageIntraFragSpectra first")
             }
 
@@ -285,10 +294,13 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'
 #' @return Returns a purityA object (pa) with the following slots now with data
 #'
-#' * pa@@av_spectra: the average spectra is recorded here stored as a list. E.g. pa@@av_spectra$`1`$av_all would give the average spectra for grouped feature 1.
+#' * pa@@avSpectra: the averaged spectra as a \code{Spectra} object, one spectrum per grouped feature, averaging
+#'   level and file, with the averaging statistics as peak variables.
+#' * pa@@av_spectra: the legacy list of averaged spectra, filled while \code{options(msPurity.legacySlots = TRUE)}.
+#'   E.g. averagedSpectra(pa)$`1`$av_all gives the average spectra for grouped feature 1.
 #' * pa@@av_all_params: The parameters used are recorded here
 #'
-#' Each spectra in the av_spectra list contains the following columns:
+#' Each averaged spectrum in the legacy list contains the following columns (peak variables in pa@@avSpectra):
 #'
 #' * cl: id of clustered (averaged) peak
 #' * mz: average m/z
@@ -343,6 +355,7 @@ setMethod(f="averageAllFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
                                  av='median', sumi=TRUE, rmp=FALSE, cores=1
           ){
+            pa <- .pa_update(pa)
 
             pa@av_all_params$minfrac = minfrac
             pa@av_all_params$minnum = minnum
@@ -372,10 +385,23 @@ average_xcms_grouped_msms <- function(pa, av_level){
     para = FALSE
   }
 
-  av_spectra <- plyr::alply(names(pa@grped_ms2), 1, average_xcms_grouped_msms_indiv, pa=pa, av_level=av_level, .parallel = para)
-  names(av_spectra) <- names(pa@grped_ms2)
+  # Inputs come from the Spectra slots. Levels not being averaged now are
+  # carried over unchanged, from the legacy slot when it is filled.
+  ms2 <- .pa_grouped_legacy(pa)
+  av_in <- .pa_av_legacy(pa@avSpectra, pa@grped_df)
+  av_keep <- if (.pa_legacy() && length(pa@av_spectra)) pa@av_spectra else av_in
+  groups <- unique(as.character(pa@grped_df$grpid))
 
-  pa@av_spectra <- av_spectra
+  av_spectra <- plyr::alply(groups, 1, average_xcms_grouped_msms_indiv, pa=pa, av_level=av_level,
+                            ms2=ms2, av_in=av_in, av_keep=av_keep, .parallel = para)
+  names(av_spectra) <- groups
+
+  if(pa@cores>1){
+    parallel::stopCluster(cl)
+  }
+
+  pa@avSpectra <- .pa_av_to_spectra(av_spectra, pa@grped_df)
+  pa <- .pa_sync_legacy(pa, av_spectra = av_spectra)
 
   return(pa)
 
@@ -383,7 +409,7 @@ average_xcms_grouped_msms <- function(pa, av_level){
 
 
 
-average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
+average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in, av_keep){
 
   grp_idx_char <- as.character(grp_idx)
 
@@ -391,7 +417,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   # Get the appropiate details for the xcms grouped feature from purityA object
   ##############################################################################
   grped_info <- pa@grped_df[as.character(pa@grped_df$grpid) == grp_idx_char,]
-  grped_spectra <- pa@grped_ms2[grp_idx_char][[1]]
+  grped_spectra <- ms2[grp_idx_char][[1]]
 
   grped_info$index <- 1:nrow(grped_info)
   names(grped_spectra) <- 1:length(grped_spectra)
@@ -401,6 +427,11 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   ##############################################################################
   grped_spectra <- plyr::llply(grped_spectra, data.frame)
   df <- data.frame(do.call("rbind", grped_spectra))
+  # With filterFragSpectra(rmp = TRUE) every spectrum of a feature can be NULL;
+  # an empty table then takes the same path as a feature with no passing peaks
+  if (ncol(df) == 0){
+    df <- data.frame(mz = numeric(), i = numeric(), pass_flag = numeric())
+  }
 
   colnames(df)[1:2] <- c('mz', 'i')
   df$index <-   rep(seq_along(grped_spectra), sapply(grped_spectra, nrow))
@@ -413,22 +444,22 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
   spectra_to_average <- merge(df, grped_info[, c('grpid', 'sample', 'cid', 'index', 'inPurity')], by = "index")
 
   # Set return variable to empty list or already existing results
-  if (!is.null(pa@av_spectra[[grp_idx_char]][["av_intra"]])){
-    av_intra = pa@av_spectra[[grp_idx_char]][["av_intra"]]
+  if (!is.null(av_keep[[grp_idx_char]][["av_intra"]])){
+    av_intra = av_keep[[grp_idx_char]][["av_intra"]]
   } else {
     av_intra = NULL
   }
 
   # Set return variable to empty list or already existing results
-  if (!is.null(pa@av_spectra[[grp_idx_char]][["av_inter"]])){
-    av_inter = pa@av_spectra[[grp_idx_char]][["av_inter"]]
+  if (!is.null(av_keep[[grp_idx_char]][["av_inter"]])){
+    av_inter = av_keep[[grp_idx_char]][["av_inter"]]
   } else {
     av_inter = NULL
   }
 
   # Set return variable to empty list or already existing results
-  if (!is.null(pa@av_spectra[[grp_idx_char]][["av_all"]])){
-    av_all = pa@av_spectra[[grp_idx_char]][["av_all"]]
+  if (!is.null(av_keep[[grp_idx_char]][["av_all"]])){
+    av_all = av_keep[[grp_idx_char]][["av_all"]]
   } else {
     av_all = NULL
   }
@@ -466,7 +497,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level){
 
   } else if (av_level=="inter") {
 
-    av_intra_df <- plyr::ldply(av_intra, .id = 'sample', function(x){x[x$pass_flag,]})
+    av_intra_df <- plyr::ldply(av_in[[grp_idx_char]][["av_intra"]], .id = 'sample', function(x){x[x$pass_flag,]})
 
     # Average the averaged spectra across files
     av_inter <- average_spectra(av_intra_df,

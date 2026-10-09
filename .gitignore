@@ -3,3 +3,5 @@ check/
 .Rhistory
 .RData
 .Ruserdata
+tests/testthat/purityXplots/
+.docs/

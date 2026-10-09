@@ -39,7 +39,7 @@ dimsPredictPuritySingle(
 
 \item{ilim}{numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
-\item{mzRback}{character = backend to use for mzR parsing}
+\item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
 
 \item{isotopes}{boolean = TRUE if isotopes are to be removed}
 
