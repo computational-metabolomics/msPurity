@@ -1,0 +1,768 @@
+{
+  "$schema": "./variables.schema.json",
+  "title": "mzStack spectra variable registry",
+  "description": "The canonical spectra variables, the storage columns they are produced from, their types, units and index bases, and the MassQL frame columns derived from them (mzStack-0 section 6, mzStack-1 section 5.1, mzStack-2 section 5). SQL expressions are over storage column names; each variable's storage candidates are tried in order and the first whose columns are all present wins.",
+  "version": "0.1.0",
+  "variables": [
+    {
+      "name": "msLevel",
+      "type": "int32",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "ms_level"
+          ],
+          "sql": "CAST(\"ms_level\" AS INTEGER)"
+        }
+      ],
+      "description": "MS level of the spectrum."
+    },
+    {
+      "name": "rtime",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "UO:0000010",
+        "label": "second"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "time"
+          ],
+          "sql": "\"time\" * 60.0"
+        }
+      ],
+      "storage_unit": {
+        "accession": "UO:0000031",
+        "label": "minute"
+      },
+      "description": "Retention time. Stored in minutes, exposed in seconds."
+    },
+    {
+      "name": "polarity",
+      "type": "int32",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "scan_polarity"
+          ],
+          "sql": "CASE \"scan_polarity\" WHEN 1 THEN 1 WHEN -1 THEN 0 END"
+        }
+      ],
+      "description": "1 positive, 0 negative, null unknown. Stored as +1/-1."
+    },
+    {
+      "name": "centroided",
+      "type": "bool",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "spectrum_representation"
+          ],
+          "sql": "CASE \"spectrum_representation\" WHEN 'MS:1000127' THEN TRUE WHEN 'MS:1000128' THEN FALSE END"
+        }
+      ],
+      "description": "True for centroid, false for profile. Stored as the CURIE MS:1000127 or MS:1000128."
+    },
+    {
+      "name": "smoothed",
+      "type": "bool",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "none",
+      "description": "No storage source; always a typed null."
+    },
+    {
+      "name": "spectrumId",
+      "type": "string",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "id"
+          ],
+          "sql": "CAST(\"id\" AS VARCHAR)"
+        }
+      ],
+      "description": "The source format's nativeID."
+    },
+    {
+      "name": "acquisitionNum",
+      "type": "int32",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "scan_number"
+          ],
+          "sql": "CAST(\"scan_number\" AS INTEGER)"
+        }
+      ],
+      "description": "The instrument's scan number, as the instrument assigned it; it has no base."
+    },
+    {
+      "name": "scanIndex",
+      "type": "int32",
+      "nullable": true,
+      "unit": null,
+      "index_base": 0,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "scan_index"
+          ],
+          "sql": "CAST(\"scan_index\" AS INTEGER)"
+        },
+        {
+          "columns": [
+            "spectrum_index"
+          ],
+          "sql": "CAST(\"spectrum_index\" AS INTEGER)"
+        }
+      ],
+      "description": "Position of the spectrum within its source file."
+    },
+    {
+      "name": "dataOrigin",
+      "type": "string",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "data_origin"
+          ],
+          "sql": "\"data_origin\""
+        }
+      ],
+      "description": "The source file the spectrum came from."
+    },
+    {
+      "name": "dataStorage",
+      "type": "string",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "implementation",
+      "description": "The dataset holding the spectrum, supplied by the implementation."
+    },
+    {
+      "name": "precScanNum",
+      "type": "int32",
+      "nullable": true,
+      "unit": null,
+      "index_base": 0,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "precursor_index"
+          ],
+          "sql": "CAST(\"precursor_index\" AS INTEGER)"
+        }
+      ],
+      "description": "The precursor spectrum's position in its run, as mzPeak stores it."
+    },
+    {
+      "name": "precursorMz",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "selected_ion_mz"
+          ],
+          "sql": "\"selected_ion_mz\""
+        }
+      ],
+      "description": "m/z of the first selected ion."
+    },
+    {
+      "name": "precursorCharge",
+      "type": "int32",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "charge_state"
+          ],
+          "sql": "CAST(\"charge_state\" AS INTEGER)"
+        }
+      ],
+      "description": "Charge of the first selected ion."
+    },
+    {
+      "name": "precursorIntensity",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000131",
+        "label": "number of detector counts"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "peak_intensity"
+          ],
+          "sql": "\"peak_intensity\""
+        }
+      ],
+      "description": "Intensity of the first selected ion."
+    },
+    {
+      "name": "collisionEnergy",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "UO:0000266",
+        "label": "electronvolt"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "collision_energy"
+          ],
+          "sql": "\"collision_energy\""
+        }
+      ],
+      "description": "Collision energy."
+    },
+    {
+      "name": "isolationWindowTargetMz",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "isolation_window_target"
+          ],
+          "sql": "\"isolation_window_target\""
+        }
+      ],
+      "description": "Isolation window target."
+    },
+    {
+      "name": "isolationWindowLowerMz",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "isolation_window_target",
+            "isolation_window_lower_offset"
+          ],
+          "sql": "\"isolation_window_target\" - \"isolation_window_lower_offset\""
+        }
+      ],
+      "description": "Absolute lower bound of the isolation window. Stored as an offset below the target."
+    },
+    {
+      "name": "isolationWindowUpperMz",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "isolation_window_target",
+            "isolation_window_upper_offset"
+          ],
+          "sql": "\"isolation_window_target\" + \"isolation_window_upper_offset\""
+        }
+      ],
+      "description": "Absolute upper bound of the isolation window. Stored as an offset above the target."
+    },
+    {
+      "name": "totIonCurrent",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000131",
+        "label": "number of detector counts"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "total_ion_current"
+          ],
+          "sql": "\"total_ion_current\""
+        }
+      ],
+      "description": "Total ion current, as the instrument reported it."
+    },
+    {
+      "name": "basePeakMz",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "base_peak_mz"
+          ],
+          "sql": "\"base_peak_mz\""
+        }
+      ],
+      "description": "m/z of the base peak."
+    },
+    {
+      "name": "basePeakIntensity",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000131",
+        "label": "number of detector counts"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "base_peak_intensity"
+          ],
+          "sql": "\"base_peak_intensity\""
+        }
+      ],
+      "description": "Intensity of the base peak."
+    },
+    {
+      "name": "lowMz",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "lowest_observed_mz"
+          ],
+          "sql": "\"lowest_observed_mz\""
+        }
+      ],
+      "description": "Lowest observed m/z."
+    },
+    {
+      "name": "highMz",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "highest_observed_mz"
+          ],
+          "sql": "\"highest_observed_mz\""
+        }
+      ],
+      "description": "Highest observed m/z."
+    },
+    {
+      "name": "peaksCount",
+      "type": "int32",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "number_of_peaks",
+            "number_of_data_points"
+          ],
+          "sql": "CAST(COALESCE(\"number_of_peaks\", \"number_of_data_points\") AS INTEGER)"
+        },
+        {
+          "columns": [
+            "number_of_peaks"
+          ],
+          "sql": "CAST(\"number_of_peaks\" AS INTEGER)"
+        },
+        {
+          "columns": [
+            "number_of_data_points"
+          ],
+          "sql": "CAST(\"number_of_data_points\" AS INTEGER)"
+        }
+      ],
+      "description": "Number of peaks or data points in the stored representation."
+    },
+    {
+      "name": "injectionTime",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "UO:0000028",
+        "label": "millisecond"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "ion_injection_time"
+          ],
+          "sql": "\"ion_injection_time\""
+        }
+      ],
+      "description": "Ion injection time."
+    },
+    {
+      "name": "filterString",
+      "type": "string",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "filter_string"
+          ],
+          "sql": "CAST(\"filter_string\" AS VARCHAR)"
+        }
+      ],
+      "description": "The vendor filter string."
+    },
+    {
+      "name": "scanWindowLowerLimit",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "scan_window_lower_limit"
+          ],
+          "sql": "\"scan_window_lower_limit\""
+        }
+      ],
+      "description": "Lower limit of the scan window."
+    },
+    {
+      "name": "scanWindowUpperLimit",
+      "type": "float64",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "scan_window_upper_limit"
+          ],
+          "sql": "\"scan_window_upper_limit\""
+        }
+      ],
+      "description": "Upper limit of the scan window."
+    },
+    {
+      "name": "usi",
+      "type": "string",
+      "nullable": true,
+      "unit": null,
+      "index_base": null,
+      "spectra_core": false,
+      "source": "derived",
+      "description": "Universal Spectrum Identifier, derived by the view from the manifest's usi object, dataOrigin, spectrumId and scanIndex (mzStack-1 section 3.1); null where no collection is declared."
+    },
+    {
+      "name": "mz",
+      "type": "list<float64>",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000040",
+        "label": "m/z"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "mz"
+          ],
+          "sql": "\"mz\""
+        }
+      ],
+      "description": "Signal m/z values. For an mzpeak run, resolved through the archive's array index."
+    },
+    {
+      "name": "intensity",
+      "type": "list<float64>",
+      "nullable": true,
+      "unit": {
+        "accession": "MS:1000131",
+        "label": "number of detector counts"
+      },
+      "index_base": null,
+      "spectra_core": true,
+      "source": "storage",
+      "storage": [
+        {
+          "columns": [
+            "intensity"
+          ],
+          "sql": "\"intensity\""
+        }
+      ],
+      "description": "Signal intensities, aligned with mz. For an mzpeak run, resolved through the archive's array index."
+    }
+  ],
+  "storage_columns": [
+    {
+      "name": "spectrum_id_",
+      "type": "int32",
+      "reserved": true,
+      "index_base": 1,
+      "description": "The row key: contiguous across the dataset, assigned in write order, int32 or wider."
+    },
+    {
+      "name": "spectrum_index",
+      "type": "int64",
+      "reserved": false,
+      "index_base": 0,
+      "description": "Position within the run, matching an archive's own index column."
+    },
+    {
+      "name": "scan_index",
+      "type": "int32",
+      "reserved": true,
+      "index_base": 0,
+      "description": "Position within the source file; restarts per file."
+    },
+    {
+      "name": "scan_number",
+      "type": "int32",
+      "reserved": true,
+      "index_base": null,
+      "description": "The instrument's scan number, as the instrument assigned it."
+    },
+    {
+      "name": "n_scans",
+      "type": "int32",
+      "reserved": true,
+      "index_base": null,
+      "description": "How many scans the spectrum had; a flattened row shows only the first."
+    },
+    {
+      "name": "n_selected_ions",
+      "type": "int32",
+      "reserved": true,
+      "index_base": null,
+      "description": "How many selected ions the spectrum had; a flattened row shows only the first."
+    },
+    {
+      "name": "n_precursors",
+      "type": "int32",
+      "reserved": true,
+      "index_base": null,
+      "description": "How many precursors the spectrum had; a flattened row shows only the first."
+    }
+  ],
+  "frames": [
+    {
+      "name": "i",
+      "frames": [
+        "MS1",
+        "MS2"
+      ],
+      "source": "intensity",
+      "conversion": null,
+      "description": "Intensity of one data point."
+    },
+    {
+      "name": "i_norm",
+      "frames": [
+        "MS1",
+        "MS2"
+      ],
+      "source": "intensity",
+      "conversion": "intensity / max(intensity) over the spectrum's own array",
+      "description": "Intensity relative to the spectrum's most intense point."
+    },
+    {
+      "name": "i_tic_norm",
+      "frames": [
+        "MS1",
+        "MS2"
+      ],
+      "source": "intensity",
+      "conversion": "intensity / sum(intensity) over the spectrum's own array, not totIonCurrent",
+      "description": "Intensity relative to the summed intensity of the array."
+    },
+    {
+      "name": "mz",
+      "frames": [
+        "MS1",
+        "MS2"
+      ],
+      "source": "mz",
+      "conversion": null,
+      "description": "m/z of one data point."
+    },
+    {
+      "name": "scan",
+      "frames": [
+        "MS1",
+        "MS2"
+      ],
+      "source": "spectrum_id_",
+      "conversion": null,
+      "description": "The spectrum's key."
+    },
+    {
+      "name": "rt",
+      "frames": [
+        "MS1",
+        "MS2"
+      ],
+      "source": "rtime",
+      "conversion": "rtime / 60",
+      "description": "Retention time in minutes."
+    },
+    {
+      "name": "polarity",
+      "frames": [
+        "MS1",
+        "MS2"
+      ],
+      "source": "polarity",
+      "conversion": "CASE polarity WHEN 1 THEN 1 WHEN 0 THEN 2 ELSE 0 END",
+      "description": "MassQL encoding: 1 positive, 2 negative, 0 unknown."
+    },
+    {
+      "name": "precmz",
+      "frames": [
+        "MS2"
+      ],
+      "source": "precursorMz",
+      "conversion": null,
+      "description": "Precursor m/z."
+    },
+    {
+      "name": "ms1scan",
+      "frames": [
+        "MS2"
+      ],
+      "source": "spectrum_id_",
+      "conversion": "the scan of the most recent MS1 spectrum preceding this one within the same dataOrigin, as a running value",
+      "description": "The preceding MS1 scan."
+    },
+    {
+      "name": "charge",
+      "frames": [
+        "MS2"
+      ],
+      "source": "precursorCharge",
+      "conversion": "COALESCE(precursorCharge, 0)",
+      "description": "Precursor charge, with null rendered as 0."
+    }
+  ]
+}

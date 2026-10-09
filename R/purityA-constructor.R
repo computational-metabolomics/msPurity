@@ -75,7 +75,10 @@ NULL
 #' * In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da.
 #'
 #'
-#' @param fileList vector; mzML file paths
+#' @param fileList vector of mzML file paths, or a \code{Spectra},
+#'        \code{MsExperiment} or \code{XcmsExperiment} object holding the
+#'        spectra of one or more files. Objects are used as they are, so any
+#'        filtering applied to them also applies to the purity calculation
 #' @param mostIntense boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.
 #' @param nearest boolean; True if the peak selected is from either the preceding scan or the nearest.
 #' @param offsets vector; Override the isolation offsets found in the mzML file e.g. c(0.5, 0.5)
@@ -88,14 +91,18 @@ NULL
 #' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
-#' @param mzRback character; backend to use for mzR parsing
+#' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param ppmInterp numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
 #'                           the precursor ion found in the neighbouring scans.
 #' @param cores numeric; Number of cores to use
 #'
-#' @return Returns a purityA object (pa) with the pa@@puritydf slot updated
+#' @return Returns a purityA object (pa). The MS/MS scans and their purity are
+#' stored as a \code{Spectra} object in the pa@@spectra slot, with the columns
+#' below as spectra variables. \code{purityTable(pa)} returns them as a data
+#' frame, which is also kept in the legacy pa@@puritydf slot while
+#' \code{options(msPurity.legacySlots = TRUE)} (the default).
 #'
-#' The purity dataframe (**pa@@puritydf**) consists of the following columns:
+#' The purity dataframe (**purityTable(pa)**) consists of the following columns:
 #' * pid: unique id for MS/MS scan
 #' * fileid: unique id for mzML file
 #' * seqNum: scan number
@@ -150,14 +157,32 @@ purityA <- function(fileList,
                     im=NULL,
                     ppmInterp=7){
 
-  if((is.null(fileList)) || (all(fileList == "" ))){
-    message("no file list")
-    return(NULL)
+  # Spectra, MsExperiment and XcmsExperiment inputs are used as they are;
+  # file paths are read once here.
+  if (is(fileList, "MsExperiment")){
+    fileList <- MsExperiment::spectra(fileList)
+  }
+  if (is(fileList, "Spectra")){
+    raw <- fileList
+    fileList <- unique(Spectra::dataOrigin(raw))
+  }else{
+    if((is.null(fileList)) || (all(fileList == "" ))){
+      message("no file list")
+      return(NULL)
+    }
+    raw <- .msp_read(fileList)
   }
   names(fileList) <- basename(fileList)
+  .msp_deprecate_mzRback(mzRback)
+  sps <- .msp_split_files(raw)
 
   requireNamespace('foreach')
   pa <- new("purityA", fileList = fileList, cores = cores, mzRback=mzRback)
+  pa@params$purityA <- list(cores = cores, mostIntense = mostIntense, nearest = nearest,
+                            offsets = offsets, plotP = plotP, plotdir = plotdir,
+                            interpol = interpol, iwNorm = iwNorm, iwNormFun = iwNormFun,
+                            ilim = ilim, mzRback = mzRback, isotopes = isotopes, im = im,
+                            ppmInterp = ppmInterp)
 
   # Check cores and choose if parallel or not (do or dopar)
   if(pa@cores<=1){
@@ -172,8 +197,8 @@ purityA <- function(fileList,
 
   # run parallel (or not) using foreach
   purityL <- operator(foreach::foreach(i = 1:length(pa@fileList),
-                                  .packages = 'mzR'),
-                                  assessPuritySingle(filepth = pa@fileList[[i]],
+                                  .packages = 'Spectra'),
+                                  assessPuritySingle(filepth = sps[[i]],
                                   mostIntense = mostIntense,
                                   nearest=nearest,
                                   offsets = offsets,
@@ -203,7 +228,9 @@ purityA <- function(fileList,
     puritydf <- cbind(pid, puritydf)
   }
 
-  pa@puritydf <- puritydf
+  o <- Spectra::dataOrigin(raw)
+  pa@spectra <- .pa_spectra_new(raw, match(o, unique(o)), puritydf)
+  pa <- .pa_sync_legacy(pa, puritydf = puritydf)
   pa@cores = cores
 
   return(pa)
@@ -229,7 +256,7 @@ purityA <- function(fileList,
 #' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
-#' @param mzRback character; Backend to use for mzR parsing
+#' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param ppmInterp numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
@@ -262,7 +289,11 @@ assessPuritySingle <- function(filepth,
   # Load in files and initial setup
   #=================================
   # Get the mzR dataframes
-  mrdf <- getmrdf(filepth, mzRback)
+  sp <- .msp_as_spectra(filepth)
+  if (is(filepth, "Spectra")){
+    filepth <- Spectra::dataOrigin(sp)[1]
+  }
+  mrdf <- getmrdf(sp, mzRback)
   if(is.null(mrdf)){
     message(paste("No MS/MS spectra for file: ", filepth))
     return(NULL)
@@ -291,11 +322,11 @@ assessPuritySingle <- function(filepth,
   }
 
   # get scans (list of mz and i) from mzR
-  scans <- getscans(filepth, mzRback)
+  scans <- getscans(sp, mzRback)
 
   # Get offsets from mzML unless defined by user
   if(anyNA(offsets)){
-    offsets <- get_isolation_offsets(filepth)
+    offsets <- .msp_isolation_offsets(sp)
   }
   minoff <- offsets[1]
   maxoff <- offsets[2]
@@ -678,14 +709,18 @@ get_isolation_offsets <- function(inputfile){
 
 # Get the Data
 getmrdf <- function(files, backend='pwiz'){
-  #requireNamespace('mzR') # problem with cpp libraries
-  # need to be loaded here for parallel
+  # files can be file paths or a Spectra object; either way one header per file
+  if (is(files, "Spectra")){
+    sps <- .msp_split_files(files)
+    files <- vapply(sps, function(s) Spectra::dataOrigin(s)[1], "")
+  }else{
+    sps <- NULL
+  }
   mrdf <- NULL
 
   for(i in 1:length(files)){
     #message(paste("processing file:" ,i))
-    mr <- mzR::openMSfile(files[i], backend=backend)
-    mrdfn <- mzR::header(mr)
+    mrdfn <- .msp_header(if (is.null(sps)) .msp_read(files[i]) else sps[[i]])
     if(length(unique(mrdfn$msLevel))<2){
       if (unique(mrdfn$msLevel)==1){
         message("only MS1 data")
@@ -737,20 +772,15 @@ missing_prec_scan <- function(mrdfn){
 }
 
 getscans <- function(files, backend='pwiz'){
-  if(length(files)==1){
-    mr <- mzR::openMSfile(files, backend=backend)
-    scan_peaks <- mzR::peaks(mr)
-    return(scan_peaks)
-  }else{
-
-    scan_peaks <- plyr::alply(files, 1 ,function(x){
-      mr <- mzR::openMSfile(x, backend=backend)
-      scan_peaks <- mzR::peaks(mr)
-      return(scan_peaks)
-    })
-
-    return(scan_peaks)
+  # files can be file paths or a Spectra object. One file gives a list of
+  # peak matrices; several give one such list per file.
+  sps <- if (is(files, "Spectra")) .msp_split_files(files)
+         else lapply(files, .msp_read)
+  scan_peaks <- lapply(sps, .msp_peaks)
+  if(length(scan_peaks)==1){
+    return(scan_peaks[[1]])
   }
+  return(scan_peaks)
 }
 
 # MSMSperMS <- function(filepths){

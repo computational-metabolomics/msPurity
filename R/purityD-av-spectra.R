@@ -47,6 +47,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
                            clustType="hc", ppm=1.5, snthr = 3, av="median",
                            missingV="zero", minfrac=0.6667, normTIC=FALSE,
                            snMeth="median") {
+  Object <- .pd_begin(Object)
   nfiles <- nrow(Object@fileList)
 
   if(Object@mzML==TRUE){
@@ -81,7 +82,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
   # Perform averaging using "averageSpectraSingle" function
   # on multiple single runs (1 file) multi-core (averaging scans in 1 file)
   Object@avPeaks$orig <- operator(foreach::foreach(i=1:nfiles,
-                                            .packages = c("Rcpp", "mzR")),
+                                            .packages = c("Rcpp", "Spectra")),
                                             averageSpectraSingle(filePth = as.character(Object@fileList$filepth[i]),
                                                       rtscn = rtscn,
                                                       scanRange= scanRange,
@@ -116,7 +117,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
   Object@avParam$scanRange <- scanRange
   Object@avParam$timeRange <- timeRange
 
-  return(Object)
+  return(.pd_end(Object))
 
 })
 
@@ -154,7 +155,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
 #' @param snMeth character; Type of snMethod to use \['mean', 'median', 'precalc'\]. Precalc only applicable when using the csvFile parameter as TRUE
 #' @param normTIC boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
-#' @param mzRback character; Backend to use for mzR parsing
+#' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param MSFileReader boolean; Deprecapted. Use csvFile parameter
 #' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
 #' @examples
@@ -260,11 +261,11 @@ mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth, bac
   # Read in mzml file from mzR
 
   #print("reading in mzML")
-  mr <- mzR::openMSfile(mzmlPth, backend=backend)
+  sp <- .msp_read(mzmlPth)
 
   # Get the peaks
-  scanPeaks <- mzR::peaks(mr)
-  h <- mzR::header(mr)
+  scanPeaks <- .msp_peaks(sp)
+  h <- .msp_header(sp)
 
   # get the ms1 scans
   hms1 <- h[h$msLevel==1,]
@@ -322,7 +323,7 @@ mzMLProcess <- function(mzmlPth, rtscn, scanRange, timeRange, snthr, snMeth, bac
 
 
 msfrProcess <- function(filePth, scanRange, snthr, snMeth){
-  csvFileOut <- read.csv(filePth)
+  csvFileOut <- .msp_msfr_frame(.msp_read_msfr(filePth))
 
   keep <- c('mz', 'i', 'scanid', 'snr')
   csvFileOut <- csvFileOut[,(names(csvFileOut ) %in% keep)]
@@ -367,6 +368,7 @@ msfrProcess <- function(filePth, scanRange, snthr, snMeth){
 #' @export
 setMethod(f="groupPeaks", signature="purityD", definition =
             function(Object, ppm=3, sampleOnly=FALSE, clustType='hc') {
+              Object <- .pd_begin(Object)
               if (sampleOnly){
                 idx = Object@sampleIdx
               }else{
@@ -379,7 +381,7 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 
               Object@groupedPeaks <- groupPeaksEx(shrt, cores = Object@cores, clustType = clustType, ppm = ppm)
 
-              return(Object)
+              return(.pd_end(Object))
 
 
 })

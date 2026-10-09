@@ -23,7 +23,10 @@ purityA(
 )
 }
 \arguments{
-\item{fileList}{vector; mzML file paths}
+\item{fileList}{vector of mzML file paths, or a \code{Spectra},
+\code{MsExperiment} or \code{XcmsExperiment} object holding the
+spectra of one or more files. Objects are used as they are, so any
+filtering applied to them also applies to the purity calculation}
 
 \item{cores}{numeric; Number of cores to use}
 
@@ -46,7 +49,7 @@ linear should be used for all standard cases, isotope removal is also not availa
 
 \item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
-\item{mzRback}{character; backend to use for mzR parsing}
+\item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
 
 \item{isotopes}{boolean; TRUE if isotopes are to be removed}
 
@@ -56,9 +59,13 @@ linear should be used for all standard cases, isotope removal is also not availa
 the precursor ion found in the neighbouring scans.}
 }
 \value{
-Returns a purityA object (pa) with the pa@puritydf slot updated
+Returns a purityA object (pa). The MS/MS scans and their purity are
+stored as a \code{Spectra} object in the pa@spectra slot, with the columns
+below as spectra variables. \code{purityTable(pa)} returns them as a data
+frame, which is also kept in the legacy pa@puritydf slot while
+\code{options(msPurity.legacySlots = TRUE)} (the default).
 
-The purity dataframe (\strong{pa@puritydf}) consists of the following columns:
+The purity dataframe (\strong{purityTable(pa)}) consists of the following columns:
 \itemize{
 \item pid: unique id for MS/MS scan
 \item fileid: unique id for mzML file

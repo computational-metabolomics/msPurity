@@ -27,17 +27,19 @@ test_that("checking combine annotations based functions", {
 
   sqlitePth <- sm_resultPthCopy
 
-  combined <- combineAnnotations(sqlitePth,
-                                 compoundDbPth=compoundDbPth,
-                                 metfrag_resultPth = metfrag_resultPth,
-                                 sirius_csi_resultPth = sirius_csi_resultPth,
-                                 probmetab_resultPth = probmetab_resultPth,
-                                 ms1_lookup_resultPth = ms1_lookup_resultPth,
-                                 weights = weights,
-                                 ms1_lookup_dbSource='hmdb',
-                                 ms1_lookup_checkAdducts=FALSE,
-                                 ms1_lookup_keepAdducts=c('[M+H]+', '[M-H]-')
-                                 )
+  expect_warning(
+    combined <- combineAnnotations(sqlitePth,
+                                   compoundDbPth=compoundDbPth,
+                                   metfrag_resultPth = metfrag_resultPth,
+                                   sirius_csi_resultPth = sirius_csi_resultPth,
+                                   probmetab_resultPth = probmetab_resultPth,
+                                   ms1_lookup_resultPth = ms1_lookup_resultPth,
+                                   weights = weights,
+                                   ms1_lookup_dbSource='hmdb',
+                                   ms1_lookup_checkAdducts=FALSE,
+                                   ms1_lookup_keepAdducts=c('[M+H]+', '[M-H]-')
+                                   ),
+    class = "deprecatedWarning")
   # likely to change to only providing limited testing
   expect_equal(combined$rank,   c(1,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,
                                   5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,7,7,7,7,8,8,8,9,9,9,9,9,9,9,9,9,9,

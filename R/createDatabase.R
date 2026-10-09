@@ -38,7 +38,7 @@
 #'    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> **createDatabase** -> spectralMatching -> (sqlite spectral database)
 #'
 #' @param pa purityA object; Needs to be the same used for frag4feature function
-#' @param xcmsObj xcms object of class XCMSnExp or xcmsSet; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)
+#' @param xcmsObj xcms object of class XcmsExperiment, XCMSnExp or xcmsSet; Needs to be the same used for frag4feature function (this will be ignored when using xsa parameter)
 #' @param xsa CAMERA object (optional); if CAMERA object is used, we ignore the xset parameter input and obtain all information
 #'                          from the xset object nested with the CAMERA xsa object. Adduct and isotope information
 #'                          will be included into the database when using this parameter. The underlying xset object must
@@ -48,7 +48,44 @@
 #' @param outDir character; Out directory for the SQLite result database
 #' @param metadata list; A list of metadata to add to the s_peak_meta table
 #' @param xset xcms object of class XCMSnExp or xcmsSet; (Deprecated - if provided, will replace variable 'obj')
-#' @return path to SQLite database and database name
+#' @param format character; \code{"sqlite"} (the default) writes the SQLite database described above, and raises a
+#'               deprecation warning: SQLite output is frozen and receives bug fixes only. \code{"parquet"} writes a
+#'               Parquet dataset instead (experimental; requires the suggested packages arrow and jsonlite). See Details.
+#' @param study character (optional, parquet only); path of the Parquet dataset the mzML files were converted into, for
+#'              example with MsBackendParquet::mzMLToParquet(). MS2 scans are then referenced by their spectrum ids in that
+#'              dataset. Without it, every source file is recorded as an external source.
+#' @param studyKey character (parquet only); the key the study is declared under in the results dataset.
+#' @param fileMap named character (optional, parquet only); source file path (as in \code{pa@fileList}) -> run_id.
+#'                Required when two source files share a file name, and to match files whose recorded paths
+#'                no longer exist.
+#' @param overwrite logical (parquet only); replace an existing dataset at the destination.
+#' @return For \code{format = "sqlite"}, the path to the SQLite database. For \code{format = "parquet"}, the path of
+#'         the Parquet results dataset, invisibly.
+#'
+#' @details
+#' **Parquet output (experimental)**
+#'
+#' With \code{format = "parquet"}, the results are written as a results dataset (a directory of Parquet
+#' files with an \code{mzStack.json} manifest), following part 4 of the mzStack specification:
+#'
+#'  * xcms features, chromatographic peaks and their per-sample abundances become the \code{feature},
+#'    \code{chromatographic_peak}, \code{chromatographic_peak_feature} and \code{abundance} tables, with
+#'    \code{assay} and \code{sample} for the source files;
+#'  * the links between MS2 scans and features become \code{spectrum_feature}, with the precursor m/z,
+#'    error, retention time and purity each scan was matched at;
+#'  * averaged fragmentation spectra become spectra of the dataset, one run per source file for spectra
+#'    averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
+#'    (\code{av_inter}, \code{av_all}), with their per-peak statistics;
+#'  * the scans each averaged spectrum was made from are recorded in \code{merge_member};
+#'  * every assessed MS2 scan keeps its precursor purity measures (\code{x_mspurity_scan}); MS2 scans are
+#'    referenced, not copied;
+#'  * the processing parameters, what was converted and anything that could not be mapped are recorded
+#'    in \code{tool_provenance}, \code{conversion}, \code{source_identifier} and \code{loss_ledger}.
+#'
+#' The dataset is written to \code{file.path(outDir, dbName)}; the default name ends in \code{.parquet}. It is built
+#' beside its destination and moved into place only once complete, so an interrupted write leaves nothing behind.
+#'
+#' CAMERA annotation (\code{xsa}) and a custom \code{grpPeaklist} are not mapped to the Parquet output and are refused.
 #'
 #' @examples
 #' library(xcms)
@@ -83,7 +120,28 @@
 #'
 #' @md
 #' @export
-createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA){
+createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA,
+                            format = c("sqlite", "parquet"), study = NULL, studyKey = "study",
+                            fileMap = NULL, overwrite = FALSE){
+  pa <- .pa_update(pa)
+  format <- match.arg(format)
+  if (format == "parquet"){
+    return(.createDatabase_parquet(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
+                                   grpPeaklist = grpPeaklist, dbName = dbName,
+                                   metadata = metadata, xset = xset, study = study,
+                                   studyKey = studyKey, fileMap = fileMap,
+                                   overwrite = overwrite))
+  }
+  db <- .createDatabase_sqlite(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
+                               grpPeaklist = grpPeaklist, dbName = dbName,
+                               metadata = metadata, xset = xset)
+  .msp_deprecate_sqlite("createDatabase()")
+  db
+}
+
+# The SQLite writer behind createDatabase(), without the deprecation
+# warning, for callers that warn once themselves or not at all.
+.createDatabase_sqlite <- function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA){
   ########################################################
   # Export the target data into sqlite database
   ########################################################
@@ -100,12 +158,12 @@ createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, d
   #if a peaklist was not supplied to function, extract from xsa or obj.
   if (!is.data.frame(grpPeaklist)){
     if (is.null(xsa)){
-      if(is(xcmsObj, 'XCMSnExp')){
-        grpPeaklist <- cbind(xcms::featureDefinitions(xcmsObj), featureValues(xcmsObj))
+      if(.xcms_is_modern(xcmsObj)){
+        grpPeaklist <- cbind(xcms::featureDefinitions(xcmsObj), xcms::featureValues(xcmsObj))
       }else if(is(xcmsObj, 'xcmsSet')){
         grpPeaklist <- xcms::peakTable(xcmsObj)
       }else{
-        stop('createDatabase stopped as the "xcmsObj" (or "xset" if specified) argument is not of class "XCMSnExp" or "xcmsSet"')
+        stop('createDatabase stopped as the "xcmsObj" (or "xset" if specified) argument is not of class "XcmsExperiment", "XCMSnExp" or "xcmsSet"')
       }
     }else{
       grpPeaklist <- CAMERA::getPeaklist(xsa)
@@ -132,13 +190,14 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     XCMSnExp_bool <- FALSE
   }else{
     #confirm whether xcmsObj is of class "XCMSnExp" (if not, it should be of class "xcmsSet")
-    XCMSnExp_bool <- is(xcmsObj, "XCMSnExp")
+    XCMSnExp_bool <- .xcms_is_modern(xcmsObj)
   }
 
   if (XCMSnExp_bool) {
-    cond1 = (length(pa@fileList) > length(xcmsObj@processingData@files)) && (pa@f4f_link_type=='group')
-    cond2 = !all(basename(pa@fileList)==basename(xcmsObj@processingData@files)) && (pa@f4f_link_type=='individual')
-    cond3 = !all(names(pa@fileList)==basename(xcmsObj@processingData@files))
+    xfiles <- .xcms_files(xcmsObj)
+    cond1 = (length(pa@fileList) > length(xfiles)) && (pa@f4f_link_type=='group')
+    cond2 = !all(basename(pa@fileList)==basename(xfiles)) && (pa@f4f_link_type=='individual')
+    cond3 = !all(names(pa@fileList)==basename(xfiles))
   }else{
     cond1 = (length(pa@fileList) > length(xcmsObj@filepaths)) && (pa@f4f_link_type=='group')
     cond2 = !all(basename(pa@fileList)==basename(xcmsObj@filepaths)) && (pa@f4f_link_type=='individual')
@@ -162,7 +221,9 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
       return(NULL)
     }else{
       if(XCMSnExp_bool){
-        xcmsObj@processingData@files = unname(pa@fileList)
+        # XcmsExperiment keeps its file paths in its spectra.
+        if (is(xcmsObj, 'XCMSnExp')) xcmsObj@processingData@files = unname(pa@fileList)
+        xfiles <- unname(pa@fileList)
       }else{
         xcmsObj@filepaths <- unname(pa@fileList)
       }
@@ -210,14 +271,10 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
 
   pa@fileList <- unname(pa@fileList)
 
-  scaninfo <- pa@puritydf
+  scaninfo <- purityTable(pa)
   fileList <- pa@fileList
 
-  if(XCMSnExp_bool){
-    classInfo = xcmsObj@phenoData@data$class
-  }else{
-    classInfo = xcmsObj@phenoData$class
-  }
+  classInfo = .xcms_classes(xcmsObj)
 
   if(is.null(classInfo)){
     classInfo = rep(NA, length(fileList))
@@ -249,7 +306,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   # in these cases we need to ensure that fileids are correct
   if (unevenFilelists){
     if(XCMSnExp_bool){
-      cPeaks[,'sample'] <- match(basename(xcmsObj@processingData@files[cPeaks[,'sample']]), filedf$filename)
+      cPeaks[,'sample'] <- match(basename(xfiles[cPeaks[,'sample']]), filedf$filename)
     }else{
       cPeaks[,'sample'] <- match(basename(xcmsObj@filepaths[cPeaks[,'sample']]), filedf$filename)
     }
@@ -278,7 +335,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   colnames(grpPeaklist)[which(colnames(grpPeaklist)=='into')] <- '_into'
 
   if(XCMSnExp_bool){
-    grpPeaklist$grp_name = xcmsObj@msFeatureData$featureDefinitions@rownames
+    grpPeaklist$grp_name = .xcms_feature_names(xcmsObj)
     #convert list of peakIDX values to string - required for dbWriteTable, below
     grpPeaklist$peakidx = apply(grpPeaklist, 1, function(row){ paste(unlist(row['peakidx']), collapse = ', ')} )
   }else{
@@ -329,16 +386,17 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   ###############################################
   # get all the fragmentation from the scans
   if((!is.null(pa@filter_frag_params[["allfrag"]])) && (pa@filter_frag_params$allfrag)){
-    speaks <- pa@all_frag_scans
+    speaks <- .pa_allfrag_frozen(pa)
   }else{
     speaks <- getScanPeaks(pa)
     speaks$grpid <- NA
   }
 
-  if (length(pa@av_spectra)>0){
-    av_spectra <- plyr::ldply(pa@av_spectra, getAvSpectraForGrp)
+  av_list <- averagedSpectra(pa)
+  if (length(av_list)>0){
+    av_spectra <- plyr::ldply(av_list, getAvSpectraForGrp)
     colnames(av_spectra)[1] <- 'grpid'
-    av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
+    av_spectra$grpid <- names(av_list)[av_spectra$grpid]
     colnames(av_spectra)[colnames(av_spectra)=='sample'] <- 'fileid'
 
     colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
@@ -628,9 +686,9 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 scanPeaks4db <- function(x, pa){
 
-  mr <- mzR::openMSfile(as.character(x$filepth))
-  scanpeaks <- mzR::peaks(mr)
-  scans <- mzR::header(mr)
+  sp <- .msp_read(as.character(x$filepth))
+  scanpeaks <- .msp_peaks(sp)
+  scans <- .msp_header(sp)
   names(scanpeaks) <- seq(1, length(scanpeaks))
 
   scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)
@@ -668,7 +726,6 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
     gidx <- xcms::featureDefinitions(xcmsObj)$peakidx
     bestpeaks <- xcms::featureValues(xcmsObj, method = method, value = 'index')
     sids = xcms::chromPeaks(xcmsObj)[,'sample']
-    filenames = rownames(xcmsObj@phenoData@data)
     peaks_df = data.frame(xcms::chromPeaks(xcmsObj))
   }else{
     gidx <- xcmsObj@groupidx

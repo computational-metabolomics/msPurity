@@ -32,6 +32,7 @@
 #' @export
 setMethod(f="writeOut", signature="purityD",
           definition= function(Object, outDir, original) {
+  Object <- .pd_begin(Object)
 
   dir.create(outDir)
 
@@ -65,5 +66,5 @@ setMethod(f="writeOut", signature="purityD",
   }
 
   # write out meta information
-  return(Object)
+  return(.pd_end(Object))
 })

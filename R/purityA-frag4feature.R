@@ -64,7 +64,7 @@
 #'
 #' @aliases frag4feature
 #' @param pa object; purityA object
-#' @param xcmsObj object; XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object
+#' @param xcmsObj object; XcmsExperiment, XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object
 #' @param ppm numeric; ppm tolerance between precursor mz and XCMS feature mz
 #' @param plim numeric; minimum purity of precursor to be included
 #' @param intense boolean; If TRUE the most intense precursor will be used. If FALSE the precursor closest to the center of the isolation window will be used
@@ -84,7 +84,10 @@
 #' @return Returns a purityA object (pa) with the following slots populated:
 #'
 #' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
-#' * pa@@grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+#' * pa@@fragSpectra: The linked fragmentation spectra as a \code{Spectra} object, each scan once, identified by
+#'   its \code{pid}. \code{groupedSpectra(pa)} returns them as a list per XCMS feature
+#' * pa@@grped_ms2: The legacy list of fragmentation spectra for each grouped XCMS feature, filled while
+#'   \code{options(msPurity.legacySlots = TRUE)} (the default)
 #' * pa@@f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
 #'
 #'
@@ -124,6 +127,7 @@ setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA){
+  pa <- .pa_update(pa)
 
   if(!is.na(xset)){
     message('The param xset is deprecated - please use xcmsObj instead')
@@ -155,7 +159,7 @@ setMethod(f="frag4feature", signature="purityA",
     dbName <- db_name
   }
 
-  if(is(xcmsObj, 'XCMSnExp')){
+  if(.xcms_is_modern(xcmsObj)){
     XCMSnExp_bool = TRUE
   }else if(is(xcmsObj, 'xcmsSet')){
     XCMSnExp_bool = FALSE
@@ -163,7 +167,7 @@ setMethod(f="frag4feature", signature="purityA",
     XCMSnExp_bool = FALSE
     xcmsObj = xcmsObj@xcmsSet
   }else{
-    stop('xcmsObj is not of class XCMSnExp, xcmsSet or xsAnnotate')
+    stop('xcmsObj is not of class XcmsExperiment, XCMSnExp, xcmsSet or xsAnnotate')
   }
 
   # Makes sure the same files are being used
@@ -172,7 +176,7 @@ setMethod(f="frag4feature", signature="purityA",
     for(i in 1:length(pa@fileList)){
       
       if(XCMSnExp_bool){
-        f_nms = basename(xcmsObj@processingData@files[i])
+        f_nms = basename(.xcms_files(xcmsObj)[i])
       }else{
         f_nms = basename(xcmsObj@filepaths[i])
       }
@@ -187,12 +191,12 @@ setMethod(f="frag4feature", signature="purityA",
   }
 
   # Get the purity data frame and the xcms peaks data frame
-  puritydf <- pa@puritydf
+  puritydf <- purityTable(pa)
   puritydf$fileid <- as.numeric(as.character(puritydf$fileid))
 
   if(XCMSnExp_bool){
     allpeaks <- data.frame(xcms::chromPeaks(xcmsObj))
-    allpeaks$filename = basename(xcmsObj@processingData@files)[allpeaks$sample]
+    allpeaks$filename = basename(.xcms_files(xcmsObj))[allpeaks$sample]
     #allpeaks$filename = basename(xcmsObj$sampleName)[allpeaks$sample]
   }else{
     allpeaks <- data.frame(xcmsObj@peaks)
@@ -292,16 +296,28 @@ setMethod(f="frag4feature", signature="purityA",
     grpm <- grpm[grpm$inPurity>plim,]
   }
 
+  # Record the arguments for provenance.
+  prm <- if (methods::.hasSlot(pa, "params")) pa@params else list()
+  prm$frag4feature <- list(ppm = ppm, plim = plim, intense = intense,
+                           convert2RawRT = convert2RawRT, useGroup = useGroup,
+                           xcmsObj_class = class(xcmsObj)[1])
+  pa@params <- prm
+
   # add to the slots
   pa@grped_df <- grpm
-  pa@grped_ms2 <- getMS2scans(grpm, pa@fileList, mzRback = pa@mzRback)
+  # Each linked scan is stored once; grped_ms2 is rebuilt from the links.
+  pa@fragSpectra <- .pa_raw_scans(pa, unique(grpm$pid))
+  pa <- .pa_sync_legacy(pa, grped_ms2 = .pa_grouped_legacy(pa))
 
   if (createDb){
     if(is.null(pa@filter_frag_params$allfrag)){
       pa@filter_frag_params$allfrag = FALSE
     }
-    pa@db_path <- createDatabase(pa, xcmsObj = xcmsObj, xsa=NULL, outDir=outDir,
-                                 grpPeaklist=grpPeaklist, dbName=dbName)
+    pa@db_path <- .createDatabase_sqlite(pa, xcmsObj = xcmsObj, xsa=NULL, outDir=outDir,
+                                         grpPeaklist=grpPeaklist, dbName=dbName)
+    .msp_deprecate_sqlite("frag4feature(createDb = TRUE)",
+                          paste("Call createDatabase(format = \"parquet\")",
+                                "after frag4feature() instead."))
   }
 
   return(pa)
@@ -376,22 +392,6 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
 
 check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
 
-getMS2scans  <- function(grpm, filepths, mzRback){
-  # Get all MS2 scans
-
-  scans <- getscans(filepths, mzRback)
-
-  if(length(filepths)==1){
-    scans = list(scans)
-  }
-
-  grpm$fid <- seq(1, nrow(grpm))
-
-  ms2l <- plyr::dlply(grpm, ~ grpid, getScanLoop, scans=scans)
-
-  return(ms2l)
-}
-
 
 mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
   if ('mzmed' %in% colnames(mtchRow)){
@@ -422,23 +422,6 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
   }
 }
 
-getScanLoop <- function(peaks, scans){
-  grpl <-  list()
-
-  if ('sample' %in% colnames(peaks)){
-    idx_nm ='sample'
-  }else{
-    idx_nm = 'fileid'
-  }
-  for(i in 1:nrow(peaks)){
-    x <- peaks[i,]
-    idx <- x[,idx_nm]
-    grpl[[i]] <- scans[[idx]][[x$precurMtchID]]
-
-  }
-  return(grpl)
-}
-
 getname <- function(x, xcmsObj){
  x$filename <- basename(xcmsObj@filepaths[x$sample])
  return(x)
@@ -457,6 +440,11 @@ convert2Raw <- function(all_peaks, xcmsObj, XCMSnExp_bool){
   if(XCMSnExp_bool==1 && (is(xcmsObj,  'XCMSnExp'))){
       all_peaks$rtmin <- xcms::rtime(xcmsObj, adjusted=FALSE, bySample=TRUE)[[sid]][match(all_peaks$rtmin, xcms::rtime(xcmsObj, adjusted = TRUE, bySample = TRUE)[[sid]])]
       all_peaks$rtmax <- xcms::rtime(xcmsObj, adjusted=FALSE, bySample=TRUE)[[sid]][match(all_peaks$rtmax, xcms::rtime(xcmsObj, adjusted = TRUE, bySample = TRUE)[[sid]])]
+  }else if(XCMSnExp_bool==1 && (is(xcmsObj, 'XcmsExperiment'))){
+      raw <- .xcms_rtime_by_sample(xcmsObj, adjusted = FALSE)[[sid]]
+      adj <- .xcms_rtime_by_sample(xcmsObj, adjusted = TRUE)[[sid]]
+      all_peaks$rtmin <- raw[match(all_peaks$rtmin, adj)]
+      all_peaks$rtmax <- raw[match(all_peaks$rtmax, adj)]
   }else if(XCMSnExp_bool==0 && (is(xcmsObj, 'xcmsSet'))){
       all_peaks$rtmin <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmin, xcmsObj@rt$corrected[[sid]])]
       all_peaks$rtmax <- xcmsObj@rt$raw[[sid]][match(all_peaks$rtmax, xcmsObj@rt$corrected[[sid]])]

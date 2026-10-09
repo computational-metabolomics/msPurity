@@ -23,6 +23,9 @@
 #'
 #' @keywords internal
 #' @importFrom magrittr %>%
+#' @importClassesFrom Spectra Spectra
+#' @importClassesFrom MsExperiment MsExperiment
+#' @importFrom BiocGenerics updateObject
 #' @importFrom grDevices dev.off png
 #' @importFrom graphics abline legend lines plot points text
 #' @importFrom stats approxfun dnorm median na.omit sd

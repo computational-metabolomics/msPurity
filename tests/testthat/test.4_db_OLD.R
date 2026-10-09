@@ -17,8 +17,10 @@ test_that("checking createDatabase functions (new schema)", {
 
 
   td <- tempdir()
-  db_pth = createDatabase(pa, xset, outDir = td,
-                          dbName = paste0("test-new-schema-", as.integer(Sys.time()), "-", sample.int(1e9, 1), ".sqlite"))
+  expect_warning(
+    db_pth <- createDatabase(pa, xset, outDir = td,
+                             dbName = paste0("test-new-schema-", as.integer(Sys.time()), "-", sample.int(1e9, 1), ".sqlite")),
+    class = "deprecatedWarning")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
 
@@ -57,8 +59,10 @@ test_that("checking create_database (old schema)", {
 
 
   td <- tempdir()
-  db_pth = create_database(pa, xset, out_dir = td,
-                           db_name = paste0("test-old-schema-", as.integer(Sys.time()), "-", sample.int(1e9, 1), ".sqlite"))
+  expect_warning(
+    db_pth <- create_database(pa, xset, out_dir = td,
+                              db_name = paste0("test-old-schema-", as.integer(Sys.time()), "-", sample.int(1e9, 1), ".sqlite")),
+    class = "deprecatedWarning")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), file.path(db_pth))
 
@@ -80,7 +84,9 @@ test_that("checking create_database (old schema)", {
   ####################################
   # Check EIC database from purityX
   ####################################
-  px  <- purityX(xset, saveEIC = TRUE, sqlitePth = db_pth, plotP = TRUE, xgroups=c(1,2,3))
+  expect_warning(
+    px <- purityX(xset, saveEIC = TRUE, sqlitePth = db_pth, plotP = TRUE, xgroups=c(1,2,3)),
+    class = "deprecatedWarning")
   eics <- DBI::dbGetQuery(con, 'SELECT * FROM eics')
   expect_equal(nrow(eics), 211)
 

@@ -44,7 +44,20 @@ setClass(
     av_inter_params = "list",
     av_all_params = "list",
     filter_frag_params = "list",
-    all_frag_scans = "data.frame"
+    all_frag_scans = "data.frame",
+    # Arguments of purityA() and frag4feature(), for provenance.
+    params = "list",
+    # MS/MS scans with their purity results as spectra variables.
+    spectra = "Spectra",
+    # Scans used downstream, each once, with filter flags as peak variables.
+    fragSpectra = "Spectra",
+    # Averaged spectra, one per feature, averaging level and sample.
+    avSpectra = "Spectra"
+  ),
+  prototype = prototype(
+    spectra = Spectra::Spectra(Spectra::MsBackendMemory()),
+    fragSpectra = Spectra::Spectra(Spectra::MsBackendMemory()),
+    avSpectra = Spectra::Spectra(Spectra::MsBackendMemory())
   )
 )
 
@@ -60,4 +73,9 @@ setClass(
 #' @export
 setMethod("show", "purityA", function(object) {
   print("purityA object for assessing precursor purity for MS/MS spectra")
+  if (.pa_is_current(object)) {
+    cat(length(object@spectra), "MS/MS scans,",
+        length(unique(object@grped_df$grpid)), "features with scans,",
+        length(object@avSpectra), "averaged spectra\n")
+  }
 })

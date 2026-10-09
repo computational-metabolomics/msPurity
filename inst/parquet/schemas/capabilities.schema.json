@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mzstack:schema:capabilities:0.2",
+  "title": "mzStack capability set",
+  "description": "What an implementation claims to do, as returned by capabilities() (mzStack-5 §2, §4) and recorded in a conformance report [B-076]. A capability set MUST be accurate [B-004]: anything not declared here is refused [B-005]. It describes an implementation, never a dataset [R-036]. Unknown keys are permitted.",
+  "type": "object",
+  "required": ["mzstack_version", "implementation", "classes"],
+  "properties": {
+    "mzstack_version": {
+      "$ref": "#/$defs/semver",
+      "description": "The mzStack specification version implemented [B-076]."
+    },
+    "implementation": {
+      "type": "object",
+      "required": ["name", "version", "language"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "language": { "type": "string", "minLength": 1, "description": "e.g. R, Python." },
+        "language_version": { "type": "string" },
+        "homepage": { "type": "string", "format": "uri" }
+      }
+    },
+    "classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["Reader", "Writer", "Querier", "Visualiser", "Results Reader", "Results Writer"]
+      },
+      "description": "Conformance classes claimed [B-002]."
+    },
+    "reader": { "$ref": "#/$defs/reader" },
+    "writer": { "$ref": "#/$defs/writer" },
+    "query": { "$ref": "#/$defs/query" },
+    "visualisation": { "$ref": "#/$defs/visualisation" },
+    "results": { "$ref": "#/$defs/results" },
+    "errors": {
+      "type": "object",
+      "description": "How each error class of [B-011] is surfaced: the implementation's own condition or exception name. Mechanism is implementation-defined; the distinction is not.",
+      "propertyNames": {
+        "enum": ["Format", "Archive", "Reference", "Study", "Stale", "Unsupported", "Semantic", "Capability", "Resource"]
+      },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "suite_version": {
+      "type": "string",
+      "description": "Conformance suite version the claim was assessed against, where known [B-076]."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "classes": { "contains": { "const": "Reader" } } } },
+      "then": { "required": ["reader"] }
+    },
+    {
+      "if": { "properties": { "classes": { "contains": { "const": "Writer" } } } },
+      "then": {
+        "required": ["reader", "writer"],
+        "properties": { "classes": { "contains": { "const": "Reader" } } }
+      }
+    },
+    {
+      "if": { "properties": { "classes": { "contains": { "const": "Querier" } } } },
+      "then": {
+        "required": ["reader", "query"],
+        "properties": { "classes": { "contains": { "const": "Reader" } } }
+      }
+    },
+    {
+      "if": { "properties": { "classes": { "contains": { "const": "Visualiser" } } } },
+      "then": {
+        "required": ["reader", "visualisation"],
+        "properties": { "classes": { "contains": { "const": "Reader" } } }
+      }
+    },
+    {
+      "if": { "properties": { "classes": { "contains": { "const": "Results Reader" } } } },
+      "then": {
+        "required": ["reader", "results"],
+        "properties": { "classes": { "contains": { "const": "Reader" } } }
+      }
+    },
+    {
+      "if": { "properties": { "classes": { "contains": { "const": "Results Writer" } } } },
+      "then": {
+        "required": ["reader", "writer", "results"],
+        "properties": {
+          "classes": {
+            "allOf": [
+              { "contains": { "const": "Results Reader" } },
+              { "contains": { "const": "Writer" } }
+            ]
+          },
+          "results": { "required": ["entities_written"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "majorVersion": { "type": "integer", "minimum": 0 },
+    "runKinds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["mzpeak", "native"] }
+    },
+    "projectionTypes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+      "description": "mzsorted, scansorted, or an extension type [D-054, D-079]."
+    },
+    "reader": {
+      "type": "object",
+      "required": ["mzstack_major_versions", "run_kinds"],
+      "properties": {
+        "mzstack_major_versions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/majorVersion" },
+          "description": "Manifest major versions accepted [G-009]."
+        },
+        "run_kinds": { "$ref": "#/$defs/runKinds" },
+        "mzpeak_version": {
+          "type": "string",
+          "description": "mzPeak specification version read, where mzpeak runs are supported [B-003, B-076]."
+        },
+        "signal_layouts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["list", "point"] },
+          "description": "chunk is not listed: it is always rejected as Archive [D-015]."
+        },
+        "representations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["auto", "profile", "centroid"] },
+          "description": "Signal representations a caller can select where profile and centroid are stored separately [D-045]."
+        },
+        "projections_used": { "$ref": "#/$defs/projectionTypes" },
+        "sample_metadata": {
+          "type": "boolean",
+          "description": "Reads index/samples.parquet and exposes its variables as spectra variables [D-073 to D-077]."
+        },
+        "usi": {
+          "type": "boolean",
+          "description": "Derives the usi variable and resolves USIs, including select_usi [B-009, D-028]."
+        },
+        "filters": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "ms_level", "rt", "data_origin", "polarity", "precursor_mz_range",
+              "precursor_mz_values", "contains_mz", "sample_metadata"
+            ]
+          },
+          "description": "The specified filters supported [B-023]."
+        },
+        "portable_form": {
+          "type": "string",
+          "description": "How tabular results cross a language boundary without serialisation, e.g. Arrow table or record batch stream [B-046, B-047]."
+        },
+        "validate": {
+          "type": "boolean",
+          "description": "Exposes validate(path) per mzStack-1 §11 [D-080 to D-082]."
+        },
+        "id_width": {
+          "enum": ["int32", "int64"],
+          "description": "Width of spectrum_id_ [D-021]."
+        }
+      }
+    },
+    "writer": {
+      "type": "object",
+      "required": ["run_kinds"],
+      "properties": {
+        "run_kinds": { "$ref": "#/$defs/runKinds" },
+        "source_formats": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Raw formats converted to native runs, e.g. mzML."
+        },
+        "append_runs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["mzpeak", "native"] },
+          "description": "Run kinds that can be added to an existing dataset."
+        },
+        "projections_built": { "$ref": "#/$defs/projectionTypes" },
+        "sample_metadata": {
+          "type": "boolean",
+          "description": "Writes index/samples.parquet [D-073 to D-078]."
+        }
+      }
+    },
+    "construct": {
+      "type": "string",
+      "description": "A MassQL keyword as written in the grammar, e.g. MS2PREC, TOLERANCEPPM, scaninfo, MZS:RUN."
+    },
+    "query": {
+      "type": "object",
+      "required": ["grammar_version", "profile", "route"],
+      "properties": {
+        "grammar_version": {
+          "type": "string",
+          "description": "MassQL grammar release implemented [Q-001]."
+        },
+        "grammar_digest": {
+          "type": "string",
+          "description": "Digest of the pinned grammar [Q-001]."
+        },
+        "profile": {
+          "enum": ["Q-Core", "Q-Extended", "Q-Full"],
+          "description": "Exactly one profile [Q-002]."
+        },
+        "route": {
+          "enum": ["frames", "delegated"],
+          "description": "frames: frames of mzStack-2 §5 passed to a MassQL engine [Q-004]. delegated: a MassQL implementation over the ecosystem's own spectrum object [Q-005]."
+        },
+        "engine": {
+          "type": "object",
+          "description": "The MassQL engine or delegate package the route relies on [Q-006].",
+          "required": ["name", "version"],
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" }
+          }
+        },
+        "unsupported_constructs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/construct" },
+          "description": "Constructs within the claimed profile that the route does not support [Q-006]. A non-empty list means the profile claim cannot pass its suite [B-077]."
+        },
+        "extensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["MZS:RUN", "MZS:DATAORIGIN", "MZS:ISOLATIONWINDOW"] },
+          "description": "Supported mzStack query extensions [Q-037]."
+        },
+        "compiled_path": {
+          "type": "object",
+          "description": "Constructs the compiled fast path covers, readable by a differential test [Q-034]. Absent where there is no compiled path.",
+          "required": ["conditions", "output_functions"],
+          "properties": {
+            "conditions": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/construct" } },
+            "qualifiers": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/construct" } },
+            "output_functions": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/construct" } }
+          }
+        }
+      }
+    },
+    "visualisation": {
+      "type": "object",
+      "required": ["plots", "grouping", "linking"],
+      "properties": {
+        "plots": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["TIC", "BPC", "XIC", "spectrum"] },
+          "allOf": [
+            { "contains": { "const": "TIC" } },
+            { "contains": { "const": "BPC" } },
+            { "contains": { "const": "XIC" } },
+            { "contains": { "const": "spectrum" } }
+          ],
+          "description": "All four are required for a Visualiser claim [B-007]."
+        },
+        "grouping": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "contains": { "const": "dataOrigin" },
+          "description": "Grouping columns; dataOrigin is required, others MUST be documented [V-015, B-007]."
+        },
+        "linking": {
+          "const": true,
+          "description": "A chromatogram point links to its spectrum [B-007, V-023]."
+        },
+        "features": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["overlay", "facet", "scan_marking", "thinning_flag"] },
+          "description": "RECOMMENDED features supported [B-008]."
+        },
+        "centroided_null_default": {
+          "enum": ["centroid", "profile"],
+          "description": "Representation chosen where centroided is null [V-017]."
+        },
+        "thinning_method": {
+          "type": "string",
+          "description": "e.g. max_per_bucket [V-018]."
+        }
+      }
+    },
+    "results": {
+      "type": "object",
+      "description": "Results Reader and Results Writer declarations [B-010].",
+      "required": ["results_major_versions", "entities_read", "reference_resolution", "source_freshness_enforced", "truncation"],
+      "properties": {
+        "results_major_versions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/majorVersion" }
+        },
+        "entities_read": { "$ref": "#/$defs/entities" },
+        "entities_written": { "$ref": "#/$defs/entities" },
+        "reference_resolution": {
+          "enum": ["none", "by_id", "by_native_id"],
+          "description": "[B-010, R-022]"
+        },
+        "source_freshness_enforced": {
+          "type": "boolean",
+          "description": "[R-029]"
+        },
+        "truncation": {
+          "type": "object",
+          "required": ["written", "honoured"],
+          "properties": {
+            "written": { "type": "boolean", "description": "[R-075]" },
+            "honoured": { "type": "boolean", "description": "[R-077]" }
+          }
+        },
+        "self_contained": {
+          "type": "boolean",
+          "description": "Writes or reads self_contained results datasets [R-009]."
+        },
+        "converter": { "$ref": "#/$defs/converter" }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "description": "An mzStack-4 entity, e.g. feature, chromatographic_peak, chromatographic_peak_feature, abundance, assay, sample, spectrum_feature, merge_member, compound, evidence, evidence_score, coverage, conversion, tool_provenance, source_identifier, loss_ledger."
+      }
+    },
+    "converter": {
+      "type": "object",
+      "description": "Converter declarations [R-079, R-080, R-085, R-094].",
+      "required": ["source_formats", "run_identity", "lossy_conversion"],
+      "properties": {
+        "source_formats": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["format", "versions"],
+            "properties": {
+              "format": { "type": "string" },
+              "versions": { "type": "string", "description": "Accepted version range." },
+              "route": { "type": "string", "description": "e.g. sqlite-file or live-object; different routes are different capability sets [R-090]." },
+              "coverage_manifest": {
+                "type": "object",
+                "description": "Disposition of every logical construct of the source format [R-080].",
+                "additionalProperties": {
+                  "enum": ["mapped", "mapped_partial", "not_present_in_source", "dropped", "refused"]
+                }
+              }
+            }
+          }
+        },
+        "run_identity": {
+          "type": "object",
+          "required": ["tuple", "function"],
+          "properties": {
+            "tuple": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" },
+              "description": "e.g. [source_checksum, ordinal] [R-094]."
+            },
+            "function": { "type": "string", "description": "The deterministic function minting run_id from the tuple." }
+          }
+        },
+        "lossy_conversion": {
+          "type": "boolean",
+          "description": "Whether the lossy_conversion profile is declared [R-085]."
+        }
+      }
+    }
+  }
+}

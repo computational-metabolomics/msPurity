@@ -43,11 +43,14 @@ and across MS data files (ignoring intra and inter relationships)}
 \value{
 Returns a purityA object (pa) with the following slots now with data
 \itemize{
-\item pa@av_spectra: the average spectra is recorded here stored as a list. E.g. pa@av_spectra$\code{1}$av_all would give the average spectra for grouped feature 1.
+\item pa@avSpectra: the averaged spectra as a \code{Spectra} object, one spectrum per grouped feature, averaging
+level and file, with the averaging statistics as peak variables.
+\item pa@av_spectra: the legacy list of averaged spectra, filled while \code{options(msPurity.legacySlots = TRUE)}.
+E.g. averagedSpectra(pa)$\code{1}$av_all gives the average spectra for grouped feature 1.
 \item pa@av_all_params: The parameters used are recorded here
 }
 
-Each spectra in the av_spectra list contains the following columns:
+Each averaged spectrum in the legacy list contains the following columns (peak variables in pa@avSpectra):
 \itemize{
 \item cl: id of clustered (averaged) peak
 \item mz: average m/z

@@ -71,7 +71,10 @@
 #'                           "2_frag4feature_pa.rds", package="msPurity"))
 #' pa <- filterFragSpectra(pa)
 #'
-#' @return Returns a purityA object with the pa@@grped_msms spectra matrices are updated with the following columns
+#' @return Returns a purityA object. The flags are stored in pa@@fragSpectra: purity_pass_flag as a spectra
+#' variable and the others as peak variables (stored as 1 and 0). \code{groupedSpectra(pa)}, and the legacy
+#' pa@@grped_ms2 slot while \code{options(msPurity.legacySlots = TRUE)}, give the spectra matrices with the
+#' following columns
 #'
 #' * snr: Signal to noise ratio (calculated at scan level)
 #' * ra: Relative abundance (calculated at scan level)
@@ -84,6 +87,7 @@
 #' @export
 setMethod(f="filterFragSpectra", signature="purityA",
           definition = function(pa, ilim=0, plim=0.8, ra=0, snr=3, rmp=FALSE, snmeth='median', allfrag=FALSE){
+            pa <- .pa_update(pa)
 
             if ((!length(pa@filter_frag_params)==0) && (pa@filter_frag_params$rmp)){
               message('Fragmentation peaks have been previously filtered and removed - function can\'t be performed')
@@ -99,34 +103,41 @@ setMethod(f="filterFragSpectra", signature="purityA",
             filter_frag_params$rmp = rmp
             filter_frag_params$allfrag = allfrag
 
-            pa@filter_frag_params <- filter_frag_params
+            # The grouped spectra as they were before any filtering (in case
+            # filterFragSpectra has already been run)
+            grped_ms2 <- lapply(.pa_grouped_legacy(pa), lapply, resetGrpedMS2)
 
-            # reset (incase filterFrag has already been run)
-            pa@grped_ms2 <- lapply(pa@grped_ms2, lapply, resetGrpedMS2)
+            pa@filter_frag_params <- filter_frag_params
 
             # Calculate and add flags to matrix
             # Add the purity flag
             pa@grped_df$purity_pass_flag <-  pa@grped_df$inPurity > plim
-            pa@grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid, setPuritySpectraGrp, pa)
+            grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid, setPuritySpectraGrp,
+                                     list(grped_ms2 = grped_ms2))
 
             # calculate snr, ra and combine all flags
-            pa@grped_ms2 <- lapply(pa@grped_ms2, lapply, setFlagMatrix, filter_frag_params=filter_frag_params)
+            grped_ms2 <- lapply(grped_ms2, lapply, setFlagMatrix, filter_frag_params=filter_frag_params)
 
-            # if allfrag is TRUE calculate the ms2 for all fragmentation spectra (note this is duplicating the
-            # processing at the momement - for sake of clarity of the code.
-            # So Ideally should be updated but waiting on the backend refactor to update though)
+            # if allfrag is TRUE calculate the flags for all fragmentation spectra; these then hold
+            # the flags of the grouped spectra as well
             if (allfrag){
-              # add to purityA object
-              scanpeaksFrag <- getScanPeaks(pa)
-
               # get purity flag
-              pa@puritydf$purity_pass_flag <- pa@puritydf$inPurity > plim
-              scanpeaksFrag <- merge(pa@puritydf[,c('pid', 'inPurity', 'purity_pass_flag')], scanpeaksFrag, by='pid')
-              scanpeaksFrag <- scanpeaksFrag[,c("pid","sid","fileid", "scan", "mz", "i", "type",  "purity_pass_flag"), drop=FALSE]
+              puritydf <- purityTable(pa)
+              puritydf$purity_pass_flag <- puritydf$inPurity > plim
 
+              pa@spectra <- .pa_set_purity_vars(pa@spectra, puritydf)
+              pa@fragSpectra <- .pa_frag_all(pa, filter_frag_params, puritydf)
 
-              pa@all_frag_scans <- plyr::ddply(scanpeaksFrag, ~pid, setFlagMatrix, filter_frag_params=filter_frag_params)
-
+              # The legacy all_frag_scans table, computed as it always was
+              all_frag_scans <- if (.pa_legacy()){
+                pa@all_frag_scans <- data.frame()
+                .pa_allfrag_frozen(pa)
+              }
+              pa <- .pa_sync_legacy(pa, puritydf = puritydf, grped_ms2 = grped_ms2,
+                                    all_frag_scans = all_frag_scans)
+            }else{
+              pa@fragSpectra <- .pa_frag_from_grouped(pa, grped_ms2)
+              pa <- .pa_sync_legacy(pa, grped_ms2 = grped_ms2)
             }
 
             return(pa)
@@ -151,9 +162,9 @@ getScanPeaks <- function(pa){
 }
 
 scanPeaksFromfiledf <- function(x){
-  mr <- mzR::openMSfile(as.character(x$filepth))
-  scanpeaks <- mzR::peaks(mr)
-  scans <- mzR::header(mr)
+  sp <- .msp_read(as.character(x$filepth))
+  scanpeaks <- .msp_peaks(sp)
+  scans <- .msp_header(sp)
   names(scanpeaks) <- seq(1, length(scanpeaks))
   scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)
 }
@@ -168,7 +179,9 @@ resetGrpedMS2 <- function(m){
 setPuritySpectraGrp <- function(x, pa){
   grpid <- as.character(unique(x$grpid))
 
-  msms_l <- pa@grped_ms2[as.character(grpid)][[1]]
+  # pa is a purityA object or a list holding grped_ms2
+  msms_l <- if (is.list(pa)) pa$grped_ms2[as.character(grpid)][[1]]
+            else pa@grped_ms2[as.character(grpid)][[1]]
 
   purity_pass_flag <- x$purity_pass_flag
 
