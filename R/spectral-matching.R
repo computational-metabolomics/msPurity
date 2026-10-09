@@ -85,6 +85,8 @@ spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1,
                                      spectra_type_q="scans", ra_thres_t=NA, target_db_pth=NA, rt_range=c(NA, NA), rttol=NA,
                                      match_alg='dpc'){
   message("Running msPurity spectral matching function for LC-MS(/MS) data [this function is deprecated, please use msPurity::spectralMatching for future use]")
+  .msp_deprecate_sqlite("spectral_matching()",
+                        "Use spectralMatching(format = \"parquet\") instead.")
 
   if (!is.na(ra_thres_t)){
     message("ra_thres_t argument has been deprecated and will be remove in future versions of msPurity,
@@ -104,7 +106,10 @@ spectral_matching <- function(query_db_pth, ra_thres_l=0, ra_thres_q=2, cores=1,
   # Export the target data into sqlite database
   ########################################################
   if (is.na(query_db_pth)){
-    query_db_pth <- create_database(pa=pa, xset=xset, out_dir=out_dir, grp_peaklist=grp_peaklist, db_name=db_name)
+    # One deprecation warning per call: this function has warned already.
+    query_db_pth <- suppressWarnings(
+      create_database(pa=pa, xset=xset, out_dir=out_dir, grp_peaklist=grp_peaklist, db_name=db_name),
+      classes = "deprecatedWarning")
   }
 
   if (is.na(library_db_pth)){

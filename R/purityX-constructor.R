@@ -44,12 +44,13 @@
 #' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
 #' @param plotP boolean; TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory
-#' @param mzRback character; backend to use for mzR parsing
+#' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param rtrawColumns boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
 #' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
-#' @param saveEIC boolean; If True extracted ion chromatograms will be saved to SQLite database
+#' @param saveEIC boolean; If True extracted ion chromatograms will be saved to SQLite database (deprecated: writing
+#'                SQLite raises a deprecation warning; Parquet output stores no chromatograms, extract them with xcms::chromatogram())
 #' @param sqlitePth character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
@@ -66,6 +67,14 @@ purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
                     fileignore=NULL, cores=1, xgroups=NULL,
                     iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
                     singleFile=0, rtrawColumns=FALSE, saveEIC=FALSE, sqlitePth=NULL){
+  .msp_deprecate_mzRback(mzRback)
+
+  # Warn here: EICs may be written by a parallel worker.
+  if (isTRUE(saveEIC) && singleFile <= 0){
+    .msp_deprecate_sqlite("purityX(saveEIC = TRUE)",
+                          paste("Parquet output stores no chromatograms; extract EICs",
+                                "when needed with xcms::chromatogram()."))
+  }
 
   if (singleFile>0){
 
@@ -585,11 +594,5 @@ getmrdf_standard_all <- function(filepths, backend=NULL){
 
 # get the standard mrdf
 getmrdf_standard <- function(filepth, backend=NULL){
-  if(is.null(backend)){
-    mr <- mzR::openMSfile(filepth)
-  }else{
-    mr <- mzR::openMSfile(filepth, backend=backend)
-  }
-  return(mzR::header(mr))
-
+  return(.msp_header(.msp_read(filepth)))
 }

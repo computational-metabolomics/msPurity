@@ -42,6 +42,7 @@
 #' @export
 setMethod(f="subtract", signature = "purityD",
           definition = function(Object, byClass = TRUE, mapping=c("sample", "blank"), ppm = 5, s2bthres=10){
+  Object <- .pd_begin(Object)
   fileList <- Object@fileList
 
   requireNamespace('foreach')
@@ -60,7 +61,7 @@ setMethod(f="subtract", signature = "purityD",
   Object@avPeaks$processed <- processedP
   names(Object@avPeaks$processed) <- fileList$name
 
-  return(Object)
+  return(.pd_end(Object))
 })
 
 subtractSingle <- function(Object, i, ppm, s2bthres){

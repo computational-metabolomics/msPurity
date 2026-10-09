@@ -51,7 +51,15 @@ purityD <- setClass(
     outFiles = "vector",
     mzML = "logical",
     groupedPeaks = "data.frame",
-    mzRback = 'character'
+    mzRback = 'character',
+    # Averaged peak lists, one spectrum per file and stage.
+    avSpectra = "Spectra",
+    # The files and their sample information.
+    experiment = "MsExperiment"
+  ),
+  prototype = prototype(
+    avSpectra = Spectra::Spectra(Spectra::MsBackendMemory()),
+    experiment = MsExperiment::MsExperiment()
   )
 )
 
@@ -73,10 +81,12 @@ purityD <- setClass(
 #' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 #' peaks <- getP(ppDIMS)
 #' @export
-setMethod("getP", "purityD", function(x) x@avPeaks)
+setMethod("getP", "purityD", function(x) averagedPeaks(x))
 
 setMethod("updatePeaks", "purityD", function(x, newlist) {
+  x <- .pd_update(x)
   x@avPeaks <- newlist;
+  x <- .pd_end(x)
   validObject(x);
   return(x)
 })

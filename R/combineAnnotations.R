@@ -48,7 +48,16 @@
 #' @param summaryOutput boolean; If a summary dataframe is to be created
 #'
 #'
-#' @param outPth character;
+#' @param outPth character; For SQLite, the path of a copy of \code{sm_resultPth} to write to (the original is
+#'               updated in place otherwise). For Parquet, the path of a copy of the results dataset to write to.
+#' @param format character; \code{"sqlite"} (the default) adds the combined annotations to the SQLite database, and
+#'               raises a deprecation warning: SQLite output is frozen. \code{"parquet"} (experimental) takes a Parquet
+#'               results dataset with spectral-matching evidence (from \code{spectralMatching(format = "parquet")} or
+#'               \code{convertSqliteToParquet()}) in \code{sm_resultPth}. It scores exactly as the SQLite route, and
+#'               records the result without changing any existing row: a new revision of the compound table, the
+#'               compounds' database references, and the per-tool and combined scores per feature and compound
+#'               (tables \code{x_mspurity_feature_annotation} and \code{x_mspurity_combined_annotation}). The tool result
+#'               files and the compound database are recorded as inputs, with their digests.
 #'
 #' @examples
 #' metfrag_resultPth <- system.file("extdata", "tests", "external_annotations",
@@ -65,6 +74,45 @@
 #' @return purityA object with slots for fragmentation-XCMS links
 #' @export
 combineAnnotations <- function(sm_resultPth,
+                               compoundDbPth,
+                               metfrag_resultPth=NA,
+                               sirius_csi_resultPth=NA,
+                               probmetab_resultPth=NA,
+                               ms1_lookup_resultPth=NA,
+                               ms1_lookup_dbSource='hmdb',
+                               ms1_lookup_checkAdducts=FALSE,
+                               ms1_lookup_keepAdducts=c('[M+H]+', '[M-H]-'),
+                               weights=list('sm'=0.3,
+                                            'metfrag'=0.2,
+                                            'sirius_csifingerid'=0.2,
+                                            'probmetab'=0,
+                                            'ms1_lookup'=0.05,
+                                            'biosim'=0.25
+                               ),
+                               compoundDbType='sqlite',
+                               compoundDbName=NA,
+                               compoundDbHost=NA,
+                               compoundDbPort=NA,
+                               compoundDbUser=NA,
+                               compoundDbPass=NA,
+                               outPth=NA,
+                               summaryOutput=TRUE,
+                               format=c('sqlite', 'parquet')
+
+){
+  format <- match.arg(format)
+  a <- as.list(environment())
+  if (format == 'parquet'){
+    return(.combineAnnotations_parquet(a))
+  }
+  res <- do.call(.combineAnnotations_sqlite, a[names(formals(.combineAnnotations_sqlite))])
+  .msp_deprecate_sqlite('combineAnnotations()')
+  res
+}
+
+# The SQLite route of combineAnnotations(); the Parquet route also scores
+# through it, on a temporary database.
+.combineAnnotations_sqlite <- function(sm_resultPth,
                                compoundDbPth,
                                metfrag_resultPth=NA,
                                sirius_csi_resultPth=NA,
