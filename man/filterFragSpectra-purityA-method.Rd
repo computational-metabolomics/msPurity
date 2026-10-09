@@ -34,7 +34,10 @@
 \item{allfrag}{boolean; Whether to filter on all fragmentation spectra or just the fragmentation spectra grouped to XCMS feature}
 }
 \value{
-Returns a purityA object with the pa@grped_msms spectra matrices are updated with the following columns
+Returns a purityA object. The flags are stored in pa@fragSpectra: purity_pass_flag as a spectra
+variable and the others as peak variables (stored as 1 and 0). \code{groupedSpectra(pa)}, and the legacy
+pa@grped_ms2 slot while \code{options(msPurity.legacySlots = TRUE)}, give the spectra matrices with the
+following columns
 \itemize{
 \item snr: Signal to noise ratio (calculated at scan level)
 \item ra: Relative abundance (calculated at scan level)

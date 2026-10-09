@@ -140,7 +140,7 @@ test_that("checking filterFragSpectra purityA (xcms v2 functions)", {
   expect_equal(pa@grped_ms2[[10]][[2]][,'pass_flag'], c(1, 1, 1, 0, 0, 1, 0, 1, 0, 0 ,0, 1, 0, 1, 0))
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "3_filterFragSpectra_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_legacy_equal(pa, pa_saved)
 
 })
 
@@ -169,7 +169,7 @@ test_that("checking averageIntraFragSpectra (no filter) purityA (xcms v2 functio
   expect_equal(round(pa@av_spectra$`12`$av_intra$`2`$i, 2), c( 4419.71, 23772.87, 2029273.85, 12305.23, 4081.14))
 
   pa_saved <- readRDS(system.file("extdata","tests", "purityA", "4_averageIntraFragSpectra_no_filter_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_legacy_equal(pa, pa_saved)
 
 
 })
@@ -191,7 +191,7 @@ test_that("checking averageInterFragSpectra (no filter) purityA (xcms v2 functio
   expect_equal(round(pa@av_spectra$`12`$av_inter$i, 2), c(31097.73, 4143476.25, 26102.33))
 
   pa_saved <- readRDS(system.file("extdata","tests", "purityA", "5_averageInterFragSpectra_no_filter_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_legacy_equal(pa, pa_saved)
 
 })
 
@@ -216,7 +216,7 @@ test_that("checking averageAllFragSpectra (no filter) purityA", {
   expect_equal(round(pa@av_spectra$`12`$av_all$i, 2), c(4419.71, 1726.61, 31097.73, 4143476.25, 26102.33, 4081.14))
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "6_averageAllFragSpectra_no_filter_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_legacy_equal(pa, pa_saved)
 
 })
 
@@ -238,7 +238,7 @@ test_that("checking averageIntraFragSpectra (with filter) purityA (xcms v2 funct
   #saveRDS(pa, file.path("inst", "extdata", "tests", "purityA", "7_averageIntraFragSpectra_with_filter_pa.rds"))
 
   pa_saved <- readRDS(system.file("extdata","tests", "purityA", "7_averageIntraFragSpectra_with_filter_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_legacy_equal(pa, pa_saved)
 
 
 })
@@ -256,7 +256,7 @@ test_that("checking averageInterFragSpectra (with filter) purityA  (xcms v2 func
   #saveRDS(pa, file.path("inst", "extdata", "tests",  "purityA", "8_averageInterFragSpectra_with_filter_pa.rds"))
 
   pa_saved <- readRDS(system.file("extdata","tests", "purityA", "8_averageInterFragSpectra_with_filter_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_legacy_equal(pa, pa_saved)
 
 })
 
@@ -275,7 +275,7 @@ test_that("checking averageAllFragSpectra (with filter) purityA (xcms v2 functio
   #saveRDS(pa, file.path("inst", "extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa.rds"))
 
   pa_saved <- readRDS(system.file("extdata", "tests", "purityA", "9_averageAllFragSpectra_with_filter_pa_OLD.rds", package="msPurity"))
-  expect_equal(pa, pa_saved)
+  expect_legacy_equal(pa, pa_saved)
 
 })
 

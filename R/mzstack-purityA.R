@@ -165,12 +165,8 @@
         i <- which(scans$fileid == files$fileid[j])
         if (!length(i))
             next
-        h <- tryCatch({
-            mr <- mzR::openMSfile(files$filepth[j])
-            hdr <- mzR::header(mr)
-            mzR::close(mr)
-            hdr
-        }, error = function(e) NULL)
+        h <- tryCatch(.msp_header(.msp_read(files$filepth[j])),
+                      error = function(e) NULL)
         if (is.null(h) || is.null(h$spectrumId))
             next
         out$native_id[i] <- as.character(
@@ -479,9 +475,10 @@
                           fileid = integer()))
     filtered <- length(pa@filter_frag_params) > 0L
     keep <- logical(nrow(g))
+    ms2 <- groupedSpectra(pa)
     for (grp in unique(as.character(g$grpid))) {
         rows <- which(as.character(g$grpid) == grp)
-        spectra <- pa@grped_ms2[[grp]]
+        spectra <- ms2[[grp]]
         for (j in seq_along(rows)) {
             s <- spectra[[j]]
             keep[rows[j]] <- !is.null(s) && NROW(s) > 0L &&

@@ -46,7 +46,7 @@ purityX(
 
 \item{plotP}{boolean; TRUE if plot of the EIC of feature and associated contamination is the be save to the working directory}
 
-\item{mzRback}{character; backend to use for mzR parsing}
+\item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
 
 \item{isotopes}{boolean; TRUE if isotopes are to be removed}
 

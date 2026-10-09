@@ -123,6 +123,7 @@
 createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA,
                             format = c("sqlite", "mzstack"), study = NULL, studyKey = "study",
                             fileMap = NULL, overwrite = FALSE){
+  pa <- .pa_update(pa)
   format <- match.arg(format)
   if (format == "mzstack"){
     return(.createDatabase_mzstack(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
@@ -270,7 +271,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
 
   pa@fileList <- unname(pa@fileList)
 
-  scaninfo <- pa@puritydf
+  scaninfo <- purityTable(pa)
   fileList <- pa@fileList
 
   classInfo = .xcms_classes(xcmsObj)
@@ -385,16 +386,17 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   ###############################################
   # get all the fragmentation from the scans
   if((!is.null(pa@filter_frag_params[["allfrag"]])) && (pa@filter_frag_params$allfrag)){
-    speaks <- pa@all_frag_scans
+    speaks <- .pa_allfrag_frozen(pa)
   }else{
     speaks <- getScanPeaks(pa)
     speaks$grpid <- NA
   }
 
-  if (length(pa@av_spectra)>0){
-    av_spectra <- plyr::ldply(pa@av_spectra, getAvSpectraForGrp)
+  av_list <- averagedSpectra(pa)
+  if (length(av_list)>0){
+    av_spectra <- plyr::ldply(av_list, getAvSpectraForGrp)
     colnames(av_spectra)[1] <- 'grpid'
-    av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
+    av_spectra$grpid <- names(av_list)[av_spectra$grpid]
     colnames(av_spectra)[colnames(av_spectra)=='sample'] <- 'fileid'
 
     colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
@@ -684,9 +686,9 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 scanPeaks4db <- function(x, pa){
 
-  mr <- mzR::openMSfile(as.character(x$filepth))
-  scanpeaks <- mzR::peaks(mr)
-  scans <- mzR::header(mr)
+  sp <- .msp_read(as.character(x$filepth))
+  scanpeaks <- .msp_peaks(sp)
+  scans <- .msp_header(sp)
   names(scanpeaks) <- seq(1, length(scanpeaks))
 
   scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)

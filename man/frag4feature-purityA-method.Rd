@@ -64,7 +64,10 @@
 Returns a purityA object (pa) with the following slots populated:
 \itemize{
 \item pa@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
-\item pa@grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+\item pa@fragSpectra: The linked fragmentation spectra as a \code{Spectra} object, each scan once, identified by
+its \code{pid}. \code{groupedSpectra(pa)} returns them as a list per XCMS feature
+\item pa@grped_ms2: The legacy list of fragmentation spectra for each grouped XCMS feature, filled while
+\code{options(msPurity.legacySlots = TRUE)} (the default)
 \item pa@f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
 }
 }

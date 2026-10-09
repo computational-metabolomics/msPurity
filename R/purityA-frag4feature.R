@@ -84,7 +84,10 @@
 #' @return Returns a purityA object (pa) with the following slots populated:
 #'
 #' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
-#' * pa@@grped_ms2: A list of fragmentation spectra associated with each grouped XCMS feature is recorded here
+#' * pa@@fragSpectra: The linked fragmentation spectra as a \code{Spectra} object, each scan once, identified by
+#'   its \code{pid}. \code{groupedSpectra(pa)} returns them as a list per XCMS feature
+#' * pa@@grped_ms2: The legacy list of fragmentation spectra for each grouped XCMS feature, filled while
+#'   \code{options(msPurity.legacySlots = TRUE)} (the default)
 #' * pa@@f4f_link_type: The linking method is recorded here (e.g. individual peaks or grouped - "useGroup=TRUE")
 #'
 #'
@@ -124,6 +127,7 @@ setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA){
+  pa <- .pa_update(pa)
 
   if(!is.na(xset)){
     message('The param xset is deprecated - please use xcmsObj instead')
@@ -187,7 +191,7 @@ setMethod(f="frag4feature", signature="purityA",
   }
 
   # Get the purity data frame and the xcms peaks data frame
-  puritydf <- pa@puritydf
+  puritydf <- purityTable(pa)
   puritydf$fileid <- as.numeric(as.character(puritydf$fileid))
 
   if(XCMSnExp_bool){
@@ -301,7 +305,9 @@ setMethod(f="frag4feature", signature="purityA",
 
   # add to the slots
   pa@grped_df <- grpm
-  pa@grped_ms2 <- getMS2scans(grpm, pa@fileList, mzRback = pa@mzRback)
+  # Each linked scan is stored once; grped_ms2 is rebuilt from the links.
+  pa@fragSpectra <- .pa_raw_scans(pa, unique(grpm$pid))
+  pa <- .pa_sync_legacy(pa, grped_ms2 = .pa_grouped_legacy(pa))
 
   if (createDb){
     if(is.null(pa@filter_frag_params$allfrag)){
@@ -386,22 +392,6 @@ fsub2  <- function(pro, allpeaks, intense, ppm, fullp=FALSE, use_grped=FALSE){
 
 check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
 
-getMS2scans  <- function(grpm, filepths, mzRback){
-  # Get all MS2 scans
-
-  scans <- getscans(filepths, mzRback)
-
-  if(length(filepths)==1){
-    scans = list(scans)
-  }
-
-  grpm$fid <- seq(1, nrow(grpm))
-
-  ms2l <- plyr::dlply(grpm, ~ grpid, getScanLoop, scans=scans)
-
-  return(ms2l)
-}
-
 
 mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
   if ('mzmed' %in% colnames(mtchRow)){
@@ -430,23 +420,6 @@ mzmatching <- function(mtchRow, mz1=mz1, ppm=ppm, pro=pro){
   }else{
     return(NULL)
   }
-}
-
-getScanLoop <- function(peaks, scans){
-  grpl <-  list()
-
-  if ('sample' %in% colnames(peaks)){
-    idx_nm ='sample'
-  }else{
-    idx_nm = 'fileid'
-  }
-  for(i in 1:nrow(peaks)){
-    x <- peaks[i,]
-    idx <- x[,idx_nm]
-    grpl[[i]] <- scans[[idx]][[x$precurMtchID]]
-
-  }
-  return(grpl)
 }
 
 getname <- function(x, xcmsObj){

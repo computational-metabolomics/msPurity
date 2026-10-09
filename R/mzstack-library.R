@@ -475,6 +475,125 @@
                                    "computed (R-093)."))))))
 }
 
+# ---------------------------------------------------------------------------
+# Spectra objects (MSP through MsBackendMsp, MassBank, MGF and others).
+# ---------------------------------------------------------------------------
+
+# Library field -> spectra variable, for the variables Spectra and its
+# common library backends (MsBackendMsp, MsBackendMassbank) use.
+.MZS_SPECTRA_LIBRARY_MAP <- c(
+    x_mspurity_name = "name", x_mspurity_compound_name = "name",
+    x_mspurity_synonyms = "synonym", x_mspurity_precursor_type = "adduct",
+    x_mspurity_inchikey = "inchikey", x_mspurity_inchi = "inchi",
+    x_mspurity_smiles = "smiles", x_mspurity_formula = "formula",
+    x_mspurity_exact_mass = "exactmass",
+    x_mspurity_instrument = "instrument",
+    x_mspurity_instrument_type = "instrument_type",
+    x_mspurity_splash = "splash", x_mspurity_comment = "comment")
+
+# Spectra variables the conversion reads besides the mapped ones.
+.MZS_SPECTRA_CORE_READ <- c("msLevel", "polarity", "precursorMz", "rtime",
+                            "collisionEnergy", "dataOrigin", "accession",
+                            "spectrumId")
+
+#' Library spectra from a Spectra object, one run per data origin.
+#'
+#' @noRd
+.mzs_spectra_library <- function(x, mapping) {
+    sv <- Spectra::spectraVariables(x)
+    d <- Spectra::spectraData(x, columns = sv)
+    n <- length(x)
+    col <- function(v) {
+        if (!v %in% sv) return(rep(NA, n))
+        val <- d[[v]]
+        # List variables, such as synonyms, are kept as one string.
+        if (is.list(val) || is(val, "List"))
+            val <- vapply(as.list(val), function(e)
+                if (!length(e) || all(is.na(e))) NA_character_
+                else paste(as.character(e), collapse = "; "), "")
+        val
+    }
+    origin <- as.character(col("dataOrigin"))
+    origin[is.na(origin)] <- "Spectra"
+    runs <- unique(origin)
+    id <- as.character(col("accession"))
+    if (all(is.na(id)))
+        id <- as.character(col("spectrumId"))
+    id[is.na(id)] <- paste0("spectrum_", which(is.na(id)))
+    pol <- suppressWarnings(as.integer(col("polarity")))
+    spectra <- data.frame(
+        run = match(origin, runs), order_key = seq_len(n),
+        ms_level = as.integer(col("msLevel")),
+        scan_polarity = ifelse(pol %in% 1L, 1L,
+                               ifelse(pol %in% 0L, -1L, NA_integer_)),
+        spectrum_representation = rep("MS:1000127", n),
+        id = id, data_origin = origin,
+        selected_ion_mz = as.numeric(col("precursorMz")),
+        collision_energy = .mzs_num(col("collisionEnergy")),
+        x_mspurity_retention_time = as.numeric(col("rtime")),
+        stringsAsFactors = FALSE)
+    for (f in names(mapping)) {
+        v <- col(mapping[[f]])
+        if (all(is.na(v)))
+            next
+        spectra[[f]] <- switch(.MZS_LIBRARY_TYPES[[f]],
+                               f64 = .mzs_num(v),
+                               i32 = suppressWarnings(as.integer(v)),
+                               as.character(v))
+    }
+    pk <- Spectra::peaksData(x, columns = c("mz", "intensity"))
+    list(spectra = spectra,
+         peaks = list(mz = lapply(pk, function(p) unname(p[, "mz"])),
+                      intensity = lapply(pk, function(p)
+                          unname(p[, "intensity"]))),
+         runs = runs,
+         unmapped = setdiff(sv, c(.MZS_SPECTRA_CORE_READ, mapping,
+                                  Spectra::coreSpectraVariables())))
+}
+
+#' @noRd
+.mzs_from_spectra <- function(x, path, mapping, version, rtUnit, runIds,
+                              overwrite, started) {
+    bad <- setdiff(names(mapping), names(.MZS_LIBRARY_TYPES))
+    if (length(bad))
+        stop("'mapping' names fields that a library does not have: ",
+             paste(bad, collapse = ", "), ".", call. = FALSE)
+    lib <- .mzs_spectra_library(x, mapping)
+    runs <- data.frame(run = seq_along(lib$runs),
+                       ordinal = seq_along(lib$runs),
+                       stringsAsFactors = FALSE)
+    num <- function(v) format(v, digits = 17)
+    digest <- .mzs_sha256_text(paste(c(
+        lib$spectra$id, num(lib$spectra$selected_ion_mz),
+        vapply(seq_along(lib$peaks$mz), function(i) paste(
+            num(lib$peaks$mz[[i]]), num(lib$peaks$intensity[[i]]),
+            collapse = " "), "")), collapse = "\n"))
+    runs$run_id <- vapply(seq_along(lib$runs), function(i) {
+        r <- .mzs_lookup(runIds, lib$runs[i])
+        if (!is.na(r)) r else .mzs_mint_run_id(
+            .mzs_sha256_text(paste(digest, lib$runs[i])), i)
+    }, character(1))
+    .mzs_write_library(
+        path, lib$spectra, lib$peaks, runs,
+        library = list(version = version %||% paste(basename(lib$runs),
+                                                    collapse = ", "),
+                       digest = paste0("sha256:", digest)),
+        rtUnit = rtUnit, overwrite = overwrite,
+        activity = list(
+            action = "convert", started = started,
+            fn = "convertLibraryToMzstack", inputs = list(),
+            parameters = list(
+                format = "spectra", rtUnit = rtUnit,
+                mapping = as.list(mapping),
+                runIds = if (length(runIds)) as.list(runIds),
+                coverage_manifest = list(
+                    spectra = "mapped", peaks = "mapped",
+                    unmapped_variables = "dropped"),
+                losses = lapply(lib$unmapped, function(v) list(
+                    construct = v, disposition = "dropped_by_configuration",
+                    reason = "A spectra variable with no library field.")))))
+}
+
 #' Convert a spectral library to an mzStack library dataset
 #'
 #' @description
@@ -488,6 +607,13 @@
 #'  * `format = "msp"`: MSP files, one run per file. `dialect` must be
 #'    declared: `"massbank"`, `"mona"` (NIST/MoNA) or `"mspurity"` (files
 #'    written by [createMSP()]). Unknown keys are an error.
+#'  * `format = "spectra"`, the default when `x` is a `Spectra` object: a
+#'    library read with any Spectra backend, such as MsBackendMsp,
+#'    MsBackendMassbank or MsBackendMgf; one run per data origin. Spectra
+#'    variables are mapped to library fields by `mapping`, and those with no
+#'    field are dropped and recorded as such in the dataset's provenance.
+#'    Retention times are taken as seconds, the Spectra convention, unless
+#'    `rtUnit` says otherwise.
 #'
 #' Peaks keep their source order and exact values. Collision energy is kept
 #' as written, with a numeric value only for plain numbers (`35`, `35 eV`).
@@ -496,11 +622,12 @@
 #'
 #' Requires the suggested packages arrow and jsonlite.
 #'
-#' @param x `character`: path of the msp2db database, or of the MSP files.
+#' @param x `character`: path of the msp2db database, or of the MSP files;
+#'     or a `Spectra` object.
 #'
 #' @param path `character(1)`, the library dataset to create.
 #'
-#' @param format `"msp2db"` or `"msp"`.
+#' @param format `"msp2db"`, `"msp"` or `"spectra"`.
 #'
 #' @param dialect `character(1)`, required for MSP: `"massbank"`, `"mona"`
 #'     or `"mspurity"`.
@@ -516,6 +643,12 @@
 #'
 #' @param overwrite `logical(1)`, whether to replace an existing dataset.
 #'
+#' @param mapping named `character`, for `format = "spectra"`: library field
+#'     (such as `x_mspurity_inchikey`) -> spectra variable. `NULL`, the
+#'     default, maps the variable names used by MsBackendMsp and
+#'     MsBackendMassbank: name, synonym, adduct, inchikey, inchi, smiles,
+#'     formula, exactmass, instrument, instrument_type, splash and comment.
+#'
 #' @return The path of the dataset, invisibly.
 #'
 #' @seealso [spectralMatching()], [validateMzstack()]
@@ -529,15 +662,44 @@
 #'     convertLibraryToMzstack(msp, out, format = "msp", dialect = "mspurity",
 #'                             overwrite = TRUE)
 #'     validateMzstack(out)
+#'
+#'     if (requireNamespace("MsBackendMsp", quietly = TRUE)) {
+#'         mona <- system.file("extdata", "tests", "mzstack", "library",
+#'                             "mini_mona.msp", package = "msPurity")
+#'         sp <- Spectra::Spectra(mona, source = MsBackendMsp::MsBackendMsp(),
+#'                                mapping = c(name = "Name", accession = "DB#",
+#'                                            precursorMz = "PrecursorMZ",
+#'                                            adduct = "Precursor_type",
+#'                                            inchikey = "InChIKey",
+#'                                            formula = "Formula",
+#'                                            polarity = "Ion_mode"))
+#'         out <- file.path(tempdir(), "library-spectra.mzstack")
+#'         convertLibraryToMzstack(sp, out, overwrite = TRUE)
+#'     }
 #' }
 #' @export
-convertLibraryToMzstack <- function(x, path, format = c("msp2db", "msp"),
+convertLibraryToMzstack <- function(x, path,
+                                    format = c("msp2db", "msp", "spectra"),
                                     dialect = NULL, version = NULL,
                                     rtUnit = NA_character_, runIds = NULL,
-                                    overwrite = FALSE) {
+                                    overwrite = FALSE, mapping = NULL) {
     .mzs_require("convertLibraryToMzstack()")
     started <- .mzs_now()
+    if (is(x, "Spectra")) {
+        if (!missing(format) && !identical(format, "spectra"))
+            stop("'x' is a Spectra object; use format = \"spectra\".",
+                 call. = FALSE)
+        .mzs_check_destination(path, overwrite)
+        if (is.na(rtUnit))
+            rtUnit <- "s"
+        .mzs_from_spectra(x, path, mapping %||% .MZS_SPECTRA_LIBRARY_MAP,
+                          version, rtUnit, runIds, overwrite, started)
+        return(invisible(normalizePath(path)))
+    }
     format <- match.arg(format)
+    if (format == "spectra")
+        stop("format = \"spectra\" needs a Spectra object as 'x'.",
+             call. = FALSE)
     if (!length(x) || !all(file.exists(x)))
         stop("'x' must name existing file(s).", call. = FALSE)
     .mzs_check_destination(path, overwrite)

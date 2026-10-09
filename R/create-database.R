@@ -152,7 +152,7 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   nm_save <- names(pa@fileList) # this is for name tracking in Galaxy
   pa@fileList <- unname(pa@fileList)
 
-  scan_info <- pa@puritydf
+  scan_info <- purityTable(pa)
   fileList <- pa@fileList
 
 
@@ -270,16 +270,17 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
 
   }
 
-  if (length(pa@av_spectra)>0){
+  av_list <- averagedSpectra(pa)
+  if (length(av_list)>0){
 
-    av_spectra <- plyr::ldply(pa@av_spectra, get_av_spectra_for_db)
+    av_spectra <- plyr::ldply(av_list, get_av_spectra_for_db)
 
     if (nrow(av_spectra)==0){
       message('No average spectra to use for database')
     }else{
       # for some reason the names are not being saved for the list as a column, so we just get them back
       colnames(av_spectra)[1] <- 'grpid'
-      av_spectra$grpid <- names(pa@av_spectra)[av_spectra$grpid]
+      av_spectra$grpid <- names(av_list)[av_spectra$grpid]
 
       colnames(av_spectra)[2] <- 'fileid'
       av_spectra$avid <- 1:nrow(av_spectra)
@@ -475,9 +476,9 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 scan_peaks_4_db <- function(x){
 
-  mr <- mzR::openMSfile(as.character(x$filepth))
-  scanpeaks <- mzR::peaks(mr)
-  scans <- mzR::header(mr)
+  sp <- .msp_read(as.character(x$filepth))
+  scanpeaks <- .msp_peaks(sp)
+  scans <- .msp_header(sp)
   names(scanpeaks) <- seq(1, length(scanpeaks))
 
   scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)

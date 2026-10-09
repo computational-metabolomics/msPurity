@@ -1,10 +1,18 @@
 CHANGES IN VERSION 1.37.4
-+ New mzStack (Parquet) output, alongside SQLite. createDatabase(), spectralMatching() and combineAnnotations() take format = "mzstack"; SQLite remains the default. Needs the suggested packages arrow and jsonlite.
-+ New functions: convertSqliteToMzstack() converts an msPurity SQLite database, convertLibraryToMzstack() converts an msp2db or MSP spectral library, validateMzstack() checks a dataset against the mzStack specification, and mzstackCapabilities() reports what the backend supports.
-+ spectralMatching() on mzStack gives the same scores as on SQLite and runs much faster against large libraries. New argument topn keeps the best-ranked matches per query.
++ New Parquet output, alongside SQLite. createDatabase(), spectralMatching() and combineAnnotations() take format = "mzstack"; SQLite remains the default. Needs the suggested packages arrow and jsonlite.
++ New functions: convertSqliteToMzstack() converts an msPurity SQLite database to a Parquet dataset, convertLibraryToMzstack() converts an msp2db or MSP spectral library or a Spectra object (such as an MSP file read with MsBackendMsp), validateMzstack() checks a Parquet dataset against its specification, and mzstackCapabilities() reports what the Parquet output supports.
++ spectralMatching() on Parquet datasets gives the same scores as on SQLite and runs much faster against large libraries. New argument topn keeps the best-ranked matches per query. Their peaks are read through MsBackendParquet when it is installed.
 + SQLite output is deprecated: every function that writes SQLite raises one deprecation warning per call. Its output is unchanged.
-+ frag4feature() and createDatabase() accept XcmsExperiment objects.
-+ purityA objects gain a params slot recording the arguments of purityA() and frag4feature(). Objects saved by earlier versions still work.
++ msPurity reads raw data through Spectra and stores spectra in Spectra objects. All results are unchanged. Spectra and MsExperiment move from Suggests to Imports.
++ purityA objects gain spectra, fragSpectra and avSpectra slots: the MS/MS scans with their purity as spectra variables, the scans linked to features (each once) with filter flags as peak variables, and the averaged spectra. They also gain a params slot recording the arguments of purityA() and frag4feature(). purityD objects gain avSpectra (the averaged peak lists) and experiment (the files as an MsExperiment) slots.
++ New accessors purityTable(), groupedSpectra(), allFragSpectra(), averagedSpectra() and averagedPeaks() return either the legacy data frames and lists or Spectra objects. Use them instead of reading slots directly.
++ The legacy slots (puritydf, grped_ms2, all_frag_scans, av_spectra and avPeaks) are still filled by default. options(msPurity.legacySlots = FALSE) leaves them empty; outputs are the same either way. The default is planned to change in the next release.
++ updateObject() converts purityA and purityD objects saved by earlier versions; every method does this on its input.
++ purityA() accepts Spectra, MsExperiment and XcmsExperiment objects as well as file paths, and reads each file once. purityD() accepts an MsExperiment. frag4feature() and createDatabase() accept XcmsExperiment objects.
++ The mzRback argument is deprecated and ignored.
++ allFragSpectra() names the scan of every peak correctly. The legacy all_frag_scans table, and the scan peaks in SQLite output, number scans with a count that skips scans without peaks, so after such a scan they name the wrong scan; they are kept as they were because the SQLite output is frozen.
++ Bug fix: averaging after filterFragSpectra(rmp = TRUE) failed when every spectrum of a feature lost all its peaks. Such features now get no averaged spectrum, and the other averages equal those of rmp = FALSE.
++ Bug fix: createMSP(method = "max") failed when one peak of the chosen spectrum passed the filters, and could write the wrong scan when a scan was linked to a feature more than once. It now writes the scan with the highest precursor intensity and skips spectra with no passing peaks.
 + Bug fix: createDatabase() called featureValues() without the xcms:: prefix and failed unless xcms was attached.
 
 CHANGES IN VERSION 1.37.3

@@ -47,6 +47,11 @@ Imports:
     doSNOW,
     stringr,
     mzR,
+    Spectra (>= 1.22.0),
+    MsExperiment (>= 1.14.0),
+    BiocGenerics,
+    S4Vectors,
+    IRanges,
     reshape2,
     fastcluster,
     ggplot2,
@@ -71,8 +76,7 @@ Suggests:
     arrow (>= 14.0.0),
     jsonlite,
     MsBackendParquet (>= 0.99.7),
-    Spectra,
-    MsExperiment
+    MsBackendMsp
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 biocViews: MassSpectrometry, Metabolomics, Software
@@ -108,6 +112,7 @@ Collate:
     'purityA-create-msp.R'
     'purityA-filter-frag-spectra.R'
     'purityA-frag4feature.R'
+    'purityA-spectra.R'
     'purityA-validate.R'
     'purityD-class.R'
     'purityD-constructor.R'
@@ -115,10 +120,12 @@ Collate:
     'purityD-dims-purity.R'
     'purityD-fileList.R'
     'purityD-filterp.R'
+    'purityD-spectra.R'
     'purityD-subtract.R'
     'purityD-writeOut.R'
     'purityX-class.R'
     'purityX-constructor.R'
+    'spectra-io.R'
     'spectral-matching.R'
     'spectralMatching.R'
     'splinepurity.R'

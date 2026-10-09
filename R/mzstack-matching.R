@@ -233,10 +233,43 @@
 
 #' Peaks of a dataset's spectra, read only for `ids`.
 #'
+#' Read as a Spectra object through MsBackendParquet when it is installed,
+#' otherwise with arrow directly.
+#'
 #' @return named list (by spectrum_id_) of data.frame(mz, i, ...flags).
 #'
 #' @noRd
 .mzs_read_peaks <- function(path, m, ids, extra = character()) {
+    if (requireNamespace("MsBackendParquet", quietly = TRUE))
+        return(.mzs_read_peaks_spectra(path, ids, extra))
+    .mzs_read_peaks_arrow(path, m, ids, extra)
+}
+
+#' @noRd
+.mzs_read_peaks_spectra <- function(path, ids, extra = character()) {
+    ids <- unique(ids[!is.na(ids)])
+    if (!length(ids))
+        return(list())
+    sp <- Spectra::Spectra(Spectra::backendInitialize(
+        MsBackendParquet::MsBackendParquet(), path = path))
+    k <- match(ids, sp$spectrum_id_)
+    sp <- sp[sort(k[!is.na(k)])]
+    if (!length(sp))
+        return(list())
+    cols <- intersect(c("mz", "intensity", extra), Spectra::peaksVariables(sp))
+    pk <- Spectra::peaksData(sp, columns = cols)
+    out <- lapply(pk, function(x) {
+        p <- data.frame(mz = unname(x[, "mz"]), i = unname(x[, "intensity"]))
+        for (c in setdiff(cols, c("mz", "intensity")))
+            p[[c]] <- as.logical(x[, c])
+        p
+    })
+    names(out) <- as.character(sp$spectrum_id_)
+    out
+}
+
+#' @noRd
+.mzs_read_peaks_arrow <- function(path, m, ids, extra = character()) {
     ids <- unique(ids[!is.na(ids)])
     out <- list()
     if (!length(ids))

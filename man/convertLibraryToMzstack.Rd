@@ -7,20 +7,22 @@
 convertLibraryToMzstack(
   x,
   path,
-  format = c("msp2db", "msp"),
+  format = c("msp2db", "msp", "spectra"),
   dialect = NULL,
   version = NULL,
   rtUnit = NA_character_,
   runIds = NULL,
-  overwrite = FALSE
+  overwrite = FALSE,
+  mapping = NULL
 )
 }
 \arguments{
-\item{x}{\code{character}: path of the msp2db database, or of the MSP files.}
+\item{x}{\code{character}: path of the msp2db database, or of the MSP files;
+or a \code{Spectra} object.}
 
 \item{path}{\code{character(1)}, the library dataset to create.}
 
-\item{format}{\code{"msp2db"} or \code{"msp"}.}
+\item{format}{\code{"msp2db"}, \code{"msp"} or \code{"spectra"}.}
 
 \item{dialect}{\code{character(1)}, required for MSP: \code{"massbank"}, \code{"mona"}
 or \code{"mspurity"}.}
@@ -35,6 +37,12 @@ or \code{"min"}, or \code{NA} if unknown.}
 (MSP) -> run id. By default minted from checksum and ordinal.}
 
 \item{overwrite}{\code{logical(1)}, whether to replace an existing dataset.}
+
+\item{mapping}{named \code{character}, for \code{format = "spectra"}: library field
+(such as \code{x_mspurity_inchikey}) -> spectra variable. \code{NULL}, the
+default, maps the variable names used by MsBackendMsp and
+MsBackendMassbank: name, synonym, adduct, inchikey, inchi, smiles,
+formula, exactmass, instrument, instrument_type, splash and comment.}
 }
 \value{
 The path of the dataset, invisibly.
@@ -49,6 +57,13 @@ library of \code{spectralMatching()}; one run per library source.
 \item \code{format = "msp"}: MSP files, one run per file. \code{dialect} must be
 declared: \code{"massbank"}, \code{"mona"} (NIST/MoNA) or \code{"mspurity"} (files
 written by \code{\link[=createMSP]{createMSP()}}). Unknown keys are an error.
+\item \code{format = "spectra"}, the default when \code{x} is a \code{Spectra} object: a
+library read with any Spectra backend, such as MsBackendMsp,
+MsBackendMassbank or MsBackendMgf; one run per data origin. Spectra
+variables are mapped to library fields by \code{mapping}, and those with no
+field are dropped and recorded as such in the dataset's provenance.
+Retention times are taken as seconds, the Spectra convention, unless
+\code{rtUnit} says otherwise.
 }
 
 Peaks keep their source order and exact values. Collision energy is kept
@@ -67,6 +82,20 @@ if (requireNamespace("arrow", quietly = TRUE) &&
     convertLibraryToMzstack(msp, out, format = "msp", dialect = "mspurity",
                             overwrite = TRUE)
     validateMzstack(out)
+
+    if (requireNamespace("MsBackendMsp", quietly = TRUE)) {
+        mona <- system.file("extdata", "tests", "mzstack", "library",
+                            "mini_mona.msp", package = "msPurity")
+        sp <- Spectra::Spectra(mona, source = MsBackendMsp::MsBackendMsp(),
+                               mapping = c(name = "Name", accession = "DB#",
+                                           precursorMz = "PrecursorMZ",
+                                           adduct = "Precursor_type",
+                                           inchikey = "InChIKey",
+                                           formula = "Formula",
+                                           polarity = "Ion_mode"))
+        out <- file.path(tempdir(), "library-spectra.mzstack")
+        convertLibraryToMzstack(sp, out, overwrite = TRUE)
+    }
 }
 }
 \seealso{

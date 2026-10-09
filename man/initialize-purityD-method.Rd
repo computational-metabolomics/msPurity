@@ -9,16 +9,20 @@
 \arguments{
 \item{.Object}{object; purityD object}
 
-\item{fileList}{data.frame; created using GetFiles, data.frame with filepaths and sample class information}
+\item{fileList}{data.frame created using Getfiles(), with file paths and sample class information; or an
+\code{MsExperiment} whose sample data holds that information (columns filepth, name, sampleType
+and class; missing ones are filled from the spectra file names, with sampleType "sample")}
 
 \item{cores}{numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1}
 
 \item{mzML}{boolean; TRUE if mzML to be used FALSE if .csv file to be used}
 
-\item{mzRback}{character; backend to use for mzR parsing}
+\item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
 }
 \value{
-purityD object
+purityD object. The files and their sample information are also kept as an \code{MsExperiment} in
+the experiment slot, and the averaged peak lists of later steps as \code{Spectra} in the avSpectra slot
+(see \code{\link{averagedPeaks}})
 }
 \description{
 The class used to predict purity from an DI-MS dataset.
