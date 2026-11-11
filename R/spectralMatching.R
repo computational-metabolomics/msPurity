@@ -1176,22 +1176,12 @@ align <-function(q_speaksi,l_speaksi, l_ppmProd=10, q_ppmProd=100, raDiffThres=1
     ppmD <- ppmdiff[i,]
     iD <- idiff[i,]
 
-    if(sum(ppmB, na.rm = TRUE)==0){
+    eligible <- which(ppmB == 1 & !is.na(ppmD))
+    matchi <- .sm_peak_match(ppmD, iD, eligible, raDiffThres)
+    if (is.na(matchi)) {
       allpeaks[[i]] <- rbind(q_speaksi[i,],c(0, 0, 'library',0))
       mcount <- append(mcount, 'miss')
       next
-    }
-
-    # First check to see if there is a matching intensity value within ra_diff (default 10%)
-    intenc <- iD[ppmB==1 & iD<raDiffThres & !is.na(ppmD) & !is.na(raDiffThres)]
-
-    if (!identical(unname(intenc), numeric(0))){
-      matchi <- match(min(intenc, na.rm = TRUE), iD)
-    }else{
-      # if there are identical matches for the ppm range searched. Then pick the match
-      # with the smallest ppm difference. This doesn't happen that often, but to
-      # keep consistent when it does
-      matchi <- match(min(ppmD[ppmB==1], na.rm=TRUE), ppmD)
     }
 
     allpeaks[[i]] <- rbind(q_speaksi[i,],l_speaksi[matchi,])
