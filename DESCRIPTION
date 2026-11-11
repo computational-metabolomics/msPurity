@@ -65,7 +65,7 @@ Imports:
 Suggests:
     BiocParallel,
     MSnbase,
-    testthat,
+    testthat (>= 3.2.0),
     xcms,
     BiocStyle,
     knitr,

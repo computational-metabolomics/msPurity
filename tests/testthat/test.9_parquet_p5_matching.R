@@ -11,7 +11,8 @@ context("Parquet: evidence, coverage, spectralMatching() and combineAnnotations(
 .query_dataset <- function() {
     skip_if_no_arrow()
     p <- tempfile("q-")
-    convertSqliteToParquet(.example("db", "createDatabase_example.sqlite"), p)
+    .without_identity_warning(convertSqliteToParquet(
+        .example("db", "createDatabase_example.sqlite"), p))
     p
 }
 
@@ -155,7 +156,8 @@ test_that("spectralMatching() warns only when it writes SQLite", {
 test_that("a database's matches become evidence, compounds and coverage", {
     skip_if_no_arrow()
     p <- tempfile("sm-")
-    convertSqliteToParquet(.example("sm", "spectralMatching_result.sqlite"), p)
+    .without_identity_warning(convertSqliteToParquet(
+        .example("sm", "spectralMatching_result.sqlite"), p))
     ev <- .read_table(p, "evidence")
     expect_identical(nrow(ev), 2L)
     expect_identical(sort(ev$reference_native_id),
@@ -180,7 +182,8 @@ test_that("a database's matches become evidence, compounds and coverage", {
 test_that("combineAnnotations() ranks the same on Parquet as on SQLite", {
     skip_if_no_arrow()
     p <- tempfile("ca-")
-    convertSqliteToParquet(.example("sm", "spectralMatching_result.sqlite"), p)
+    .without_identity_warning(convertSqliteToParquet(
+        .example("sm", "spectralMatching_result.sqlite"), p))
     args <- list(
         compoundDbPth = .example("db", "metab_compound_subset.sqlite"),
         metfrag_resultPth = .example("external_annotations", "metfrag.tsv"),

@@ -64,7 +64,8 @@ test_that("matching against a Spectra library scores as against the MSP file", {
     q <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite",
                      package = "msPurity")
     qd <- tempfile("q-")
-    suppressMessages(convertSqliteToParquet(q, qd))
+    .without_identity_warning(
+        suppressMessages(convertSqliteToParquet(q, qd)))
     a <- tempfile("lib-")
     suppressMessages(convertLibraryToParquet(.lib_file("mini_mona.msp"), a,
                                              format = "msp", dialect = "mona"))

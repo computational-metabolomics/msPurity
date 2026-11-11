@@ -210,6 +210,14 @@
 #' its spectrum in that dataset; otherwise each source file is an external
 #' source and scans are identified by mzML native id.
 #'
+#' Historical raw peak identities are resolved from file and spectrum position.
+#' A warning reports stored identities that disagree with that mapping.
+#' This warning has class `msPurity_parquet_identity_warning`. Existing
+#' filtering flags are retained; flags previously applied to the wrong spectrum
+#' and destructively removed peaks are not automatically repaired. Reprocess
+#' affected data from the original measurements when reliable flags are needed.
+#' Ambiguous averaged-peak membership is an error, not an empty spectrum.
+#'
 #' Processing parameters are not stored in the database, which is recorded
 #' in `tool_provenance` and the loss ledger. Unmapped tables are an error.
 #'
@@ -359,7 +367,7 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
                       stringsAsFactors = FALSE)
     avm <- .mzs_canon_cols(avm, names(avm), c("pid", "grpid", "fileid"))
     pk <- src$s_peaks
-    avp <- pk[pk$pid %in% av$pid, , drop = FALSE]
+    avp <- .mzs_average_peaks(src, av)
     avp <- .mzs_canon_cols(avp, .MZS_CANON_AV_PEAK,
                            c("pid", "count", "total", "cl"),
                            grep("_flag$", .MZS_CANON_AV_PEAK, value = TRUE))

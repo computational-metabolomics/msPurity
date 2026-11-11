@@ -120,24 +120,19 @@ setMethod(f="filterFragSpectra", signature="purityA",
 
             # if allfrag is TRUE calculate the flags for all fragmentation spectra; these then hold
             # the flags of the grouped spectra as well
-            if (allfrag){
-              # get purity flag
-              puritydf <- purityTable(pa)
-              puritydf$purity_pass_flag <- puritydf$inPurity > plim
-
-              pa@spectra <- .pa_set_purity_vars(pa@spectra, puritydf)
-              pa@fragSpectra <- .pa_frag_all(pa, filter_frag_params, puritydf)
-
-              # The legacy all_frag_scans table, computed as it always was
-              all_frag_scans <- if (.pa_legacy()){
-                pa@all_frag_scans <- data.frame()
-                .pa_allfrag_frozen(pa)
-              }
-              pa <- .pa_sync_legacy(pa, puritydf = puritydf, grped_ms2 = grped_ms2,
-                                    all_frag_scans = all_frag_scans)
-            }else{
-              pa@fragSpectra <- .pa_frag_from_grouped(pa, grped_ms2)
-              pa <- .pa_sync_legacy(pa, grped_ms2 = grped_ms2)
+            if (allfrag) {
+                puritydf <- purityTable(pa)
+                puritydf$purity_pass_flag <- puritydf$inPurity > plim
+                pa@spectra <- .pa_set_purity_vars(pa@spectra, puritydf)
+                pa@fragSpectra <- .pa_frag_all(pa, filter_frag_params, puritydf)
+                all_frag_scans <- if (.pa_legacy()) {
+                    .pa_allfrag_legacy(pa)
+                }
+                pa <- .pa_sync_legacy(pa, puritydf = puritydf,
+                    grped_ms2 = grped_ms2, all_frag_scans = all_frag_scans)
+            } else {
+                pa@fragSpectra <- .pa_frag_from_grouped(pa, grped_ms2)
+                pa <- .pa_sync_legacy(pa, grped_ms2 = grped_ms2)
             }
 
             return(pa)
@@ -148,29 +143,45 @@ setMethod(f="filterFragSpectra", signature="purityA",
 
 
 
-getScanPeaks <- function(pa){
-  scaninfo <- pa@puritydf
-  fileList <- pa@fileList
-  filedf <- data.frame(filepth=fileList,
-                       fileid=seq(1, length(fileList)))
-  scanpeaksFrag <- plyr::ddply(filedf, ~ fileid, scanPeaksFromfiledf)
-  comb <- paste(scanpeaksFrag[,1], scanpeaksFrag[,2], sep=' ')
-  scanpeaksFrag <- cbind(1:nrow(scanpeaksFrag), cumsum(!duplicated(comb)), scanpeaksFrag)
-  colnames(scanpeaksFrag) <- c('sid','pid', 'fileid', 'scan', 'mz', 'i')
-  scanpeaksFrag$type <- 'scan'
-  return(scanpeaksFrag)
+# Empty raw-peak schema, including results with every peak removed.
+.pa_empty_scan_peaks <- function(pid = integer()) {
+    data.frame(sid = integer(),
+        pid = if (is.null(pid)) integer() else pid[0],
+        fileid = integer(), scan = factor(), mz = numeric(),
+        i = numeric(), type = character())
 }
 
-scanPeaksFromfiledf <- function(x){
-  sp <- .msp_read(as.character(x$filepth))
-  scanpeaks <- .msp_peaks(sp)
-  scans <- .msp_header(sp)
-  names(scanpeaks) <- seq(1, length(scanpeaks))
-  scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)
+getScanPeaks <- function(pa) {
+    scans <- purityTable(pa)
+    key <- paste(as.character(scans$fileid), scans$seqNum)
+    if (anyNA(scans$fileid) || anyNA(scans$seqNum) ||
+            anyNA(scans$pid) || anyDuplicated(key) || anyDuplicated(scans$pid))
+        stop("Spectrum identities must be unique by pid and file position.")
+    parts <- lapply(seq_along(pa@fileList), function(fileid) {
+        sp <- .msp_read(as.character(pa@fileList[[fileid]]))
+        header <- .msp_header(sp)
+        peaks <- .msp_peaks(sp)
+        index <- which(header$msLevel > 1L)
+        n <- vapply(peaks[index], nrow, integer(1L))
+        values <- do.call(rbind, peaks[index])
+        if (is.null(values) || !nrow(values)) return(NULL)
+        data.frame(fileid = fileid,
+            scan = as.character(rep(header$seqNum[index], n)),
+            mz = values[, 1L], i = values[, 2L])
+    })
+    peaks <- do.call(rbind, parts)
+    if (is.null(peaks))
+        return(.pa_empty_scan_peaks(scans$pid))
+    # Preserve peak-row ids before excluding unassessed higher-level spectra.
+    peaks$sid <- seq_len(nrow(peaks))
+    peaks$pid <- scans$pid[match(paste(peaks$fileid, peaks$scan), key)]
+    peaks <- peaks[!is.na(peaks$pid), , drop = FALSE]
+    peaks$scan <- factor(peaks$scan, levels = unique(as.character(
+        scans$seqNum)))
+    peaks$type <- rep("scan", nrow(peaks))
+    rownames(peaks) <- NULL
+    peaks[, c("sid", "pid", "fileid", "scan", "mz", "i", "type")]
 }
-
-
-
 
 resetGrpedMS2 <- function(m){
   m[,1:2, drop=FALSE]

@@ -1,7 +1,9 @@
 # Canonical dumps of the SQLite databases msPurity writes.
 #
-# The SQLite output is frozen while it is deprecated: the same inputs must
-# keep producing the same tables, column types and values. Byte equality is
+# SQLite is deprecated, but raw peak ownership is corrected deliberately.
+# The references retain the same tables, types and values except independently
+# verified raw pid corrections; unrelated historical output stays unchanged.
+# Byte equality is
 # not usable, because the `source` table records a timestamp and the
 # package version, and paths depend on where msPurityData is installed. A
 # dump records, per table, its CREATE statement and every row in rowid
@@ -86,7 +88,7 @@
     x
 }
 
-# Each writer the frozen SQLite output must keep reproducing. Every element
+# SQLite writers checked against the corrected reference output. Each element
 # is a function of a fresh output directory returning the database written.
 .golden_writers <- function() {
     list(
