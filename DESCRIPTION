@@ -63,6 +63,7 @@ Imports:
     tools,
     utils
 Suggests:
+    BiocParallel,
     MSnbase,
     testthat,
     xcms,
