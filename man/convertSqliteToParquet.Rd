@@ -40,6 +40,14 @@ MS2 scans are referenced, not copied. With \code{study}, each scan resolves to
 its spectrum in that dataset; otherwise each source file is an external
 source and scans are identified by mzML native id.
 
+Historical raw peak identities are resolved from file and spectrum position.
+A warning reports stored identities that disagree with that mapping.
+This warning has class \code{msPurity_parquet_identity_warning}. Existing
+filtering flags are retained; flags previously applied to the wrong spectrum
+and destructively removed peaks are not automatically repaired. Reprocess
+affected data from the original measurements when reliable flags are needed.
+Ambiguous averaged-peak membership is an error, not an empty spectrum.
+
 Processing parameters are not stored in the database, which is recorded
 in \code{tool_provenance} and the loss ledger. Unmapped tables are an error.
 

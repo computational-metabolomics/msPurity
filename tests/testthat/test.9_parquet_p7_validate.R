@@ -10,7 +10,8 @@ context("Parquet: validation (mzStack-1 §11, mzStack-4 §11)")
             lib <- tempfile("lib-")
             convertLibraryToParquet(ex("library", "mini_library.sqlite"), lib)
             q <- tempfile("q-")
-            convertSqliteToParquet(ex("db", "createDatabase_example.sqlite"), q)
+            .without_identity_warning(convertSqliteToParquet(
+                ex("db", "createDatabase_example.sqlite"), q))
             suppressMessages(spectralMatching(q, lib, q_spectraTypes = "av_all",
                                               format = "parquet",
                                               updateDb = TRUE, topn = 1))

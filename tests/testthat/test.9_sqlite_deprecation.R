@@ -1,12 +1,11 @@
-context("SQLite output: frozen, and deprecated with a warning")
+context("SQLite output regressions and deprecation warnings")
 
-# The SQLite writers must keep producing exactly what msPurity 1.37.3 wrote.
-# The golden dumps were generated from master before the Parquet backend was
-# added; see fixtures/make-sqlite-golden.R.
+# Historical dumps retain their original values except verified raw pid
+# corrections. Other tables, peak arrays, flags and row ordering stay unchanged.
 
 for (nm in names(.golden_writers())) local({
     nm <- nm
-    test_that(paste("SQLite output is unchanged:", nm), {
+    test_that(paste("SQLite output matches corrected references:", nm), {
         skip_if_no_mspuritydata()
         skip_if_not_installed("xcms")
         suppressPackageStartupMessages(library(xcms))

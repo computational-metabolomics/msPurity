@@ -7,16 +7,12 @@ test_that("results are unchanged when only the Spectra slots are filled", {
     old <- options(msPurity.legacySlots = FALSE)
     on.exit(options(old))
     res <- .parity_purityA(via = "accessors")
-    for (stage in names(ref)) {
-        r <- ref[[stage]]
-        if (is.list(r) && !is.null(r$all_frag_scans))
-            r <- .parity_fix_allfrag(r)
-        expect_identical(res[[stage]], r, label = stage)
-    }
+    for (stage in names(ref))
+        expect_identical(res[[stage]], ref[[stage]], label = stage)
 })
 
 # The full workflow up to createDatabase(), with allfrag = TRUE so that the
-# frozen all_frag_scans table is rebuilt when the legacy slot is empty.
+# corrected all_frag_scans table is rebuilt when the legacy slot is empty.
 .workflow_db <- function(format) {
     q <- .parity_quiet
     pa <- q(purityA(unname(.lcmsms_paths())))

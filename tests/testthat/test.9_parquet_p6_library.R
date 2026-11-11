@@ -167,7 +167,7 @@ test_that("matching against a converted library scores as SQLite does", {
     q <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite",
                      package = "msPurity")
     qd <- tempfile("q-")
-    convertSqliteToParquet(q, qd)
+    .without_identity_warning(convertSqliteToParquet(q, qd))
     ld <- .convert_lib(lib)
     for (types in list("av_all", c("av_all", "inter"))) {
         a <- suppressMessages(spectralMatching(q, lib, q_spectraTypes = types,

@@ -217,12 +217,10 @@ export_2_sqlite <- function(pa, grp_peaklist, xset, xsa, out_dir, db_name){
   # other wise the s_peak_meta ids might not match up (should be fixed from previous matching)
   # filedf <- filedf[as.numeric(unique(scan_info$fileid)),]
 
-  scanpeaks_frag <- plyr::ddply(filedf, ~ fileid, scan_peaks_4_db)
-
-  comb <- paste(scanpeaks_frag[,1], scanpeaks_frag[,2], sep=' ')
-  scanpeaks_frag <- cbind(1:nrow(scanpeaks_frag), cumsum(!duplicated(comb)), scanpeaks_frag)
-  colnames(scanpeaks_frag) <- c('sid','pid', 'fileid', 'scan', 'mz', 'i')
-  fks_pid <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
+    scanpeaks_frag <- getScanPeaks(pa)
+    scanpeaks_frag$type <- NULL
+    fks_pid <- list(pid = list(new_name = "pid", ref_name = "pid",
+            ref_table = "s_peak_meta"))
 
   custom_dbWriteTable(name_pk = 'sid', fks=append(fks_fileid, fks_pid),
                       table_name = 's_peaks', df=scanpeaks_frag, con=con)
@@ -472,17 +470,6 @@ update_cn_order <- function(name_pk, names_fk, df){
   return(df[,columnorder])
 }
 
-
-
-scan_peaks_4_db <- function(x){
-
-  sp <- .msp_read(as.character(x$filepth))
-  scanpeaks <- .msp_peaks(sp)
-  scans <- .msp_header(sp)
-  names(scanpeaks) <- seq(1, length(scanpeaks))
-
-  scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)
-}
 
 
 custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTEGER'){

@@ -220,7 +220,15 @@
 .mzs_derived_index <- function(src, files, uid) {
     m <- src$s_peak_meta
     type <- m$spectrum_type
-    av <- m[!is.na(type) & type %in% c("intra", "inter", "all"), ,
+    averaged <- c("intra", "inter", "all")
+    if (any(!is.na(type) & !type %in% c("scan", averaged)))
+        .mzs_abort("semantic", "Unsupported stored spectrum type.")
+    pk <- src$s_peaks[src$s_peaks$type %in% averaged, , drop = FALSE]
+    expected <- type[match(pk$pid, m$pid)]
+    if (anyNA(expected) || any(pk$type != expected))
+        .mzs_abort("semantic", "Averaged peaks have missing or contradictory ",
+            "spectrum metadata.")
+    av <- m[!is.na(type) & type %in% averaged, ,
             drop = FALSE]
     if (!nrow(av))
         return(av)
@@ -248,6 +256,25 @@
     av
 }
 
+#' Peak rows with unambiguous identity and original stored average type.
+#' @noRd
+.mzs_average_peaks <- function(src, av) {
+    pk <- src$s_peaks[src$s_peaks$pid %in% av$pid, , drop = FALSE]
+    if (!nrow(pk)) return(pk)
+    if (anyDuplicated(av$pid) || !"type" %in% names(pk))
+        .mzs_abort("semantic", "Average peak membership is ambiguous.")
+    if (anyNA(pk$type) || any(!nzchar(trimws(as.character(pk$type)))))
+        .mzs_abort("semantic",
+            "Average peak membership has missing type information.")
+    pk <- pk[pk$type != "scan", , drop = FALSE]
+    expected <- av$spectrum_type[match(pk$pid, av$pid)]
+    if (anyNA(expected) || any(!pk$type %in% c("all", "intra", "inter")) ||
+            any(pk$type != expected))
+        .mzs_abort("semantic",
+            "Averaged peaks disagree with their stored spectrum type.")
+    pk
+}
+
 #' The native runs holding the averaged spectra, for `.mzs_commit_new()`.
 #'
 #' @noRd
@@ -255,7 +282,7 @@
     if (!nrow(av))
         return(list(runs = list(), results_runs = list(),
                     peak_columns = list()))
-    pk <- src$s_peaks[src$s_peaks$pid %in% av$pid, , drop = FALSE]
+    pk <- .mzs_average_peaks(src, av)
     pk <- pk[order(pk$pid, pk$mz, pk$cl), , drop = FALSE]
     unknown <- setdiff(names(pk), c("sid", "fileid", "mz", "i", "type",
                                     "scan", "grpid", "pid", "frac",
@@ -334,8 +361,8 @@
 .mzs_merge_member <- function(src, av, members, scans, scan_refs) {
     if (!nrow(av))
         return(list(table = NULL, incomplete = 0L))
-    avp <- src$s_peaks[src$s_peaks$pid %in% av$pid & !is.na(src$s_peaks$total),
-                       c("pid", "total")]
+    avp <- .mzs_average_peaks(src, av)
+    avp <- avp[!is.na(avp$total), c("pid", "total"), drop = FALSE]
     total <- tapply(avp$total, avp$pid, max)
     out <- lapply(seq_len(nrow(av)), function(i) {
         a <- av[i, ]
@@ -434,15 +461,18 @@
     data.frame(pid = g$pid, cid = NA_integer_, grpid = g$grpid)
 }
 
-#' The s_peak_meta pid of each scan peak in s_peaks.
-#'
-#' s_peaks `pid` does not identify the scan, so match on file id and `scan`
-#' (the acquisition number).
-#'
+#' Resolve scan peaks by the file-position convention of msPurity writers.
 #' @noRd
 .mzs_scan_peak_pid <- function(src, sp) {
     m <- .mzs_scans(src)
-    k <- match(paste(sp$fileid, sp$scan), paste(m$fileid, m$acquisitionNum))
+    key <- paste(m$fileid, m$seqNum)
+    if (anyDuplicated(key))
+        .mzs_abort("semantic",
+            "Ambiguous file-position metadata for scan peaks.")
+    if (nrow(sp) && anyNA(m$seqNum))
+        .mzs_abort("semantic",
+            "Scan peak ownership requires file-position metadata.")
+    k <- match(paste(sp$fileid, sp$scan), key)
     m$pid[k]
 }
 
@@ -816,6 +846,18 @@
     else .mzs_pkg_version("msPurity")
     files <- .mzs_files(src$fileinfo, study, studyKey, fileMap, path)
     scans <- .mzs_scans(src)
+    raw_peaks <- src$s_peaks[src$s_peaks$type %in% "scan", , drop = FALSE]
+    if (is.null(live) && nrow(raw_peaks)) {
+        pid <- .mzs_scan_peak_pid(src, raw_peaks)
+        if (any(!is.na(pid) & (is.na(raw_peaks$pid) | pid != raw_peaks$pid)))
+            warning(warningCondition(paste0(
+                "Stored scan peak identities disagree with their ",
+                "file positions; ",
+                "identities are remapped, but historical flags and ",
+                "removed peaks ",
+                "cannot be repaired automatically."),
+            class = "msPurity_parquet_identity_warning"))
+    }
     scan_refs <- .mzs_scan_refs(files, scans)
     av <- .mzs_derived_index(src, files, uid)
     derived <- .mzs_derived_runs(src, av)

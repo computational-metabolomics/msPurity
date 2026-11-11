@@ -108,7 +108,7 @@
 
 # puritydf rebuilt from the spectra slot.
 .pa_purity_table <- function(sp) {
-    cols <- sp@metadata$puritydfColumns
+    cols <- unique(sp@metadata$puritydfColumns)
     if (!length(sp) || is.null(cols))
         return(.pa_empty_frame())
     as.data.frame(Spectra::spectraData(sp, columns = cols), optional = TRUE)
@@ -241,27 +241,6 @@
     sv$purity_pass_flag <- as.logical(flag)
     sv$single_peak <- vapply(pk, nrow, integer(1)) == 1L
     .msp_memory(sv, mats, .PA_FRAG_PEAK_VARS)
-}
-
-# all_frag_scans as filterFragSpectra(allfrag = TRUE) has always written it,
-# for the frozen SQLite output. Its pid column counts scans in file order,
-# skipping scans without peaks, so after such a scan it names the wrong
-# scan; the scan column is right. Kept as it was on purpose.
-.pa_allfrag_frozen <- function(pa) {
-    if (nrow(pa@all_frag_scans))
-        return(pa@all_frag_scans)
-    prm <- pa@filter_frag_params
-    if (!isTRUE(prm$allfrag))
-        return(.pa_empty_frame())
-    scanpeaksFrag <- getScanPeaks(pa)
-    puritydf <- purityTable(pa)
-    puritydf$purity_pass_flag <- puritydf$inPurity > prm$plim
-    scanpeaksFrag <- merge(puritydf[, c("pid", "inPurity", "purity_pass_flag")],
-                           scanpeaksFrag, by = "pid")
-    scanpeaksFrag <- scanpeaksFrag[, c("pid", "sid", "fileid", "scan", "mz",
-                                       "i", "type", "purity_pass_flag"),
-                                   drop = FALSE]
-    plyr::ddply(scanpeaksFrag, ~pid, setFlagMatrix, filter_frag_params = prm)
 }
 
 # fragSpectra from the all_frag_scans of a saved object. The pid of each row

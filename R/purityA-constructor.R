@@ -375,8 +375,13 @@ assessPuritySingle <- function(filepth,
                            isotopes=isotopes,
                            im=im)
 
-  # Add results to mzR dataframe
-  mrdfshrt <- cbind(mrdfshrt, initial)
+    # Keep the input key once; ddply also returns its grouping column.
+    if (nrow(initial) != nrow(mrdfshrt) ||
+            !identical(as.numeric(initial$seqNum),
+                as.numeric(mrdfshrt$seqNum)))
+        stop("Initial purity results do not match the spectrum positions.")
+    mrdfshrt <- cbind(mrdfshrt,
+        initial[, names(initial) != "seqNum", drop = FALSE])
 
   # If no interpolation required then all purity calculations are completed
   if(interpol=="none"){

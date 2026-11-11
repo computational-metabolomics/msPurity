@@ -385,12 +385,27 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   # Add s_peaks (all fragmentation spectra either scans or averaged)
   ###############################################
   # get all the fragmentation from the scans
-  if((!is.null(pa@filter_frag_params[["allfrag"]])) && (pa@filter_frag_params$allfrag)){
-    speaks <- .pa_allfrag_frozen(pa)
-  }else{
-    speaks <- getScanPeaks(pa)
-    speaks$grpid <- NA
-  }
+    if (isTRUE(pa@filter_frag_params$allfrag)) {
+        # These peak-row ids are local to assessed spectra; the scan route
+        # retains the original all-MS>1 peak positions, including gaps.
+        speaks <- allFragSpectra(pa, legacy = TRUE)
+        if (!nrow(speaks)) {
+            speaks <- .pa_empty_scan_peaks(scaninfo$pid)
+            speaks$snr <- numeric()
+            speaks$ra <- numeric()
+            for (flag in c("purity_pass_flag", "intensity_pass_flag",
+                    "ra_pass_flag", "snr_pass_flag", "pass_flag")) {
+                speaks[[flag]] <- logical(nrow(speaks))
+            }
+            speaks <- speaks[, c("sid", "pid", "fileid", "scan", "mz", "i",
+                    "snr", "ra", "type", "purity_pass_flag",
+                    "intensity_pass_flag", "ra_pass_flag", "snr_pass_flag",
+                    "pass_flag")]
+        }
+    } else {
+        speaks <- getScanPeaks(pa)
+    }
+    speaks$grpid <- rep(NA_real_, nrow(speaks))
 
   av_list <- averagedSpectra(pa)
   if (length(av_list)>0){
@@ -400,10 +415,11 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     colnames(av_spectra)[colnames(av_spectra)=='sample'] <- 'fileid'
 
     colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
-    av_spectra$sid <- (max(speaks$sid)+1):(max(speaks$sid)+nrow(av_spectra))
+    av_spectra$sid <- max(c(0, speaks$sid)) + seq_len(nrow(av_spectra))
 
     prePid  <- paste(av_spectra$grpid, av_spectra$fileid, av_spectra$type)
-    newPids <- max(scaninfo$pid)+as.numeric(factor(prePid, levels=unique(prePid)))
+    newPids <- max(c(0, scaninfo$pid)) +
+        as.numeric(factor(prePid, levels = unique(prePid)))
 
     # add new scaninfo details (with just pid for now)
     av_spectra$pid <- newPids
@@ -682,17 +698,6 @@ update_cn_order <- function(name_pk, names_fk, df){
   return(df[,columnorder])
 }
 
-
-
-scanPeaks4db <- function(x, pa){
-
-  sp <- .msp_read(as.character(x$filepth))
-  scanpeaks <- .msp_peaks(sp)
-  scans <- .msp_header(sp)
-  names(scanpeaks) <- seq(1, length(scanpeaks))
-
-  scanpeaks_df <- plyr::ldply(scanpeaks[scans$seqNum[scans$msLevel>1]], .id=TRUE)
-}
 
 
 custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTEGER'){

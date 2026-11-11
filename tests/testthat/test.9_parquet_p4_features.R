@@ -69,9 +69,12 @@ test_that("SQLite -> Parquet -> SQLite is exact under semantic equality", {
              suppressWarnings(suppressMessages(createDatabase(
                  .golden_pa(), .golden_xcms("msms_only_xset.rds"),
                  outDir = td, dbName = "xset.sqlite"))))
-    for (db in dbs) {
+    for (i in seq_along(dbs)) {
+        db <- dbs[[i]]
         p <- tempfile("rt-")
-        convertSqliteToParquet(db, p)
+        if (i <= 2L)
+            .without_identity_warning(convertSqliteToParquet(db, p))
+        else convertSqliteToParquet(db, p)
         a <- .mzs(".mzs_canonical_sqlite")(db)
         b <- .mzs(".mzs_canonical_parquet")(p)
         expect_identical(names(a), names(b))
@@ -132,8 +135,8 @@ test_that("a per-sample column count that disagrees with the files is refused (R
     DBI::dbExecute(con, "ALTER TABLE c_peak_groups ADD COLUMN junk TEXT")
     DBI::dbExecute(con, "UPDATE c_peak_groups SET junk = 'x' || grpid")
     DBI::dbDisconnect(con)
-    expect_parquet_error(convertSqliteToParquet(db, tempfile("bad-")),
-                         "semantic")
+    expect_parquet_error(.without_identity_warning(
+        convertSqliteToParquet(db, tempfile("bad-"))), "semantic")
 })
 
 test_that("frag4feature() and createDatabase() accept XcmsExperiment", {

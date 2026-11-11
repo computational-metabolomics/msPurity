@@ -9,7 +9,8 @@ context("Parquet: provenance, converter tables and the SQLite converter")
         skip_if_no_arrow()
         if (is.null(cache[[name]]) || !dir.exists(cache[[name]])) {
             p <- tempfile("conv-")
-            convertSqliteToParquet(.example_db(name), p)
+            .without_identity_warning(
+                convertSqliteToParquet(.example_db(name), p))
             cache[[name]] <<- p
         }
         cache[[name]]
@@ -185,8 +186,9 @@ test_that("a basename collision needs a fileMap (R-096, R-097)", {
     expect_parquet_error(convertSqliteToParquet(db, tempfile("c-")),
                          "semantic")
     p <- tempfile("c-")
-    convertSqliteToParquet(db, p, fileMap = c("/day1/QC.mzML" = "QC_day1",
-                                              "/day2/QC.mzML" = "QC_day2"))
+    .without_identity_warning(convertSqliteToParquet(db, p,
+            fileMap = c("/day1/QC.mzML" = "QC_day1",
+                "/day2/QC.mzML" = "QC_day2")))
     m <- .manifest(p)
     expect_setequal(vapply(m$sources, function(s) s$key, ""),
                     c("QC_day1", "QC_day2"))

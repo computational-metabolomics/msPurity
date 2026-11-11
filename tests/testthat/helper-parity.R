@@ -56,24 +56,6 @@
     x
 }
 
-# The legacy all_frag_scans names scans by a count that skips scans without
-# peaks, so after such a scan its pid is wrong (the scan column is right).
-# allFragSpectra() returns the table with each row's pid taken from its file
-# and scan, and the purity and overall flags of that scan.
-.parity_fix_allfrag <- function(view) {
-    afs <- view$all_frag_scans
-    if (!nrow(afs))
-        return(view)
-    p <- view$puritydf
-    afs$pid <- p$pid[match(paste(afs$fileid, as.character(afs$scan)),
-                           paste(as.character(p$fileid), p$seqNum))]
-    afs$purity_pass_flag <- p$inPurity[match(afs$pid, p$pid)] > 0.7
-    afs$pass_flag <- afs$purity_pass_flag & afs$intensity_pass_flag &
-        afs$ra_pass_flag & afs$snr_pass_flag
-    view$all_frag_scans <- afs
-    view
-}
-
 .msp_text <- function(pth) {
     s <- readChar(pth, file.info(pth)$size)
     gsub("msPurity version:\\d+\\.\\d+\\.\\d+", "", s)

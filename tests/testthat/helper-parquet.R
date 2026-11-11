@@ -28,6 +28,12 @@ skip_if_no_mspuritydata <- function() {
     list(value = value, n = n, messages = msgs)
 }
 
+# Ignore only the expected identity warning from historical database fixtures.
+.without_identity_warning <- function(expr) {
+    withCallingHandlers(expr, msPurity_parquet_identity_warning =
+            function(w) invokeRestart("muffleWarning"))
+}
+
 # Expect `expr` to raise a Parquet error of the given class.
 expect_parquet_error <- function(expr, class) {
     testthat::expect_error(expr, class = paste0("msPurity_parquet_", class))
