@@ -108,7 +108,7 @@
 
 # puritydf rebuilt from the spectra slot.
 .pa_purity_table <- function(sp) {
-    cols <- sp@metadata$puritydfColumns
+    cols <- unique(sp@metadata$puritydfColumns)
     if (!length(sp) || is.null(cols))
         return(.pa_empty_frame())
     as.data.frame(Spectra::spectraData(sp, columns = cols), optional = TRUE)
