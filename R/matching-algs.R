@@ -62,6 +62,18 @@ cdpc <- function(L, Q){
 }
 
 
+# Preserve input-order ties, considering only eligible, unused reference peaks.
+.sm_peak_match <- function(ppm_diff, intensity_diff, eligible,
+    intensity_limit) {
+    if (!length(eligible))
+        return(NA_integer_)
+    intensity <- eligible[which(intensity_diff[eligible] < intensity_limit)]
+    if (length(intensity))
+        intensity[which.min(intensity_diff[intensity])]
+    else
+        eligible[which.min(ppm_diff[eligible])]
+}
+
 dpc <- function(A,B) {
   return( sum(A*B)/sqrt(sum(A^2)*sum(B^2)) )
 }
@@ -72,4 +84,3 @@ overlap <- function(start1, end1, start2, end2){
   return((end1 >= start2) & (end2 >= start1))
 
 }
-

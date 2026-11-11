@@ -693,27 +693,12 @@ matchi <-function(library_peaks, target_peaks, ppmdiff, idiff, ppm_tol_prod=50, 
     ppmD <- ppmdiff[i,]
     iD <- idiff[i,]
 
-    if(all(is.na(ppmD))){
+    eligible <- which(ppmD < ppm_tol_prod)
+    matchi <- .sm_peak_match(ppmD, iD, eligible, ra_diff)
+    if (is.na(matchi)) {
       allpeaks[[i]] <- rbind(target_peaks[i,],c(0, 0, 2,0))
       mcount <- append(mcount, 'miss')
       next
-    }
-
-    bm <- min(ppmD, na.rm = TRUE)
-
-    if (bm>ppm_tol_prod){
-      allpeaks[[i]] <- rbind(target_peaks[i,],c(0, 0, 2,0))
-      mcount <- append(mcount, 'miss')
-      next
-    }
-
-    # First check to see if there is a matching intensity value within ra_diff (default 10%)
-    intenc <- iD[ppmD<ppm_tol_prod & iD<ra_diff & !is.na(ppmD) & !is.na(ra_diff)]
-
-    if (!identical(unname(intenc), numeric(0))){
-      matchi <- match(min(intenc, na.rm = TRUE), iD)
-    }else{
-      matchi <- match(min(ppmD[ppmD<ppm_tol_prod], na.rm=TRUE), ppmD)
     }
 
     allpeaks[[i]] <- rbind(target_peaks[i,],library_peaks[matchi,])
