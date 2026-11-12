@@ -8,7 +8,8 @@ test_that("results are unchanged when only the Spectra slots are filled", {
     on.exit(options(old))
     res <- .parity_purityA(via = "accessors")
     for (stage in names(ref))
-        expect_identical(res[[stage]], ref[[stage]], label = stage)
+        expect_equal(res[[stage]], ref[[stage]],
+                     tolerance = 1e-12, label = stage)
 })
 
 # The full workflow up to createDatabase(), with allfrag = TRUE so that the

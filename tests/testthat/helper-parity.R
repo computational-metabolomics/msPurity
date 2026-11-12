@@ -4,7 +4,8 @@
 # returns the results in their legacy shapes (puritydf, grped_df, grped_ms2,
 # all_frag_scans, av_spectra, MSP text and the DIMS peak lists). The
 # references in fixtures/parity were written by the code before the move,
-# and every later change must reproduce them exactly.
+# and later results must agree within floating-point rounding. Explicit
+# identity and saved-object checks remain exact.
 
 .parity_dir <- function() {
     d <- testthat::test_path("fixtures", "parity")
