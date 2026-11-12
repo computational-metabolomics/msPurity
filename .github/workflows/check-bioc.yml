@@ -67,6 +67,14 @@ jobs:
           writeLines(paste(names(paths), paths, sep = "="),
               Sys.getenv("GITHUB_ENV"))
 
+      - name: Set up macOS OpenSSL
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew list --versions openssl@3 >/dev/null || brew install openssl@3
+          openssl_prefix=$(brew --prefix openssl@3)
+          echo "LIBRARY_PATH=$openssl_prefix/lib${LIBRARY_PATH:+:$LIBRARY_PATH}" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
@@ -107,6 +115,7 @@ jobs:
       - name: Prepare reference library
         shell: Rscript {0}
         run: |
+          options(timeout = max(1200, getOption("timeout")))
           path <- Sys.getenv("MSPURITY_REFERENCE")
           dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
           if (!file.exists(path)) {
