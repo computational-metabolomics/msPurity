@@ -14,23 +14,52 @@ context("Parquet: spectra read and written through Spectra")
                                  polarity = "Ion_mode"))
 }
 
-.sorted <- function(x) x[order(as.numeric(names(x)))]
+# Every run's stored rows, in manifest run order.
+.stored <- function(p) {
+    m <- MsBackendParquet::readManifest(p)
+    as.data.frame(dplyr::bind_rows(lapply(m$runs, function(r) {
+        sp <- .mzs(".mzs_read_run")(p, r)
+        sp$run_id <- rep(r$run_id, nrow(sp))
+        sp
+    })))
+}
 
-test_that("peaks read through MsBackendParquet equal the arrow reader", {
+test_that("spectra read through MsBackendParquet are the stored ones", {
     skip_if_no_arrow()
-    testthat::skip_if_not_installed("MsBackendParquet")
     lib <- tempfile("lib-")
     suppressMessages(convertLibraryToParquet(.lib_file("mini_library.sqlite"),
                                              lib))
     flags <- c("x_mspurity_snr_pass_flag", "x_mspurity_minnum_pass_flag",
                "x_mspurity_minfrac_pass_flag", "x_mspurity_ra_pass_flag")
     for (p in c(lib, .results_dataset())) {
-        m <- .mzs(".mzs_read_manifest")(p)
-        ids <- .mzs(".mzs_read_spectra_meta")(p, m, "id")$spectrum_id_
-        expect_gt(length(ids), 0)
-        a <- .mzs(".mzs_read_peaks_spectra")(p, ids, flags)
-        b <- .mzs(".mzs_read_peaks_arrow")(p, m, ids, flags)
-        expect_identical(.sorted(a), .sorted(b))
+        st <- .stored(p)
+        expect_gt(nrow(st), 0)
+        cols <- c("id", "data_origin", "ms_level", "scan_polarity",
+                  "selected_ion_mz")
+        meta <- .mzs(".mzs_read_spectra_meta")(
+            p, MsBackendParquet::readManifest(p), cols)
+        expect_identical(meta$run_id, st$run_id)
+        expect_equal(meta$spectrum_id_, st$spectrum_id_)
+        ## A core variable with no values is not stored, and reads as NA.
+        for (c in cols) {
+            if (is.null(st[[c]]))
+                expect_true(all(is.na(meta[[c]])), info = c)
+            else
+                expect_equal(meta[[c]], st[[c]], info = c)
+        }
+
+        have <- intersect(flags, names(st))
+        pk <- .mzs(".mzs_read_peaks")(p, rev(st$spectrum_id_), flags)
+        expect_identical(names(pk), as.character(st$spectrum_id_))
+        want <- lapply(seq_len(nrow(st)), function(k) {
+            d <- data.frame(mz = st$mz[[k]], i = st$intensity[[k]])
+            for (f in have) {
+                v <- st[[f]][[k]]
+                d[[f]] <- if (is.null(v)) rep(NA, nrow(d)) else v
+            }
+            d
+        })
+        expect_identical(unname(pk), want)
     }
 })
 
@@ -41,14 +70,10 @@ test_that("a Spectra library converts like the MSP file it was read from", {
                                              format = "msp", dialect = "mona"))
     b <- tempfile("lib-")
     suppressMessages(convertLibraryToParquet(.mona_spectra(), b))
-    read <- function(p) {
-        m <- .manifest(p)
-        as.data.frame(dplyr::bind_rows(lapply(m$runs, function(r) as.data.frame(
-            arrow::read_parquet(file.path(p, r$path, "part-0.parquet")))[, c(
-                "id", "ms_level", "scan_polarity", "selected_ion_mz", "mz",
-                "intensity", "x_mspurity_precursor_type",
-                "x_mspurity_inchikey", "x_mspurity_formula")])))
-    }
+    read <- function(p) .stored(p)[, c(
+        "id", "ms_level", "scan_polarity", "selected_ion_mz", "mz",
+        "intensity", "x_mspurity_precursor_type", "x_mspurity_inchikey",
+        "x_mspurity_formula")]
     sa <- read(a)
     sb <- read(b)
     k <- match(sa$id, sb$id)

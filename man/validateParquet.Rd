@@ -30,16 +30,11 @@ reported at SHOULD level.
 
 The append-only rule for results tables cannot be checked: a rewritten
 Parquet part is indistinguishable from a new one.
-
-Requires the suggested packages arrow and jsonlite.
 }
 \examples{
-if (requireNamespace("arrow", quietly = TRUE) &&
-    requireNamespace("jsonlite", quietly = TRUE)) {
-    db <- system.file("extdata", "tests", "db",
-                      "createDatabase_example.sqlite", package = "msPurity")
-    out <- file.path(tempdir(), "validate-example.parquet")
-    convertSqliteToParquet(db, out, overwrite = TRUE)
-    validateParquet(out)
-}
+db <- system.file("extdata", "tests", "db",
+                  "createDatabase_example.sqlite", package = "msPurity")
+out <- file.path(tempdir(), "validate-example.parquet")
+convertSqliteToParquet(db, out, overwrite = TRUE)
+validateParquet(out)
 }

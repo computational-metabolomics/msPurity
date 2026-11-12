@@ -50,18 +50,13 @@ Ambiguous averaged-peak membership is an error, not an empty spectrum.
 
 Processing parameters are not stored in the database, which is recorded
 in \code{tool_provenance} and the loss ledger. Unmapped tables are an error.
-
-Requires the suggested packages arrow and jsonlite.
 }
 \examples{
-if (requireNamespace("arrow", quietly = TRUE) &&
-    requireNamespace("jsonlite", quietly = TRUE)) {
-    db <- system.file("extdata", "tests", "db",
-                      "createDatabase_example.sqlite", package = "msPurity")
-    out <- file.path(tempdir(), "converted.parquet")
-    convertSqliteToParquet(db, out, overwrite = TRUE)
-    validateParquet(out)
-}
+db <- system.file("extdata", "tests", "db",
+                  "createDatabase_example.sqlite", package = "msPurity")
+out <- file.path(tempdir(), "converted.parquet")
+convertSqliteToParquet(db, out, overwrite = TRUE)
+validateParquet(out)
 }
 \seealso{
 \code{\link[=createDatabase]{createDatabase()}}, \code{\link[=validateParquet]{validateParquet()}}

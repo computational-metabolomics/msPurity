@@ -39,8 +39,9 @@
     "its feature (xcms featureDefinitions() mzmed and rtmed, or",
     "peakTable() mz and rt), as createDatabase() records them.")
 
-# Metadata column types of an averaged spectrum.
-.MZS_AV_META_TYPES <- c(ms_level = "i32", time = "f64", scan_polarity = "i32",
+# Metadata column types of an averaged spectrum. `rtime` is the retention
+# time in seconds, which is stored as `time` in minutes.
+.MZS_AV_META_TYPES <- c(ms_level = "i32", rtime = "f64", scan_polarity = "i32",
                         spectrum_representation = "str", id = "str",
                         data_origin = "str", selected_ion_mz = "f64",
                         x_mspurity_precursor_purity = "f64")
@@ -83,7 +84,7 @@
     }
 
     if (!is.null(study)) {
-        sm <- .mzs_read_manifest(study)
+        sm <- MsBackendParquet::readManifest(study)
         meta <- .mzs_read_spectra_meta(study, sm, "data_origin")
         origin <- unique(meta[, c("run_id", "data_origin")])
         norm <- function(p) normalizePath(p, mustWork = FALSE)
@@ -320,7 +321,7 @@
         }
         meta <- data.frame(
             ms_level = rep(2L, nrow(a)),
-            time = a$retention_time / 60,
+            rtime = a$retention_time,
             scan_polarity = .mzs_scan_polarity(a$polarity),
             spectrum_representation = rep("MS:1000127", nrow(a)),
             id = a$native_id,

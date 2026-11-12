@@ -231,71 +231,36 @@
 # Reading spectra to match.
 # ---------------------------------------------------------------------------
 
-#' Peaks of a dataset's spectra, read only for `ids`.
+#' Peaks of a dataset's spectra, read through MsBackendParquet only for
+#' `ids`.
 #'
-#' Read as a Spectra object through MsBackendParquet when it is installed,
-#' otherwise with arrow directly.
+#' @param extra peak-annotation flag columns to add, as logical.
 #'
-#' @return named list (by spectrum_id_) of data.frame(mz, i, ...flags).
+#' @return named list (by spectrum_id_, in id order) of
+#'     data.frame(mz, i, ...flags). Ids the dataset does not hold are left
+#'     out.
 #'
 #' @noRd
-.mzs_read_peaks <- function(path, m, ids, extra = character()) {
-    if (requireNamespace("MsBackendParquet", quietly = TRUE))
-        return(.mzs_read_peaks_spectra(path, ids, extra))
-    .mzs_read_peaks_arrow(path, m, ids, extra)
-}
-
-#' @noRd
-.mzs_read_peaks_spectra <- function(path, ids, extra = character()) {
+.mzs_read_peaks <- function(path, ids, extra = character()) {
     ids <- unique(ids[!is.na(ids)])
     if (!length(ids))
         return(list())
-    sp <- Spectra::Spectra(Spectra::backendInitialize(
-        MsBackendParquet::MsBackendParquet(), path = path))
-    k <- match(ids, sp$spectrum_id_)
-    sp <- sp[sort(k[!is.na(k)])]
-    if (!length(sp))
+    be <- Spectra::backendInitialize(MsBackendParquet::MsBackendParquet(),
+                                     path = path)
+    keep <- as.character(sort(ids))
+    keep <- keep[keep %in% Spectra::spectraNames(be)]
+    if (!length(keep))
         return(list())
-    cols <- intersect(c("mz", "intensity", extra), Spectra::peaksVariables(sp))
-    pk <- Spectra::peaksData(sp, columns = cols)
+    be <- be[keep]
+    cols <- intersect(c("mz", "intensity", extra), Spectra::peaksVariables(be))
+    pk <- Spectra::peaksData(be, columns = cols)
     out <- lapply(pk, function(x) {
         p <- data.frame(mz = unname(x[, "mz"]), i = unname(x[, "intensity"]))
         for (c in setdiff(cols, c("mz", "intensity")))
             p[[c]] <- as.logical(x[, c])
         p
     })
-    names(out) <- as.character(sp$spectrum_id_)
-    out
-}
-
-#' @noRd
-.mzs_read_peaks_arrow <- function(path, m, ids, extra = character()) {
-    ids <- unique(ids[!is.na(ids)])
-    out <- list()
-    if (!length(ids))
-        return(out)
-    rf <- .mzs_runs_frame(m)
-    for (i in seq_len(nrow(rf))) {
-        lo <- rf$uid_base[i]
-        hi <- lo + rf$n_spectra[i] - 1L
-        want <- ids[ids >= lo & ids <= hi]
-        if (!length(want))
-            next
-        ds <- arrow::open_dataset(.mzs_run_dir(path, m$runs[[i]]),
-                                  format = "parquet")
-        cols <- intersect(c("spectrum_id_", "mz", "intensity", extra),
-                          names(ds))
-        df <- as.data.frame(dplyr::collect(dplyr::select(dplyr::filter(
-            ds, spectrum_id_ %in% want), dplyr::all_of(cols))))
-        for (k in seq_len(nrow(df))) {
-            p <- data.frame(mz = df$mz[[k]], i = df$intensity[[k]])
-            for (c in setdiff(cols, c("spectrum_id_", "mz", "intensity"))) {
-                v <- df[[c]][[k]]
-                p[[c]] <- if (is.null(v)) rep(NA, nrow(p)) else v
-            }
-            out[[as.character(df$spectrum_id_[k])]] <- p
-        }
-    }
+    names(out) <- keep
     out
 }
 
@@ -342,7 +307,7 @@
             stringsAsFactors = FALSE)
         flags <- c("x_mspurity_snr_pass_flag", "x_mspurity_minnum_pass_flag",
                    "x_mspurity_minfrac_pass_flag", "x_mspurity_ra_pass_flag")
-        pk <- .mzs_read_peaks(path, m, sm$spectrum_id_, flags)
+        pk <- .mzs_read_peaks(path, sm$spectrum_id_, flags)
         if (isTRUE(a$q_spectraFilter))
             pk <- lapply(pk, function(p) {
                 have <- intersect(flags, names(p))
@@ -381,7 +346,7 @@
                 grpid = grp_of(fid), precursor_mz = s$precursor_mz,
                 retention_time = s$retention_time, inPurity = s$in_purity,
                 polarity = NA_character_, stringsAsFactors = FALSE)
-            pk <- .mzs_read_peaks(src$path, src$manifest, s$ms2_spectrum_id_)
+            pk <- .mzs_read_peaks(src$path, s$ms2_spectrum_id_)
             if (isTRUE(a$q_spectraFilter)) {
                 ## Without filterFragSpectra() scan flags no peaks pass,
                 ## as in the SQLite route.
@@ -500,7 +465,7 @@
         keep <- keep & !is.na(meta$inPurity) & meta$inPurity > a$l_purity
     meta <- meta[keep, , drop = FALSE]
     list(meta = meta, peaks = function(ids)
-        .mzs_read_peaks(lpath, lm, ids))
+        .mzs_read_peaks(lpath, ids))
 }
 
 #' Score every query against the library spectra in its precursor window.
@@ -648,7 +613,7 @@
                          no.. = TRUE), stage, recursive = TRUE)
     unlink(list.files(stage, pattern = "\\.lock$", full.names = TRUE),
            recursive = TRUE)
-    m <- .mzs_read_manifest(stage)
+    m <- MsBackendParquet::readManifest(stage)
     old <- m$uid
     m$uid <- .mzs_uid()
     ## Re-resolve relative source paths against the new location.
@@ -659,7 +624,7 @@
             m$sources[[i]]$path <- .mzs_relative_path(
                 normalizePath(file.path(from, p)), to)
     }
-    .mzs_write_manifest(stage, m)
+    MsBackendParquet::writeManifest(stage, m, bump = FALSE)
     .mzs_finalise(stage, to, overwrite)
     old
 }
@@ -687,11 +652,11 @@
     if (!.mzs_is_dataset(a$q_dbPth))
         .mzs_abort("format", "'", a$q_dbPth, "' is not a Parquet dataset.")
     q <- normalizePath(a$q_dbPth)
-    m <- .mzs_read_manifest(q)
+    m <- MsBackendParquet::readManifest(q)
     if (!identical(m$role, "results"))
         .mzs_abort("unsupported", "'", q, "' is not a results dataset.")
     lpath <- normalizePath(a$l_dbPth, mustWork = TRUE)
-    lm <- .mzs_read_manifest(lpath)
+    lm <- MsBackendParquet::readManifest(lpath)
     if (!m$role %in% "results" || !lm$role %in% c("library", "results"))
         .mzs_abort("unsupported", "'", lpath, "' is neither a library nor ",
                    "a results dataset.")

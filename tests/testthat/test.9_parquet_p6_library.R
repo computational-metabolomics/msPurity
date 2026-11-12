@@ -13,8 +13,7 @@ context("Parquet: library datasets from msp2db and MSP")
 .lib_spectra <- function(p) {
     m <- .manifest(p)
     out <- lapply(m$runs, function(r) {
-        sp <- as.data.frame(arrow::read_parquet(file.path(p, r$path,
-                                                          "part-0.parquet")))
+        sp <- .mzs(".mzs_read_run")(p, r)
         sp$run_id <- r$run_id
         sp
     })
@@ -116,7 +115,7 @@ test_that("MSP keys outside the declared dialect are refused, not skipped", {
     e <- tryCatch(convertLibraryToParquet(
         .lib_file("mini_mona.msp"), tempfile(), format = "msp",
         dialect = "massbank"), error = function(e) e)
-    expect_s3_class(e, "msPurity_parquet_unsupported")
+    expect_s3_class(e, "mzstack_unsupported")
     expect_identical(e$line, 1L)
     f <- tempfile(fileext = ".msp")
     writeLines(c(readLines(.lib_file("mini_mona.msp"))[1:3],
@@ -124,7 +123,7 @@ test_that("MSP keys outside the declared dialect are refused, not skipped", {
     e <- tryCatch(convertLibraryToParquet(f, tempfile(), format = "msp",
                                           dialect = "mona"),
                   error = function(e) e)
-    expect_s3_class(e, "msPurity_parquet_unsupported")
+    expect_s3_class(e, "mzstack_unsupported")
     expect_identical(e$constructs, "MYSTERY_KEY")
     expect_identical(e$line, 4L)
     ## A peak count that disagrees with the peaks listed.

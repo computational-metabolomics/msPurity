@@ -45,9 +45,9 @@ test_that("updateDb = FALSE writes nothing; TRUE appends evidence (R-070)", {
     .sm(p, p)
     expect_identical(.manifest(p)$generation, g0)
     ## An unknown key survives the update (G-011).
-    m <- .mzs(".mzs_read_manifest")(p)
+    m <- MsBackendParquet::readManifest(p)
     m$x_vendor <- list("keep", list(a = 1L))
-    .mzs(".mzs_write_manifest")(p, m)
+    .write_raw_manifest(p, m)
     .sm(p, p, updateDb = TRUE)
     m <- .manifest(p)
     expect_identical(m$generation, g0 + 1L)
