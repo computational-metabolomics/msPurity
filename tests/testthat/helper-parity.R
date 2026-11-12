@@ -59,6 +59,9 @@
 
 .msp_text <- function(pth) {
     s <- readChar(pth, file.info(pth)$size)
+    # The legacy writer adds CRLF on Windows through a text connection,
+    # which can add a second CR. Preserve line boundaries and all content.
+    s <- gsub("\r{1,2}\n", "\n", s)
     gsub("msPurity version:\\d+\\.\\d+\\.\\d+", "", s)
 }
 
