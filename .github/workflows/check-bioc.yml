@@ -47,6 +47,10 @@ jobs:
       TZ: UTC
       BIOCPARALLEL_WORKER_MAX: '2'
     steps:
+      - name: Preserve fixture line endings
+        shell: bash
+        run: git config --global core.autocrlf false
+
       - uses: actions/checkout@v4
 
       - name: Set up R
