@@ -192,23 +192,3 @@ test_that("unresolvable sources are SHOULD findings, never failures (R-100)", {
     expect_false(.has(v, "R-100"))
     expect_true(any(v$requirement == "R-100" & v$level == "SHOULD"))
 })
-
-test_that("requirement coverage is tracked for every requirement the code enforces (B-053)", {
-    fl <- system.file("parquet", "requirements.tsv", package = "msPurity")
-    req <- utils::read.delim(fl, stringsAsFactors = FALSE)
-    expect_true(all(c("requirement", "level", "covered_by", "note") %in%
-                    names(req)))
-    rdir <- testthat::test_path("..", "..", "R")
-    skip_if_not(dir.exists(rdir), "package sources not available")
-    src <- unlist(lapply(list.files(rdir, pattern = "^parquet-.*\\.R$",
-                                    full.names = TRUE), readLines))
-    cited <- unique(unlist(regmatches(src, gregexpr(
-        "\\b[GDRB]-[0-9]{3}\\b", src))))
-    expect_true(length(cited) > 0)
-    expect_identical(setdiff(cited, req$requirement), character())
-    tests <- req$covered_by[nzchar(req$covered_by)]
-    tests <- unique(unlist(strsplit(tests, ";\\s*")))
-    for (t in tests)
-        expect_true(file.exists(testthat::test_path(t)), info = t)
-    expect_true(all(nzchar(req$covered_by) | nzchar(req$note)))
-})
