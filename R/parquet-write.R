@@ -1,14 +1,15 @@
 # Writing Parquet datasets: native runs, results tables, the results index
 # and the manifest.
 #
-# A new dataset is built and validated in a staging directory beside its
-# destination, then moved into place. The manifest is written last, so an
-# interrupted write never looks like a dataset. Updates add new Parquet parts
-# or a new table revision, never rewriting existing parts, then commit a new
-# manifest atomically if no other writer has committed meanwhile.
+# Native runs and the manifest are written with MsBackendParquet; results
+# tables and the results index by msPurity. A new dataset is built and
+# validated in a staging directory beside its destination, then moved into
+# place. The manifest is written last, so an interrupted write never looks
+# like a dataset. Updates add new Parquet parts or a new table revision,
+# never rewriting existing parts, then commit a new manifest atomically if no
+# other writer has committed meanwhile.
 
 .MZS_ROW_GROUP <- 65536L
-.MZS_SPECTRA_ROW_GROUP <- 250L
 
 # ---------------------------------------------------------------------------
 # Preparing tables.
@@ -175,58 +176,58 @@
 
 #' Write native runs of derived or library spectra.
 #'
+#' The runs are written by `MsBackendParquet::createMsBackendParquetDataset()`
+#' into `dir`, which then holds a dataset of those runs at generation 1.
+#' Spectrum ids run from 1 in run order. A run with no spectra is not
+#' written.
+#'
 #' @param runs list of runs in manifest order, each `list(run_id, meta,
-#'     peaks)`: `meta` a data.frame of storage-vocabulary scalar columns, one
-#'     row per spectrum in write order; `peaks` a named list of list columns
-#'     (`mz`, `intensity` and any peak-annotation columns), each a list with
-#'     one element per spectrum and an Arrow element type in its `type`
-#'     attribute.
+#'     peaks)`: `meta` a data.frame, one row per spectrum in write order, of
+#'     storage-vocabulary scalar columns (`ms_level`, `scan_polarity`, `id`,
+#'     ...) and `rtime`, the retention time in seconds; `peaks` a named list
+#'     of list columns (`mz`, `intensity` and any peak-annotation columns),
+#'     each a list with one element per spectrum and an Arrow element type
+#'     in its `type` attribute.
 #'
 #' @param types named character vector: Arrow type code of each `meta`
 #'     column.
 #'
-#' @return the run entries for the manifest.
+#' @return the ids of the runs written, in manifest order.
 #'
 #' @noRd
-.mzs_write_native_runs <- function(dir, runs, types, generation) {
-    base <- 1L
-    entries <- list()
-    for (r in runs) {
-        .mzs_check_key(r$run_id, "A run_id")
-        n <- nrow(r$meta)
-        rel <- file.path("spectra", paste0("run_id=", r$run_id))
-        dir.create(file.path(dir, rel), recursive = TRUE, showWarnings = FALSE)
-        arrays <- list(
-            spectrum_id_ = arrow::Array$create(base + seq_len(n) - 1L,
-                                               type = arrow::int32()),
-            spectrum_index = arrow::Array$create(seq_len(n) - 1,
-                                                 type = arrow::int64()))
-        for (c in names(r$meta)) {
-            code <- types[[c]]
-            arrays[[c]] <- arrow::Array$create(
-                .mzs_as_r_type(r$meta[[c]], code),
-                type = .mzs_arrow_type(code))
-        }
-        for (c in names(r$peaks)) {
-            el <- attr(r$peaks[[c]], "type") %||% "f64"
-            v <- lapply(unclass(r$peaks[[c]]), function(e)
-                if (is.null(e)) NULL else .mzs_as_r_type(e, el))
-            arrays[[c]] <- arrow::Array$create(
-                v, type = arrow::list_of(.mzs_arrow_type(el)))
-        }
-        arrow::write_parquet(do.call(arrow::arrow_table, arrays),
-                             file.path(dir, rel, "part-0.parquet"),
-                             chunk_size = .MZS_SPECTRA_ROW_GROUP,
-                             compression = "snappy")
-        entries[[length(entries) + 1L]] <- list(
-            run_id = r$run_id, kind = "native", path = rel,
-            n_spectra = as.integer(n), uid_base = as.integer(base),
-            ingested_at = as.integer(generation),
-            signal = list(layout = "list", profile = NULL, centroid = NULL),
-            projections = .mzs_object())
-        base <- base + n
+.mzs_write_native_runs <- function(dir, runs, types) {
+    runs <- Filter(function(r) nrow(r$meta) > 0L, runs)
+    ids <- vapply(runs, function(r) r$run_id, character(1))
+    if (!length(ids))
+        return(ids)
+    for (id in ids)
+        .mzs_check_key(id, "A run_id")
+    if (any(grepl("^[._]", ids)) || anyDuplicated(tolower(ids)))
+        .mzs_abort("format", "Run ids must not begin with '.' or '_', and ",
+                   "must differ other than by case: ",
+                   paste(ids, collapse = ", "), ".")
+    n <- vapply(runs, function(r) nrow(r$meta), integer(1))
+    meta <- do.call(.mzs_rbind_fill, lapply(runs, function(r) r$meta))
+    for (c in names(meta))
+        if (!is.na(types[c]))
+            meta[[c]] <- .mzs_as_r_type(meta[[c]], types[[c]])
+    df <- S4Vectors::DataFrame(.mzs_spectra_vars(meta), check.names = FALSE)
+    df$run_id <- rep(ids, n)
+    for (p in unique(unlist(lapply(runs, function(r) names(r$peaks))))) {
+        el <- NULL
+        v <- unlist(lapply(runs, function(r) {
+            x <- r$peaks[[p]]
+            if (is.null(x))
+                return(vector("list", nrow(r$meta)))
+            el <<- el %||% attr(x, "type")
+            unclass(x)
+        }), recursive = FALSE)
+        el <- el %||% "f64"
+        df[[p]] <- lapply(v, function(e)
+            if (is.null(e)) NULL else .mzs_as_r_type(e, el))
     }
-    entries
+    MsBackendParquet::createMsBackendParquetDataset(path = dir, data = df)
+    ids
 }
 
 #' A list column for `.mzs_write_native_runs()`.
@@ -330,14 +331,19 @@
     generation <- 1L
     act <- "act-0001"
 
-    m <- .mzs_new_manifest()
+    run_ids <- .mzs_write_native_runs(stage, plan$runs %||% list(),
+                                      plan$run_types %||% character())
+    m <- if (length(run_ids)) MsBackendParquet::readManifest(stage)
+         else MsBackendParquet::newManifest()
+    if (!identical(.mzs_runs_frame(m)$run_id, run_ids))
+        .mzs_abort("format", "The runs written (",
+                   paste(.mzs_runs_frame(m)$run_id, collapse = ", "),
+                   ") are not the runs planned (",
+                   paste(run_ids, collapse = ", "), ").")
     m$uid <- plan$uid %||% .mzs_uid()
     m$role <- plan$role %||% "results"
     if (!is.null(plan$library))
         m$library <- plan$library
-    m$runs <- .mzs_write_native_runs(stage, plan$runs %||% list(),
-                                     plan$run_types %||% character(),
-                                     generation)
 
     entries <- list()
     index <- list()
@@ -367,9 +373,7 @@
         id = act, generation = generation,
         started = a$started %||% .mzs_now(), action = a$action,
         agent = .mzs_agent(a$fn), inputs = a$inputs %||% list(),
-        outputs = list(runs = vapply(m$runs, function(r) r$run_id,
-                                     character(1)),
-                       tables = names(plan$tables)),
+        outputs = list(runs = run_ids, tables = names(plan$tables)),
         parameters = a$parameters))
     if (identical(m$role, "results")) {
         rr <- plan$results_runs %||% list()
@@ -382,7 +386,7 @@
                         file.path(stage, .MZS_COLUMN_MAP_PATH))
     }
 
-    .mzs_write_manifest(stage, m)
+    MsBackendParquet::writeManifest(stage, m, bump = FALSE)
     report <- validateParquet(stage, sourcePaths = plan$sourcePaths)
     must <- report[report$level == "MUST", , drop = FALSE]
     if (nrow(must))
@@ -419,7 +423,7 @@
 .mzs_commit_update <- function(path, append = list(), supersede = list(),
                                selection = list(), sources = list(),
                                activity, sourcePaths = NULL) {
-    m <- .mzs_read_manifest(path)
+    m <- MsBackendParquet::readManifest(path)
     if (!identical(m$role, "results"))
         .mzs_abort("unsupported", "'", path, "' is not a results dataset.")
     if (!identical(.mzs_semver_major(m$results$version), .MZS_RESULTS_MAJOR))

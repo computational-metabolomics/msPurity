@@ -8,9 +8,10 @@
 # Spectra in a run are sorted by polarity and precursor m/z so a precursor
 # window reads few row groups. Peaks keep source order and exact values.
 
-# Library spectrum metadata columns and their storage types.
+# Library spectrum metadata columns and their storage types. `rtime` is the
+# retention time in seconds, which is stored as `time` in minutes.
 .MZS_LIBRARY_TYPES <- c(
-    ms_level = "i32", time = "f64", scan_polarity = "i32",
+    ms_level = "i32", rtime = "f64", scan_polarity = "i32",
     spectrum_representation = "str", id = "str", data_origin = "str",
     selected_ion_mz = "f64", collision_energy = "f64",
     x_mspurity_name = "str", x_mspurity_synonyms = "str",
@@ -81,12 +82,12 @@
 .mzs_write_library <- function(path, spectra, peaks, runs, library,
                                rtUnit, overwrite, activity) {
     if (!is.na(rtUnit)) {
-        f <- switch(rtUnit, s = , sec = , second = , seconds = 1 / 60,
-                    min = , minute = , minutes = 1,
+        f <- switch(rtUnit, s = , sec = , second = , seconds = 1,
+                    min = , minute = , minutes = 60,
                     stop("rtUnit must be \"s\" or \"min\".", call. = FALSE))
-        spectra$time <- spectra$x_mspurity_retention_time * f
+        spectra$rtime <- spectra$x_mspurity_retention_time * f
     } else {
-        spectra$time <- NA_real_
+        spectra$rtime <- NA_real_
     }
     out <- list()
     for (i in order(runs$ordinal)) {
@@ -620,8 +621,6 @@
 #' Retention time is converted to minutes only when `rtUnit` is given.
 #' Licence and attribution fields are kept.
 #'
-#' Requires the suggested packages arrow and jsonlite.
-#'
 #' @param x `character`: path of the msp2db database, or of the MSP files;
 #'     or a `Spectra` object.
 #'
@@ -654,28 +653,25 @@
 #' @seealso [spectralMatching()], [validateParquet()]
 #'
 #' @examples
-#' if (requireNamespace("arrow", quietly = TRUE) &&
-#'     requireNamespace("jsonlite", quietly = TRUE)) {
-#'     msp <- system.file("extdata", "tests", "msp", "av_all.msp",
-#'                        package = "msPurity")
-#'     out <- file.path(tempdir(), "library.parquet")
-#'     convertLibraryToParquet(msp, out, format = "msp", dialect = "mspurity",
-#'                             overwrite = TRUE)
-#'     validateParquet(out)
+#' msp <- system.file("extdata", "tests", "msp", "av_all.msp",
+#'                    package = "msPurity")
+#' out <- file.path(tempdir(), "library.parquet")
+#' convertLibraryToParquet(msp, out, format = "msp", dialect = "mspurity",
+#'                         overwrite = TRUE)
+#' validateParquet(out)
 #'
-#'     if (requireNamespace("MsBackendMsp", quietly = TRUE)) {
-#'         mona <- system.file("extdata", "tests", "library",
-#'                             "mini_mona.msp", package = "msPurity")
-#'         sp <- Spectra::Spectra(mona, source = MsBackendMsp::MsBackendMsp(),
-#'                                mapping = c(name = "Name", accession = "DB#",
-#'                                            precursorMz = "PrecursorMZ",
-#'                                            adduct = "Precursor_type",
-#'                                            inchikey = "InChIKey",
-#'                                            formula = "Formula",
-#'                                            polarity = "Ion_mode"))
-#'         out <- file.path(tempdir(), "library-spectra.parquet")
-#'         convertLibraryToParquet(sp, out, overwrite = TRUE)
-#'     }
+#' if (requireNamespace("MsBackendMsp", quietly = TRUE)) {
+#'     mona <- system.file("extdata", "tests", "library",
+#'                         "mini_mona.msp", package = "msPurity")
+#'     sp <- Spectra::Spectra(mona, source = MsBackendMsp::MsBackendMsp(),
+#'                            mapping = c(name = "Name", accession = "DB#",
+#'                                        precursorMz = "PrecursorMZ",
+#'                                        adduct = "Precursor_type",
+#'                                        inchikey = "InChIKey",
+#'                                        formula = "Formula",
+#'                                        polarity = "Ion_mode"))
+#'     out <- file.path(tempdir(), "library-spectra.parquet")
+#'     convertLibraryToParquet(sp, out, overwrite = TRUE)
 #' }
 #' @export
 convertLibraryToParquet <- function(x, path,
@@ -720,13 +716,11 @@ convertLibraryToParquet <- function(x, path,
 #' @noRd
 .mzs_write_msp <- function(path, file, dialect = c("massbank", "mona")) {
     dialect <- match.arg(dialect)
-    m <- .mzs_read_manifest(path)
+    m <- MsBackendParquet::readManifest(path)
     num <- function(v) ifelse(is.na(v), NA_character_, .mzs_shortest_double(v))
     out <- character()
     for (r in m$runs) {
-        sp <- as.data.frame(arrow::read_parquet(file.path(
-            .mzs_run_dir(path, r), "part-0.parquet")))
-        sp <- sp[order(sp$spectrum_index), , drop = FALSE]
+        sp <- .mzs_read_run(path, r)
         col <- function(c) if (c %in% names(sp)) sp[[c]] else
             rep(NA, nrow(sp))
         pol <- c("-1" = "NEGATIVE", "1" = "POSITIVE")[as.character(

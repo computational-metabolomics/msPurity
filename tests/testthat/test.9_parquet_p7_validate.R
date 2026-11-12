@@ -25,24 +25,24 @@ context("Parquet: validation (mzStack-1 §11, mzStack-4 §11)")
 .mutate <- function(fn, base = .valid_matched()) {
     p <- .copy_dataset(base)
     ## Sources recorded relative to the original location still resolve.
-    m <- .mzs(".mzs_read_manifest")(p)
+    m <- MsBackendParquet::readManifest(p)
     for (i in seq_along(m$sources))
         if (!is.null(m$sources[[i]]$path) &&
             !startsWith(m$sources[[i]]$path, "/"))
             m$sources[[i]]$path <- normalizePath(file.path(
                 base, m$sources[[i]]$path))
-    .mzs(".mzs_write_manifest")(p, m)
+    .write_raw_manifest(p, m)
     fn(p)
     validateParquet(p)
 }
 
 .manifest_edit <- function(p, fn) {
-    m <- .mzs(".mzs_read_manifest")(p)
-    .mzs(".mzs_write_manifest")(p, fn(m))
+    m <- MsBackendParquet::readManifest(p)
+    .write_raw_manifest(p, fn(m))
 }
 
 .rewrite_table <- function(p, name, fn) {
-    m <- .mzs(".mzs_read_manifest")(p)
+    m <- MsBackendParquet::readManifest(p)
     root <- file.path(p, m$results$tables[[name]]$path)
     for (f in list.files(root, pattern = "\\.parquet$", recursive = TRUE,
                          full.names = TRUE)) {
@@ -80,7 +80,7 @@ test_that("structural defects are found (R-037, R-038, R-061, D-005)", {
         m
     })), "D-005"))
     expect_true(.has(.mutate(function(p) {
-        m <- .mzs(".mzs_read_manifest")(p)
+        m <- MsBackendParquet::readManifest(p)
         cm <- file.path(p, m$results$column_mapping_path)
         idx <- jsonlite::fromJSON(cm, simplifyVector = FALSE)
         idx$files <- Filter(function(f) f$name != "feature", idx$files)
@@ -158,7 +158,7 @@ test_that("naming and InChIKey defects are found (G-016, R-049)", {
 
 test_that("an unknown CV accession is a MUST violation (R-063)", {
     expect_true(.has(.mutate(function(p) {
-        m <- .mzs(".mzs_read_manifest")(p)
+        m <- MsBackendParquet::readManifest(p)
         cm <- file.path(p, m$results$column_mapping_path)
         idx <- jsonlite::fromJSON(cm, simplifyVector = FALSE)
         idx$files[[1]]$column_mapping[[1]]$accession <- "MS:9999999"
@@ -172,17 +172,31 @@ test_that("an unknown results major still reads as spectra (R-035)", {
         m$results$version <- "2.0.0"
         m
     })
-    m <- .mzs(".mzs_read_manifest")(p)
+    m <- MsBackendParquet::readManifest(p)
     expect_true(sum(.mzs(".mzs_runs_frame")(m)$n_spectra) > 0)
     expect_parquet_error(.mzs(".mzs_read_table")(p, m, "feature"),
                          "unsupported")
     expect_parquet_error(suppressMessages(spectralMatching(
         p, p, format = "parquet")), "unsupported")
     expect_true(.has(validateParquet(p), "R-034"))
-    skip_if_not_installed("MsBackendParquet")
     s <- Spectra::Spectra(MsBackendParquet::backendInitialize(
         MsBackendParquet::MsBackendParquet(), path = p))
     expect_identical(length(s), sum(.mzs(".mzs_runs_frame")(m)$n_spectra))
+})
+
+test_that("a dataset moved after it is written stays valid and readable", {
+    p <- .copy_dataset(.results_dataset())
+    runs <- .mzs(".mzs_runs_frame")(MsBackendParquet::readManifest(p))
+    expect_identical(runs$path, paste0("spectra/run_id=", runs$run_id))
+    moved <- paste0(p, "-moved")
+    expect_true(file.rename(p, moved))
+    v <- validateParquet(moved)
+    expect_identical(v$message[v$level == "MUST"], character())
+    s <- Spectra::Spectra(MsBackendParquet::backendInitialize(
+        MsBackendParquet::MsBackendParquet(), path = moved))
+    expect_identical(length(s), sum(runs$n_spectra))
+    expect_identical(names(.mzs(".mzs_read_peaks")(moved, c(2, 1))),
+                     c("1", "2"))
 })
 
 test_that("unresolvable sources are SHOULD findings, never failures (R-100)", {

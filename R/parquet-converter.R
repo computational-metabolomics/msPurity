@@ -73,7 +73,7 @@
 #' @export
 parquetCapabilities <- function() {
     errors <- stats::setNames(
-        as.list(paste0("msPurity_parquet_", .MZS_ERROR_CLASSES)),
+        as.list(paste0("mzstack_", .MZS_ERROR_CLASSES)),
         c("Format", "Archive", "Reference", "Study", "Stale", "Unsupported",
           "Semantic", "Capability", "Resource"))
     results <- list(

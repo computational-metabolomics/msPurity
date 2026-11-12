@@ -1,8 +1,6 @@
 # Helpers for the Parquet backend tests.
 
 skip_if_no_arrow <- function() {
-    for (p in c("arrow", "jsonlite"))
-        testthat::skip_if_not_installed(p)
     testthat::skip_if_not(arrow::codec_is_available("zstd") &&
                           arrow::codec_is_available("snappy"),
                           "arrow lacks the zstd or snappy codec")
@@ -34,9 +32,19 @@ skip_if_no_mspuritydata <- function() {
             function(w) invokeRestart("muffleWarning"))
 }
 
-# Expect `expr` to raise a Parquet error of the given class.
+# Expect `expr` to raise an mzStack error of the given class, whether msPurity
+# or MsBackendParquet raised it.
 expect_parquet_error <- function(expr, class) {
-    testthat::expect_error(expr, class = paste0("msPurity_parquet_", class))
+    testthat::expect_error(expr, class = paste0("mzstack_", class))
+}
+
+# Write a manifest as given, bypassing every check, so that a test can store
+# one the validator must reject.
+.write_raw_manifest <- function(path, m) {
+    writeLines(.mzs(".mzs_to_json")(m), file.path(path, "mzStack.json"),
+               useBytes = TRUE)
+    MsBackendParquet::invalidateDatasetCache(path)
+    invisible(path)
 }
 
 # A fresh directory path, not yet created.
@@ -49,7 +57,6 @@ expect_parquet_error <- function(expr, class) {
 .study_dataset <- local({
     path <- NULL
     function() {
-        testthat::skip_if_not_installed("MsBackendParquet")
         skip_if_no_mspuritydata()
         if (is.null(path) || !dir.exists(path)) {
             p <- tempfile("study-")
@@ -107,10 +114,10 @@ expect_parquet_error <- function(expr, class) {
     df
 }
 
-# A native run's spectra as a data.frame (list columns kept).
+# A native run's spectra as a data.frame (list columns kept), in
+# spectrum_id_ order.
 .read_run <- function(path, run_id) {
-    as.data.frame(arrow::read_parquet(file.path(
-        path, "spectra", paste0("run_id=", run_id), "part-0.parquet")))
+    .mzs(".mzs_read_run")(path, list(run_id = run_id, kind = "native"))
 }
 
 .manifest <- function(path) {

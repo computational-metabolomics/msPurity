@@ -58,6 +58,9 @@ Imports:
     DBI,
     RSQLite,
     BiocFileCache,
+    arrow (>= 14.0.0),
+    jsonlite,
+    MsBackendParquet (>= 0.99.10),
     methods,
     stats,
     tools,
@@ -74,9 +77,6 @@ Suggests:
     CAMERA,
     RPostgres,
     RMySQL,
-    arrow (>= 14.0.0),
-    jsonlite,
-    MsBackendParquet (>= 0.99.7),
     MsBackendMsp
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)

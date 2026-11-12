@@ -219,8 +219,6 @@
 #' The append-only rule for results tables cannot be checked: a rewritten
 #' Parquet part is indistinguishable from a new one.
 #'
-#' Requires the suggested packages arrow and jsonlite.
-#'
 #' @param path `character(1)`, the dataset directory.
 #'
 #' @param sourcePaths named `character`, source key -> location, overriding
@@ -232,14 +230,11 @@
 #'     findings.
 #'
 #' @examples
-#' if (requireNamespace("arrow", quietly = TRUE) &&
-#'     requireNamespace("jsonlite", quietly = TRUE)) {
-#'     db <- system.file("extdata", "tests", "db",
-#'                       "createDatabase_example.sqlite", package = "msPurity")
-#'     out <- file.path(tempdir(), "validate-example.parquet")
-#'     convertSqliteToParquet(db, out, overwrite = TRUE)
-#'     validateParquet(out)
-#' }
+#' db <- system.file("extdata", "tests", "db",
+#'                   "createDatabase_example.sqlite", package = "msPurity")
+#' out <- file.path(tempdir(), "validate-example.parquet")
+#' convertSqliteToParquet(db, out, overwrite = TRUE)
+#' validateParquet(out)
 #' @export
 validateParquet <- function(path, sourcePaths = NULL) {
     .mzs_require("validateParquet()")
@@ -255,8 +250,8 @@ validateParquet <- function(path, sourcePaths = NULL) {
         return(.mzs_finding("MUST", "D-005", NA_character_,
                             paste("The manifest is not JSON:",
                                   conditionMessage(raw))))
-    m <- tryCatch(.mzs_read_manifest(path),
-                  msPurity_parquet_format = function(e) e)
+    m <- tryCatch(MsBackendParquet::readManifest(path),
+                  mzstack_format = function(e) e)
     if (inherits(m, "error"))
         return(.mzs_finding("MUST", "G-009", NA_character_,
                             conditionMessage(m)))
@@ -422,11 +417,11 @@ validateParquet <- function(path, sourcePaths = NULL) {
         st <- tryCatch({
             .mzs_open_source(path, m, k, sourcePaths)
             NULL
-        }, msPurity_parquet_capability = function(e) NULL,
-        msPurity_parquet_reference = function(e)
+        }, mzstack_capability = function(e) NULL,
+        mzstack_reference = function(e)
             .mzs_finding("SHOULD", "R-100", NA_character_,
                          conditionMessage(e)),
-        msPurity_parquet_stale = function(e)
+        mzstack_stale = function(e)
             .mzs_finding("MUST", "R-029", NA_character_,
                          conditionMessage(e)))
         f[[length(f) + 1L]] <- st
