@@ -2,7 +2,8 @@ context("Parity with the results before the move to Spectra containers")
 
 # The references in fixtures/parity hold the legacy-shaped results of each
 # workflow before the Spectra transition. Only raw peak identities and their
-# purity/overall flags were corrected to match file positions. Comparisons
+# purity/overall flags were corrected to match file positions. Calculated
+# values allow floating-point rounding across platforms; identity checks
 # remain exact.
 
 suppressPackageStartupMessages(library(xcms))
@@ -13,13 +14,15 @@ test_that("purityA workflows reproduce the reference results", {
     res <- .parity_purityA()
     expect_identical(names(res), names(purityA_ref))
     for (stage in names(purityA_ref))
-        expect_identical(res[[stage]], purityA_ref[[stage]], label = stage)
+        expect_equal(res[[stage]], purityA_ref[[stage]],
+                     tolerance = 1e-12, label = stage)
 })
 
 test_that("the accessors rebuild the reference results from the Spectra slots", {
     res <- .parity_purityA(via = "accessors")
     for (stage in names(purityA_ref))
-        expect_identical(res[[stage]], purityA_ref[[stage]], label = stage)
+        expect_equal(res[[stage]], purityA_ref[[stage]],
+                     tolerance = 1e-12, label = stage)
 })
 
 test_that("parity reference stores file-position spectrum identities", {
@@ -45,5 +48,6 @@ test_that("the purityD workflow reproduces the reference results", {
     ref <- .parity_ref("purityD")
     res <- .parity_purityD()
     for (stage in names(ref))
-        expect_identical(res[[stage]], ref[[stage]], label = stage)
+        expect_equal(res[[stage]], ref[[stage]],
+                     tolerance = 1e-12, label = stage)
 })
