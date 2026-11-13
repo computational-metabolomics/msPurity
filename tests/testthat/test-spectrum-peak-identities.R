@@ -128,13 +128,12 @@ test_that("real MSn peaks retain assessed spectrum positions", {
 }
 
 .identity_exported_average <- function(dataset, source_pid) {
-    manifest <- msPurity:::.mzs_read_manifest(dataset)
+    manifest <- MsBackendParquet::readManifest(dataset)
     ids <- msPurity:::.mzs_read_table(dataset, manifest, "source_identifier")
     id <- as.numeric(ids$target_key[ids$target_table == "spectra" &
                 ids$source_column == "pid" & ids$source_value == source_pid])
     spectra <- lapply(manifest$runs, function(run) {
-        as.data.frame(arrow::read_parquet(file.path(
-            msPurity:::.mzs_run_dir(dataset, run), "part-0.parquet")))
+        msPurity:::.mzs_read_run(dataset, run)
     })
     selected <- lapply(spectra, function(x) {
         x[x$spectrum_id_ == id, , drop = FALSE]
@@ -271,7 +270,6 @@ test_that("both SQLite writers retain peak ownership", {
 })
 
 test_that("historical conversion warns without changing its SQLite input", {
-    skip_if_not_installed("arrow")
     db <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite",
         package = "msPurity", mustWork = TRUE)
     before <- tools::md5sum(db)
@@ -283,7 +281,6 @@ test_that("historical conversion warns without changing its SQLite input", {
 })
 
 test_that("SQLite collision conversion retains only the actual average peak", {
-    skip_if_not_installed("arrow")
     fixture <- .identity_collision_db()
     expect_length(fixture$average_pid, 1L)
     out <- tempfile("collision-")

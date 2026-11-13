@@ -93,7 +93,7 @@
         .mzs_abort("format", "'", a$sm_resultPth, "' is not a Parquet ",
                    "dataset.")
     path <- normalizePath(a$sm_resultPth)
-    m <- .mzs_read_manifest(path)
+    m <- MsBackendParquet::readManifest(path)
     if (!identical(m$role, "results") || is.null(m$results$tables$evidence))
         .mzs_abort("capability", "'", path, "' holds no spectral-matching ",
                    "evidence to combine; run spectralMatching(format = ",
@@ -121,7 +121,7 @@
         forked <- .mzs_fork(path, a$outPth, overwrite = FALSE)
         target <- normalizePath(a$outPth)
     }
-    tm <- .mzs_read_manifest(target)
+    tm <- MsBackendParquet::readManifest(target)
     si <- .mzs_read_table(target, tm, "source_identifier")
     fid_of <- function(grpid) {
         s <- si[si$target_table == "feature" & si$source_column == "grpid", ]

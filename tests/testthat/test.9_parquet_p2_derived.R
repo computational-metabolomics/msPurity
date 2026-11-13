@@ -88,7 +88,7 @@ test_that("with a study, scans are referenced by their spectrum ids there", {
     scans <- mm[mm$member_source == "study", ]
     expect_false(anyNA(scans$member_spectrum_id_))
     study <- .study_dataset()
-    sm <- .mzs(".mzs_read_manifest")(study)
+    sm <- MsBackendParquet::readManifest(study)
     meta <- .mzs(".mzs_read_spectra_meta")(study, sm, "id")
     k <- match(scans$member_spectrum_id_, meta$spectrum_id_)
     expect_identical(meta$id[k], scans$member_native_id)
@@ -108,8 +108,6 @@ test_that("the dataset validates, and its results index is schema-valid", {
 })
 
 test_that("MsBackendParquet reads the derived spectra as a Spectra object", {
-    skip_if_not_installed("MsBackendParquet")
-    skip_if_not_installed("Spectra")
     p <- .results_dataset()
     s <- Spectra::Spectra(MsBackendParquet::backendInitialize(
         MsBackendParquet::MsBackendParquet(), path = p))

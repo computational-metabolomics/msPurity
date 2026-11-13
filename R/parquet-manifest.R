@@ -1,12 +1,13 @@
 # The dataset manifest, sources and provenance.
 #
-# `mzStack.json` is the commit point of every write: written last,
-# atomically, after everything it declares is on disk. Keys msPurity does not
-# interpret are kept exactly as parsed, and doubles are written in the
-# shortest form that reads back exactly.
+# `mzStack.json` is read and written with MsBackendParquet's manifest API
+# (readManifest(), writeManifest()), which keeps the results layer's keys
+# exactly as parsed and commits atomically. The manifest is the commit point
+# of every write: written last, after everything it declares is on disk.
 #
-# Also here: source entries with per-run fingerprints, lazy source
-# resolution, and provenance activity records.
+# Also here: the JSON writer for msPurity's own documents (the results
+# index, JSON table cells), source entries with per-run fingerprints, lazy
+# source resolution, and provenance activity records.
 
 .MZS_SPEC_VERSION <- "0.1.0"
 .MZS_RESULTS_VERSION <- "1.0.0"
@@ -74,14 +75,8 @@
 }
 
 # ---------------------------------------------------------------------------
-# Reading and writing the manifest.
+# The manifest and msPurity's own JSON documents.
 # ---------------------------------------------------------------------------
-
-#' @noRd
-.mzs_new_manifest <- function() {
-    list(format = "mzStack", version = .MZS_SPEC_VERSION, generation = 1L,
-         created = .mzs_now(), runs = list())
-}
 
 #' @noRd
 .mzs_manifest_path <- function(path) file.path(path, .MZS_MANIFEST)
@@ -90,36 +85,6 @@
 .mzs_is_dataset <- function(path) {
     is.character(path) && length(path) == 1L && dir.exists(path) &&
         file.exists(.mzs_manifest_path(path))
-}
-
-#' Read and check a manifest.
-#'
-#' Arrays come back as lists and objects as named lists, so a read and write
-#' cycle reproduces the document key for key.
-#'
-#' @noRd
-.mzs_read_manifest <- function(path) {
-    .mzs_require("Reading a Parquet dataset")
-    fl <- .mzs_manifest_path(path)
-    if (!file.exists(fl))
-        .mzs_abort("format", "'", path, "' is not a Parquet dataset: it has ",
-                   "no ", .MZS_MANIFEST, ".")
-    m <- tryCatch(jsonlite::fromJSON(fl, simplifyVector = FALSE),
-                  error = function(e)
-                      .mzs_abort("format", "Could not parse '", fl, "': ",
-                                 conditionMessage(e)))
-    if (!is.list(m) || !identical(m$format, "mzStack"))
-        .mzs_abort("format", "'", fl, "' declares format '",
-                   m$format %||% "<missing>", "'; expected 'mzStack'.")
-    have <- .mzs_semver_major(m$version)
-    if (is.na(have) || have != .mzs_semver_major(.MZS_SPEC_VERSION))
-        .mzs_abort("format", "'", path, "' is mzStack version ",
-                   m$version %||% "<missing>", "; msPurity reads ",
-                   .mzs_semver_major(.MZS_SPEC_VERSION), ".x.")
-    m$generation <- as.integer(m$generation)
-    if (is.null(m$runs))
-        m$runs <- list()
-    m
 }
 
 #' The shortest decimal rendering of each finite double that reads back
@@ -152,7 +117,7 @@
     structure(s, class = "json")
 }
 
-#' JSON text for a manifest, results index or parameter list.
+#' JSON text for a results index or parameter list.
 #'
 #' @noRd
 .mzs_to_json <- function(x, pretty = TRUE) {
@@ -174,44 +139,29 @@
     invisible(fl)
 }
 
-#' @noRd
-.mzs_write_manifest <- function(path, m) {
-    m$generation <- as.integer(m$generation)
-    .mzs_write_json(m, .mzs_manifest_path(path))
-}
-
 #' Commit a new version of an existing dataset's manifest.
 #'
-#' Optimistic concurrency: if the manifest is no longer at generation
-#' `expect`, nothing is written. A lock directory serialises the
-#' check-and-rename.
+#' `m` was read at generation `expect`. `writeManifest()` serialises the
+#' check and the rename with a lock; if another writer holds it or has
+#' committed meanwhile, nothing is written and the `mzstack_conflict` error
+#' is raised with the class `msPurity_parquet_conflict` added.
 #'
 #' @return the committed manifest, at generation `expect + 1`.
 #'
 #' @noRd
 .mzs_commit_manifest <- function(path, m, expect) {
-    lock <- paste0(.mzs_manifest_path(path), ".lock")
-    if (!dir.create(lock, showWarnings = FALSE))
-        stop(structure(class = c("msPurity_parquet_conflict", "error",
-                                 "condition"),
-                       list(message = paste0("Another writer holds '", lock,
-                                             "'. Retry once it has finished, ",
-                                             "or remove a stale lock."),
-                            call = NULL)))
-    on.exit(unlink(lock, recursive = TRUE), add = TRUE)
-    current <- .mzs_read_manifest(path)$generation
-    if (!identical(current, as.integer(expect)))
-        stop(structure(class = c("msPurity_parquet_conflict", "error",
-                                 "condition"),
-                       list(message = paste0("'", path, "' changed while ",
-                                             "this write was prepared ",
-                                             "(generation ", expect, " -> ",
-                                             current, "). Nothing was ",
-                                             "committed."),
-                            call = NULL)))
-    m$generation <- as.integer(expect) + 1L
-    .mzs_write_manifest(path, m)
-    m
+    m$generation <- as.integer(expect)
+    withCallingHandlers(
+        MsBackendParquet::writeManifest(path, m),
+        mzstack_conflict = function(e) .mzs_conflict(e))
+}
+
+#' Re-signal a manifest conflict with msPurity's class added.
+#'
+#' @noRd
+.mzs_conflict <- function(e) {
+    class(e) <- c("msPurity_parquet_conflict", class(e))
+    stop(e)
 }
 
 # ---------------------------------------------------------------------------
@@ -251,42 +201,91 @@
 #' @noRd
 .mzs_is_absolute <- function(p) grepl("^(/|[A-Za-z]:[/\\\\]|~)", p)
 
-#' Spectrum metadata of a dataset's runs.
+#' Every stored column of a run's spectrum rows, with their stored types, in
+#' `spectrum_id_` order.
 #'
-#' @param columns on-disk columns to read; any a run lacks is `NA`.
+#' @noRd
+.mzs_read_run <- function(dataset, run) {
+    ds <- arrow::open_dataset(.mzs_run_dir(dataset, run), format = "parquet",
+                              unify_schemas = TRUE)
+    df <- as.data.frame(dplyr::collect(ds))
+    df <- df[order(df$spectrum_id_), , drop = FALSE]
+    rownames(df) <- NULL
+    df
+}
+
+# The Spectra variable MsBackendParquet takes and serves for each storage
+# column msPurity uses; other columns (`x_mspurity_*`) keep their names.
+.MZS_SPECTRA_VARS <- c(id = "spectrumId", data_origin = "dataOrigin",
+                       ms_level = "msLevel", selected_ion_mz = "precursorMz",
+                       scan_polarity = "polarity",
+                       spectrum_representation = "centroided",
+                       collision_energy = "collisionEnergy",
+                       acquisition_num_ = "acquisitionNum")
+
+#' Storage-vocabulary metadata as Spectra variables: renamed by
+#' `.MZS_SPECTRA_VARS`, polarity +1 / -1 as 1 / 0, and the centroid and
+#' profile CURIEs as `TRUE` / `FALSE`.
+#'
+#' @noRd
+.mzs_spectra_vars <- function(df) {
+    if (!is.null(df$scan_polarity))
+        df$scan_polarity <- c(0L, 1L)[match(df$scan_polarity, c(-1L, 1L))]
+    if (!is.null(df$spectrum_representation))
+        df$spectrum_representation <- c(TRUE, FALSE)[match(
+            df$spectrum_representation, c("MS:1000127", "MS:1000128"))]
+    hit <- names(df) %in% names(.MZS_SPECTRA_VARS)
+    names(df)[hit] <- .MZS_SPECTRA_VARS[names(df)[hit]]
+    df
+}
+
+#' The inverse of `.mzs_spectra_vars()` for one column.
+#'
+#' @noRd
+.mzs_storage_value <- function(column, v) {
+    switch(column,
+           scan_polarity = c(-1L, 1L)[match(v, c(0L, 1L))],
+           spectrum_representation = c("MS:1000127", "MS:1000128")[
+               match(v, c(TRUE, FALSE))],
+           v)
+}
+
+#' Spectrum metadata of a dataset's runs, read through MsBackendParquet.
+#'
+#' Native and mzPeak-backed datasets are read alike. Columns are named and
+#' encoded as stored: `scan_polarity` is +1 / -1.
+#'
+#' @param columns storage columns to read; any the dataset lacks is `NA`.
 #'
 #' @return data.frame with `run_id`, `spectrum_id_` and `columns`, in
 #'     manifest run order and `spectrum_id_` order within each run.
 #'
 #' @noRd
 .mzs_read_spectra_meta <- function(dataset, m, columns, run_ids = NULL) {
-    runs <- m$runs %||% list()
+    rf <- .mzs_runs_frame(m)
     if (!is.null(run_ids))
-        runs <- Filter(function(r) r$run_id %in% run_ids, runs)
+        rf <- rf[rf$run_id %in% run_ids, , drop = FALSE]
     want <- unique(c("spectrum_id_", columns))
-    parts <- lapply(runs, function(r) {
-        dir <- .mzs_run_dir(dataset, r)
-        if (!dir.exists(dir))
-            .mzs_abort("format", "Run '", r$run_id, "' of '", dataset,
-                       "' has no files at '", dir, "'.")
-        ds <- arrow::open_dataset(dir, format = "parquet",
-                                  unify_schemas = TRUE)
-        have <- intersect(want, names(ds))
-        df <- as.data.frame(dplyr::collect(dplyr::select(
-            ds, dplyr::all_of(have))))
-        for (c in setdiff(want, have))
-            df[[c]] <- rep(NA, nrow(df))
-        df <- df[order(df$spectrum_id_), want, drop = FALSE]
-        cbind(run_id = rep(r$run_id, nrow(df)), df,
-              stringsAsFactors = FALSE)
-    })
-    if (!length(parts)) {
-        out <- data.frame(run_id = character(), stringsAsFactors = FALSE)
+    ids <- unlist(lapply(seq_len(nrow(rf)), function(i)
+        rf$uid_base[i] + seq_len(rf$n_spectra[i]) - 1L))
+    out <- data.frame(run_id = rep(rf$run_id, rf$n_spectra),
+                      stringsAsFactors = FALSE)
+    if (!length(ids)) {
         for (c in want) out[[c]] <- logical()
         return(out)
     }
-    out <- do.call(rbind, parts)
-    rownames(out) <- NULL
+    be <- Spectra::backendInitialize(MsBackendParquet::MsBackendParquet(),
+                                     path = dataset)
+    be <- be[as.character(ids)]
+    vars <- ifelse(want %in% names(.MZS_SPECTRA_VARS),
+                   .MZS_SPECTRA_VARS[want], want)
+    have <- vars %in% Spectra::spectraVariables(be)
+    sd <- as.data.frame(Spectra::spectraData(be, columns = vars[have]),
+                        optional = TRUE)
+    for (k in seq_along(want))
+        out[[want[k]]] <- if (have[k])
+            .mzs_storage_value(want[k], sd[[vars[k]]])
+        else rep(NA, length(ids))
     out
 }
 
@@ -335,16 +334,18 @@
           collapse = "/")
 }
 
-#' Per-run fingerprints `(run_id, uid_base, n_spectra, ingested_at)`.
+#' Per-run fingerprints `(run_id, uid_base, n_spectra, ingested_at)` of the
+#' dataset at `path`.
 #'
 #' @noRd
-.mzs_fingerprints <- function(m, run_ids = NULL) {
-    rf <- .mzs_runs_frame(m)
+.mzs_fingerprints <- function(path, run_ids = NULL) {
+    rf <- MsBackendParquet::manifestRuns(path)
     if (!is.null(run_ids))
         rf <- rf[rf$run_id %in% run_ids, , drop = FALSE]
     lapply(seq_len(nrow(rf)), function(i)
-        list(run_id = rf$run_id[i], uid_base = rf$uid_base[i],
-             n_spectra = rf$n_spectra[i], ingested_at = rf$ingested_at[i]))
+        list(run_id = rf$run_id[i], uid_base = as.integer(rf$uid_base[i]),
+             n_spectra = as.integer(rf$n_spectra[i]),
+             ingested_at = as.integer(rf$ingested_at[i])))
 }
 
 #' A `resolution: "dataset"` source entry.
@@ -358,12 +359,12 @@
 .mzs_dataset_source <- function(key, source, dataset, role = "study",
                                 run_ids = NULL) {
     .mzs_check_key(key)
-    m <- .mzs_read_manifest(source)
+    m <- MsBackendParquet::readManifest(source)
     entry <- list(key = key, role = role, resolution = "dataset",
                   uid = m$uid, path = .mzs_relative_path(source, dataset),
                   generation = m$generation,
                   n_spectra = as.integer(sum(.mzs_runs_frame(m)$n_spectra)),
-                  runs = .mzs_fingerprints(m, run_ids))
+                  runs = .mzs_fingerprints(source, run_ids))
     if (is.null(m$uid))
         entry["uid"] <- list(NULL)
     if (!is.null(m$library$version))
@@ -491,7 +492,8 @@
                    "declared path '", entry$path %||% "<none>", "'). Pass ",
                    "its location in 'sourcePaths'.",
                    data = list(source = key))
-    sm <- tryCatch(.mzs_read_manifest(p), msPurity_parquet_format = function(e)
+    sm <- tryCatch(MsBackendParquet::readManifest(p),
+                   mzstack_format = function(e)
         .mzs_abort("reference", "Source '", key, "' was located at '", p,
                    "' but is not a readable Parquet dataset: ",
                    conditionMessage(e), data = list(source = key)))
@@ -503,7 +505,7 @@
         want <- entry$runs %||% list()
         if (!is.null(run_ids))
             want <- Filter(function(r) r$run_id %in% run_ids, want)
-        have <- .mzs_fingerprints(sm)
+        have <- .mzs_fingerprints(p)
         names(have) <- vapply(have, function(r) r$run_id, character(1))
         for (r in want) {
             h <- have[[r$run_id]]
@@ -535,8 +537,8 @@
             .mzs_open_source(dataset, m, k, sourcePaths,
                              unique(run_ids[i]))
             "resolved"
-        }, msPurity_parquet_capability = function(e) "unresolved_external",
-        msPurity_parquet_reference = function(e) "unresolved_missing")
+        }, mzstack_capability = function(e) "unresolved_external",
+        mzstack_reference = function(e) "unresolved_missing")
         out[i] <- st
     }
     out

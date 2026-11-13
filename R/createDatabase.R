@@ -50,7 +50,7 @@
 #' @param xset xcms object of class XCMSnExp or xcmsSet; (Deprecated - if provided, will replace variable 'obj')
 #' @param format character; \code{"sqlite"} (the default) writes the SQLite database described above, and raises a
 #'               deprecation warning: SQLite output is frozen and receives bug fixes only. \code{"parquet"} writes a
-#'               Parquet dataset instead (experimental; requires the suggested packages arrow and jsonlite). See Details.
+#'               Parquet dataset instead (experimental). See Details.
 #' @param study character (optional, parquet only); path of the Parquet dataset the mzML files were converted into, for
 #'              example with MsBackendParquet::mzMLToParquet(). MS2 scans are then referenced by their spectrum ids in that
 #'              dataset. Without it, every source file is recorded as an external source.

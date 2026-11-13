@@ -221,8 +221,6 @@
 #' Processing parameters are not stored in the database, which is recorded
 #' in `tool_provenance` and the loss ledger. Unmapped tables are an error.
 #'
-#' Requires the suggested packages arrow and jsonlite.
-#'
 #' @param db `character(1)`, path of the SQLite database.
 #'
 #' @param path `character(1)`, the results dataset to create.
@@ -242,14 +240,11 @@
 #' @seealso [createDatabase()], [validateParquet()]
 #'
 #' @examples
-#' if (requireNamespace("arrow", quietly = TRUE) &&
-#'     requireNamespace("jsonlite", quietly = TRUE)) {
-#'     db <- system.file("extdata", "tests", "db",
-#'                       "createDatabase_example.sqlite", package = "msPurity")
-#'     out <- file.path(tempdir(), "converted.parquet")
-#'     convertSqliteToParquet(db, out, overwrite = TRUE)
-#'     validateParquet(out)
-#' }
+#' db <- system.file("extdata", "tests", "db",
+#'                   "createDatabase_example.sqlite", package = "msPurity")
+#' out <- file.path(tempdir(), "converted.parquet")
+#' convertSqliteToParquet(db, out, overwrite = TRUE)
+#' validateParquet(out)
 #' @export
 convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
                                    fileMap = NULL, overwrite = FALSE) {
@@ -399,7 +394,7 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
 #'
 #' @noRd
 .mzs_canonical_parquet <- function(path) {
-    m <- .mzs_read_manifest(path)
+    m <- MsBackendParquet::readManifest(path)
     tab <- function(n) .mzs_read_table(path, m, n)
     si <- tab("source_identifier")
     src_id <- function(table, column, keys) {
@@ -491,8 +486,7 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
     avp <- list()
     self <- sf[sf$ms2_source == "self", ]
     for (r in m$runs) {
-        sp <- as.data.frame(arrow::read_parquet(file.path(
-            .mzs_run_dir(path, r), "part-0.parquet")))
+        sp <- .mzs_read_run(path, r)
         if (!nrow(sp))
             next
         method <- rr[[r$run_id]]$method
@@ -502,17 +496,19 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
         fid <- if (method == "intra")
             fi$fileid[match(rr[[r$run_id]]$source_run_id, assay$run_id)]
         else NA
+        ## A variable with no values is not stored.
+        col <- function(c) sp[[c]] %||% rep(NA, nrow(sp))
         pol <- c("-1" = "negative", "1" = "positive")[as.character(
-            sp$scan_polarity)]
+            col("scan_polarity"))]
         avm[[length(avm) + 1L]] <- data.frame(
             pid = pid, method = method, grpid = grpid,
             fileid = rep(fid, nrow(sp)),
-            precursor_mz = sp$selected_ion_mz,
+            precursor_mz = as.numeric(col("selected_ion_mz")),
             retention_time = ft$retention_time_in_seconds[match(
                 self$feature_id_[match(sp$spectrum_id_,
                                        self$ms2_spectrum_id_)],
                 ft$feature_id_)],
-            inPurity = sp$x_mspurity_precursor_purity,
+            inPurity = as.numeric(col("x_mspurity_precursor_purity")),
             polarity = unname(pol), stringsAsFactors = FALSE)
         n <- lengths(sp$mz)
         lst <- function(c) if (c %in% names(sp))

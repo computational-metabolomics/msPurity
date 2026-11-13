@@ -1,11 +1,9 @@
-# Error conditions and package gates for the Parquet backend.
+# Error conditions and the codec gate for the Parquet backend.
 #
-# Errors are R conditions of class `msPurity_parquet_<class>`, each also
-# inheriting `msPurity_parquet_error`, so callers can handle one kind of
-# failure without matching message text.
-#
-# arrow and jsonlite are suggested, not imported; every entry point checks
-# for them first.
+# Errors are the typed mzStack conditions of MsBackendParquet: class
+# `mzstack_<class>`, inheriting `mzstack_error`, so a handler catches the same
+# failure whether msPurity or MsBackendParquet raised it. Conditions msPurity
+# raises also carry `msPurity_parquet_<class>` and `msPurity_parquet_error`.
 
 .MZS_ERROR_CLASSES <- c("format", "archive", "reference", "study", "stale",
                         "unsupported", "semantic", "capability", "resource")
@@ -15,6 +13,16 @@
 # Columns named in arrow/dplyr expressions.
 utils::globalVariables("spectrum_id_")
 
+#' Add msPurity's classes to an mzStack condition.
+#'
+#' @noRd
+.mzs_classed <- function(cond, class) {
+    cl <- class(cond)
+    class(cond) <- c(paste0("msPurity_parquet_", class), cl[1L],
+                     "msPurity_parquet_error", cl[-1L])
+    cond
+}
+
 #' Raise a Parquet error.
 #'
 #' @param class one of `.MZS_ERROR_CLASSES`.
@@ -22,29 +30,20 @@ utils::globalVariables("spectrum_id_")
 #' @param ... pasted together to form the message.
 #'
 #' @param data named list of fields added to the condition, e.g. the source
-#'     key a `Reference` error names.
+#'     key a `reference` error names.
 #'
 #' @noRd
 .mzs_abort <- function(class, ..., data = list()) {
     class <- match.arg(class, .MZS_ERROR_CLASSES)
-    cond <- structure(
-        c(list(message = paste0(...), call = NULL), data),
-        class = c(paste0("msPurity_parquet_", class), "msPurity_parquet_error",
-                  "error", "condition"))
-    stop(cond)
+    stop(.mzs_classed(
+        MsBackendParquet::mzstackCondition(class, ..., data = data), class))
 }
 
-#' Stop unless arrow (with zstd and snappy) and jsonlite are installed.
+#' Stop unless arrow was built with the zstd and snappy codecs, which the
+#' results tables and spectra are written with.
 #'
 #' @noRd
 .mzs_require <- function(what = "format = \"parquet\"") {
-    need <- c("arrow", "jsonlite")
-    miss <- need[!vapply(need, requireNamespace, logical(1), quietly = TRUE)]
-    if (length(miss))
-        stop(what, " requires the suggested package(s) ",
-             paste(miss, collapse = ", "), ". Install them with ",
-             "install.packages(c(", paste0("\"", miss, "\"", collapse = ", "),
-             ")).", call. = FALSE)
     codecs <- c("zstd", "snappy")
     bad <- codecs[!vapply(codecs, arrow::codec_is_available, logical(1))]
     if (length(bad))

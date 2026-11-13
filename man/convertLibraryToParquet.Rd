@@ -70,32 +70,27 @@ Peaks keep their source order and exact values. Collision energy is kept
 as written, with a numeric value only for plain numbers (\code{35}, \verb{35 eV}).
 Retention time is converted to minutes only when \code{rtUnit} is given.
 Licence and attribution fields are kept.
-
-Requires the suggested packages arrow and jsonlite.
 }
 \examples{
-if (requireNamespace("arrow", quietly = TRUE) &&
-    requireNamespace("jsonlite", quietly = TRUE)) {
-    msp <- system.file("extdata", "tests", "msp", "av_all.msp",
-                       package = "msPurity")
-    out <- file.path(tempdir(), "library.parquet")
-    convertLibraryToParquet(msp, out, format = "msp", dialect = "mspurity",
-                            overwrite = TRUE)
-    validateParquet(out)
+msp <- system.file("extdata", "tests", "msp", "av_all.msp",
+                   package = "msPurity")
+out <- file.path(tempdir(), "library.parquet")
+convertLibraryToParquet(msp, out, format = "msp", dialect = "mspurity",
+                        overwrite = TRUE)
+validateParquet(out)
 
-    if (requireNamespace("MsBackendMsp", quietly = TRUE)) {
-        mona <- system.file("extdata", "tests", "library",
-                            "mini_mona.msp", package = "msPurity")
-        sp <- Spectra::Spectra(mona, source = MsBackendMsp::MsBackendMsp(),
-                               mapping = c(name = "Name", accession = "DB#",
-                                           precursorMz = "PrecursorMZ",
-                                           adduct = "Precursor_type",
-                                           inchikey = "InChIKey",
-                                           formula = "Formula",
-                                           polarity = "Ion_mode"))
-        out <- file.path(tempdir(), "library-spectra.parquet")
-        convertLibraryToParquet(sp, out, overwrite = TRUE)
-    }
+if (requireNamespace("MsBackendMsp", quietly = TRUE)) {
+    mona <- system.file("extdata", "tests", "library",
+                        "mini_mona.msp", package = "msPurity")
+    sp <- Spectra::Spectra(mona, source = MsBackendMsp::MsBackendMsp(),
+                           mapping = c(name = "Name", accession = "DB#",
+                                       precursorMz = "PrecursorMZ",
+                                       adduct = "Precursor_type",
+                                       inchikey = "InChIKey",
+                                       formula = "Formula",
+                                       polarity = "Ion_mode"))
+    out <- file.path(tempdir(), "library-spectra.parquet")
+    convertLibraryToParquet(sp, out, overwrite = TRUE)
 }
 }
 \seealso{
