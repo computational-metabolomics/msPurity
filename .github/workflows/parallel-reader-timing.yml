@@ -1,4 +1,4 @@
-name: Windows test timing
+name: Parallel reader timing
 
 on:
   push:
@@ -16,29 +16,26 @@ jobs:
     name: Resolve R and Bioconductor
     runs-on: ubuntu-latest
     outputs:
-      config: ${{ steps.windows.outputs.config }}
+      matrix: ${{ steps.resolve.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
       - name: Resolve current versions
         id: resolve
         run: bash .github/scripts/resolve-bioc.sh
-      - name: Select Windows configuration
-        id: windows
-        env:
-          BIOC_MATRIX: ${{ steps.resolve.outputs.matrix }}
-        run: |
-          jq -c '.config[] | select(.os == "windows")' <<< "$BIOC_MATRIX" |
-            sed 's/^/config=/' >> "$GITHUB_OUTPUT"
 
-  windows-timing:
-    name: Compare Windows parallel backends
+  parallel-reader-timing:
+    name: ${{ matrix.config.os }} parallel reader
     needs: bioc-config
-    runs-on: windows-latest
-    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.bioc-config.outputs.matrix) }}
+    runs-on: ${{ matrix.config.runner }}
+    container: ${{ matrix.config.cont }}
+    timeout-minutes: 60
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_BIOC_VERSION: ${{ fromJSON(needs.bioc-config.outputs.config).bioc }}
-      EXPECTED_R_MINOR: ${{ fromJSON(needs.bioc-config.outputs.config).r_minor }}
+      R_BIOC_VERSION: ${{ matrix.config.bioc }}
+      EXPECTED_R_MINOR: ${{ matrix.config.r_minor }}
       NOT_CRAN: 'true'
       TZ: UTC
       BIOCPARALLEL_WORKER_MAX: '2'
@@ -52,9 +49,18 @@ jobs:
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: ${{ fromJSON(needs.bioc-config.outputs.config).r }}
+          r-version: ${{ matrix.config.r }}
+          install-r: ${{ runner.os != 'Linux' }}
           Ncpus: '2'
           use-public-rspm: true
+
+      - name: Set up macOS OpenSSL
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew list --versions openssl@3 >/dev/null || brew install openssl@3
+          openssl_prefix=$(brew --prefix openssl@3)
+          echo "LIBRARY_PATH=$openssl_prefix/lib${LIBRARY_PATH:+:$LIBRARY_PATH}" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
@@ -88,16 +94,16 @@ jobs:
                 paste0("--library=", shQuote(.libPaths()[1])), "."))
           stopifnot(status == 0L)
 
-      - name: Time existing tests with default and serial backends
+      - name: Time the focused parallel reader test
         shell: Rscript {0}
         env:
-          TIMING_OUTPUT: ${{ runner.temp }}/mspurity-test-timing
-        run: source(".github/scripts/time-windows-tests.R")
+          TIMING_OUTPUT: ${{ runner.temp }}/mspurity-parallel-reader-timing
+        run: source(".github/scripts/time-parallel-reader.R")
 
       - name: Upload timings and test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-test-timing-${{ github.sha }}
-          path: ${{ runner.temp }}/mspurity-test-timing
+          name: parallel-reader-timing-${{ matrix.config.os }}-${{ github.sha }}
+          path: ${{ runner.temp }}/mspurity-parallel-reader-timing
           if-no-files-found: warn
