@@ -116,10 +116,11 @@ setGeneric(name="averageAllFragSpectra",
 )
 
 
-setGeneric(name="filterFragSpectra",
-           def=function(pa, ilim=0, plim=0.8, ra=0, snr=3, cores=1, rmp=FALSE, snmeth='median', allfrag=FALSE) {
-             standardGeneric("filterFragSpectra")
-           }
+setGeneric(name = "filterFragSpectra",
+    def = function(pa, ilim = 0, plim = 0.8, ra = 0, snr = 3, cores = 1,
+        rmp = FALSE, snmeth = "median", allfrag = FALSE, param = NULL) {
+        standardGeneric("filterFragSpectra")
+    }
 )
 
 

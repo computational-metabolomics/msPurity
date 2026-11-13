@@ -155,6 +155,20 @@ test_that("inter-file summaries follow passed intra-file clusters", {
     expect_equal(as.numeric(Spectra::mz(sp)[[1]]), c(100, 150))
 })
 
+test_that("queued subsets retain original peak positions", {
+    pa <- .d05_metadata_fixture()
+    pa@fragSpectra <- Spectra::filterMzRange(pa@fragSpectra, mz = c(125, 175))
+    sp <- groupedSpectra(filterFragSpectra(pa,
+            param = FilterFragSpectraParam(plim = 0, snr = 0)), legacy = FALSE)
+    peaks <- Spectra::peaksData(sp, columns = c("mz", "original_peak_index"))
+    expect_equal(peaks[[1]][, "mz"], 150)
+    expect_equal(peaks[[1]][, "original_peak_index"], 2)
+    expect_equal(peaks[[2]][, "original_peak_index"], 2)
+    expect_equal(lengths(Spectra::mz(pa@fragSpectra)), c(1L, 1L))
+    empty <- Spectra::filterMzRange(pa@fragSpectra, mz = c(500, 600))
+    input <- msPurity:::.pa_filter_source_peaks(empty)
+    expect_equal(lengths(input$original_positions), c(0L, 0L))
+})
 
 test_that("untracked ambiguous or value-changing queues fail explicitly", {
     d <- S4Vectors::DataFrame(msLevel = 2L)

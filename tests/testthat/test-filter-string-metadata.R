@@ -70,4 +70,28 @@ test_that("D02 MS2 metadata are stored and reused without XML preparation", {
     source_rows <- match(stored$spectrumId, raw$spectrumId)
     expect_identical(stored$collisionEnergy, raw$collisionEnergy[source_rows])
 
+    older <- pa
+    older@spectra$activationType <- NULL
+    older@spectra$scanFilterAnalyzer <- NULL
+    param <- list(
+        cid = FilterFragSpectraParam(select = list(activationType = "CID"),
+            snr = 2),
+        hcd = FilterFragSpectraParam(select = list(activationType = "HCD"),
+            snr = 3))
+    filtered <- filterFragSpectra(older, param = param, allfrag = TRUE)
+    spectra <- allFragSpectra(filtered, legacy = FALSE)
+    expect_identical(spectra$activationType, stored$activationType)
+    expect_identical(spectra$scanFilterAnalyzer, stored$scanFilterAnalyzer)
+    expect_identical(spectra$msPurityParameterFallback, rep(FALSE, 78L))
+    expect_identical(vapply(spectra$msPurityParameterSetNames,
+            function(x) x[[1L]], character(1)), tolower(stored$activationType))
+    expect_identical(spectra$collisionEnergy, stored$collisionEnergy)
+
+    output <- tempfile(fileext = ".rds")
+    on.exit(unlink(output))
+    saveRDS(spectra, output)
+    reopened <- readRDS(output)
+    fields <- c("activationType", "scanFilterAnalyzer", "collisionEnergy")
+    expect_identical(Spectra::spectraData(reopened, columns = fields),
+        Spectra::spectraData(spectra, columns = fields))
 })
