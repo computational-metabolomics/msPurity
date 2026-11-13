@@ -15,6 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
+#' @rdname processingHistory
+#' @export
+setGeneric("processingHistory", function(object, step = NULL) {
+    standardGeneric("processingHistory")
+})
+
+#' @rdname processingHistory
+#' @export
+setGeneric("processingParameters", function(object, step = NULL) {
+    standardGeneric("processingParameters")
+})
+
 setGeneric("getP", function(x) standardGeneric("getP"))
 
 setGeneric("purityTable", function(pa, legacy = TRUE) standardGeneric("purityTable"))

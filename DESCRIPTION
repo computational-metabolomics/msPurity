@@ -112,7 +112,9 @@ Collate:
     'purityA-constructor.R'
     'purityA-create-msp.R'
     'purityA-filter-frag-spectra.R'
+    'purityA-filter-parameters.R'
     'purityA-frag4feature.R'
+    'purityA-processing.R'
     'purityA-spectra.R'
     'purityA-validate.R'
     'purityD-class.R'
@@ -131,4 +133,4 @@ Collate:
     'spectralMatching.R'
     'splinepurity.R'
     'xcms-compat.R'
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.1

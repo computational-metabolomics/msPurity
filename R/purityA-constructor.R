@@ -157,6 +157,8 @@ purityA <- function(fileList,
                     im=NULL,
                     ppmInterp=7){
 
+    processing_started <- Sys.time()
+
   # Spectra, MsExperiment and XcmsExperiment inputs are used as they are;
   # file paths are read once here.
   if (is(fileList, "MsExperiment")){
@@ -172,12 +174,16 @@ purityA <- function(fileList,
     }
     raw <- .msp_read(fileList)
   }
+  acquisition <- .pa_filter_metadata(raw)
+  for (field in c("activationType", "scanFilterAnalyzer"))
+    raw[[field]] <- acquisition[[field]]
   names(fileList) <- basename(fileList)
   .msp_deprecate_mzRback(mzRback)
   sps <- .msp_split_files(raw)
 
   requireNamespace('foreach')
   pa <- new("purityA", fileList = fileList, cores = cores, mzRback=mzRback)
+  pa@params$processing <- .pa_processing_empty()
   pa@params$purityA <- list(cores = cores, mostIntense = mostIntense, nearest = nearest,
                             offsets = offsets, plotP = plotP, plotdir = plotdir,
                             interpol = interpol, iwNorm = iwNorm, iwNormFun = iwNormFun,
@@ -196,23 +202,29 @@ purityA <- function(fileList,
 
 
   # run parallel (or not) using foreach
-  purityL <- operator(foreach::foreach(i = 1:length(pa@fileList),
-                                  .packages = 'Spectra'),
-                                  assessPuritySingle(filepth = sps[[i]],
-                                  mostIntense = mostIntense,
-                                  nearest=nearest,
-                                  offsets = offsets,
-                                  plotP = plotP,
-                                  plotdir = plotdir,
-                                  interpol = interpol,
-                                  iwNorm = iwNorm,
-                                  iwNormFun = iwNormFun,
-                                  ilim = ilim,
-                                  mzRback = mzRback,
-                                  isotopes = isotopes,
-                                  im = im,
-                                  ppmInterp = ppmInterp
-                                  ))
+  purityL <- operator(
+    foreach::foreach(
+      i = 1:length(pa@fileList),
+      .packages = "Spectra",
+      .export = ".pa_assess_purity_single"
+    ),
+    .pa_assess_purity_single(
+      filepth = sps[[i]],
+      mostIntense = mostIntense,
+      nearest = nearest,
+      offsets = offsets,
+      plotP = plotP,
+      plotdir = plotdir,
+      interpol = interpol,
+      iwNorm = iwNorm,
+      iwNormFun = iwNormFun,
+      ilim = ilim,
+      mzRback = mzRback,
+      isotopes = isotopes,
+      im = im,
+      ppmInterp = ppmInterp
+    )
+  )
 
   if(pa@cores>1){
       parallel::stopCluster(cl1)
@@ -220,7 +232,13 @@ purityA <- function(fileList,
 
   names(purityL) <- seq(1, length(purityL))
 
-  puritydf <- plyr::ldply(purityL, .id = TRUE)
+  resolved <- lapply(seq_along(purityL), function(i) {
+    settings <- purityL[[i]]$resolved
+    settings$fileid <- as.integer(i)
+    settings
+  })
+  names(resolved) <- names(purityL)
+  puritydf <- plyr::ldply(lapply(purityL, `[[`, "purity"), .id = TRUE)
 
   if(nrow(puritydf)>0){
     colnames(puritydf)[1] <- "fileid"
@@ -232,6 +250,12 @@ purityA <- function(fileList,
   pa@spectra <- .pa_spectra_new(raw, match(o, unique(o)), puritydf)
   pa <- .pa_sync_legacy(pa, puritydf = puritydf)
   pa@cores = cores
+  effective_parameters <- pa@params$purityA
+  effective_parameters$effective_cores <- max(1L, as.integer(pa@cores))
+  effective_parameters$resolved <- resolved
+  pa <- .pa_processing_record(pa, "purityA", effective_parameters,
+    processing_started,
+    list(previous_steps = character(), spectra = .pa_processing_refs(raw)))
 
   return(pa)
 }
@@ -285,6 +309,35 @@ assessPuritySingle <- function(filepth,
                                isotopes=TRUE,
                                im=NULL,
                                ppmInterp=7){
+  .pa_assess_purity_single(
+    filepth = filepth, fileid = fileid, mostIntense = mostIntense,
+    nearest = nearest, offsets = offsets, cores = cores, plotP = plotP,
+    plotdir = plotdir, interpol = interpol, iwNorm = iwNorm,
+    iwNormFun = iwNormFun, ilim = ilim, mzRback = mzRback,
+    isotopes = isotopes, im = im, ppmInterp = ppmInterp
+  )$purity
+}
+
+# The public function returns only the historical purity table. The constructor
+# also retains settings resolved by this same assessment, without reading twice.
+.pa_assess_purity_single <- function(
+  filepth,
+  fileid = NA,
+  mostIntense = FALSE,
+  nearest = TRUE,
+  offsets = NA,
+  cores = 1,
+  plotP = FALSE,
+  plotdir = NULL,
+  interpol = "linear",
+  iwNorm = FALSE,
+  iwNormFun = NULL,
+  ilim = 0,
+  mzRback = "pwiz",
+  isotopes = TRUE,
+  im = NULL,
+  ppmInterp = 7
+) {
   #=================================
   # Load in files and initial setup
   #=================================
@@ -293,10 +346,20 @@ assessPuritySingle <- function(filepth,
   if (is(filepth, "Spectra")){
     filepth <- Spectra::dataOrigin(sp)[1]
   }
+  resolved <- list(
+    dataOrigin = as.character(filepth),
+    status = "no_ms2",
+    offsets = c(NA_real_, NA_real_),
+    offsets_source = "not_used",
+    offsets_method = NA_character_,
+    iwNorm = iwNorm,
+    iwNormFun = NULL,
+    iwNormFun_source = "not_used"
+  )
   mrdf <- getmrdf(sp, mzRback)
   if(is.null(mrdf)){
     message(paste("No MS/MS spectra for file: ", filepth))
-    return(NULL)
+    return(list(purity = NULL, resolved = resolved))
   }
 
   # having id column makes things easier to track
@@ -318,22 +381,38 @@ assessPuritySingle <- function(filepth,
   if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
     message("only MS2 data, not possible to calculate purity")
     mrdfshrt[ , c("precursorNearest", "aMz", "aPurity", "apkNm", "iMz", "iPurity", "ipkNm", "inPkNm", "inPurity")] <- NA
-    return(mrdfshrt)
+    resolved$status <- "no_ms1"
+    return(list(purity = mrdfshrt, resolved = resolved))
   }
 
   # get scans (list of mz and i) from mzR
   scans <- getscans(sp, mzRback)
 
   # Get offsets from mzML unless defined by user
-  if(anyNA(offsets)){
-    offsets <- .msp_isolation_offsets(sp)
+  if (anyNA(offsets)) {
+    isolation <- .msp_isolation_settings(sp)
+    offsets <- isolation$offsets
+    resolved$offsets_source <- isolation$offsets_source
+    resolved$offsets_method <- isolation$offsets_method
+  } else {
+    resolved$offsets_source <- "caller"
+    resolved$offsets_method <- "explicit_offsets"
   }
+  resolved$offsets <- offsets
   minoff <- offsets[1]
   maxoff <- offsets[2]
 
-  if(is.null(iwNormFun)){
+  if (is.null(iwNormFun)) {
     iwNormFun <- iwNormGauss(minOff = -minoff, maxOff = maxoff)
+    normalization_source <- "generated_default"
+  } else {
+    normalization_source <- "caller"
   }
+  if (iwNorm) {
+    resolved$iwNormFun <- iwNormFun
+    resolved$iwNormFun_source <- normalization_source
+  }
+  resolved$status <- "assessed"
 
 
 
@@ -385,7 +464,7 @@ assessPuritySingle <- function(filepth,
 
   # If no interpolation required then all purity calculations are completed
   if(interpol=="none"){
-    return(mrdfshrt)
+    return(list(purity = mrdfshrt, resolved = resolved))
   }
 
   #=====================================
@@ -434,7 +513,7 @@ assessPuritySingle <- function(filepth,
   }
 
 
-  return(mrdfshrt)
+  return(list(purity = mrdfshrt, resolved = resolved))
 
 }
 
@@ -678,7 +757,10 @@ get_prec_scans <- function(mrdf, num){
 }
 
 get_isolation_offsets <- function(inputfile){
+  .pa_read_isolation_settings(inputfile)$offsets
+}
 
+.pa_read_isolation_settings <- function(inputfile) {
   con  <- file(inputfile, open = "r")
   lowFound = FALSE
   highFound = FALSE
@@ -698,7 +780,9 @@ get_isolation_offsets <- function(inputfile){
 
     if (grepl('<cvParam cvRef="MS" accession="MS:1000490" name="Agilent instrument model" value=""/>', oneLine)){
       message("Agilent do not have isolation offset in mzML, default given as +- 0.65 (this is an approximate for the 'narrow' window type)")
-      return(c(0.65, 0.65))
+      return(list(offsets = c(0.65, 0.65),
+          offsets_source = "approximation",
+          offsets_method = "agilent_narrow_window"))
     }
 
     if(lowFound & highFound){
@@ -707,7 +791,9 @@ get_isolation_offsets <- function(inputfile){
   }
 
   close(con)
-  return(c(low, high))
+  return(list(offsets = c(low, high),
+      offsets_source = "recorded_metadata",
+      offsets_method = "mzml_first_window"))
 
 }
 
