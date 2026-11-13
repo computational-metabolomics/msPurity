@@ -63,6 +63,26 @@ test_that("empty peak inputs retain a typed schema", {
     }
 })
 
+test_that("allfrag scalar filtering retains source peak row identifiers", {
+    fixture <- .identity_pa()
+    local_mocked_bindings(.msp_read = function(files, ...) {
+        do.call(c, unname(fixture$raw[as.character(files)]))
+    }, .package = "msPurity")
+    for (legacy in c(TRUE, FALSE)) for (remove in c(TRUE, FALSE)) {
+        case <- paste("legacy:", legacy, "remove:", remove)
+        result <- .identity_with_legacy(legacy, {
+            filterFragSpectra(fixture$pa, plim = 0.8,
+                snr = 0, allfrag = TRUE, rmp = remove)
+        })
+        peaks <- as.list(Spectra::peaksData(
+            allFragSpectra(result, legacy = FALSE),
+            columns = Spectra::peaksVariables(result@fragSpectra)))
+        observed <- do.call(rbind, peaks)
+        expect_identical(unname(observed[, "sid"]),
+            if (remove) c(4, 8) else c(3, 4, 7, 8), info = case)
+    }
+})
+
 test_that("real MSn peaks retain assessed spectrum positions", {
     path <- system.file("extdata", "msn-standards",
         "msPurity_L_tryptophan_6305_MSn.mzML.gz", package = "msPurity",

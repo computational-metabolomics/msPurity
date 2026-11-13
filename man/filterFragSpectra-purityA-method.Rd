@@ -11,6 +11,7 @@
   plim = 0.8,
   ra = 0,
   snr = 3,
+  cores = 1,
   rmp = FALSE,
   snmeth = "median",
   allfrag = FALSE
@@ -26,6 +27,9 @@
 \item{ra}{numeric; minimum relative abundance of a peak}
 
 \item{snr}{numeric; minimum signal-to-noise of a peak within each file}
+
+\item{cores}{numeric; Accepted for compatibility.
+Fragment filtering is serial.}
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 

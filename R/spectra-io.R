@@ -152,15 +152,20 @@
 # offsets recorded in the spectra, the same first occurrence the file scan
 # finds.
 .msp_isolation_offsets <- function(sp) {
+    .msp_isolation_settings(sp)$offsets
+}
+
+.msp_isolation_settings <- function(sp) {
     f <- unique(Spectra::dataStorage(sp))[1]
     if (is(sp@backend, "MsBackendMzR") && !is.na(f) && file.exists(f))
-        return(get_isolation_offsets(f))
+        return(.pa_read_isolation_settings(f))
     h <- .msp_header(sp)
     lo <- h$isolationWindowLowerOffset[!is.na(h$isolationWindowLowerOffset)]
     up <- h$isolationWindowUpperOffset[!is.na(h$isolationWindowUpperOffset)]
     if (!length(lo) || !length(up))
         stop("No isolation window offsets recorded; set offsets explicitly.")
-    c(lo[1], up[1])
+    list(offsets = c(lo[1], up[1]), offsets_source = "recorded_metadata",
+        offsets_method = "spectra_first_window")
 }
 
 # Peak lists exported from Thermo MSFileReader (msfr) as CSV: one row per

@@ -41,6 +41,8 @@
 #' @param snr numeric; minimum signal-to-noise of a peak within each file
 #' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.
 #' @param snmeth character; Method to calculate signal to noise ration (either median or mean)
+#' @param cores numeric; Accepted for compatibility.
+#'   Fragment filtering is serial.
 #' @param allfrag boolean; Whether to filter on all fragmentation spectra or just the fragmentation spectra grouped to XCMS feature
 #'
 #' @examples
@@ -86,13 +88,19 @@
 #' @md
 #' @export
 setMethod(f="filterFragSpectra", signature="purityA",
-          definition = function(pa, ilim=0, plim=0.8, ra=0, snr=3, rmp=FALSE, snmeth='median', allfrag=FALSE){
+    definition = function(pa, ilim = 0, plim = 0.8, ra = 0, snr = 3,
+        cores = 1, rmp = FALSE, snmeth = "median", allfrag = FALSE) {
             pa <- .pa_update(pa)
 
             if ((!length(pa@filter_frag_params)==0) && (pa@filter_frag_params$rmp)){
               message('Fragmentation peaks have been previously filtered and removed - function can\'t be performed')
               return(pa)
             }
+
+
+        processing_started <- Sys.time()
+        processing_input <- .pa_processing_input(pa, "filterFragSpectra",
+            allfrag = allfrag)
 
             filter_frag_params = list()
             filter_frag_params$ilim = ilim
@@ -111,9 +119,13 @@ setMethod(f="filterFragSpectra", signature="purityA",
 
             # Calculate and add flags to matrix
             # Add the purity flag
-            pa@grped_df$purity_pass_flag <-  pa@grped_df$inPurity > plim
-            grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid, setPuritySpectraGrp,
-                                     list(grped_ms2 = grped_ms2))
+            if (nrow(pa@grped_df)) {
+                pa@grped_df$purity_pass_flag <- pa@grped_df$inPurity > plim
+                grped_ms2 <- plyr::dlply(pa@grped_df, ~grpid,
+                    setPuritySpectraGrp, list(grped_ms2 = grped_ms2))
+            } else {
+                grped_ms2 <- list()
+            }
 
             # calculate snr, ra and combine all flags
             grped_ms2 <- lapply(grped_ms2, lapply, setFlagMatrix, filter_frag_params=filter_frag_params)
@@ -135,12 +147,14 @@ setMethod(f="filterFragSpectra", signature="purityA",
                 pa <- .pa_sync_legacy(pa, grped_ms2 = grped_ms2)
             }
 
-            return(pa)
+        pa <- .pa_processing_invalidate(pa)
+        effective <- c(filter_frag_params,
+            list(cores = cores, effective_cores = 1L))
+        .pa_processing_record(pa, "filterFragSpectra", effective,
+            processing_started, processing_input)
 
           }
 )
-
-
 
 
 # Empty raw-peak schema, including results with every peak removed.
