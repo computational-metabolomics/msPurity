@@ -1,3 +1,37 @@
+.activation_metadata_spectra <- function(labels, accessions) {
+    metadata <- data.frame(pid = seq_along(labels), msLevel = 2L,
+        activationType = labels, activationTypeAccession = accessions)
+    peaks <- rep(list(cbind(mz = 146.0598, intensity = 100)), length(labels))
+    msPurity:::.msp_memory(metadata, peaks)
+}
+
+test_that("activation selectors share the recognized label and CV mapping", {
+    labels <- c("cid", "beam-type collision-induced dissociation",
+        "electron transfer dissociation", NA_character_, "CID/HCD")
+    accessions <- c("MS:1000133", "MS:1000422", "MS:1000598",
+        "MS:1000422", NA_character_)
+    source <- .activation_metadata_spectra(labels, accessions)
+    param <- list(
+        cid = FilterFragSpectraParam(select = list(
+            activationType = "collision-induced dissociation")),
+        hcd = FilterFragSpectraParam(select = list(
+            activationType = "MS:1000422")),
+        etd = FilterFragSpectraParam(select = list(activationType = "ETD")))
+    fallback <- list(ilim = 0, plim = 0.8, ra = 0, snr = 3,
+        snmeth = "median", rmp = FALSE, allfrag = FALSE, cores = 1)
+
+    result <- msPurity:::.pa_filter_resolve(source, param, fallback)
+
+    expect_identical(result$assignments$parameter_set_names,
+        list("cid", "hcd", "etd", "hcd", character()))
+    expect_identical(result$metadata$activationType,
+        c(labels[1:3], "HCD", "CID/HCD"))
+    expect_identical(source$activationType, labels)
+    expect_identical(source$activationTypeAccession, accessions)
+    expect_identical(as.list(result$parameter_objects$hcd)$select,
+        list(activationType = "MS:1000422"))
+})
+
 test_that("structured activation precedes the limited scan-filter fallback", {
     source <- data.frame(msLevel = 2L,
         activationType = c("CID", NA, "vendor method", NA, NA),

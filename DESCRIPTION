@@ -48,6 +48,7 @@ Imports:
     stringr,
     mzR,
     Spectra (>= 1.22.0),
+    ProtGenerics (>= 1.24.0),
     MsExperiment (>= 1.14.0),
     BiocGenerics,
     S4Vectors,
