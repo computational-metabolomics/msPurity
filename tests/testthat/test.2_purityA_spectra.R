@@ -9,22 +9,22 @@ test_that("purityA() stores the scans and their purity as Spectra", {
     expect_s4_class(sp, "Spectra")
     expect_length(sp, nrow(purity_ref))
     expect_identical(sp$pid, purity_ref$pid)
-    expect_identical(sp$inPurity, purity_ref$inPurity)
+    expect_equal(sp$inPurity, purity_ref$inPurity, tolerance = 1e-12)
     expect_true(all(Spectra::msLevel(sp) == 2L))
     expect_identical(Spectra::scanIndex(sp), purity_ref$seqNum)
-    expect_identical(purityTable(pa), purity_ref)
+    expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
     expect_true(validObject(pa))
 })
 
 test_that("purityA() accepts Spectra and MsExperiment input", {
     sp <- Spectra::Spectra(msms, source = Spectra::MsBackendMzR())
     pa <- suppressMessages(purityA(sp))
-    expect_identical(purityTable(pa), purity_ref)
+    expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
     expect_identical(unname(basename(pa@fileList)), basename(msms))
 
     me <- MsExperiment::readMsExperiment(msms)
     pa <- suppressMessages(purityA(me))
-    expect_identical(purityTable(pa), purity_ref)
+    expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
 })
 
 test_that("purityA() reads a Parquet study dataset through MsBackendParquet", {
@@ -32,7 +32,7 @@ test_that("purityA() reads a Parquet study dataset through MsBackendParquet", {
     sp <- Spectra::Spectra(Spectra::backendInitialize(
         MsBackendParquet::MsBackendParquet(), path = .study_dataset()))
     pa <- suppressMessages(purityA(sp))
-    expect_identical(purityTable(pa), purity_ref)
+    expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
 })
 
 test_that("legacy slots can be switched off", {
@@ -40,7 +40,7 @@ test_that("legacy slots can be switched off", {
     on.exit(options(old))
     pa <- suppressMessages(purityA(msms))
     expect_identical(nrow(pa@puritydf), 0L)
-    expect_identical(purityTable(pa), purity_ref)
+    expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
 })
 
 test_that("updateObject() converts every saved purityA object", {

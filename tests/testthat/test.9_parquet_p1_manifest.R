@@ -18,6 +18,19 @@ test_that("the nine error classes are distinct conditions (B-011)", {
     expect_identical(e$source, "s")
 })
 
+test_that("identifiers drawn in quick succession are unique", {
+    uid <- .mzs(".mzs_uid")
+    set.seed(42)
+    expected <- runif(3)
+    set.seed(42)
+    ids <- replicate(2000, uid())
+    expect_identical(runif(3), expected)
+    expect_false(anyDuplicated(ids) > 0)
+    expect_true(all(grepl(
+        "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+        ids)))
+})
+
 test_that("the manifest round-trips every double exactly (D-070)", {
     skip_if_no_arrow()
     m <- MsBackendParquet::newManifest()

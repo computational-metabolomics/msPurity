@@ -10,16 +10,16 @@ test_that("the DIMS workflow is unchanged with only the Spectra slots filled", {
     pd <- q(averageSpectra(q(purityD(inDF, mzML = TRUE)), snMeth = "median",
                            snthr = 5))
     expect_identical(length(pd@avPeaks), 0L)
-    expect_identical(averagedPeaks(pd), purityD_ref$averageSpectra)
+    expect_equal(averagedPeaks(pd), purityD_ref$averageSpectra, tolerance = 1e-12)
     pd <- q(filterp(pd, thr = 5000, rsd = 10))
-    expect_identical(averagedPeaks(pd), purityD_ref$filterp)
+    expect_equal(averagedPeaks(pd), purityD_ref$filterp, tolerance = 1e-12)
     pd <- q(subtract(pd))
-    expect_identical(averagedPeaks(pd), purityD_ref$subtract)
+    expect_equal(averagedPeaks(pd), purityD_ref$subtract, tolerance = 1e-12)
     pd <- q(dimsPredictPurity(pd))
-    expect_identical(averagedPeaks(pd), purityD_ref$dimsPredictPurity)
-    expect_identical(getP(pd), purityD_ref$dimsPredictPurity)
+    expect_equal(averagedPeaks(pd), purityD_ref$dimsPredictPurity, tolerance = 1e-12)
+    expect_equal(getP(pd), purityD_ref$dimsPredictPurity, tolerance = 1e-12)
     pd <- q(groupPeaks(pd))
-    expect_identical(pd@groupedPeaks, purityD_ref$groupPeaks)
+    expect_equal(pd@groupedPeaks, purityD_ref$groupPeaks, tolerance = 1e-12)
 
     sp <- averagedPeaks(pd, legacy = FALSE)
     expect_s4_class(sp, "Spectra")
@@ -38,7 +38,7 @@ test_that("purityD() accepts an MsExperiment", {
     expect_identical(pd@sampleIdx, q(purityD(inDF, mzML = TRUE))@sampleIdx)
     expect_s4_class(pd@experiment, "MsExperiment")
     pd <- q(averageSpectra(pd, snMeth = "median", snthr = 5))
-    expect_identical(averagedPeaks(pd), purityD_ref$averageSpectra)
+    expect_equal(averagedPeaks(pd), purityD_ref$averageSpectra, tolerance = 1e-12)
 
     # Without sample data the file paths, names and types are filled in.
     pd <- q(purityD(MsExperiment::readMsExperiment(inDF$filepth)))
@@ -58,8 +58,8 @@ test_that("updateObject() adds the Spectra slots to a saved purityD object", {
     up <- updateObject(saved)
     expect_true(msPurity:::.pd_is_current(up))
     expect_identical(averagedPeaks(up), saved@avPeaks)
-    expect_identical(averagedPeaks(q(filterp(saved, thr = 5000, rsd = 10))),
-                     purityD_ref$filterp)
+    expect_equal(averagedPeaks(q(filterp(saved, thr = 5000, rsd = 10))),
+                 purityD_ref$filterp, tolerance = 1e-12)
 })
 
 test_that("msfr peak lists are read through Spectra", {

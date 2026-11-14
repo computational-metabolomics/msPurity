@@ -11,9 +11,11 @@
   plim = 0.8,
   ra = 0,
   snr = 3,
+  cores = 1,
   rmp = FALSE,
   snmeth = "median",
-  allfrag = FALSE
+  allfrag = FALSE,
+  param = NULL
 )
 }
 \arguments{
@@ -27,11 +29,17 @@
 
 \item{snr}{numeric; minimum signal-to-noise of a peak within each file}
 
+\item{cores}{numeric; Accepted for compatibility.
+Fragment filtering is serial.}
+
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 
 \item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
 
 \item{allfrag}{boolean; Whether to filter on all fragmentation spectra or just the fragmentation spectra grouped to XCMS feature}
+
+\item{param}{NULL, a complete \code{FilterFragSpectraParam}, or a named list
+of complete parameter objects. Parameter-set filtering requires one core.}
 }
 \value{
 Returns a purityA object. The flags are stored in pa@fragSpectra: purity_pass_flag as a spectra

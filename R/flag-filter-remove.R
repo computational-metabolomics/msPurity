@@ -299,7 +299,7 @@ create_enriched_peaklist <- function(xcmsObj,rsd_i_blank, minfrac_blank,rsd_rt_b
 
   # Check if any of the peaks are valid for each sample. If they are we create a
   # summary flag to keep this peak (unless we remove it later at the subtraction stage)
-  temp <- apply(as.array(grp_peaklist[,valids]), 1, sum)
+  temp <- rowSums(grp_peaklist[, valids, drop = FALSE])
 
   grp_peaklist <- cbind(grp_peaklist, 'all_sample_valid'=rep(0, nrow(grp_peaklist)))
   grp_peaklist[temp>0,][,'all_sample_valid']=1
@@ -370,7 +370,7 @@ sum_calc_peaklist <- function(xcmsObj, XCMSnExp_bool){
     coverage_m[,cnt] <- grp_peaklist[,c]/length(files)
     colnames(coverage_m)[cnt] <- paste(c, "coverage", sep="_")
 
-    subseti <- grp_peaklist[ , which(colnames(grp_peaklist) %in% files)]
+    subseti <- grp_peaklist[ , which(colnames(grp_peaklist) %in% files), drop = FALSE]
     rsdi <- apply(subseti, 1, rsd)
     mediani <- apply(subseti, 1, median, na.rm=TRUE)
 
@@ -401,7 +401,7 @@ sum_calc_peaklist <- function(xcmsObj, XCMSnExp_bool){
     files <- x$fileid
 
     # rt RSD
-    subsetT <- grouprt[ , which(colnames(grouprt) %in% files)]
+    subsetT <- grouprt[ , which(colnames(grouprt) %in% files), drop = FALSE]
     rsdT <- apply(subsetT, 1, rsd)
     grp_peaklist <- cbind(grp_peaklist, rsdT)
     colnames(grp_peaklist)[ncol(grp_peaklist)] = paste(c, "RSD_RT", sep="_")

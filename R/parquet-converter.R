@@ -46,7 +46,7 @@
          route = "library:mzspeclib",
          coverage_manifest = list(library = "refused")),
     list(format = "msPurity purityA",
-         versions = ">= 1.37.4",
+         versions = ">= 1.39.1",
          route = "mspurity:live-object",
          coverage_manifest = list(
              puritydf = "mapped", grped_df = "mapped_partial",
