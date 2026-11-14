@@ -1,3 +1,19 @@
+# msPurity 1.39.3
+
+- **Parquet built on MsBackendParquet** (#126): manifests, mzStack
+  conditions, and writing and reading spectra now use the MsBackendParquet
+  dataset API, so msPurity and MsBackendParquet apply one set of mzStack
+  rules. MsBackendParquet (>= 0.99.10), arrow and jsonlite move from Suggests
+  to Imports.
+- Parquet errors carry both `mzstack_<class>` and `msPurity_parquet_<class>`
+  classes; `parquetCapabilities()` reports the `mzstack_*` names. A manifest
+  commit refused by another writer keeps `msPurity_parquet_conflict`.
+- Parquet datasets store run paths relative to the dataset, so a dataset can
+  be moved or renamed. `spectrum_index` is int64 in every run, part files are
+  named by MsBackendParquet, core variables with no values in a run are not
+  written, and library sources without spectra are not written as empty
+  runs. The Parquet format is unreleased, so no migration is needed.
+
 # msPurity 1.39.2
 
 - **Bug fix**: identifiers for processing records and Parquet datasets could
