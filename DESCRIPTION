@@ -2,8 +2,8 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.37.4
-Date: 2026-10-07
+Version: 1.39.1
+Date: 2026-11-14
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
         email = "thomas.nigel.lawson@gmail.com", role = c("aut", "cre"),
@@ -48,6 +48,7 @@ Imports:
     stringr,
     mzR,
     Spectra (>= 1.22.0),
+    ProtGenerics (>= 1.24.0),
     MsExperiment (>= 1.14.0),
     BiocGenerics,
     S4Vectors,
@@ -112,7 +113,9 @@ Collate:
     'purityA-constructor.R'
     'purityA-create-msp.R'
     'purityA-filter-frag-spectra.R'
+    'purityA-filter-parameters.R'
     'purityA-frag4feature.R'
+    'purityA-processing.R'
     'purityA-spectra.R'
     'purityA-validate.R'
     'purityD-class.R'
@@ -131,4 +134,4 @@ Collate:
     'spectralMatching.R'
     'splinepurity.R'
     'xcms-compat.R'
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.1

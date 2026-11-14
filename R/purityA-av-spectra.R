@@ -377,6 +377,15 @@ setMethod(f="averageAllFragSpectra", signature="purityA",
 
 average_xcms_grouped_msms <- function(pa, av_level){
 
+    processing_started <- Sys.time()
+    processing_step <- switch(av_level,
+        intra = "averageIntraFragSpectra", inter = "averageInterFragSpectra",
+        all = "averageAllFragSpectra")
+    processing_input <- .pa_processing_input(pa, processing_step)
+    previous <- pa@avSpectra
+    if (av_level == "intra")
+        pa <- .pa_processing_invalidate(pa, "inter")
+
   if(pa@cores>1){
     cl <- parallel::makeCluster(pa@cores)
     doSNOW::registerDoSNOW(cl)
@@ -392,26 +401,41 @@ average_xcms_grouped_msms <- function(pa, av_level){
   av_keep <- if (.pa_legacy() && length(pa@av_spectra)) pa@av_spectra else av_in
   groups <- unique(as.character(pa@grped_df$grpid))
 
-  av_spectra <- plyr::alply(groups, 1, average_xcms_grouped_msms_indiv, pa=pa, av_level=av_level,
-                            ms2=ms2, av_in=av_in, av_keep=av_keep, .parallel = para)
-  names(av_spectra) <- groups
+    results <- plyr::alply(groups, 1, average_xcms_grouped_msms_indiv,
+        pa = pa, av_level = av_level, ms2 = ms2, av_in = av_in,
+        av_keep = av_keep, record_inputs = TRUE, .parallel = para)
+    names(results) <- groups
+    used_inputs <- lapply(results, `[[`, "used")
+    av_spectra <- results
+    for (i in seq_along(results))
+        av_spectra[i] <- list(results[[i]]$spectra)
 
   if(pa@cores>1){
     parallel::stopCluster(cl)
   }
 
   pa@avSpectra <- .pa_av_to_spectra(av_spectra, pa@grped_df)
+    pa <- .pa_av_metadata(pa, av_level, previous, used_inputs)
   pa <- .pa_sync_legacy(pa, av_spectra = av_spectra)
 
+    effective_parameters <- methods::slot(
+        pa, paste0("av_", av_level, "_params"))
+    names(effective_parameters)[
+        names(effective_parameters) == "av_type"] <- "av"
+    effective_parameters$effective_cores <- max(1L, as.integer(pa@cores))
+    pa <- .pa_processing_record(pa, processing_step, effective_parameters,
+        processing_started, processing_input)
   return(pa)
 
 }
 
 
 
-average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in, av_keep){
+average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in,
+    av_keep, record_inputs = FALSE) {
 
   grp_idx_char <- as.character(grp_idx)
+    used_inputs <- list()
 
   ##############################################################################
   # Get the appropiate details for the xcms grouped feature from purityA object
@@ -489,11 +513,21 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in, a
                                             rathr=pa@av_intra_params$ra,
                                             rathr_pre= pa@av_intra_params$ra_pre,
                                             snrthr_pre= pa@av_intra_params$snr_pre,
-                                            av_type=pa@av_intra_params$av_type)
+                                            av_type = pa@av_intra_params$av_type,
+                                            record_inputs = record_inputs)
+
+        if (record_inputs) {
+            members <- lapply(av_intra, `[[`, "members")
+            for (i in seq_along(av_intra))
+                av_intra[i] <- list(av_intra[[i]]$peaks)
+        }
 
     if (pa@av_intra_params$rmp){
       av_intra  <- plyr::llply(av_intra , function(x){x[x$pass_flag,]})
     }
+        if (record_inputs)
+            used_inputs$intra <- Map(.pa_average_used_members,
+                members, av_intra)
 
   } else if (av_level=="inter") {
 
@@ -509,12 +543,20 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in, a
                                  minfrac=pa@av_inter_params$minfrac,
                                  snthr=pa@av_inter_params$snr,
                                  rathr=pa@av_inter_params$ra,
-                                 av_type=pa@av_inter_params$av_type
+                                 av_type = pa@av_inter_params$av_type,
+                                 record_inputs = record_inputs
                                )
+
+        if (record_inputs) {
+            members <- av_inter$members
+            av_inter <- av_inter$peaks
+        }
 
     if (pa@av_inter_params$rmp){
       av_inter <- av_inter[av_inter$pass_flag,]
     }
+        if (record_inputs)
+            used_inputs$inter <- .pa_average_used_members(members, av_inter)
 
   } else if (av_level=="all") {
 
@@ -530,24 +572,42 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in, a
                                 rathr=pa@av_all_params$ra,
                                 rathr_pre= pa@av_all_params$ra_pre,
                                 snrthr_pre= pa@av_all_params$snr_pre,
-                                av_type=pa@av_all_params$av_type)
+                                av_type = pa@av_all_params$av_type,
+                                record_inputs = record_inputs)
+        if (record_inputs) {
+            members <- av_all$members
+            av_all <- av_all$peaks
+        }
     if (pa@av_all_params$rmp){
       av_all <- av_all[av_all$pass_flag,]
     }
+        if (record_inputs)
+            used_inputs$all <- .pa_average_used_members(members, av_all)
   } else {
 
     stop("Incorrect av_level for averaging fragmentation spectra; use intra, inter or all")
 
   }
 
-  return(list('av_intra'=av_intra , 'av_inter'=av_inter, 'av_all'=av_all))
+    spectra <- list(av_intra = av_intra, av_inter = av_inter, av_all = av_all)
+    if (record_inputs)
+        return(list(spectra = spectra, used = used_inputs))
+    spectra
 }
 
 
+# Occurrence membership follows the clusters retained by the existing worker.
+.pa_average_used_members <- function(members, peaks) {
+    if (is.null(peaks) || !nrow(peaks)) return(list())
+    members[as.character(peaks$cl)]
+}
 
-average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sumi,
-                            minfrac, snthr, snmeth='median', rathr, rathr_pre=NULL, snrthr_pre=NULL, av_type='median'){
+
+average_spectra <- function(spectra, indx = "index", ppm, cores, minnum, sumi,
+    minfrac, snthr, snmeth = "median", rathr, rathr_pre = NULL,
+    snrthr_pre = NULL, av_type = "median", record_inputs = FALSE) {
   if (nrow(spectra)==0){
+        if (record_inputs) return(list(peaks = NULL, members = list()))
     return(NULL)
   }
 
@@ -572,6 +632,7 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sumi,
   }
 
   if (nrow(spectra)==0){
+        if (record_inputs) return(list(peaks = NULL, members = list()))
     return(NULL)
   }
 
@@ -580,6 +641,14 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sumi,
 
   mz <- spectra$mz
 
+    # Inter-file inputs refer to peaks in an earlier intra-file average.
+    if (record_inputs) {
+        input_keys <- if (indx == "sample")
+            data.frame(sample = as.character(spectra[[indx]]),
+                cluster = as.character(spectra$cl),
+                stringsAsFactors = FALSE) else
+            spectra[[indx]]
+    }
 
   # Cluster the peaks togther
   spectra$cl <- clustering(mz, clustType = 'hc', cores = cores, ppm = ppm)
@@ -604,6 +673,15 @@ average_spectra <- function(spectra, indx='index', ppm, cores, minnum, sumi,
 
   averages$pass_flag <- (averages$minfrac_pass_flag & averages$snr_pass_flag & averages$ra_pass_flag & averages$minnum_pass_flag)
 
+    if (record_inputs) {
+        members <- lapply(
+            split(seq_len(nrow(spectra)), spectra$cl), function(i) {
+                if (is.data.frame(input_keys))
+                    unique(input_keys[i, , drop = FALSE])
+                else unique(input_keys[i])
+            })
+        return(list(peaks = averages, members = members))
+    }
   return(averages)
 }
 

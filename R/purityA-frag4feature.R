@@ -128,6 +128,8 @@ setMethod(f="frag4feature", signature="purityA",
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA){
   pa <- .pa_update(pa)
+  processing_started <- Sys.time()
+  processing_input <- .pa_processing_input(pa, "frag4feature")
 
   if(!is.na(xset)){
     message('The param xset is deprecated - please use xcmsObj instead')
@@ -304,6 +306,7 @@ setMethod(f="frag4feature", signature="purityA",
   pa@params <- prm
 
   # add to the slots
+  pa <- .pa_processing_relink(pa)
   pa@grped_df <- grpm
   # Each linked scan is stored once; grped_ms2 is rebuilt from the links.
   pa@fragSpectra <- .pa_raw_scans(pa, unique(grpm$pid))
@@ -320,6 +323,11 @@ setMethod(f="frag4feature", signature="purityA",
                                 "after frag4feature() instead."))
   }
 
+        effective_parameters <- c(pa@params$frag4feature,
+            list(createDb = createDb, outDir = outDir, dbName = dbName,
+                grpPeaklist = grpPeaklist))
+        pa <- .pa_processing_record(pa, "frag4feature", effective_parameters,
+            processing_started, processing_input)
   return(pa)
 
 })

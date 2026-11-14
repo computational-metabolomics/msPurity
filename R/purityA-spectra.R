@@ -33,6 +33,26 @@
                           "snr_pass_flag", "pass_flag")
 
 # Whether the legacy slots are filled.
+# Spectra versions without metadata methods expose the documented metadata
+# slot. Keep that compatibility access in one place rather than defining a
+# method for a class owned by another package.
+.pa_spectra_metadata <- function(object) {
+    if (methods::hasMethod("metadata", class(object),
+            where = asNamespace("S4Vectors")))
+        S4Vectors::metadata(object) else methods::slot(object, "metadata")
+}
+
+`.pa_spectra_metadata<-` <- function(object, value) {
+    if (methods::hasMethod("metadata<-", class(object),
+            where = asNamespace("S4Vectors"))) {
+        S4Vectors::metadata(object) <- value
+    } else {
+        if (!is.list(value)) stop("Spectrum metadata must be a list.")
+        methods::slot(object, "metadata") <- value
+    }
+    object
+}
+
 .pa_legacy <- function() isTRUE(getOption("msPurity.legacySlots", TRUE))
 
 # An empty legacy data frame slot, as the class prototype has it.
@@ -69,8 +89,23 @@
     idx <- match(paste(as.character(puritydf$fileid), puritydf$seqNum),
                  paste(fileid, Spectra::scanIndex(raw)))
     sp <- raw[idx]
+    offsets <- .pa_raw_peak_offsets(raw)
+    sp$msPurityRawPeakOffset <- offsets$offset[idx]
+    sp$msPurityRawPeakCount <- offsets$count[idx]
+    sp$msPurityRawPeakIdBasis <- rep("source_reference", length(sp))
     sp <- .pa_set_purity_vars(sp, puritydf)
+    if (all(Spectra::dataStorage(sp) == "<memory>"))
+        .pa_spectra_metadata(sp)$msPurityRawPeaksAvailable <- TRUE
     sp
+}
+
+# Include every fragmentation level when numbering source peak rows.
+.pa_raw_peak_offsets <- function(raw) {
+    count <- lengths(Spectra::reset(raw))
+    numbered <- integer(length(count))
+    fragmentation <- which(Spectra::msLevel(raw) > 1L)
+    numbered[fragmentation] <- count[fragmentation]
+    list(offset = c(0, cumsum(numbered))[seq_along(count)], count = count)
 }
 
 # Add or replace puritydf columns as spectra variables, remembering the
@@ -78,7 +113,7 @@
 .pa_set_purity_vars <- function(sp, df) {
     for (cn in colnames(df))
         sp[[cn]] <- df[[cn]]
-    sp@metadata$puritydfColumns <- colnames(df)
+    .pa_spectra_metadata(sp)$puritydfColumns <- colnames(df)
     sp
 }
 
@@ -108,7 +143,7 @@
 
 # puritydf rebuilt from the spectra slot.
 .pa_purity_table <- function(sp) {
-    cols <- unique(sp@metadata$puritydfColumns)
+    cols <- unique(.pa_spectra_metadata(sp)$puritydfColumns)
     if (!length(sp) || is.null(cols))
         return(.pa_empty_frame())
     as.data.frame(Spectra::spectraData(sp, columns = cols), optional = TRUE)
@@ -116,6 +151,8 @@
 
 # Whether the spectra slot can read its own peaks.
 .pa_has_peaks <- function(sp) {
+    if (isTRUE(.pa_spectra_metadata(sp)$msPurityRawPeaksAvailable))
+        return(TRUE)
     if (!length(sp) || !is(sp@backend, "MsBackendMzR"))
         return(FALSE)
     all(file.exists(unique(Spectra::dataStorage(sp))))
@@ -131,6 +168,8 @@
         stop("Scans ", paste(head(pids[is.na(rows)]), collapse = ", "),
              " are not in the purityA object.")
     sp <- sp[rows]
+    if (!length(sp))
+        return(sp)
     if (!.pa_has_peaks(sp)) {
         files <- unname(as.character(pa@fileList))
         raw <- .msp_read(files)
@@ -140,13 +179,40 @@
         idx <- match(key, paste(fid, Spectra::scanIndex(raw)))
         if (anyNA(idx))
             stop("Scans could not be found in the files of fileList.")
+        offsets <- .pa_raw_peak_offsets(raw)
         pk <- .msp_peaks(raw[idx])
         sv <- Spectra::spectraData(sp)
         sv$mz <- NULL
         sv$intensity <- NULL
+        sv$msPurityRawPeakOffset <- offsets$offset[idx]
+        sv$msPurityRawPeakCount <- offsets$count[idx]
+        sv$msPurityRawPeakIdBasis <- rep("source_reference", length(sp))
         out <- .msp_memory(as.data.frame(sv, optional = TRUE), pk)
-        out@metadata <- sp@metadata
+        .pa_spectra_metadata(out) <- .pa_spectra_metadata(sp)
+        .pa_spectra_metadata(out)$msPurityRawPeaksAvailable <- TRUE
         return(out)
+    }
+    if (!"msPurityRawPeakOffset" %in% Spectra::spectraVariables(sp)) {
+        files <- unname(as.character(pa@fileList))
+        if (length(files) && all(file.exists(files))) {
+            raw <- .msp_read(files)
+            origins <- Spectra::dataOrigin(raw)
+            file_id <- match(origins, unique(origins))
+            source_rows <- match(paste(sp$fileid, sp$seqNum),
+                paste(file_id, Spectra::scanIndex(raw)))
+            if (anyNA(source_rows))
+                stop("Source peak offsets could not be resolved by file ",
+                    "and spectrum position.")
+            offsets <- .pa_raw_peak_offsets(raw)
+            basis <- "source_reference"
+        } else {
+            offsets <- .pa_raw_peak_offsets(pa@spectra)
+            source_rows <- rows
+            basis <- "filter_input"
+        }
+        sp$msPurityRawPeakOffset <- offsets$offset[source_rows]
+        sp$msPurityRawPeakCount <- offsets$count[source_rows]
+        sp$msPurityRawPeakIdBasis <- rep(basis, length(sp))
     }
     Spectra::setBackend(sp, Spectra::MsBackendMemory())
 }
@@ -154,6 +220,123 @@
 # ---------------------------------------------------------------------------
 # fragSpectra: the scans used downstream, each stored once.
 # ---------------------------------------------------------------------------
+
+# Metadata follows the source spectrum; acquisition dimensions are independent.
+.pa_fragment_variables <- function(pa, pids) {
+    rows <- match(pids, pa@spectra$pid)
+    if (anyNA(rows)) stop("Fragment spectra refer to unknown pid values.")
+    sp <- pa@spectra[rows]
+    cols <- setdiff(Spectra::spectraVariables(sp), Spectra::peaksVariables(sp))
+    as.data.frame(Spectra::spectraData(sp, columns = cols), optional = TRUE)
+}
+
+.pa_fragment_metadata <- function(sp, pa) {
+    .pa_spectra_metadata(sp) <- .pa_spectra_metadata(pa@spectra)
+    sp
+}
+
+# Match retained values only when their original occurrence is unambiguous.
+.pa_peak_positions <- function(peaks, original, ordered_duplicates = TRUE) {
+    if (!nrow(peaks)) return(integer())
+    key <- complex(real = peaks[, 1L], imaginary = peaks[, 2L])
+    raw_key <- complex(real = original[, 1L], imaginary = original[, 2L])
+    positions <- match(key, raw_key)
+    if (anyNA(positions))
+        stop("Original peak positions cannot be recovered after changing ",
+            "peak values; retain original_peak_index before processing.")
+    if (!anyDuplicated(raw_key)) return(positions)
+    groups <- unique(raw_key)
+    raw_group <- match(raw_key, groups)
+    kept_group <- match(key, groups)
+    before <- tabulate(raw_group, length(groups))
+    after <- tabulate(kept_group, length(groups))
+    if (any(after > 0L & (after != before |
+                    (!ordered_duplicates & before > 1L))))
+        stop("Original peak positions are ambiguous for duplicate peaks; ",
+            "retain original_peak_index before processing.")
+    for (group in which(after > 1L))
+        positions[kept_group == group] <- which(raw_group == group)
+    positions
+}
+
+# Spectra 1.22/1.23 has no public queue accessor. Keep this compatibility
+# query isolated; processingLog() does not include arbitrary addProcessing().
+.pa_spectra_has_queue <- function(source) {
+    if (!methods::.hasSlot(source, "processingQueue"))
+        stop("Unsupported Spectra processing queue layout.")
+    queue <- methods::slot(source, "processingQueue")
+    if (!is.list(queue))
+        stop("Unsupported Spectra processing queue layout.")
+    length(queue) > 0L
+}
+
+.pa_filter_source_peaks <- function(source) {
+    invalid <- function(x) {
+        anyNA(x) || any(!is.finite(x) | x < 1 | x != trunc(x)) ||
+            anyDuplicated(x) > 0L
+    }
+    known <- "original_peak_index" %in% Spectra::peaksVariables(source)
+    columns <- c("mz", "intensity", if (known) "original_peak_index")
+    values <- as.list(Spectra::peaksData(source, columns = columns))
+    peaks <- lapply(values, function(m) {
+        m <- as.matrix(m)
+        m[, c("mz", "intensity"), drop = FALSE]
+    })
+    if (known) {
+        positions <- lapply(values, function(m) {
+            as.numeric(m[, "original_peak_index"])
+        })
+        original <- as.list(Spectra::peaksData(Spectra::reset(source),
+                columns = "original_peak_index"))
+        raw_positions <- lapply(original, function(m) {
+            as.numeric(m[, "original_peak_index"])
+        })
+        if (any(vapply(raw_positions, invalid, logical(1))))
+            stop("Invalid original peak positions before processing.")
+        stored_positions <- Map(function(index, raw) {
+            match(index, raw[, "original_peak_index"])
+        }, positions, original)
+    } else {
+        original <- as.list(Spectra::peaksData(Spectra::reset(source),
+                columns = c("mz", "intensity")))
+        ordered <- !.pa_spectra_has_queue(source)
+        positions <- Map(function(kept, raw) {
+            .pa_peak_positions(kept, raw, ordered_duplicates = ordered)
+        }, peaks, original)
+        stored_positions <- positions
+    }
+    if (any(vapply(seq_along(positions), function(i) {
+        x <- positions[[i]]
+        length(x) != nrow(peaks[[i]]) || invalid(x)
+    }, logical(1)))) stop("Invalid original peak positions.")
+    basis <- if ("msPurityOriginalPeakIndexBasis" %in%
+            Spectra::spectraVariables(source))
+        as.character(source$msPurityOriginalPeakIndexBasis) else
+        rep("filter_input", length(source))
+    if (isTRUE(.pa_spectra_metadata(source)$msPurityRawPeaksAvailable) ||
+            all(Spectra::dataStorage(source) != "<memory>"))
+        basis[] <- "source_reference"
+    list(peaks = peaks, original_positions = positions, basis = basis,
+        stored_positions = stored_positions)
+}
+
+.pa_source_peak_ids <- function(source, selected) {
+    if (!length(source))
+        return(list())
+    offset <- source$msPurityRawPeakOffset
+    count <- source$msPurityRawPeakCount
+    basis <- source$msPurityRawPeakIdBasis
+    if (length(offset) != length(source) || anyNA(offset) ||
+            length(count) != length(source) || anyNA(count))
+        stop("Source peak offsets are unavailable.")
+    lapply(seq_along(source), function(i) {
+        index <- if (basis[i] == "source_reference")
+            selected$original_positions[[i]] else selected$stored_positions[[i]]
+        if (anyNA(index) || any(index > count[i]))
+            stop("Source peak identities cannot be recovered safely.")
+        offset[i] + index
+    })
+}
 
 # fragSpectra from grped_ms2 and grped_df. Each scan takes its peaks from the
 # first link that refers to it.
@@ -169,17 +352,41 @@
     first <- !duplicated(grped_df$pid)
     pids <- grped_df$pid[first]
     mats <- mats[first]
-    tab <- .pa_purity_table(pa@spectra)
-    sv <- data.frame(msLevel = rep(2L, length(pids)))
-    if (nrow(tab)) {
-        k <- match(pids, tab$pid)
-        sv$rtime <- as.numeric(tab$retentionTime[k])
-        sv$precursorMz <- as.numeric(tab$precursorMZ[k])
-        sv$scanIndex <- as.integer(tab$seqNum[k])
-        sv$fileid <- tab$fileid[k]
-        sv$seqNum <- tab$seqNum[k]
+    sv <- .pa_fragment_variables(pa, pids)
+    previous <- if ("pid" %in% Spectra::spectraVariables(pa@fragSpectra))
+        match(pids, pa@fragSpectra$pid) else rep(NA_integer_, length(pids))
+    positions <- lapply(mats, function(m) {
+        seq_len(if (is.null(m)) 0L else nrow(m))
+    })
+    basis <- rep("filter_input", length(pids))
+    known <- which(!is.na(previous))
+    if (length(known)) {
+        input <- .pa_filter_source_peaks(pa@fragSpectra[previous[known]])
+        basis[known] <- input$basis
+        for (j in seq_along(known)) {
+            i <- known[j]
+            if (!is.null(mats[[i]]) && nrow(mats[[i]])) {
+                rows <- .pa_peak_positions(mats[[i]][, 1:2, drop = FALSE],
+                    input$peaks[[j]])
+                positions[[i]] <- input$original_positions[[j]][rows]
+            }
+        }
     }
-    sv$pid <- pids
+    raw_rows <- which(is.na(previous))
+    if (length(raw_rows) && .pa_has_peaks(pa@spectra)) {
+        input <- .pa_filter_source_peaks(pa@spectra[
+            match(pids[raw_rows], pa@spectra$pid)])
+        for (j in seq_along(raw_rows)) {
+            i <- raw_rows[j]
+            if (!is.null(mats[[i]]) && nrow(mats[[i]])) {
+                rows <- .pa_peak_positions(mats[[i]][, 1:2, drop = FALSE],
+                    input$peaks[[j]])
+                positions[[i]] <- input$original_positions[[j]][rows]
+            }
+        }
+        basis[raw_rows] <- input$basis
+    }
+    sv$msPurityOriginalPeakIndexBasis <- basis
     filtered <- length(pa@filter_frag_params) > 0
     if (!filtered) {
         mats <- lapply(mats, function(m) {
@@ -188,7 +395,12 @@
             colnames(m) <- c("mz", "intensity")
             m
         })
-        return(.msp_memory(sv, mats))
+        mats <- Map(function(m, index) {
+            if (is.null(m)) return(NULL)
+            cbind(m, original_peak_index = index)
+        }, mats, positions)
+        return(.pa_fragment_metadata(.msp_memory(sv, mats,
+                    c("mz", "intensity", "original_peak_index")), pa))
     }
     # Whether the raw scan had a single peak: setFlagMatrix() names the row
     # of such a spectrum (see .pa_frag_matrix()).
@@ -205,17 +417,22 @@
         colnames(m)[2] <- "intensity"
         cbind(m, sid = rep(NA_real_, nrow(m)))
     })
-    .msp_memory(sv, mats, .PA_FRAG_PEAK_VARS)
+    mats <- Map(function(m, index) {
+        if (is.null(m)) return(NULL)
+        cbind(m, original_peak_index = index)
+    }, mats, positions)
+    .pa_fragment_metadata(.msp_memory(sv, mats,
+            c(.PA_FRAG_PEAK_VARS, "original_peak_index")), pa)
 }
 
 # fragSpectra for filterFragSpectra(allfrag = TRUE): every MS/MS scan, read
 # from the raw data and flagged with setFlagMatrix() using its own purity
-# flag. sid numbers the peaks of all scans in pid order, as all_frag_scans
-# does.
+# flag. sid retains source-row numbering, including intervening MSn spectra.
 .pa_frag_all <- function(pa, filter_frag_params, puritydf) {
     raw <- .pa_raw_scans(pa, puritydf$pid)
-    pk <- .msp_peaks(raw)
-    offset <- c(0, cumsum(vapply(pk, nrow, integer(1))))
+    input <- .pa_filter_source_peaks(raw)
+    pk <- input$peaks
+    source_ids <- .pa_source_peak_ids(raw, input)
     flag <- puritydf$purity_pass_flag
     unflagged <- filter_frag_params
     unflagged$rmp <- FALSE
@@ -225,22 +442,19 @@
         x <- setFlagMatrix(cbind(m, flag[i]), unflagged)
         x <- cbind(x[, setdiff(.PA_FRAG_LEGACY_COLS, "purity_pass_flag"),
                      drop = FALSE],
-                   sid = offset[i] + seq_len(nrow(m)))
+            sid = source_ids[[i]],
+            original_peak_index = input$original_positions[[i]])
         colnames(x)[2] <- "intensity"
         if (isTRUE(filter_frag_params$rmp))
             x <- x[x[, "pass_flag"] == 1, , drop = FALSE]
         x
     })
-    sv <- data.frame(msLevel = rep(2L, length(pk)),
-                     rtime = as.numeric(puritydf$retentionTime),
-                     precursorMz = as.numeric(puritydf$precursorMZ),
-                     scanIndex = as.integer(puritydf$seqNum))
-    sv$fileid <- puritydf$fileid
-    sv$seqNum <- puritydf$seqNum
-    sv$pid <- puritydf$pid
+    sv <- .pa_fragment_variables(pa, puritydf$pid)
+    sv$msPurityOriginalPeakIndexBasis <- input$basis
     sv$purity_pass_flag <- as.logical(flag)
     sv$single_peak <- vapply(pk, nrow, integer(1)) == 1L
-    .msp_memory(sv, mats, .PA_FRAG_PEAK_VARS)
+    .pa_fragment_metadata(.msp_memory(sv, mats,
+            c(.PA_FRAG_PEAK_VARS, "original_peak_index")), pa)
 }
 
 # fragSpectra from the all_frag_scans of a saved object. The pid of each row
@@ -395,7 +609,7 @@
     }
     if (!length(rows)) {
         sp <- Spectra::Spectra(Spectra::MsBackendMemory())
-        sp@metadata$groups <- names(av)
+        .pa_spectra_metadata(sp)$groups <- names(av)
         return(sp)
     }
     sv <- do.call(rbind, rows)
@@ -415,8 +629,8 @@
         matrix(m, ncol = length(pcols), dimnames = list(NULL, pcols))
     })
     sp <- .msp_memory(sv, mats, pcols)
-    sp@metadata$groups <- names(av)
-    sp@metadata$columns <- cols
+    .pa_spectra_metadata(sp)$groups <- names(av)
+    .pa_spectra_metadata(sp)$columns <- cols
     sp
 }
 
@@ -438,10 +652,10 @@
 # calls the averaging code uses, so they carry the same attributes; the
 # SQLite writer, and possibly other code, relies on them.
 .pa_av_legacy <- function(sp, grped_df = NULL) {
-    groups <- sp@metadata$groups
+    groups <- .pa_spectra_metadata(sp)$groups
     if (is.null(groups))
         return(list())
-    cols <- sp@metadata$columns
+    cols <- .pa_spectra_metadata(sp)$columns
     pk <- .msp_peak_list(sp)
     sv <- if (length(sp))
         as.data.frame(Spectra::spectraData(sp, columns = c(
@@ -502,7 +716,7 @@
 .pa_update <- function(pa) {
     if (!.pa_is_current(pa))
         pa <- updateObject(pa)
-    pa
+    .pa_processing_attach(.pa_processing_init(pa))
 }
 
 .pa_is_current <- function(pa) {
@@ -531,7 +745,7 @@
 #' @export
 setMethod("updateObject", "purityA", function(object, ..., verbose = FALSE) {
     if (.pa_is_current(object))
-        return(object)
+        return(.pa_processing_attach(.pa_processing_init(object)))
     old <- function(s, default) {
         if (methods::.hasSlot(object, s)) methods::slot(object, s) else default
     }
@@ -552,7 +766,7 @@ setMethod("updateObject", "purityA", function(object, ..., verbose = FALSE) {
     if (length(av))
         pa@avSpectra <- .pa_av_to_spectra(av, pa@grped_df)
     methods::validObject(pa)
-    pa
+    .pa_processing_attach(.pa_processing_init(pa))
 })
 
 setValidity("purityA", function(object) {
@@ -609,9 +823,14 @@ setValidity("purityA", function(object) {
 #' purityTable(pa, legacy = FALSE)
 #' averagedSpectra(pa, legacy = FALSE)
 #' @name purityA-accessors
-#' @aliases purityTable groupedSpectra allFragSpectra averagedSpectra
-#'   purityTable,purityA-method groupedSpectra,purityA-method
-#'   allFragSpectra,purityA-method averagedSpectra,purityA-method
+#' @aliases purityTable
+#' @aliases groupedSpectra
+#' @aliases allFragSpectra
+#' @aliases averagedSpectra
+#' @aliases purityTable,purityA-method
+#' @aliases groupedSpectra,purityA-method
+#' @aliases allFragSpectra,purityA-method
+#' @aliases averagedSpectra,purityA-method
 #' @export purityTable groupedSpectra allFragSpectra averagedSpectra
 NULL
 
@@ -640,3 +859,205 @@ setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
     pa <- .pa_update(pa)
     if (legacy) .pa_av_legacy(pa@avSpectra, pa@grped_df) else pa@avSpectra
 })
+
+.PA_ACQUISITION_FIELDS <- c(
+    "msLevel", "polarity", "massAnalyzer", "massAnalyzerAccession",
+    "analyzer", "analyzerType",
+    "massAnalyzerType", "scanFilterAnalyzer",
+    "analyzerName", "instrumentConfigurationId", "activationType",
+    "activationTypeAccession",
+    "activationMethod", "collisionEnergy", "collisionEnergyUnit",
+    "collisionEnergyUnits", "collisionEnergyUnitName",
+    "collisionEnergyUnitAccession", "spectrumId", "nativeId", "acquisitionNum",
+    "scanIndex", "precScanNum", "filterString", "dataOrigin", "fileid",
+    "seqNum", "pid", "precursorScanNum")
+
+.pa_average_key <- function(sp) {
+    paste(sp$grpid, sp$av_level, ifelse(is.na(sp$sample), "<NA>", sp$sample),
+        sep = "\r")
+}
+
+# Resolve occurrence indices recorded by the existing averaging path. Repeated
+# feature links remain separate even when their source pid is the same.
+.pa_average_contributors <- function(pa, group, used) {
+    g <- pa@grped_df
+    rows <- which(as.character(g$grpid) == group)
+    index <- seq_along(rows)
+    retained <- index %in% used
+    rows <- rows[retained]
+    index <- index[retained]
+    source <- match(g$pid[rows], pa@fragSpectra$pid)
+    if (anyNA(source))
+        stop("Used averaging inputs refer to unavailable source spectra.")
+    out <- data.frame(featureLinkIndex = rows,
+        contributorIndex = index,
+        grpid = as.character(g$grpid[rows]),
+        sample = as.character(g$sample[rows]), pid = g$pid[rows],
+        stringsAsFactors = FALSE)
+    cols <- intersect(
+        c("fileid", "seqNum", "spectrumId", "nativeId", "acquisitionNum",
+            "msPurityProcessingId"),
+        Spectra::spectraVariables(pa@fragSpectra))
+    for (nm in cols)
+        out[[nm]] <- pa@fragSpectra[[nm]][source]
+    list(references = out, source = source)
+}
+
+# Resolve actual inter-file peak inputs through their earlier cluster records.
+# Historical averages without these records cannot identify original members.
+.pa_inter_contributors <- function(previous, group, members) {
+    if (!length(members)) return(list())
+    available <- "msPurityClusterContributors" %in%
+        Spectra::spectraVariables(previous)
+    lapply(members, function(keys) {
+        if (!available) return(NULL)
+        used <- integer()
+        for (i in seq_len(nrow(keys))) {
+            row <- which(previous$grpid == group &
+                    previous$av_level == "av_intra" &
+                    as.character(previous$sample) == keys$sample[i])
+            if (length(row) != 1L)
+                stop(
+                    "Inter-file input does not identify one intra-file average."
+                )
+            mapping <- previous$msPurityClusterContributors[[row]]
+            cluster <- keys$cluster[i]
+            if (is.null(mapping) || !cluster %in% names(mapping)) return(NULL)
+            used <- union(used, mapping[[cluster]])
+        }
+        used
+    })
+}
+
+.pa_acquisition_values <- function(sp, rows) {
+    cols <- union(names(.PA_FILTER_AXES),
+        intersect(.PA_ACQUISITION_FIELDS,
+            Spectra::spectraVariables(sp)))
+    canonical <- .pa_filter_metadata(sp[rows])
+    out <- lapply(cols, function(nm) {
+        if (nm %in% names(canonical))
+            return(if (length(rows)) unique(canonical[[nm]]) else NA)
+        if (!nm %in% Spectra::spectraVariables(sp) || !length(rows))
+            return(NA)
+        unique(sp[[nm]][rows])
+    })
+    stats::setNames(out, cols)
+}
+
+.pa_acquisition_status <- function(values) {
+    lapply(values, function(x) {
+        if (!length(x) || all(is.na(x))) "unknown"
+        else if (length(x) == 1L && !anyNA(x)) "uniform"
+        else "mixed"
+    })
+}
+
+.pa_acquisition_scalar <- function(values, field) {
+    if (length(values) == 1L && !anyNA(values)) return(values)
+    if (endsWith(field, "Accession")) return(NA_character_)
+    if (field %in% c("massAnalyzer", "analyzer", "analyzerType",
+            "massAnalyzerType", "analyzerName", "scanFilterAnalyzer",
+            "activationType",
+            "activationMethod", "collisionEnergyUnit", "collisionEnergyUnits",
+            "collisionEnergyUnitName") &&
+            length(values) > 1L && any(!is.na(values))) return("mixed")
+    if (is.integer(values)) NA_integer_
+    else if (is.numeric(values)) NA_real_
+    else if (is.logical(values)) NA
+    else NA_character_
+}
+
+
+# Preserve metadata and history for carried-over average rows; summarize only
+# the measurements received by the unchanged averaging algorithm.
+.pa_av_metadata <- function(pa, av_level, previous, used_inputs = list()) {
+    sp <- pa@avSpectra
+    if (!length(sp)) return(pa)
+    level <- paste0("av_", av_level)
+    changed <- which(sp$av_level == level)
+    carried <- which(sp$av_level != level)
+    old_rows <- if (length(previous))
+        match(.pa_average_key(sp)[carried], .pa_average_key(previous)) else
+        rep(NA_integer_, length(carried))
+    old_vars <- setdiff(Spectra::spectraVariables(previous),
+        Spectra::peaksVariables(previous))
+    base_vars <- Spectra::spectraVariables(sp)
+    for (nm in old_vars) {
+        old <- previous[[nm]]
+        value <- if (nm %in% base_vars) sp[[nm]] else
+            if (is.list(old)) rep(list(NULL), length(sp)) else
+                old[rep(NA_integer_, length(sp))]
+        ok <- !is.na(old_rows)
+        value[carried[ok]] <- old[old_rows[ok]]
+        sp[[nm]] <- value
+    }
+    meta <- .pa_spectra_metadata(sp)
+    old_meta <- .pa_spectra_metadata(previous)
+    for (nm in setdiff(names(old_meta), c("groups", "columns")))
+        meta[[nm]] <- old_meta[[nm]]
+    .pa_spectra_metadata(sp) <- meta
+    fields <- c("msPurityContributors", "msPurityClusterContributors",
+        "msPurityAcquisitionValues", "msPurityAcquisitionStatus")
+    stored <- stats::setNames(lapply(fields, function(nm) {
+        if (nm %in% Spectra::spectraVariables(sp)) sp[[nm]] else
+            rep(list(NULL), length(sp))
+    }), fields)
+    configurations <- if ("msPurityAcquisitionConfiguration" %in%
+            Spectra::spectraVariables(sp)) sp$msPurityAcquisitionConfiguration
+    else rep("unknown", length(sp))
+    summaries <- vector("list", length(sp))
+    for (i in changed) {
+        used <- used_inputs[[as.character(sp$grpid[i])]]
+        if (level == "av_inter") {
+            clusters <- .pa_inter_contributors(previous, sp$grpid[i],
+                used$inter)
+        } else {
+            clusters <- if (level == "av_intra")
+                used$intra[[as.character(sp$sample[i])]] else used$all
+        }
+        if (any(vapply(clusters, is.null, logical(1)))) {
+            contributors <- NULL
+            values <- .pa_acquisition_values(pa@fragSpectra, integer())
+        } else {
+            inputs <- .pa_average_contributors(pa, sp$grpid[i],
+                unique(unlist(clusters, use.names = FALSE)))
+            contributors <- inputs$references
+            values <- .pa_acquisition_values(pa@fragSpectra, inputs$source)
+        }
+        status <- .pa_acquisition_status(values)
+        summaries[[i]] <- values
+        stored$msPurityContributors[i] <- list(contributors)
+        stored$msPurityClusterContributors[i] <- list(clusters)
+        stored$msPurityAcquisitionValues[i] <- list(values)
+        stored$msPurityAcquisitionStatus[i] <- list(status)
+        axes <- intersect(c("msLevel", "massAnalyzer", "scanFilterAnalyzer",
+                "activationType",
+                "collisionEnergy", "collisionEnergyUnit", "polarity"),
+            names(status))
+        state <- unlist(status[axes], use.names = FALSE)
+        configurations[i] <- if (all(state == "unknown")) "unknown" else
+            if (any(state == "mixed")) "mixed" else
+                if (any(state == "unknown")) "incomplete" else "uniform"
+    }
+    for (nm in fields) sp[[nm]] <- stored[[nm]]
+    sp$msPurityAcquisitionConfiguration <- configurations
+    # Native IDs belong to contributor references, never to an invented
+    # acquired identity for the average itself.
+    native <- c("pid", "fileid", "seqNum", "spectrumId", "nativeId",
+        "acquisitionNum", "scanIndex", "precScanNum", "precursorScanNum",
+        "dataOrigin", "filterString")
+    columns <- setdiff(unique(unlist(lapply(summaries[changed], names),
+                use.names = FALSE)), native)
+    for (nm in setdiff(columns, "msLevel")) {
+        scalar <- lapply(summaries[changed], function(x) {
+            .pa_acquisition_scalar(x[[nm]], nm)
+        })
+        if (!length(scalar)) next
+        value <- if (nm %in% Spectra::spectraVariables(sp)) sp[[nm]] else
+            scalar[[1L]][rep(NA_integer_, length(sp))]
+        value[changed] <- unlist(scalar, use.names = FALSE)
+        sp[[nm]] <- value
+    }
+    pa@avSpectra <- sp
+    pa
+}

@@ -2,7 +2,7 @@
 msPurity: Package to assess precursor ion purity, process fragmentation spectra and perform spectral matching
 ============
 
-See NEWS file for updates
+See NEWS.md file for updates
 
 **General:**
 
