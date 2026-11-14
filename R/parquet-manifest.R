@@ -35,7 +35,14 @@
 #' @noRd
 .mzs_now <- function() format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 
-#' Evaluate `expr` without disturbing the caller's random number stream.
+# Private random stream for identifiers, seeded once per process.
+.mzs_rng <- new.env(parent = emptyenv())
+
+#' Evaluate `expr` on a private random number stream.
+#'
+#' The stream is seeded from the clock once per process and then continued,
+#' so identifiers drawn in quick succession differ even where the clock is
+#' coarse. The caller's random number stream is left undisturbed.
 #'
 #' @noRd
 .mzs_with_own_seed <- function(expr) {
@@ -48,8 +55,15 @@
         else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE))
             rm(".Random.seed", envir = globalenv())
     })
-    set.seed(NULL)
-    expr
+    if (is.null(.mzs_rng$seed) || !identical(.mzs_rng$pid, Sys.getpid())) {
+        set.seed(NULL)
+        .mzs_rng$pid <- Sys.getpid()
+    } else {
+        assign(".Random.seed", .mzs_rng$seed, envir = globalenv())
+    }
+    value <- expr
+    .mzs_rng$seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+    value
 }
 
 #' A random UUIDv4, for a dataset `uid`.

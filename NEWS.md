@@ -1,3 +1,12 @@
+# msPurity 1.39.2
+
+- **Bug fix**: identifiers for processing records and Parquet datasets could
+  repeat when created in quick succession, most often on macOS, where the
+  clock that seeded them has microsecond resolution. A repeated processing
+  identifier replaced an earlier record and made the processing history
+  invalid. Identifiers now come from a random stream seeded once per R
+  process, and the caller's random number stream is still left unchanged.
+
 # msPurity 1.39.1
 
 - **Parquet output**: new Parquet output,
