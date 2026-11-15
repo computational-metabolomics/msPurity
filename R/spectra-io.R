@@ -43,11 +43,20 @@
                       "isolationWindowUpperOffset", "scanWindowLowerLimit",
                       "scanWindowUpperLimit")
 
+# Parallel backend for Spectra calls on raw files. msPurity parallelises over
+# files through its own 'cores' argument, so raw data access is serial. The
+# default bpparam() is a SnowParam on Windows, which starts a new cluster for
+# every call.
+.msp_bpparam <- function() {
+    BiocParallel::SerialParam()
+}
+
 # Read one or more mzML/mzXML files as a Spectra object. Spectra are in file
 # order, then scan order, as mzR reads them.
 .msp_read <- function(files) {
     files <- as.character(unname(files))
-    Spectra::Spectra(files, source = Spectra::MsBackendMzR())
+    Spectra::Spectra(files, source = Spectra::MsBackendMzR(),
+                     BPPARAM = .msp_bpparam())
 }
 
 # Accept a file path or a Spectra object.
@@ -83,7 +92,17 @@
 
 # The mzR::peaks() list of peak matrices (columns mz and intensity).
 .msp_peaks <- function(sp) {
-    as.list(Spectra::peaksData(sp, columns = c("mz", "intensity")))
+    as.list(Spectra::peaksData(sp, columns = c("mz", "intensity"),
+                               BPPARAM = .msp_bpparam()))
+}
+
+# Number of peaks per spectrum. Spectra's lengths() has no BPPARAM argument.
+.msp_lengths <- function(sp) {
+    if (!length(sp))
+        return(integer())
+    vapply(as.list(Spectra::peaksData(sp, columns = "mz",
+                                      BPPARAM = .msp_bpparam())),
+           nrow, integer(1))
 }
 
 # An in-memory Spectra from a data frame of spectra variables and a list of
@@ -137,7 +156,8 @@
             m
         }))
     }
-    lapply(as.list(Spectra::peaksData(sp, columns = cols)), function(m) {
+    lapply(as.list(Spectra::peaksData(sp, columns = cols,
+                                      BPPARAM = .msp_bpparam())), function(m) {
         if (is.data.frame(m)) {
             m <- as.matrix(m)
             dimnames(m) <- list(NULL, colnames(m))

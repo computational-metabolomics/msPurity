@@ -146,11 +146,13 @@ test_that("checking frag4feature (fillpeaks)", {
       #xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = ChromPeakAreaParam())
       xcmsObj@processingData@files[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
       xcmsObj@processingData@files[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-      xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = FillChromPeaksParam(expandMz = 0, expandRt = 0, ppm = 0))
+      xcmsObj <- xcms::fillChromPeaks(xcmsObj, param = FillChromPeaksParam(expandMz = 0, expandRt = 0, ppm = 0),
+                                      BPPARAM = BiocParallel::SerialParam())
     }else if('xcmsSet' == class(xcmsObj)[1]){
       xcmsObj@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
       xcmsObj@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-      xcmsObj <- xcms::fillPeaks.chrom(xcmsObj, expand.mz = 0, expand.rt = 0)
+      xcmsObj <- xcms::fillPeaks.chrom(xcmsObj, expand.mz = 0, expand.rt = 0,
+                                       BPPARAM = BiocParallel::SerialParam())
     }else{
       stop('obj is not of class XCMSnExp or xcmsSet')
     }

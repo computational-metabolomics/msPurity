@@ -101,7 +101,7 @@
 
 # Include every fragmentation level when numbering source peak rows.
 .pa_raw_peak_offsets <- function(raw) {
-    count <- lengths(Spectra::reset(raw))
+    count <- .msp_lengths(Spectra::reset(raw))
     numbered <- integer(length(count))
     fragmentation <- which(Spectra::msLevel(raw) > 1L)
     numbered[fragmentation] <- count[fragmentation]
@@ -214,7 +214,8 @@
         sp$msPurityRawPeakCount <- offsets$count[source_rows]
         sp$msPurityRawPeakIdBasis <- rep(basis, length(sp))
     }
-    Spectra::setBackend(sp, Spectra::MsBackendMemory())
+    Spectra::setBackend(sp, Spectra::MsBackendMemory(),
+                        BPPARAM = .msp_bpparam())
 }
 
 # ---------------------------------------------------------------------------
@@ -277,7 +278,8 @@
     }
     known <- "original_peak_index" %in% Spectra::peaksVariables(source)
     columns <- c("mz", "intensity", if (known) "original_peak_index")
-    values <- as.list(Spectra::peaksData(source, columns = columns))
+    values <- as.list(Spectra::peaksData(source, columns = columns,
+                                         BPPARAM = .msp_bpparam()))
     peaks <- lapply(values, function(m) {
         m <- as.matrix(m)
         m[, c("mz", "intensity"), drop = FALSE]
@@ -287,7 +289,7 @@
             as.numeric(m[, "original_peak_index"])
         })
         original <- as.list(Spectra::peaksData(Spectra::reset(source),
-                columns = "original_peak_index"))
+                columns = "original_peak_index", BPPARAM = .msp_bpparam()))
         raw_positions <- lapply(original, function(m) {
             as.numeric(m[, "original_peak_index"])
         })
@@ -298,7 +300,7 @@
         }, positions, original)
     } else {
         original <- as.list(Spectra::peaksData(Spectra::reset(source),
-                columns = c("mz", "intensity")))
+                columns = c("mz", "intensity"), BPPARAM = .msp_bpparam()))
         ordered <- !.pa_spectra_has_queue(source)
         positions <- Map(function(kept, raw) {
             .pa_peak_positions(kept, raw, ordered_duplicates = ordered)

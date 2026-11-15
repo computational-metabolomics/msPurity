@@ -64,5 +64,5 @@ pa@fileList[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
 pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
 xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-db_pth <- create_database(pa, xset)
+db_pth <- create_database(pa, xset, out_dir = tempdir())
 }

@@ -17,12 +17,13 @@ test_that("purityA() stores the scans and their purity as Spectra", {
 })
 
 test_that("purityA() accepts Spectra and MsExperiment input", {
-    sp <- Spectra::Spectra(msms, source = Spectra::MsBackendMzR())
+    sp <- Spectra::Spectra(msms, source = Spectra::MsBackendMzR(),
+        BPPARAM = BiocParallel::SerialParam())
     pa <- suppressMessages(purityA(sp))
     expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
     expect_identical(unname(basename(pa@fileList)), basename(msms))
 
-    me <- MsExperiment::readMsExperiment(msms)
+    me <- MsExperiment::readMsExperiment(msms, BPPARAM = BiocParallel::SerialParam())
     pa <- suppressMessages(purityA(me))
     expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
 })

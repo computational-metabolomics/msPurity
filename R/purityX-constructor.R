@@ -60,6 +60,9 @@
 #' xset <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xset_OLD.rds", package="msPurity"))
 #' xset@filepaths[1] <- msPths[basename(msPths)=="LCMS_1.mzML"]
 #' xset@filepaths[2] <- msPths[basename(msPths)=="LCMS_2.mzML"]
+#'
+#' ## Keep the example short: predict only the peaks between m/z 100 and 200
+#' xset@peaks <- xset@peaks[xset@peaks[, "mz"] >= 100 & xset@peaks[, "mz"] <= 200, ]
 #' px <- purityX(xset, singleFile = 1)
 #'
 #' @export

@@ -60,7 +60,8 @@ test_that("D02 MS2 metadata are stored and reused without XML preparation", {
     path <- system.file("extdata", "msn-standards",
         "msPurity_L_tryptophan_6305_MSn.mzML.gz", package = "msPurity",
         mustWork = TRUE)
-    raw <- Spectra::Spectra(path, source = Spectra::MsBackendMzR())
+    raw <- Spectra::Spectra(path, source = Spectra::MsBackendMzR(),
+        BPPARAM = BiocParallel::SerialParam())
     pa <- purityA(raw, cores = 1L, plotP = FALSE)
     stored <- purityTable(pa, legacy = FALSE)
     expect_length(stored, 78L)

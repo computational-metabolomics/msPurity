@@ -21,7 +21,8 @@ context("MSn standard fixtures")
     compound = names(.msn_standard_mz), stringsAsFactors = FALSE)
 
 .msn_standard_feature <- function(compound, kind) {
-    xe <- MsExperiment::readMsExperiment(.msn_standard_file(compound, kind))
+    xe <- MsExperiment::readMsExperiment(.msn_standard_file(compound, kind),
+        BPPARAM = BiocParallel::SerialParam())
     xe <- xcms::findChromPeaks(xe,
         param = xcms::CentWaveParam(ppm = 10, mzdiff = 0.001,
             peakwidth = c(3, 30), snthresh = 10,

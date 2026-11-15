@@ -85,7 +85,7 @@
 #' pa <- readRDS(system.file("extdata", "tests", "purityA",
 #'                           "9_averageAllFragSpectra_with_filter_pa.rds",
 #'                           package="msPurity"))
-#' createMSP(pa)
+#' createMSP(pa, msp_file_pth = file.path(tempdir(), "frag_spectra.msp"))
 #' @md
 #' @export
 setMethod(f="createMSP", signature="purityA",

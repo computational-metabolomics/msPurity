@@ -1,3 +1,16 @@
+# msPurity 1.39.4
+
+- **Faster on Windows** (#136): raw spectra are read serially through
+  Spectra. The default `bpparam()` on Windows is a SnowParam that started a
+  new cluster for every read, which made `purityA()`, `frag4feature()` and
+  the fragment filters many times slower there. msPurity still runs files in
+  parallel through its `cores` argument. BiocParallel moves from Suggests to
+  Imports.
+- Examples load stored objects instead of rerunning the xcms and purityA
+  pipelines, `spectralMatching()` examples use the bundled mini library
+  instead of downloading the full one, and `createDatabase()`,
+  `create_database()` and `createMSP()` examples write to `tempdir()`.
+
 # msPurity 1.39.3
 
 - **Parquet built on MsBackendParquet** (#126): manifests, mzStack

@@ -32,7 +32,8 @@ test_that("purityD() accepts an MsExperiment", {
     q <- .parity_quiet
     inDF <- Getfiles(.dims_paths(), pattern = ".mzML", check = FALSE)
     me <- MsExperiment::readMsExperiment(
-        inDF$filepth, sampleData = S4Vectors::DataFrame(inDF))
+        inDF$filepth, sampleData = S4Vectors::DataFrame(inDF),
+        BPPARAM = BiocParallel::SerialParam())
     pd <- q(purityD(me, mzML = TRUE))
     expect_identical(pd@fileList$name, inDF$name)
     expect_identical(pd@sampleIdx, q(purityD(inDF, mzML = TRUE))@sampleIdx)
@@ -41,7 +42,8 @@ test_that("purityD() accepts an MsExperiment", {
     expect_equal(averagedPeaks(pd), purityD_ref$averageSpectra, tolerance = 1e-12)
 
     # Without sample data the file paths, names and types are filled in.
-    pd <- q(purityD(MsExperiment::readMsExperiment(inDF$filepth)))
+    pd <- q(purityD(MsExperiment::readMsExperiment(inDF$filepth,
+        BPPARAM = BiocParallel::SerialParam())))
     expect_identical(pd@fileList$filepth, normalizePath(inDF$filepth))
     expect_identical(pd@fileList$sampleType, c("sample", "sample"))
 })

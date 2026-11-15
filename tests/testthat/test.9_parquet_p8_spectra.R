@@ -11,7 +11,8 @@ context("Parquet: spectra read and written through Spectra")
                                  precursorMz = "PrecursorMZ",
                                  adduct = "Precursor_type",
                                  inchikey = "InChIKey", formula = "Formula",
-                                 polarity = "Ion_mode"))
+                                 polarity = "Ion_mode"),
+                     BPPARAM = BiocParallel::SerialParam())
 }
 
 # Every run's stored rows, in manifest run order.
