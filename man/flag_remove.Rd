@@ -86,32 +86,31 @@ The output is a list object containing: 1) the updated xcms object, 2) the group
 }
 \examples{
 library(xcms)
-library(MSnbase)
-library(magrittr)
 #read in files and data
-msPths <-list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
+#msPths <-list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+#ms_data = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
 
 #subset the data to focus on retention times 30-90 seconds and m/z values between 100 and 200 m/z.
-rtr = c(30, 90)
-mzr = c(100, 200)
-ms_data = ms_data \%>\%  filterRt(rt = rtr) \%>\%  filterMz(mz = mzr)
+#rtr = c(30, 90)
+#mzr = c(100, 200)
+#ms_data = ms_data \%>\%  filterRt(rt = rtr) \%>\%  filterMz(mz = mzr)
 
 ##### perform feature detection in individual files
-cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-xcmsObj <- findChromPeaks(ms_data, param = cwp)
-xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
-xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
-pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+#cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#xcmsObj <- findChromPeaks(ms_data, param = cwp)
+#xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
+#xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = 'sampleNames', 'class')
+#pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
+#xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+
+##### load the result of the steps above from existing data
+xcmsObj = readRDS(system.file("extdata", "tests", "purityA", "10_input_filterflagremove.rds", package="msPurity"))
+## The saved object records the file paths of the machine that made it
+mzmlDir <- system.file("extdata", "lcms", "mzML", package="msPurityData")
+xcmsObj@processingData@files <- file.path(mzmlDir,
+    c("LCMS_1.mzML", "LCMS_2.mzML", "LCMSMS_1.mzML", "LCMSMS_2.mzML"))
 
 #### flag, filter and remove peaks, returning an updated xcmsObj (XCMSnExp or xcmsSet class), grouped_peaklist (data.frame) and removed_peaks (data.frame)
 fr <- flag_remove(xcmsObj)
-
-##### load from existing data
-xcmsObj = readRDS(system.file("extdata", "tests", "purityA", "10_input_filterflagremove.rds", package="msPurity"))
-
-
-
 
 }

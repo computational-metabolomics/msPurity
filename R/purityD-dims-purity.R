@@ -37,7 +37,8 @@ NULL
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 #' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ppDIMS <- averageSpectra(ppDIMS)
+#' ## A high signal-to-noise threshold keeps the example short
+#' ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
 #' ppDIMS <- filterp(ppDIMS)
 #' ppDIMS <- subtract(ppDIMS)
 #' ppDIMS <- dimsPredictPurity(ppDIMS)

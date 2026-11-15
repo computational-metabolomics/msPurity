@@ -52,7 +52,8 @@ test_that("fresh and reopened MSn results export without duplicate positions", {
     old <- options(msPurity.legacySlots = TRUE)
     on.exit(options(old))
     serial <- BiocParallel::SerialParam()
-    xe <- xcms::findChromPeaks(MsExperiment::readMsExperiment(.seqnum_file()),
+    xe <- xcms::findChromPeaks(MsExperiment::readMsExperiment(.seqnum_file(),
+        BPPARAM = serial),
         param = xcms::CentWaveParam(ppm = 10, mzdiff = 0.001,
             peakwidth = c(3, 30), snthresh = 10, prefilter = c(3, 100),
             fitgauss = FALSE, noise = 0, verboseColumns = FALSE,

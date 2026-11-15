@@ -88,7 +88,8 @@ if (requireNamespace("MsBackendMsp", quietly = TRUE)) {
                                        adduct = "Precursor_type",
                                        inchikey = "InChIKey",
                                        formula = "Formula",
-                                       polarity = "Ion_mode"))
+                                       polarity = "Ion_mode"),
+                           BPPARAM = BiocParallel::SerialParam())
     out <- file.path(tempdir(), "library-spectra.parquet")
     convertLibraryToParquet(sp, out, overwrite = TRUE)
 }

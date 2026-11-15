@@ -224,10 +224,14 @@
 #' td <- tempdir()
 #' q_dbPth <- system.file("extdata", "tests", "db", "createDatabase_example.sqlite", package="msPurity")
 #'
+#' ## A small library with the spectra used here. Leave l_dbPth as NA to use the
+#' ## full reference library, which is downloaded and cached on first use.
+#' l_dbPth <- system.file("extdata", "tests", "library", "mini_library.sqlite", package="msPurity")
+#'
 #' rid <- paste0(paste0(sample(LETTERS, 5, TRUE), collapse=""),  paste0(sample(9999, 1, TRUE), collapse=""), ".sqlite")
 #' sm_out_pth <- file.path(td, rid)
 #'
-#' result <- spectralMatching(q_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('PR100407', 'ML005101', 'CCMSLIB00003740024'),
+#' result <- spectralMatching(q_dbPth, l_dbPth = l_dbPth, q_xcmsGroups = c(53, 89, 410), cores=1, l_accessions = c('PR100407', 'ML005101', 'CCMSLIB00003740024'),
 #'                           q_spectraTypes = 'av_all',
 #'                           updateDb = TRUE,
 #'                           copyDb = TRUE,

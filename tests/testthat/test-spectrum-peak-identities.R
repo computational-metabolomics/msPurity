@@ -96,8 +96,9 @@ test_that("real MSn peaks retain assessed spectrum positions", {
     pa <- purityA(path, cores = 1L, plotP = FALSE)
     out <- msPurity:::getScanPeaks(pa)
     scans <- purityTable(pa)
-    raw <- Spectra::Spectra(path, source = Spectra::MsBackendMzR())
-    peaks <- Spectra::peaksData(raw)
+    raw <- Spectra::Spectra(path, source = Spectra::MsBackendMzR(),
+        BPPARAM = BiocParallel::SerialParam())
+    peaks <- Spectra::peaksData(raw, BPPARAM = BiocParallel::SerialParam())
 
     expect_true(all(Spectra::msLevel(raw)[scans$seqNum] == 2L))
     expect_equal(nrow(out), sum(vapply(peaks[scans$seqNum], nrow,

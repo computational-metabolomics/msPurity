@@ -363,7 +363,8 @@ msfrProcess <- function(filePth, scanRange, snthr, snMeth){
 #' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
 #' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 #' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ppDIMS <- averageSpectra(ppDIMS)
+#' ## A high signal-to-noise threshold keeps the example short
+#' ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
 #' grpedP <- groupPeaks(ppDIMS)
 #' @export
 setMethod(f="groupPeaks", signature="purityD", definition =
@@ -400,11 +401,10 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #' @return data.frame of peaklists grouped together by mz
 #' @examples
 #'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ppDIMS <- averageSpectra(ppDIMS)
-#' grpedP <- groupPeaks(ppDIMS)
+#' peak_list <- list(
+#'     blank = data.frame(peakID = 1:3, mz = c(100.0010, 150.0583, 200.1000)),
+#'     sample = data.frame(peakID = 1:4, mz = c(100.0012, 150.0585, 175.0500, 200.1003)))
+#' grpedP <- groupPeaksEx(peak_list, ppm = 3)
 #' @export
 groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   comb <- plyr::ldply(peak_list)

@@ -60,7 +60,7 @@
 #' pa@fileList[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
 #' xset@filepaths[1] <- msmsPths[basename(msmsPths)=="LCMSMS_1.mzML"]
 #' xset@filepaths[2] <- msmsPths[basename(msmsPths)=="LCMSMS_2.mzML"]
-#' db_pth <- create_database(pa, xset)
+#' db_pth <- create_database(pa, xset, out_dir = tempdir())
 #' @export
 create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, db_name=NA){
   .msp_deprecate_sqlite("create_database()",

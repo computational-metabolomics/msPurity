@@ -64,3 +64,16 @@ test_that("checking purityX (single file)", {
   expect_equal(px, px_saved)
 })
 
+
+test_that("purityX() plots the EICs of each feature", {
+  skip_if_no_mspuritydata()
+  td <- tempfile("purityX-plots-")
+  dir.create(td)
+  wd <- setwd(td)
+  on.exit(setwd(wd))
+  px <- suppressMessages(purityX(.golden_xcms("msms_only_xset_OLD.rds"),
+                                 plotP = TRUE, xgroups = c(1, 2)))
+  expect_setequal(unique(px@predictions$grpid), c(1, 2))
+  plots <- list.files(file.path(td, "purityXplots"), pattern = "[.]png$")
+  expect_gt(length(plots), 0)
+})

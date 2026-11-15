@@ -154,10 +154,13 @@ test_that("frag4feature() and createDatabase() accept XcmsExperiment", {
     pdp <- xcms::PeakDensityParam(sampleGroups = c(1, 1), minFraction = 0,
                                   bw = 30)
     xn <- MSnbase::readMSData(files, mode = "onDisk", msLevel. = 1)
-    xn <- xcms::groupChromPeaks(xcms::findChromPeaks(xn, param = cwp),
+    serial <- BiocParallel::SerialParam()
+    xn <- xcms::groupChromPeaks(xcms::findChromPeaks(xn, param = cwp,
+                                                     BPPARAM = serial),
                                 param = pdp)
-    xe <- MsExperiment::readMsExperiment(files)
-    xe <- xcms::findChromPeaks(xe, param = cwp, msLevel = 1L)
+    xe <- MsExperiment::readMsExperiment(files, BPPARAM = serial)
+    xe <- xcms::findChromPeaks(xe, param = cwp, msLevel = 1L,
+                               BPPARAM = serial)
     xe <- xcms::groupChromPeaks(xe, param = pdp, msLevel = 1L)
     expect_s4_class(xe, "XcmsExperiment")
     pa <- .golden_pa("1_purityA_pa.rds")

@@ -23,9 +23,8 @@ Group a list of dataframes by their m/z values
 }
 \examples{
 
-datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-ppDIMS <- averageSpectra(ppDIMS)
-grpedP <- groupPeaks(ppDIMS)
+peak_list <- list(
+    blank = data.frame(peakID = 1:3, mz = c(100.0010, 150.0583, 200.1000)),
+    sample = data.frame(peakID = 1:4, mz = c(100.0012, 150.0585, 175.0500, 200.1003)))
+grpedP <- groupPeaksEx(peak_list, ppm = 3)
 }
