@@ -32,7 +32,11 @@ filtering applied to them also applies to the purity calculation}
 
 \item{mostIntense}{boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.}
 
-\item{nearest}{boolean; True if the peak selected is from either the preceding scan or the nearest.}
+\item{nearest}{logical; TRUE uses the nearest usable MS1 measurement on either
+side. FALSE requires the reported preceding MS1 reference. When references are
+absent throughout a file, the preceding MS1 is used. A later measurement never
+substitutes for an unavailable preceding reference. Missing permitted
+measurements produce NA purity; one usable measurement supports a single estimate.}
 
 \item{offsets}{numeric; Two nonnegative lower and upper offsets
 in Da, with positive total width. Explicit offsets set a window

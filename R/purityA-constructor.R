@@ -82,7 +82,11 @@ NULL
 #'        spectra of one or more files. Objects are used as they are, so any
 #'        filtering applied to them also applies to the purity calculation
 #' @param mostIntense boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.
-#' @param nearest boolean; True if the peak selected is from either the preceding scan or the nearest.
+#' @param nearest logical; TRUE uses the nearest usable MS1 measurement on either
+#' side. FALSE requires the reported preceding MS1 reference. When references are
+#' absent throughout a file, the preceding MS1 is used. A later measurement never
+#' substitutes for an unavailable preceding reference. Missing permitted
+#' measurements produce NA purity; one usable measurement supports a single estimate.
 #' @param offsets numeric; Two nonnegative lower and upper offsets
 #' in Da, with positive total width. Explicit offsets set a window
 #' around the selected precursor m/z. NA uses each event's recorded
@@ -282,7 +286,9 @@ purityA <- function(fileList,
 #' @param filepth character; mzML file path for MS/MS spectra
 #' @param fileid numeric; adds a fileid column (primarily for internal use for msPurity)
 #' @param mostIntense boolean; True if the most intense peak is used for calculation. False if the centered peak is used
-#' @param nearest boolean; True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used
+#' @param nearest logical; TRUE uses the nearest usable MS1 on either side.
+#' FALSE requires the reported preceding reference. Missing permitted measurements
+#' produce NA purity; a later measurement is not substituted.
 #' @param offsets numeric; Two nonnegative lower and upper offsets
 #' in Da, with positive total width. Explicit offsets set a window
 #' around the selected precursor m/z. NA uses each event's recorded
@@ -373,7 +379,7 @@ assessPuritySingle <- function(filepth,
     iwNormFun_source = "not_used"
   )
   mrdf <- getmrdf(sp, mzRback)
-  if(is.null(mrdf)){
+  if (is.null(mrdf) || !any(mrdf$msLevel == 2L)) {
     message(paste("No MS/MS spectra for file: ", filepth))
     return(list(purity = NULL, resolved = resolved))
   }
@@ -394,10 +400,12 @@ assessPuritySingle <- function(filepth,
                                         "precursorMZ", "precursorRT",
                                         "precursorScanNum", "id", "filename", "retentionTime")]
 
-  if((length(unique(mrdf$msLevel))<2) && (unique(mrdf$msLevel)==2)){
-    message("only MS2 data, not possible to calculate purity")
+  if (!any(mrdf$msLevel == 1L)) {
+    message("No MS1 measurements; only MS2 data cannot supply precursor purity.")
     mrdfshrt[ , c("precursorNearest", "aMz", "aPurity", "apkNm", "iMz", "iPurity", "ipkNm", "inPkNm", "inPurity")] <- NA
     resolved$status <- "no_ms1"
+    resolved$observations <- .pa_ms1_observations(mrdfshrt, mrdf,
+        rep(list(integer()), nrow(mrdfshrt)), "no_ms1")
     return(list(purity = mrdfshrt, resolved = resolved))
   }
 
@@ -441,10 +449,24 @@ assessPuritySingle <- function(filepth,
   }
 
   # Get the precursor (ms1) scans
-  prec_scans <- get_prec_scans(mrdf, nump)
-
-  # add a column with the nearest precursor for all ms2 scans
-  mrdfshrt$precursorNearest <- plyr::laply(prec_scans, function(x){ return(x$nearest)})
+  usable <- vapply(scans, function(peaks) {
+    nrow(peaks) > 0L && all(is.finite(peaks)) &&
+        all(peaks[, 1L] > 0 & peaks[, 2L] >= 0)
+  }, logical(1L))
+  prec_scans <- get_prec_scans(mrdf, nump, usable)
+  nearest_position <- vapply(prec_scans, `[[`, integer(1L), "nearest")
+  mrdfshrt$precursorNearest <- mrdf$seqNum[nearest_position]
+  reference_position <- match(mrdfshrt$precursorScanNum, mrdf$acquisitionNum)
+  permitted <- !is.na(reference_position) &
+      mrdf$msLevel[reference_position] == 1L & usable[reference_position] &
+      reference_position < which(mrdf$msLevel == 2L)
+  permitted[is.na(permitted)] <- FALSE
+  reference_position[!permitted] <- NA_integer_
+  mrdfshrt$.purity_position <- if (nearest) nearest_position else reference_position
+  unavailable <- is.na(mrdfshrt$.purity_position)
+  if (any(unavailable))
+    warning(sum(unavailable), " MS2 spectra have no usable permitted MS1 ",
+        "measurement; their purity is unavailable.", call. = FALSE)
 
 
   #=====================================
@@ -474,7 +496,14 @@ assessPuritySingle <- function(filepth,
         initial[, names(initial) != "seqNum", drop = FALSE])
 
   # If no interpolation required then all purity calculations are completed
+  used <- lapply(seq_len(nrow(mrdfshrt)), function(i) {
+    if (windows$status[i] != "valid" || is.na(mrdfshrt$.purity_position[i]))
+        integer() else mrdfshrt$.purity_position[i]
+  })
   if(interpol=="none"){
+    resolved$observations <- .pa_ms1_observations(mrdfshrt, mrdf, used,
+        ifelse(windows$status == "valid", "initial", windows$status))
+    mrdfshrt$.purity_position <- NULL
     return(list(purity = mrdfshrt, resolved = resolved))
   }
 
@@ -524,6 +553,9 @@ assessPuritySingle <- function(filepth,
   }
 
 
+  resolved$observations <- .pa_ms1_observations(mrdfshrt, mrdf,
+      interDF$ms1_used, ifelse(windows$status == "valid", interpol, windows$status))
+  mrdfshrt$.purity_position <- NULL
   return(list(purity = mrdfshrt, resolved = resolved))
 
 }
@@ -546,7 +578,9 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
   #========================================
   # Get the scan to perform calculations on
   #========================================
-  if (nearest){
+  if (".purity_position" %in% names(ms2h)) {
+    precScn <- ms2h$.purity_position
+  } else if (nearest) {
     precScn <- ms2h$precursorNearest
   }else{
     precScn <- ms2h$precursorScanNum
@@ -559,6 +593,10 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
   mzmin <-  precMZ - minoff
   mzmax <-  precMZ + maxoff
 
+  if (length(precScn) != 1L || is.na(precScn) || precScn < 1L ||
+          precScn > length(scans) || !nrow(scans[[precScn]]))
+    return(c(aMz = NA_real_, aPurity = NA_real_, apkNm = NA_real_,
+        iMz = NA_real_, iPurity = NA_real_, ipkNm = NA_real_))
   allscans <- scans[[precScn]]
 
   #=======================================
@@ -641,8 +679,9 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
 
   if (!is.null(windows)) {
     window <- .pa_purity_window(rowi, windows, iwNormFun)
-    if (!window$valid)
-      return(c(inPkNm = NA_real_, inPurity = NA_real_))
+    if (!window$valid || is.na(rowi$.purity_position))
+      return(data.frame(inPkNm = NA_real_, inPurity = NA_real_,
+          ms1_used = I(list(integer()))))
     minoff <- window$minoff
     maxoff <- window$maxoff
     iwNormFun <- window$iwNormFun
@@ -660,9 +699,15 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
     purity <- splinePurity(rowi, roi_scns, rowi$precursorMZ - minoff,
                            rowi$precursorMZ + maxoff, ppm,
                            mostIntense, scanids, plotP, plotdir)
+    attr(purity, "ms1_used") <- if (is.finite(purity))
+        c(scanids$pre, scanids$post) else integer()
   }
-
-
+  if (!is.null(windows)) {
+    used <- attr(purity, "ms1_used")
+    purity <- if (interpol == "linear") as.data.frame(as.list(purity)) else
+        data.frame(inPkNm = NA_real_, inPurity = purity)
+    purity$ms1_used <- I(list(used))
+  }
   return(purity)
 
 }
@@ -670,7 +715,13 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
 linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
                          nearest, mostIntense, iwNorm, iwNormFun, ilim,
                          plotP, plotdir, isotopes, im){
-  if(nearest){
+  finish <- function(value, used) {
+    if (".purity_position" %in% names(rowi)) attr(value, "ms1_used") <- used
+    value
+  }
+  if (".purity_position" %in% names(rowi)) {
+    scn1 <- rowi$.purity_position
+  } else if (nearest) {
     scn1 <- rowi$precursorNearest
   }else{
     scn1 <- rowi$precursorScanNum
@@ -698,7 +749,7 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
 
 
   # Then calculate purity for the other nearest MS1 scan (purity2)
-  if(scanids$pre==scn1){
+  if (scn1 %in% scanids$pre) {
     scn2 <- scanids$post
   }else{
     scn2 <- scanids$pre
@@ -706,7 +757,7 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
 
   # The last scan (nothing to interpolate from)
   if((length(scn2)==0) || (is.na(mztarget1))){
-    return(c("inPkNm"=pknm1, "inPurity"=purity1))
+    return(finish(c("inPkNm" = pknm1, "inPurity" = purity1), scn1))
   }
 
   # Calculate purity for the other nearest MS1 scan
@@ -734,8 +785,10 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
     fpurity <- NULL
   }else{
     # Create linear functions for poth purity and the number of peaks
-    fpurity <- approxfun(c(scn1, scn2), c(purity1, purity2))
-    inPurity <- fpurity(scanids$scan)
+    coordinates <- if (is.null(scanids$coordinates)) c(scn1, scn2) else
+        scanids$coordinates[c(scn1, scn2)]
+    fpurity <- approxfun(coordinates, c(purity1, purity2))
+    inPurity <- fpurity(rowi$seqNum)
   }
 
   ###########################################
@@ -747,8 +800,10 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
     inPkNm <- pknm2
   }else{
     # Create linear functions for poth purity and the number of peaks
-    fpk <- approxfun(c(scn1, scn2), c(pknm2, pknm2))
-    inPkNm <- fpk(scanids$scan)
+    coordinates <- if (is.null(scanids$coordinates)) c(scn1, scn2) else
+        scanids$coordinates[c(scn1, scn2)]
+    fpk <- approxfun(coordinates, c(pknm2, pknm2))
+    inPkNm <- fpk(rowi$seqNum)
   }
 
   # save a plot of the interpolation
@@ -760,13 +815,13 @@ linearPurity <- function(rowi, scan_peaks, minoff, maxoff, ppm, scanids,
     plotPurity(df, rowi$seqNum, name, fpurity)
   }
 
-  return(c("inPkNm"=inPkNm, "inPurity"=inPurity))
+  return(finish(c("inPkNm" = inPkNm, "inPurity" = inPurity), c(scn1, scn2)))
 }
 
-get_prec_scans <- function(mrdf, num){
+get_prec_scans <- function(mrdf, num, usable = rep(TRUE, nrow(mrdf))) {
 
-  ms1 <- mrdf[mrdf$msLevel==1,]$seqNum
-  ms2 <- mrdf[mrdf$msLevel==2,]$seqNum
+  ms1 <- which(mrdf$msLevel == 1L & usable)
+  ms2 <- which(mrdf$msLevel == 2L)
 
   prec_scans <- plyr::alply(ms2, 1, function(scan2){
     post <- ms1[ms1>scan2]
@@ -780,9 +835,10 @@ get_prec_scans <- function(mrdf, num){
       post <- post[1:num]
     }
 
-    nearest <- ms1[which.min(abs(ms1 - scan2))]
-
-    return(list("pre"=pre, "post"=post, "scan"=scan2, "nearest"= nearest))
+    nearest <- if (length(ms1))
+        ms1[which.min(abs(mrdf$seqNum[ms1] - mrdf$seqNum[scan2]))] else NA_integer_
+    return(list(pre = pre, post = post, scan = scan2, nearest = nearest,
+        coordinates = mrdf$seqNum))
   })
 
   return(prec_scans)

@@ -156,3 +156,21 @@ test_that("empty associations retain diagnostics without reading peaks", {
     settings <- tail(processingParameters(unmatched, "frag4feature"), 1L)[[1L]]
     expect_identical(settings$ppm, 0)
 })
+
+test_that("unavailable MS2 purity cannot create missing feature-link rows", {
+    skip_if_not_installed("xcms")
+    fixture <- .msn_association_fixture("tryptophan")
+    pa <- fixture$pa
+    pa@spectra$inPurity[] <- NA_real_
+    pa@puritydf$inPurity[] <- NA_real_
+    ordinary <- frag4feature(pa, fixture$xe, ppm = 10, plim = 0.7,
+        convert2RawRT = FALSE)
+    expect_equal(nrow(ordinary@grped_df), 0L)
+    expect_length(ordinary@fragSpectra, 0L)
+    higher <- frag4feature(pa, fixture$xe, ppm = 10, plim = 0.7,
+        includeMSn = TRUE, parentReference = "acquisitionNum",
+        convert2RawRT = FALSE)
+    expect_gt(nrow(higher@grped_df), 0L)
+    expect_false(anyNA(higher@grped_df$pid))
+    expect_true(all(higher@grped_df$msLevel > 2L))
+})
