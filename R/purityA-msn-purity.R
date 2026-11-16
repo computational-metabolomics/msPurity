@@ -20,18 +20,11 @@
         peaks_in_window = rep(NA_integer_, length(rows)),
         status = rep("missing_parent", length(rows)))
     if (is.null(offsets)) offsets <- NA_real_
-    automatic <- is.numeric(offsets) || is.logical(offsets)
-    automatic <- automatic && length(offsets) %in% 1:2 &&
-        all(is.na(offsets)) && !any(is.nan(offsets))
-    if (!automatic) {
-        if (!is.numeric(offsets) || length(offsets) != 2L ||
-                any(!is.finite(offsets) | offsets < 0) || sum(offsets) <= 0)
-            stop("Explicit isolation offsets must be two nonnegative finite ",
-                "numbers with positive total width.")
-        result$lower_mz <- result$precursor_mz - offsets[1L]
-        result$upper_mz <- result$precursor_mz + offsets[2L]
-        result$window_source[] <- "caller"
-    }
+    windows <- .pa_isolation_windows(result$precursor_mz, result$lower_mz,
+        result$upper_mz, column("isolationWindowTargetMz"), offsets)
+    result$lower_mz <- windows$isolationWindowLowerMz
+    result$upper_mz <- windows$isolationWindowUpperMz
+    result$window_source <- windows$source
     valid_parent <- !is.na(parent) & scans$parent_status[rows] == "valid"
     valid_parent[valid_parent] <- scans$ms_level[parent[valid_parent]] ==
         scans$ms_level[rows[valid_parent]] - 1L

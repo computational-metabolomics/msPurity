@@ -116,7 +116,9 @@
     p <- unname(.lcmsms_paths())
     out <- list()
 
-    pa1 <- q(purityA(p))
+    # These references used a fixed window around precursorMz.
+    # Recorded event centres are covered by the window tests.
+    pa1 <- q(purityA(p, offsets = c(0.5, 0.5)))
     out$purityA <- .parity_view(pa1, via)
 
     pa2 <- q(frag4feature(pa1, .golden_xcms("msms_only_xcmsnexp.rds")))

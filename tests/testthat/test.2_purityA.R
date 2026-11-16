@@ -8,7 +8,7 @@ test_that("checking purityA", {
 
   msmsPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "MSMS")
 
-  pa  <- purityA(msmsPths)
+  pa  <- purityA(msmsPths, offsets = c(0.5, 0.5))
 
   #saveRDS(pa, file.path("inst", "extdata", "tests", "purityA", "1_purityA_pa.rds"))
 

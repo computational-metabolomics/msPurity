@@ -4,7 +4,7 @@ purity_ref <- .parity_ref("purityA")$purityA$puritydf
 msms <- unname(.lcmsms_paths())
 
 test_that("purityA() stores the scans and their purity as Spectra", {
-    pa <- suppressMessages(purityA(msms))
+    pa <- suppressMessages(purityA(msms, offsets = c(0.5, 0.5)))
     sp <- purityTable(pa, legacy = FALSE)
     expect_s4_class(sp, "Spectra")
     expect_length(sp, nrow(purity_ref))
@@ -19,12 +19,12 @@ test_that("purityA() stores the scans and their purity as Spectra", {
 test_that("purityA() accepts Spectra and MsExperiment input", {
     sp <- Spectra::Spectra(msms, source = Spectra::MsBackendMzR(),
         BPPARAM = BiocParallel::SerialParam())
-    pa <- suppressMessages(purityA(sp))
+    pa <- suppressMessages(purityA(sp, offsets = c(0.5, 0.5)))
     expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
     expect_identical(unname(basename(pa@fileList)), basename(msms))
 
     me <- MsExperiment::readMsExperiment(msms, BPPARAM = BiocParallel::SerialParam())
-    pa <- suppressMessages(purityA(me))
+    pa <- suppressMessages(purityA(me, offsets = c(0.5, 0.5)))
     expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
 })
 
@@ -32,14 +32,14 @@ test_that("purityA() reads a Parquet study dataset through MsBackendParquet", {
     skip_if_no_arrow()
     sp <- Spectra::Spectra(Spectra::backendInitialize(
         MsBackendParquet::MsBackendParquet(), path = .study_dataset()))
-    pa <- suppressMessages(purityA(sp))
+    pa <- suppressMessages(purityA(sp, offsets = c(0.5, 0.5)))
     expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
 })
 
 test_that("legacy slots can be switched off", {
     old <- options(msPurity.legacySlots = FALSE)
     on.exit(options(old))
-    pa <- suppressMessages(purityA(msms))
+    pa <- suppressMessages(purityA(msms, offsets = c(0.5, 0.5)))
     expect_identical(nrow(pa@puritydf), 0L)
     expect_equal(purityTable(pa), purity_ref, tolerance = 1e-12)
 })

@@ -32,7 +32,11 @@ assessPuritySingle(
 
 \item{nearest}{boolean; True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used}
 
-\item{offsets}{vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)}
+\item{offsets}{numeric; Two nonnegative lower and upper offsets
+in Da, with positive total width. Explicit offsets set a window
+around the selected precursor m/z. NA uses each event's recorded
+absolute bounds. A selected precursor outside those bounds has
+unavailable purity.}
 
 \item{cores}{numeric; Number of cores to use}
 
