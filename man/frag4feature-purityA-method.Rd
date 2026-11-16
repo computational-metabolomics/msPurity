@@ -22,7 +22,11 @@
   create_db = NA,
   grp_peaklist = NA,
   db_name = NA,
-  xset = NA
+  xset = NA,
+  includeMSn = FALSE,
+  parentReference = "auto",
+  purityPpm = 10,
+  purityTolerance = 0
 )
 }
 \arguments{
@@ -32,7 +36,8 @@
 
 \item{ppm}{numeric; ppm tolerance between precursor mz and XCMS feature mz}
 
-\item{plim}{numeric; minimum purity of precursor to be included}
+\item{plim}{numeric; minimum MS2 precursor purity to be included.
+This threshold does not apply to MS3/MS4 diagnostic purity.}
 
 \item{intense}{boolean; If TRUE the most intense precursor will be used. If FALSE the precursor closest to the center of the isolation window will be used}
 
@@ -59,6 +64,29 @@
 \item{db_name}{character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp}
 
 \item{xset}{object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object}
+
+\item{includeMSn}{logical; also associate MS3 and MS4 spectra through their
+validated MS2 acquisition ancestors. The default retains MS2-only links.}
+
+\item{parentReference}{How to interpret parent references. Numeric
+\code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
+original file positions (\code{"scanIndex"}), or backend source keys
+(\code{"sourceSpectrumId"}). The last option is msPurity-specific and
+uses retained \code{spectrum_id_} or \code{source_spectrum_id} keys.
+\code{"spectrumId"} matches native \code{spectrumRef} metadata to native
+\code{spectrumId}; it requires these fields to have been supplied by the
+reader. No new metadata extraction is performed. None of these identifiers
+is the current position in a filtered object. All matches use the same run.
+\code{"auto"} tries these interpretations and accepts a consistent mapping;
+conflicting valid parents or inconsistent conventions raise an error.
+Missing references remain unresolved. No parent is inferred from peak
+similarity or proximity in retention time.}
+
+\item{purityPpm, purityTolerance}{Relative (ppm) and absolute (Da) tolerances
+for matching an MS3/MS4 precursor to a peak in its validated parent.
+The allowed difference is \code{abs(precursorMz) * purityPpm / 1e6 +
+purityTolerance}. These affect diagnostic purity only; \code{ppm} remains
+the feature-association tolerance. Defaults are 10 ppm and 0 Da.}
 }
 \value{
 Returns a purityA object (pa) with the following slots populated:
@@ -95,6 +123,15 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 \itemize{
 \item [grouped XCMS peaks] * ------ * [MS/MS spectra]
 }
+
+With \code{includeMSn = TRUE}, MS3 and MS4 inherit feature membership through
+validated, same-file acquisition relationships. Root MS2 associations are
+established before \code{plim} is applied, so a rejected MS2 precursor does
+not remove valid descendant links. Higher levels retain their own precursor
+and acquisition metadata and have no MS1-based precursor-purity value.
+Missing or invalid ancestry does not establish a descendant feature link.
+Acquisition times remain raw; \code{convert2RawRT} converts feature bounds
+using the existing xcms retention-time mapping.
 }
 
 \subsection{Example LC-MS/MS processing workflow}{
@@ -123,6 +160,31 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 \item Can experience some problems when using XCMS version < 3 and obiwarp retention time correction.
 }
 }
+}
+\details{
+With \code{includeMSn = TRUE}, associated MS3/MS4 spectra receive
+diagnostic precursor-isolation purity in \code{msPurityStagePurity}, with
+an assessment status in \code{msPurityPurityStatus}. The calculation uses
+stored parent peaks before queued processing and the child's recorded
+isolation bounds. Explicit \code{purityA(offsets = ...)} overrides apply;
+missing bounds are not replaced by vendor-specific approximations.
+
+The closest parent peak within the matching tolerance supplies the
+numerator.
+Equal-distance ties are unavailable rather than resolved by intensity.
+\code{pcalc()} divides its intensity by the summed positive intensities
+strictly inside the isolation bounds, without interpolation, isotope
+removal, low-intensity exclusion or isolation-efficiency normalization.
+Missing or invalid inputs give \code{NA} and an explanatory status; known
+profile parent spectra are not assessed. Irreversible processing already
+applied to the input cannot be undone.
+
+History records the parent, bounds, matched peak and settings under the
+\code{frag4feature} step's \code{msn_purity} entry. \code{inPurity} retains
+its MS2 meaning. Both this function's \code{plim} and the purity threshold
+in \code{filterFragSpectra()} apply only to MS2, regardless of higher-level
+diagnostic values. MSn averaging and processed export are separate
+operations.
 }
 \examples{
 #====== XCMS =================================

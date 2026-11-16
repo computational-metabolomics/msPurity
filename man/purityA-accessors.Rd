@@ -29,16 +29,17 @@ default for this release.
 }
 \details{
 \itemize{
-\item \code{purityTable()}: the MS/MS scans with their precursor ion
+\item \code{purityTable()}: the MS2 spectra with their precursor ion
 purity, as the \code{puritydf} data frame or as \code{Spectra} with the
 purity results as spectra variables.
-\item \code{groupedSpectra()}: the MS/MS scans linked to XCMS features by
+\item \code{groupedSpectra()}: the spectra linked to XCMS features by
 \code{frag4feature()}, as the \code{grped_ms2} list (one list of peak
 matrices per feature) or as \code{Spectra} holding each scan once. The
 links themselves are in \code{pa@grped_df}, keyed by \code{pid}.
-\item \code{allFragSpectra()}: every MS/MS scan with the flags of
-\code{filterFragSpectra(allfrag = TRUE)}, as the \code{all_frag_scans}
-data frame or as \code{Spectra} with the flags as peak variables.
+\item \code{allFragSpectra()}: the spectra at the requested levels with
+flags from \code{filterFragSpectra(allfrag = TRUE)}, as the
+\code{all_frag_scans} data frame or as \code{Spectra} with peak flags.
+Filtering defaults to MS2; request \code{msLevel = 2:4} for MS2-MS4.
 \item \code{averagedSpectra()}: the averaged spectra, as the nested
 \code{av_spectra} list or as \code{Spectra} with one spectrum per
 feature, averaging level and sample.

@@ -165,6 +165,13 @@ A user can also define their own normalisation function. The only requirement of
 }
 }
 }
+\details{
+MS3/MS4 spectra are retained with their acquisition metadata, but
+MS1-based precursor purity is calculated only for MS2. Higher-level
+feature association is enabled with \code{frag4feature(includeMSn = TRUE)}.
+That operation also estimates diagnostic MS3/MS4 purity from their parent
+fragmentation spectra; purity thresholds still apply only to MS2.
+}
 \examples{
 filepths <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")
 pa <- purityA(filepths)

@@ -84,19 +84,7 @@
 # The spectra slot from the raw spectra of all files and puritydf. Each
 # puritydf row is matched to its scan by file position and scan index.
 .pa_spectra_new <- function(raw, fileid, puritydf) {
-    if (!nrow(puritydf))
-        return(Spectra::Spectra(Spectra::MsBackendMemory()))
-    idx <- match(paste(as.character(puritydf$fileid), puritydf$seqNum),
-                 paste(fileid, Spectra::scanIndex(raw)))
-    sp <- raw[idx]
-    offsets <- .pa_raw_peak_offsets(raw)
-    sp$msPurityRawPeakOffset <- offsets$offset[idx]
-    sp$msPurityRawPeakCount <- offsets$count[idx]
-    sp$msPurityRawPeakIdBasis <- rep("source_reference", length(sp))
-    sp <- .pa_set_purity_vars(sp, puritydf)
-    if (all(Spectra::dataStorage(sp) == "<memory>"))
-        .pa_spectra_metadata(sp)$msPurityRawPeaksAvailable <- TRUE
-    sp
+    .pa_msn_retained_spectra(raw, fileid, puritydf)
 }
 
 # Include every fragmentation level when numbering source peak rows.
@@ -111,8 +99,23 @@
 # Add or replace puritydf columns as spectra variables, remembering the
 # column order of puritydf.
 .pa_set_purity_vars <- function(sp, df) {
-    for (cn in colnames(df))
-        sp[[cn]] <- df[[cn]]
+    have <- Spectra::spectraVariables(sp)
+    rows <- if ("pid" %in% have && "pid" %in% names(df))
+        match(df$pid, sp$pid) else seq_len(nrow(df))
+    if (anyNA(rows) || anyDuplicated(rows) || any(rows > length(sp)))
+        stop("Purity results do not match the retained spectrum identities.")
+    complete <- length(rows) == length(sp) &&
+        identical(rows, seq_along(sp))
+    for (cn in colnames(df)) {
+        if (complete) {
+            sp[[cn]] <- df[[cn]]
+        } else {
+            value <- if (cn %in% have) sp[[cn]] else
+                df[[cn]][rep(NA_integer_, length(sp))]
+            value[rows] <- df[[cn]]
+            sp[[cn]] <- value
+        }
+    }
     .pa_spectra_metadata(sp)$puritydfColumns <- colnames(df)
     sp
 }
@@ -146,6 +149,7 @@
     cols <- unique(.pa_spectra_metadata(sp)$puritydfColumns)
     if (!length(sp) || is.null(cols))
         return(.pa_empty_frame())
+    sp <- sp[which(Spectra::msLevel(sp) == 2L)]
     as.data.frame(Spectra::spectraData(sp, columns = cols), optional = TRUE)
 }
 
@@ -427,21 +431,24 @@
             c(.PA_FRAG_PEAK_VARS, "original_peak_index")), pa)
 }
 
-# fragSpectra for filterFragSpectra(allfrag = TRUE): every MS/MS scan, read
-# from the raw data and flagged with setFlagMatrix() using its own purity
-# flag. sid retains source-row numbering, including intervening MSn spectra.
-.pa_frag_all <- function(pa, filter_frag_params, puritydf) {
-    raw <- .pa_raw_scans(pa, puritydf$pid)
+# All-fragment filtering reads only the selected source spectra. sid retains
+# source-row numbering, including intervening unselected spectra.
+.pa_frag_all <- function(pa, filter_frag_params, puritydf, pids) {
+    if (!length(pids))
+        return(Spectra::Spectra(Spectra::MsBackendMemory()))
+    raw <- .pa_raw_scans(pa, pids)
     input <- .pa_filter_source_peaks(raw)
     pk <- input$peaks
     source_ids <- .pa_source_peak_ids(raw, input)
-    flag <- puritydf$purity_pass_flag
+    purity <- puritydf$inPurity[match(pids, puritydf$pid)]
+    assessment <- .pa_filter_purity(Spectra::msLevel(raw), purity,
+        filter_frag_params$plim, source = raw)
     unflagged <- filter_frag_params
     unflagged$rmp <- FALSE
     mats <- lapply(seq_along(pk), function(i) {
         m <- pk[[i]]
         if (!nrow(m)) return(NULL)
-        x <- setFlagMatrix(cbind(m, flag[i]), unflagged)
+        x <- setFlagMatrix(cbind(m, assessment$gate[i]), unflagged)
         x <- cbind(x[, setdiff(.PA_FRAG_LEGACY_COLS, "purity_pass_flag"),
                      drop = FALSE],
             sid = source_ids[[i]],
@@ -451,9 +458,11 @@
             x <- x[x[, "pass_flag"] == 1, , drop = FALSE]
         x
     })
-    sv <- .pa_fragment_variables(pa, puritydf$pid)
+    sv <- .pa_fragment_variables(pa, pids)
     sv$msPurityOriginalPeakIndexBasis <- input$basis
-    sv$purity_pass_flag <- as.logical(flag)
+    sv$purity_pass_flag <- assessment$flag
+    sv$msPurityStagePurity <- assessment$purity
+    sv$msPurityPurityStatus <- assessment$status
     sv$single_peak <- vapply(pk, nrow, integer(1)) == 1L
     .pa_fragment_metadata(.msp_memory(sv, mats,
             c(.PA_FRAG_PEAK_VARS, "original_peak_index")), pa)
@@ -548,8 +557,7 @@
     n <- vapply(pk, nrow, integer(1))
     if (!sum(n))
         return(.pa_empty_frame())
-    tab <- .pa_purity_table(pa@spectra)
-    scan_levels <- unique(as.character(tab$seqNum))
+    scan_levels <- unique(as.character(pa@spectra$seqNum))
     all <- do.call(rbind, pk)
     rownames(all) <- NULL
     rep_sv <- function(v) rep(v, n)
@@ -798,16 +806,17 @@ setValidity("purityA", function(object) {
 #' default for this release.
 #'
 #' \itemize{
-#'   \item \code{purityTable()}: the MS/MS scans with their precursor ion
+#'   \item \code{purityTable()}: the MS2 spectra with their precursor ion
 #'   purity, as the \code{puritydf} data frame or as \code{Spectra} with the
 #'   purity results as spectra variables.
-#'   \item \code{groupedSpectra()}: the MS/MS scans linked to XCMS features by
+#'   \item \code{groupedSpectra()}: the spectra linked to XCMS features by
 #'   \code{frag4feature()}, as the \code{grped_ms2} list (one list of peak
 #'   matrices per feature) or as \code{Spectra} holding each scan once. The
 #'   links themselves are in \code{pa@grped_df}, keyed by \code{pid}.
-#'   \item \code{allFragSpectra()}: every MS/MS scan with the flags of
-#'   \code{filterFragSpectra(allfrag = TRUE)}, as the \code{all_frag_scans}
-#'   data frame or as \code{Spectra} with the flags as peak variables.
+#'   \item \code{allFragSpectra()}: the spectra at the requested levels with
+#'   flags from \code{filterFragSpectra(allfrag = TRUE)}, as the
+#'   \code{all_frag_scans} data frame or as \code{Spectra} with peak flags.
+#'   Filtering defaults to MS2; request \code{msLevel = 2:4} for MS2-MS4.
 #'   \item \code{averagedSpectra()}: the averaged spectra, as the nested
 #'   \code{av_spectra} list or as \code{Spectra} with one spectrum per
 #'   feature, averaging level and sample.
@@ -838,7 +847,8 @@ NULL
 
 setMethod("purityTable", "purityA", function(pa, legacy = TRUE) {
     pa <- .pa_update(pa)
-    if (legacy) .pa_purity_table(pa@spectra) else pa@spectra
+    if (legacy) .pa_purity_table(pa@spectra) else
+        pa@spectra[which(Spectra::msLevel(pa@spectra) == 2L)]
 })
 
 setMethod("groupedSpectra", "purityA", function(pa, legacy = TRUE) {
@@ -846,6 +856,8 @@ setMethod("groupedSpectra", "purityA", function(pa, legacy = TRUE) {
     if (legacy)
         return(.pa_grouped_legacy(pa))
     frag <- pa@fragSpectra
+    if (!length(frag))
+        return(frag)
     frag[frag$pid %in% pa@grped_df$pid]
 })
 
