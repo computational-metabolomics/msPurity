@@ -288,7 +288,15 @@
         m <- as.matrix(m)
         m[, c("mz", "intensity"), drop = FALSE]
     })
-    if (known) {
+    queued <- .pa_spectra_has_queue(source)
+    if (!queued) {
+        stored_positions <- lapply(peaks, function(m) seq_len(nrow(m)))
+        positions <- if (known) lapply(values, function(m) {
+            as.numeric(m[, "original_peak_index"])
+        }) else stored_positions
+        if (known && any(vapply(positions, invalid, logical(1L))))
+            stop("Invalid original peak positions before processing.")
+    } else if (known) {
         positions <- lapply(values, function(m) {
             as.numeric(m[, "original_peak_index"])
         })
@@ -305,9 +313,8 @@
     } else {
         original <- as.list(Spectra::peaksData(Spectra::reset(source),
                 columns = c("mz", "intensity"), BPPARAM = .msp_bpparam()))
-        ordered <- !.pa_spectra_has_queue(source)
         positions <- Map(function(kept, raw) {
-            .pa_peak_positions(kept, raw, ordered_duplicates = ordered)
+            .pa_peak_positions(kept, raw, ordered_duplicates = FALSE)
         }, peaks, original)
         stored_positions <- positions
     }

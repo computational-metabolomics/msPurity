@@ -259,6 +259,29 @@ test_that("duplicate peak identities require tracking before queued changes", {
         methods::new("purityA")), "Unsupported Spectra")
 })
 
+test_that("unchanged peaks are retrieved once without renumbering identities", {
+    source <- msPurity:::.msp_memory(data.frame(msLevel = 2L),
+        list(cbind(mz = c(100.1234, 150.0567), intensity = c(20, 50),
+                original_peak_index = c(1, 3))),
+        c("mz", "intensity", "original_peak_index"))
+    reads <- 0L
+    retrieve <- Spectra::peaksData
+    local_mocked_bindings(peaksData = function(object, ...) {
+        if (methods::is(object, "Spectra")) reads <<- reads + 1L
+        retrieve(object, ...)
+    }, .package = "Spectra")
+    prepared <- msPurity:::.pa_filter_source_peaks(source)
+    expect_identical(reads, 1L)
+    expect_identical(prepared$original_positions, list(c(1, 3)))
+    expect_identical(prepared$stored_positions, list(1:2))
+    reads <- 0L
+    selected <- Spectra::filterMzRange(source, mz = c(150, 151))
+    prepared <- msPurity:::.pa_filter_source_peaks(selected)
+    expect_identical(reads, 2L)
+    expect_identical(prepared$original_positions, list(3))
+    expect_identical(prepared$stored_positions, list(2L))
+})
+
 test_that("allfrag includes unlinked spectra with their own metadata", {
     pa <- .filter_param_fixture()
     pa@grped_df <- pa@grped_df[1:3, , drop = FALSE]
