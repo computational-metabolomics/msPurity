@@ -325,37 +325,48 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
         }
         keep
     })
-    settings <- sets <- list()
-    assignment <- data.frame(spectrum_index = seq_along(source),
-        parameter_id = rep(NA_character_, length(source)),
-        fallback_used = rep(FALSE, length(source)), stringsAsFactors = FALSE)
-    if ("pid" %in% Spectra::spectraVariables(source))
-        assignment$pid <- source$pid
-    assignment$parameter_set_names <- rep(list(character()), length(source))
+    fields <- c("ilim", "plim", "ra", "snr", "snmeth")
+    values <- c(lapply(specs, `[`, fields), list(fallback[fields]))
     equal <- function(a, b) {
         isTRUE(all.equal(a, b, check.attributes = FALSE, tolerance = 0))
     }
-    fields <- c("ilim", "plim", "ra", "snr", "snmeth")
-    for (i in seq_along(source)) {
-        ids <- names(matched)[vapply(matched, `[`, logical(1), i)]
-        current <- if (length(ids)) specs[[ids[1L]]][fields]
-        else fallback[fields]
-        if (length(ids) > 1L && any(!vapply(specs[ids], function(spec) {
-            equal(spec[fields], current)
-        }, logical(1))))
-            stop("Conflicting overlapping parameter sets at spectrum ", i, ".")
-        same <- which(vapply(sets, equal, logical(1), current))
+    representatives <- list()
+    groups <- integer(length(values))
+    for (i in seq_along(values)) {
+        same <- which(vapply(representatives, equal, logical(1L), values[[i]]))
         if (!length(same)) {
-            id <- sprintf("parameter-%04d", length(sets) + 1L)
-            sets[[id]] <- current
-        } else {
-            id <- names(sets)[same[1L]]
+            representatives[[length(representatives) + 1L]] <- values[[i]]
+            same <- length(representatives)
         }
-        settings[[i]] <- current
-        assignment$parameter_id[i] <- id
-        assignment$fallback_used[i] <- !length(ids)
-        assignment$parameter_set_names[i] <- list(ids)
+        groups[i] <- same[1L]
     }
+    fallback_index <- length(values)
+    choice <- rep(fallback_index, length(source))
+    conflicts <- integer()
+    set_names <- rep(list(character()), length(source))
+    for (i in seq_along(matched)) {
+        rows <- which(matched[[i]])
+        previous <- choice[rows]
+        conflict <- previous != fallback_index & groups[previous] != groups[i]
+        conflicts <- c(conflicts, rows[conflict])
+        choice[rows[previous == fallback_index]] <- i
+        set_names[rows] <- lapply(set_names[rows], c, names(matched)[i])
+    }
+    if (length(conflicts))
+        stop("Conflicting overlapping parameter sets at spectrum ",
+            min(conflicts), ".")
+    settings <- unname(values[choice])
+    selected_groups <- groups[choice]
+    order <- unique(selected_groups)
+    ids <- sprintf("parameter-%04d", seq_along(order))
+    sets <- if (length(order)) stats::setNames(
+        settings[match(order, selected_groups)], ids) else list()
+    assignment <- data.frame(spectrum_index = seq_along(source),
+        parameter_id = ids[match(selected_groups, order)],
+        fallback_used = choice == fallback_index, stringsAsFactors = FALSE)
+    if ("pid" %in% Spectra::spectraVariables(source))
+        assignment$pid <- source$pid
+    assignment$parameter_set_names <- set_names
     list(parameters = settings, assignments = assignment, metadata = metadata,
         parameter_sets = sets, parameter_objects = objects,
         unused_parameter_sets = names(matched)[
