@@ -150,6 +150,28 @@ test_that("equivalent overlaps share effective settings and conflicts fail", {
     expect_identical(pa@fragSpectra$activationType, c("CID", "HCD", NA, "ETD"))
 })
 
+test_that("parameter identities follow first use of shared settings", {
+    spectra <- .filter_param_fixture()@fragSpectra[c(3, 2, 1, 4)]
+    params <- list(unused = FilterFragSpectraParam(select = list(msLevel = 3L)),
+        cid = FilterFragSpectraParam(select = list(activationType = "CID"),
+            snr = 0),
+        hcd = FilterFragSpectraParam(select = list(activationType = "HCD"),
+            snr = 0))
+    result <- msPurity:::.pa_filter_resolve(spectra, params,
+        .filter_param_defaults())
+    expect_identical(result$assignments$parameter_id,
+        c("parameter-0001", "parameter-0002",
+            "parameter-0002", "parameter-0001"))
+    expect_identical(result$assignments$parameter_set_names,
+        list(character(), "hcd", "cid", character()))
+    expect_identical(result$unused_parameter_sets, "unused")
+    empty <- msPurity:::.pa_filter_resolve(spectra[integer()], params,
+        .filter_param_defaults())
+    expect_identical(empty$parameter_sets, list())
+    expect_identical(empty$parameters, list())
+    expect_identical(empty$unused_parameter_sets, names(params))
+})
+
 test_that("typed fixed settings equal corresponding scalar scientific output", {
     pa <- .filter_param_fixture()
     # Keep missing purity out of the scalar comparison; its historical NA
