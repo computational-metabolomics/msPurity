@@ -34,7 +34,11 @@ filtering applied to them also applies to the purity calculation}
 
 \item{nearest}{boolean; True if the peak selected is from either the preceding scan or the nearest.}
 
-\item{offsets}{vector; Override the isolation offsets found in the mzML file e.g. c(0.5, 0.5)}
+\item{offsets}{numeric; Two nonnegative lower and upper offsets
+in Da, with positive total width. Explicit offsets set a window
+around the selected precursor m/z. NA uses each event's recorded
+absolute bounds. A selected precursor outside those bounds has
+unavailable purity.}
 
 \item{plotP}{boolean; If TRUE a plot of the purity is to be saved}
 
@@ -158,11 +162,14 @@ Other options to model the isolation efficiency the  gaussian isolation window m
 A user can also define their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
 }
 
-\subsection{Notes regarding instrument specific isolation window offsets used:}{
-\itemize{
-\item The isolation widths offsets will be automatically determined from extracting metadata from the mzML file. However, for some vendors though this is not recorded, in these cases the offsets should be given by the user as an argument (offsets).
-\item In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da.
-}
+\subsection{Isolation windows}{
+
+Each MS2 event uses its recorded isolation bounds. If bounds are missing or
+invalid, its purity is NA and a warning identifies the affected count.
+Supply explicit lower and upper offsets when the acquisition settings are
+known; no instrument-specific width is assumed. For example,
+\code{offsets = c(0.65, 0.65)} is appropriate only for a known 1.3 Da window.
+Resolved bounds and their sources are retained in processing history.
 }
 }
 \details{

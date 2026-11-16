@@ -17,7 +17,7 @@
     Spectra::Spectra(d, source = Spectra::MsBackendMemory())
 }
 
-test_that("history reuses each file's resolved offsets", {
+test_that("history reuses each spectrum's resolved offsets", {
     first <- .d05_settings_spectra()
     second <- .d05_settings_spectra("second-memory", c(0.4, 0.6))
     calls <- 0L
@@ -104,32 +104,6 @@ test_that("applied normalization survives RDS without peak arrays", {
     expect_equal(restored$iwNormFun(c(-0.5, 0, 0.5)), c(0, 1, 0))
     expect_identical(restored$offsets, resolved$offsets)
     expect_null(parameters$iwNormFun)
-})
-
-test_that("file settings distinguish metadata from the Agilent assumption", {
-    path <- tempfile(fileext = ".xml")
-    before <- getAllConnections()
-    on.exit({
-        for (id in setdiff(getAllConnections(), before))
-            base::close(getConnection(id))
-        unlink(path)
-    })
-    writeLines(c(
-        '<cvParam name="isolation window lower offset" value="0.4"/>',
-        '<cvParam name="isolation window upper offset" value="0.6"/>'), path)
-    recorded <- msPurity:::.pa_read_isolation_settings(path)
-    expect_identical(recorded$offsets_source, "recorded_metadata")
-    expect_identical(recorded$offsets_method, "mzml_first_window")
-    expect_identical(msPurity:::get_isolation_offsets(path), c(0.4, 0.6))
-
-    writeLines(paste0('<cvParam cvRef="MS" accession="MS:1000490" ',
-            'name="Agilent instrument model" value=""/>'), path)
-    expect_message(
-        approximation <- msPurity:::.pa_read_isolation_settings(path),
-        "approximate")
-    expect_identical(approximation$offsets, c(0.65, 0.65))
-    expect_identical(approximation$offsets_source, "approximation")
-    expect_identical(approximation$offsets_method, "agilent_narrow_window")
 })
 
 test_that("MS1-only assessment retains NULL and unused settings", {

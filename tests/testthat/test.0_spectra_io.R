@@ -31,12 +31,14 @@ test_that("getmrdf() and getscans() accept paths or Spectra", {
                      msPurity:::.msp_peaks(msPurity:::.msp_read(f[1])))
 })
 
-test_that("isolation offsets fall back to the spectra when no file is read", {
+test_that("isolation windows agree between file-backed and memory spectra", {
     f <- raw_files[grepl("LCMSMS_1", raw_files)]
-    sp <- msPurity:::.msp_read(f)
-    expect_identical(msPurity:::.msp_isolation_offsets(sp), c(0.5, 0.5))
+    sp <- Spectra::filterMsLevel(msPurity:::.msp_read(f), 2L)
+    recorded <- msPurity:::.msp_isolation_settings(sp)
+    expect_identical(unique(recorded$lowerOffset), 0.5)
+    expect_identical(unique(recorded$upperOffset), 0.5)
     mem <- Spectra::setBackend(sp, Spectra::MsBackendMemory())
-    expect_identical(msPurity:::.msp_isolation_offsets(mem), c(0.5, 0.5))
+    expect_identical(msPurity:::.msp_isolation_settings(mem), recorded)
 })
 
 test_that("a non-default mzRback is reported as deprecated", {

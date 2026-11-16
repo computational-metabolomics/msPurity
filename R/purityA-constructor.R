@@ -68,12 +68,14 @@ NULL
 #'
 #' A user can also define their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
 #'
-#' ## Notes regarding instrument specific isolation window offsets used:
+#' ## Isolation windows
 #'
-#' * The isolation widths offsets will be automatically determined from extracting metadata from the mzML file. However, for some vendors though this is not recorded, in these cases the offsets should be given by the user as an argument (offsets).
-#'
-#' * In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da.
-#'
+#' Each MS2 event uses its recorded isolation bounds. If bounds are missing or
+#' invalid, its purity is NA and a warning identifies the affected count.
+#' Supply explicit lower and upper offsets when the acquisition settings are
+#' known; no instrument-specific width is assumed. For example,
+#' \code{offsets = c(0.65, 0.65)} is appropriate only for a known 1.3 Da window.
+#' Resolved bounds and their sources are retained in processing history.
 #'
 #' @param fileList vector of mzML file paths, or a \code{Spectra},
 #'        \code{MsExperiment} or \code{XcmsExperiment} object holding the
@@ -81,7 +83,11 @@ NULL
 #'        filtering applied to them also applies to the purity calculation
 #' @param mostIntense boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.
 #' @param nearest boolean; True if the peak selected is from either the preceding scan or the nearest.
-#' @param offsets vector; Override the isolation offsets found in the mzML file e.g. c(0.5, 0.5)
+#' @param offsets numeric; Two nonnegative lower and upper offsets
+#' in Da, with positive total width. Explicit offsets set a window
+#' around the selected precursor m/z. NA uses each event's recorded
+#' absolute bounds. A selected precursor outside those bounds has
+#' unavailable purity.
 #' @param plotP boolean; If TRUE a plot of the purity is to be saved
 #' @param plotdir vector; If plotP is TRUE plots will be saved to this directory
 #' @param interpol character; type of interolation to be performed "linear" or "spline" (Spline option is only included for testing purposes,
@@ -277,7 +283,11 @@ purityA <- function(fileList,
 #' @param fileid numeric; adds a fileid column (primarily for internal use for msPurity)
 #' @param mostIntense boolean; True if the most intense peak is used for calculation. False if the centered peak is used
 #' @param nearest boolean; True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used
-#' @param offsets vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)
+#' @param offsets numeric; Two nonnegative lower and upper offsets
+#' in Da, with positive total width. Explicit offsets set a window
+#' around the selected precursor m/z. NA uses each event's recorded
+#' absolute bounds. A selected precursor outside those bounds has
+#' unavailable purity.
 #' @param cores numeric; Number of cores to use
 #' @param plotP boolean; If TRUE a plot of the purity is to be saved
 #' @param plotdir vector; If plotP is TRUE plots will be saved to this directory
@@ -347,6 +357,7 @@ assessPuritySingle <- function(filepth,
   # Load in files and initial setup
   #=================================
   # Get the mzR dataframes
+  automatic_offsets <- .pa_automatic_offsets(offsets)
   sp <- .msp_as_spectra(filepth)
   if (is(filepth, "Spectra")){
     filepth <- Spectra::dataOrigin(sp)[1]
@@ -393,31 +404,26 @@ assessPuritySingle <- function(filepth,
   # get scans (list of mz and i) from mzR
   scans <- getscans(sp, mzRback)
 
-  # Get offsets from mzML unless defined by user
-  if (anyNA(offsets)) {
-    isolation <- .msp_isolation_settings(sp)
-    offsets <- isolation$offsets
-    resolved$offsets_source <- isolation$offsets_source
-    resolved$offsets_method <- isolation$offsets_method
+  selected <- sp[Spectra::msLevel(sp) == 2L]
+  if (automatic_offsets) {
+    windows <- .msp_isolation_settings(selected)
   } else {
-    resolved$offsets_source <- "caller"
-    resolved$offsets_method <- "explicit_offsets"
+    windows <- .pa_isolation_windows(Spectra::precursorMz(selected),
+        Spectra::isolationWindowLowerMz(selected),
+        Spectra::isolationWindowUpperMz(selected),
+        Spectra::isolationWindowTargetMz(selected), offsets)
   }
-  resolved$offsets <- offsets
-  minoff <- offsets[1]
-  maxoff <- offsets[2]
-
-  if (is.null(iwNormFun)) {
-    iwNormFun <- iwNormGauss(minOff = -minoff, maxOff = maxoff)
-    normalization_source <- "generated_default"
-  } else {
-    normalization_source <- "caller"
-  }
-  if (iwNorm) {
-    resolved$iwNormFun <- iwNormFun
-    resolved$iwNormFun_source <- normalization_source
-  }
+  windows$seqNum <- mrdfshrt$seqNum
+  windows$acquisitionNum <- mrdfshrt$acquisitionNum
+  invalid <- windows$status != "valid"
+  if (any(invalid))
+    warning(sum(invalid), " MS2 spectra have missing or invalid isolation ",
+        "bounds; their purity is unavailable. Supply offsets when known.",
+        call. = FALSE)
+  isolation <- .pa_isolation_history(windows, iwNorm, iwNormFun)
+  resolved[names(isolation)] <- isolation
   resolved$status <- "assessed"
+  minoff <- maxoff <- NA_real_
 
 
 
@@ -457,7 +463,7 @@ assessPuritySingle <- function(filepth,
                            iwNormFun=iwNormFun,
                            ilim=ilim,
                            isotopes=isotopes,
-                           im=im)
+                           im = im, windows = windows)
 
     # Keep the input key once; ddply also returns its grouping column.
     if (nrow(initial) != nrow(mrdfshrt) ||
@@ -503,7 +509,7 @@ assessPuritySingle <- function(filepth,
                                    iwNormFun=iwNormFun,
                                    ilim=ilim,
                                    isotopes=isotopes,
-                                   im=im)
+                                   im = im, windows = windows)
 
   if(cores>1){
     requireNamespace(parallel)
@@ -524,7 +530,18 @@ assessPuritySingle <- function(filepth,
 
 
 get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
-                            mostIntense, iwNorm, iwNormFun, ilim, isotopes, im){
+                            mostIntense, iwNorm, iwNormFun, ilim, isotopes, im,
+                            windows = NULL) {
+
+  if (!is.null(windows)) {
+    window <- .pa_purity_window(ms2h, windows, iwNormFun)
+    if (!window$valid)
+      return(c(aMz = NA_real_, aPurity = NA_real_, apkNm = NA_real_,
+          iMz = NA_real_, iPurity = NA_real_, ipkNm = NA_real_))
+    minoff <- window$minoff
+    maxoff <- window$maxoff
+    iwNormFun <- window$iwNormFun
+  }
 
   #========================================
   # Get the scan to perform calculations on
@@ -619,7 +636,17 @@ get_init_purity <- function(ms2h, scans, minoff, maxoff, nearest,
 get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
                               minoff, maxoff, mostIntense=FALSE, plotP=FALSE,
                               plotdir=NULL, interpol, nearest=TRUE,
-                              iwNorm, iwNormFun, ilim, isotopes, im){
+                              iwNorm, iwNormFun, ilim, isotopes, im,
+                              windows = NULL) {
+
+  if (!is.null(windows)) {
+    window <- .pa_purity_window(rowi, windows, iwNormFun)
+    if (!window$valid)
+      return(c(inPkNm = NA_real_, inPurity = NA_real_))
+    minoff <- window$minoff
+    maxoff <- window$maxoff
+    iwNormFun <- window$iwNormFun
+  }
 
   # get the region of interest for scans
   scanids <- prec_scans[which(ms2==rowi$seqNum)][[1]]
@@ -630,7 +657,8 @@ get_interp_purity <- function(rowi, scan_peaks, prec_scans, ms2, ppm,
                            nearest, mostIntense, iwNorm, iwNormFun,
                            ilim, plotP, plotdir, isotopes, im)
   }else if (interpol=="spline"){
-    purity <- splinePurity(rowi, roi_scns, minoff, maxoff, ppm,
+    purity <- splinePurity(rowi, roi_scns, rowi$precursorMZ - minoff,
+                           rowi$precursorMZ + maxoff, ppm,
                            mostIntense, scanids, plotP, plotdir)
   }
 
@@ -760,48 +788,6 @@ get_prec_scans <- function(mrdf, num){
   return(prec_scans)
 
 }
-
-get_isolation_offsets <- function(inputfile){
-  .pa_read_isolation_settings(inputfile)$offsets
-}
-
-.pa_read_isolation_settings <- function(inputfile) {
-  con  <- file(inputfile, open = "r")
-  lowFound = FALSE
-  highFound = FALSE
-
-  while (TRUE) {
-    oneLine <- readLines(con, n = 1)
-
-    if (!lowFound){
-      low <- as.numeric(stringr::str_match(oneLine, '^.*name=\"isolation window lower offset\" value=\"([0-9]+\\.[0-9]+).*$')[,2])
-      if(!is.na(low)){lowFound=TRUE}
-    }
-
-    if (!highFound){
-      high <- as.numeric(stringr::str_match(oneLine, '^.*name=\"isolation window upper offset\" value=\"([0-9]+\\.[0-9]+).*$')[,2])
-      if(!is.na(high)){highFound=TRUE}
-    }
-
-    if (grepl('<cvParam cvRef="MS" accession="MS:1000490" name="Agilent instrument model" value=""/>', oneLine)){
-      message("Agilent do not have isolation offset in mzML, default given as +- 0.65 (this is an approximate for the 'narrow' window type)")
-      return(list(offsets = c(0.65, 0.65),
-          offsets_source = "approximation",
-          offsets_method = "agilent_narrow_window"))
-    }
-
-    if(lowFound & highFound){
-      break
-    }
-  }
-
-  close(con)
-  return(list(offsets = c(low, high),
-      offsets_source = "recorded_metadata",
-      offsets_method = "mzml_first_window"))
-
-}
-
 
 # Get the Data
 getmrdf <- function(files, backend='pwiz'){
