@@ -346,41 +346,38 @@
     root_rows <- match(scans$root_pid, scans$pid)
     root_groups <- match(root_rows, linked_roots)
     parent_rows <- match(scans$parent_id, scans$spectrum_id)
-    out <- list(links)
-    for (i in which(scans$ms_level > 2L & scans$path_status == "valid")) {
-        group <- root_groups[i]
-        if (is.na(group)) next
-        child <- links[rows_by_root[[group]], , drop = FALSE]
-        child$pid <- rep(scans$pid[i], nrow(child))
-        child$msLevel <- rep(scans$ms_level[i], nrow(child))
-        for (column in purity_columns)
-            child[[column]][] <- NA
+    descendants <- which(scans$ms_level > 2L & scans$path_status == "valid" &
+            !is.na(root_groups))
+    occurrences <- rows_by_root[root_groups[descendants]]
+    child_rows <- rep(descendants, lengths(occurrences))
+    child <- links[unlist(occurrences, use.names = FALSE), , drop = FALSE]
+    if (length(child_rows)) {
+        child$pid <- scans$pid[child_rows]
+        child$msLevel <- scans$ms_level[child_rows]
+        for (column in purity_columns) child[[column]][] <- NA
         for (column in stage_columns) {
             if (column %in% names(stage))
-                child[[column]] <- rep(stage[[column]][i], nrow(child))
-            else
-                child[[column]][] <- NA
+                child[[column]] <- stage[[column]][child_rows]
+            else child[[column]][] <- NA
         }
-        child$seqNum <- rep(scans$scan_index[i], nrow(child))
-        child$retentionTime <- rep(scans$rtime[i], nrow(child))
+        child$seqNum <- scans$scan_index[child_rows]
+        child$retentionTime <- scans$rtime[child_rows]
         child$precurMtchID <- child$seqNum
-        reference <- scans$parent_reference_raw[i]
-        child$precurMtchScan <- rep(if (grepl("^[0-9]+$", reference))
-                as.numeric(reference) else reference, nrow(child))
-        parent <- parent_rows[i]
-        child$precurMtchRT <- rep(scans$rtime[parent], nrow(child))
-        child$precurMtchMZ <- rep(scans$precursor_mz[i], nrow(child))
-        child$precurMtchPPM <- rep(NA_real_, nrow(child))
+        reference <- scans$parent_reference_raw[child_rows]
+        child$precurMtchScan <- if (all(grepl("^[0-9]+$", reference)))
+            as.numeric(reference) else reference
+        child$precurMtchRT <- scans$rtime[parent_rows[child_rows]]
+        child$precurMtchMZ <- scans$precursor_mz[child_rows]
+        child$precurMtchPPM <- rep(NA_real_, length(child_rows))
         if ("precScanNum" %in% names(stage) &&
                 "precursorScanNum" %in% names(child))
-            child$precursorScanNum <- rep(stage$precScanNum[i], nrow(child))
+            child$precursorScanNum <- stage$precScanNum[child_rows]
         if ("parent_reference_raw" %in% names(child))
-            child$parent_reference_raw <- rep(reference, nrow(child))
+            child$parent_reference_raw <- reference
         if ("precursorRT" %in% names(child))
             child$precursorRT <- child$precurMtchRT
-        out[[length(out) + 1L]] <- child
     }
-    result <- do.call(rbind, out)
+    result <- rbind(links, child)
     if (!is.na(plim) && plim > 0)
         result <- result[result$msLevel != 2L |
                 (!is.na(result$inPurity) & result$inPurity > plim), ,
