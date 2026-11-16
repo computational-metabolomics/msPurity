@@ -15,7 +15,8 @@
   rmp = FALSE,
   snmeth = "median",
   allfrag = FALSE,
-  param = NULL
+  param = NULL,
+  msLevel = 2L
 )
 }
 \arguments{
@@ -23,7 +24,10 @@
 
 \item{ilim}{numeric; min intensity of a peak}
 
-\item{plim}{numeric; min precursor ion purity of the associated precursor for fragmentation spectra scan}
+\item{plim}{numeric; minimum MS2 precursor ion purity. MS3/MS4 spectra
+use fragment-quality thresholds without another precursor-purity
+requirement. Diagnostic MS3/MS4 purity estimates are retained for
+inspection and never determine whether spectra or peaks pass this filter.}
 
 \item{ra}{numeric; minimum relative abundance of a peak}
 
@@ -36,10 +40,22 @@ Fragment filtering is serial.}
 
 \item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
 
-\item{allfrag}{boolean; Whether to filter on all fragmentation spectra or just the fragmentation spectra grouped to XCMS feature}
+\item{allfrag}{logical; consider all retained fragmentation spectra when
+TRUE, or only feature-associated spectra when FALSE. In either case,
+\code{msLevel} selects the levels included in the processed result.}
 
 \item{param}{NULL, a complete \code{FilterFragSpectraParam}, or a named list
 of complete parameter objects. Parameter-set filtering requires one core.}
+
+\item{msLevel}{nonempty numeric vector of integer MS levels from 2 to 4.
+Defaults to MS2. Use \code{msLevel = 2:4} for all supported levels.
+Requested levels with no eligible spectra produce an empty result.
+
+Level selection narrows processed spectra and feature associations,
+retaining source measurements and ancestry. Start alternatives from the
+same linked object: filtering cannot restore excluded associations.
+Parameter \code{select} assigns settings within the selected levels.
+History records requested \code{msLevel} and actual \code{effective_msLevel}.}
 }
 \value{
 Returns a purityA object. The flags are stored in pa@fragSpectra: purity_pass_flag as a spectra
@@ -55,6 +71,10 @@ following columns
 \item ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
 \item pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
 }
+
+For MS3/MS4, \code{purity_pass_flag} is unknown (\code{NA});
+\code{pass_flag} describes product-quality criteria only. Filtering an MS2
+spectrum does not automatically exclude its linked MS3/MS4 descendants.
 }
 \description{
 \strong{General}

@@ -42,6 +42,14 @@
 #'
 #' * \[grouped XCMS peaks\] &ast; ------ &ast; \[MS/MS spectra\]
 #'
+#' With \code{includeMSn = TRUE}, MS3 and MS4 inherit feature membership through
+#' validated, same-file acquisition relationships. Root MS2 associations are
+#' established before \code{plim} is applied, so a rejected MS2 precursor does
+#' not remove valid descendant links. Higher levels retain their own precursor
+#' and acquisition metadata and have no MS1-based precursor-purity value.
+#' Missing or invalid ancestry does not establish a descendant feature link.
+#' Acquisition times remain raw; \code{convert2RawRT} converts feature bounds
+#' using the existing xcms retention-time mapping.
 #'
 #' ## Example LC-MS/MS processing workflow
 #'
@@ -66,10 +74,54 @@
 #' @param pa object; purityA object
 #' @param xcmsObj object; XcmsExperiment, XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object
 #' @param ppm numeric; ppm tolerance between precursor mz and XCMS feature mz
-#' @param plim numeric; minimum purity of precursor to be included
+#' @param plim numeric; minimum MS2 precursor purity to be included.
+#'   This threshold does not apply to MS3/MS4 diagnostic purity.
 #' @param intense boolean; If TRUE the most intense precursor will be used. If FALSE the precursor closest to the center of the isolation window will be used
 #' @param useGroup boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature
 #' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
+#' @param includeMSn logical; also associate MS3 and MS4 spectra through their
+#'   validated MS2 acquisition ancestors. The default retains MS2-only links.
+#' @param parentReference How to interpret parent references. Numeric
+#'   \code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
+#'   original file positions (\code{"scanIndex"}), or backend source keys
+#'   (\code{"sourceSpectrumId"}). The last option is msPurity-specific and
+#'   uses retained \code{spectrum_id_} or \code{source_spectrum_id} keys.
+#'   \code{"spectrumId"} matches native \code{spectrumRef} metadata to native
+#'   \code{spectrumId}; it requires these fields to have been supplied by the
+#'   reader. No new metadata extraction is performed. None of these identifiers
+#'   is the current position in a filtered object. All matches use the same run.
+#'   \code{"auto"} tries these interpretations and accepts a consistent mapping;
+#'   conflicting valid parents or inconsistent conventions raise an error.
+#'   Missing references remain unresolved. No parent is inferred from peak
+#'   similarity or proximity in retention time.
+#' @param purityPpm,purityTolerance Relative (ppm) and absolute (Da) tolerances
+#'   for matching an MS3/MS4 precursor to a peak in its validated parent.
+#'   The allowed difference is \code{abs(precursorMz) * purityPpm / 1e6 +
+#'   purityTolerance}. These affect diagnostic purity only; \code{ppm} remains
+#'   the feature-association tolerance. Defaults are 10 ppm and 0 Da.
+#' @details With \code{includeMSn = TRUE}, associated MS3/MS4 spectra receive
+#'   diagnostic precursor-isolation purity in \code{msPurityStagePurity}, with
+#'   an assessment status in \code{msPurityPurityStatus}. The calculation uses
+#'   stored parent peaks before queued processing and the child's recorded
+#'   isolation bounds. Explicit \code{purityA(offsets = ...)} overrides apply;
+#'   missing bounds are not replaced by vendor-specific approximations.
+#'
+#'   The closest parent peak within the matching tolerance supplies the
+#'   numerator.
+#'   Equal-distance ties are unavailable rather than resolved by intensity.
+#'   \code{pcalc()} divides its intensity by the summed positive intensities
+#'   strictly inside the isolation bounds, without interpolation, isotope
+#'   removal, low-intensity exclusion or isolation-efficiency normalization.
+#'   Missing or invalid inputs give \code{NA} and an explanatory status; known
+#'   profile parent spectra are not assessed. Irreversible processing already
+#'   applied to the input cannot be undone.
+#'
+#'   History records the parent, bounds, matched peak and settings under the
+#'   \code{frag4feature} step's \code{msn_purity} entry. \code{inPurity} retains
+#'   its MS2 meaning. Both this function's \code{plim} and the purity threshold
+#'   in \code{filterFragSpectra()} apply only to MS2, regardless of higher-level
+#'   diagnostic values. MSn averaging and processed export are separate
+#'   operations.
 #' @param createDb boolean; if yes, generate a database of MS2 spectra
 #' @param outDir string; path where (optionally generated) database file should be saved
 #' @param grpPeaklist dataframe; Can use any peak dataframe to add to databse. Still needs to be derived from the "obj" object though
@@ -135,8 +187,20 @@
 setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
-                                grp_peaklist = NA, db_name = NA, xset = NA){
+                                grp_peaklist = NA, db_name = NA, xset = NA,
+                                includeMSn = FALSE, parentReference = "auto",
+                                purityPpm = 10, purityTolerance = 0) {
   pa <- .pa_update(pa)
+
+  if (!is.logical(includeMSn) || length(includeMSn) != 1L || anyNA(includeMSn))
+    stop("includeMSn must be TRUE or FALSE.")
+  parentReference <- match.arg(parentReference,
+    c("auto", "acquisitionNum", "scanIndex", "spectrumId", "sourceSpectrumId"))
+  for (value in list(purityPpm, purityTolerance))
+    if (!is.numeric(value) || length(value) != 1L ||
+        !is.finite(value) || value < 0)
+      stop("purityPpm and purityTolerance must be single nonnegative ",
+        "finite numbers.")
   processing_started <- Sys.time()
   processing_input <- .pa_processing_input(pa, "frag4feature")
 
@@ -169,6 +233,11 @@ setMethod(f="frag4feature", signature="purityA",
     message('The param db_name is deprecated - please use dbName instead')
     dbName <- db_name
   }
+
+  if (includeMSn && isTRUE(createDb))
+    stop("MSn feature association cannot use the deprecated createDb route. ",
+      "Associate spectra first; higher-level database export requires a ",
+      "supported MSn export route.")
 
   if(.xcms_is_modern(xcmsObj)){
     XCMSnExp_bool = TRUE
@@ -215,9 +284,9 @@ setMethod(f="frag4feature", signature="purityA",
     #allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xcmsObj=xcmsObj)
   }
 
-  allpeaks$cid <- seq(1, nrow(allpeaks))
+  allpeaks$cid <- seq_len(nrow(allpeaks))
 
-  if(convert2RawRT){
+  if (convert2RawRT && nrow(allpeaks)) {
 
     conv_check = FALSE
 
@@ -243,67 +312,67 @@ setMethod(f="frag4feature", signature="purityA",
 
   }
 
-  # Check if is going to be multi-core
-  if(pa@cores>1){
-    cl <- parallel::makeCluster(pa@cores)
-    doSNOW::registerDoSNOW(cl)
-    para = TRUE
-  }else{
-    para = FALSE
-  }
+  # No MS2 roots or no matching features still yield a typed empty result.
+  grpm <- allpeaks[FALSE, , drop = FALSE]
+  empty <- list(grpid = character(), pid = integer(), sample = integer(),
+    cid = integer(), inPurity = numeric(), fileid = integer(),
+    seqNum = integer(), retentionTime = numeric(), precurMtchMZ = numeric())
+  for (name in setdiff(names(empty), names(grpm))) grpm[[name]] <- empty[[name]]
 
-  if(useGroup){
-
-    if(XCMSnExp_bool){
-      fullpeakw <- data.frame(get_full_peak_width(xcms::featureDefinitions(xcmsObj), xcmsObj = xcmsObj))
-    }else{
-      fullpeakw <- data.frame(get_full_peak_width(xcmsObj@groups, xcmsObj = xcmsObj))
+  if (nrow(puritydf) && nrow(allpeaks)) {
+    para <- pa@cores > 1
+    if (para) {
+      cl <- parallel::makeCluster(pa@cores)
+      doSNOW::registerDoSNOW(cl)
     }
-
-    fullpeakw$grpid <- seq(1, nrow(fullpeakw))
-
-    matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks=fullpeakw, intense=intense, ppm=ppm,
-                           fullp=TRUE, use_grped=TRUE)
-
-  }else{
-    # Map xcms features to the data frame (takes a while)
-    matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1,
-                           allpeaks=allpeaks,
-                           ppm = ppm,
-                           intense = intense)
-  }
-
-  if(pa@cores>1){
-      parallel::stopCluster(cl)
-  }
-
-  #shrt <- puritydf[,c('fileid', 'seqNum', 'inPurity','pid')]
-
-  if (useGroup){
-    grpedp <- matched
-  }else{
-    #Group by the xcms groups
-    #
-    if(XCMSnExp_bool){
-      grpedp <- plyr::llply(xcms::featureDefinitions(xcmsObj)$peakidx,grpByXCMS, matched=matched)
-    }else{
-      grpedp <- plyr::llply(xcmsObj@groupidx, grpByXCMS, matched=matched)
+    if (useGroup) {
+      definitions <- if (XCMSnExp_bool) xcms::featureDefinitions(xcmsObj) else
+        xcmsObj@groups
+      fullpeakw <- data.frame(get_full_peak_width(definitions,
+        xcmsObj = xcmsObj))
+      fullpeakw$grpid <- seq_len(nrow(fullpeakw))
+      matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks = fullpeakw,
+        intense = intense, ppm = ppm, fullp = TRUE, use_grped = TRUE)
+    } else {
+      matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1,
+        allpeaks = allpeaks, ppm = ppm, intense = intense)
     }
-
-    names(grpedp) <- seq(1, length(grpedp))
-    grpedp <- plyr::ldply(grpedp, .id = TRUE)
-    colnames(grpedp)[1] <- "grpid"
+    if (para) parallel::stopCluster(cl)
+    if (nrow(matched)) {
+      if (useGroup) {
+        grpm <- matched
+      } else {
+        membership <- if (XCMSnExp_bool)
+          xcms::featureDefinitions(xcmsObj)$peakidx else xcmsObj@groupidx
+        grouped <- plyr::llply(membership, grpByXCMS, matched = matched)
+        names(grouped) <- seq_along(grouped)
+        grouped <- plyr::ldply(grouped, .id = TRUE)
+        if (nrow(grouped)) {
+          colnames(grouped)[1L] <- "grpid"
+          grpm <- grouped
+        }
+      }
+    }
   }
-
-  # Add some extra info for filtering purposes
-  #grpm <- merge(grpedp, shrt, by = c('pid', 'fileid', 'seqNum'))
-  grpm <- grpedp
 
   # Make sure order is by grpid
-  grpm <- grpm[order(grpm$grpid),]
+  grpm <- grpm[order(grpm$grpid), , drop = FALSE]
 
-  # Filter out any precursor below purity threshold
-  if (!is.na(plim) && plim>0){
+  # Descendants use the MS2 associations before MS2 precursor-purity exclusion.
+  pa <- .pa_processing_relink(pa)
+  pa@params$msnLineage <- NULL
+  if (includeMSn) {
+    source_metadata <- .pa_msn_spectra_metadata(pa@spectra)
+    preparation <- .pa_msn_ancestry(source_metadata, parentReference)
+    preparation$source_metadata <- source_metadata
+    grpm <- .pa_msn_feature_links(grpm, preparation, plim)
+    diagnostic <- .pa_msn_purity(pa@spectra, preparation, unique(grpm$pid),
+      purityPpm, purityTolerance, pa@params$purityA$offsets)
+    pa@spectra <- diagnostic$spectra
+    for (field in c("msPurityStagePurity", "msPurityPurityStatus"))
+      grpm[[field]] <- pa@spectra[[field]][match(grpm$pid, pa@spectra$pid)]
+    pa@params$msnLineage <- preparation
+  } else if (!is.na(plim) && plim > 0) {
     grpm <- grpm[grpm$inPurity>plim,]
   }
 
@@ -311,14 +380,23 @@ setMethod(f="frag4feature", signature="purityA",
   prm <- if (methods::.hasSlot(pa, "params")) pa@params else list()
   prm$frag4feature <- list(ppm = ppm, plim = plim, intense = intense,
                            convert2RawRT = convert2RawRT, useGroup = useGroup,
-                           xcmsObj_class = class(xcmsObj)[1])
+                           xcmsObj_class = class(xcmsObj)[1],
+                           includeMSn = includeMSn,
+                           parentReference = parentReference,
+                           purityPpm = purityPpm,
+                           purityTolerance = purityTolerance)
   pa@params <- prm
+  if (includeMSn) {
+    pa@params$frag4feature$resolvedParentReference <-
+      preparation$parentReference
+    pa@params$frag4feature$msn_purity <- diagnostic$parameters
+  }
 
   # add to the slots
-  pa <- .pa_processing_relink(pa)
   pa@grped_df <- grpm
   # Each linked scan is stored once; grped_ms2 is rebuilt from the links.
-  pa@fragSpectra <- .pa_raw_scans(pa, unique(grpm$pid))
+  pa@fragSpectra <- if (nrow(grpm)) .pa_raw_scans(pa, unique(grpm$pid)) else
+    pa@spectra[integer()]
   pa <- .pa_sync_legacy(pa, grped_ms2 = .pa_grouped_legacy(pa))
 
   if (createDb){

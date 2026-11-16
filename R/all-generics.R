@@ -89,7 +89,10 @@ setGeneric(name="frag4feature",
            def=function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE,
                         useGroup=NA, createDb=FALSE,
                         outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA,
-                        create_db = NA, grp_peaklist = NA, db_name = NA, xset = NA){
+                        create_db = NA, grp_peaklist = NA, db_name = NA,
+                        xset = NA, includeMSn = FALSE,
+                        parentReference = "auto",
+                        purityPpm = 10, purityTolerance = 0) {
              standardGeneric("frag4feature")
            }
 )
@@ -118,7 +121,8 @@ setGeneric(name="averageAllFragSpectra",
 
 setGeneric(name = "filterFragSpectra",
     def = function(pa, ilim = 0, plim = 0.8, ra = 0, snr = 3, cores = 1,
-        rmp = FALSE, snmeth = "median", allfrag = FALSE, param = NULL) {
+        rmp = FALSE, snmeth = "median", allfrag = FALSE, param = NULL,
+        msLevel = 2L) {
         standardGeneric("filterFragSpectra")
     }
 )

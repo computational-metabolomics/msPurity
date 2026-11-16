@@ -109,6 +109,11 @@ The dataset is written to \code{file.path(outDir, dbName)}; the default name end
 beside its destination and moved into place only once complete, so an interrupted write leaves nothing behind.
 
 CAMERA annotation (\code{xsa}) and a custom \code{grpPeaklist} are not mapped to the Parquet output and are refused.
+
+Processed-result export currently supports MS2 outputs. Processed
+MS3/MS4 fragment or averaged spectra must remain in the Spectra workflow;
+these writers reject them explicitly. Higher-level measurements already
+present in source files retain their existing raw-data conversion support.
 }
 \examples{
 #====== XCMS =================================

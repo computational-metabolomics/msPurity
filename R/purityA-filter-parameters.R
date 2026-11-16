@@ -93,10 +93,13 @@
 #' A complete filtering parameter set extending \code{ProtGenerics::Param}.
 #' Defaults are fixed when the object is constructed. Supply one object or a
 #' named list of objects to \code{filterFragSpectra(param = )}. Scalar calls
-#' remain available. Call-wide \code{rmp}, \code{allfrag} and \code{cores}
+#' remain available. Call-wide \code{rmp}, \code{allfrag}, \code{msLevel}
+#' and \code{cores}
 #' are not fields of this object; parameter-set filtering requires one core.
 #'
-#' \code{select} assigns settings to spectra; it does not discard spectra.
+#' \code{select} assigns settings within the spectra selected by the call;
+#' it does not discard spectra or include levels beyond the call's
+#' \code{msLevel} argument, which defaults to MS2.
 #' Fields are combined with AND and values within a field with OR. Supported
 #' fields are \code{msLevel}, \code{massAnalyzer}, \code{scanFilterAnalyzer},
 #' \code{activationType}, \code{collisionEnergy}, \code{collisionEnergyUnit}
@@ -120,6 +123,7 @@
 #' @param ilim Minimum peak intensity in recorded units.
 #' @param plim Minimum MS2 precursor purity, between zero and one. \code{NA}
 #'   explicitly skips purity filtering for spectra matched by this object.
+#'   MS3/MS4 diagnostic purity is never used by this threshold.
 #' @param ra Minimum relative abundance on the existing 0 to 100 scale.
 #' @param snr Minimum signal-to-noise ratio, using the existing statistic.
 #' @param snmeth Noise statistic: \code{"median"} or \code{"mean"}.

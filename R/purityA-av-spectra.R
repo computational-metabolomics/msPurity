@@ -377,6 +377,12 @@ setMethod(f="averageAllFragSpectra", signature="purityA",
 
 average_xcms_grouped_msms <- function(pa, av_level){
 
+    if (nrow(pa@grped_df)) {
+        rows <- match(unique(pa@grped_df$pid), pa@spectra$pid)
+        if (any(Spectra::msLevel(pa@spectra)[rows] > 2L, na.rm = TRUE))
+            stop("Averaging MS3/MS4 feature links is not supported.")
+    }
+
     processing_started <- Sys.time()
     processing_step <- switch(av_level,
         intra = "averageIntraFragSpectra", inter = "averageInterFragSpectra",

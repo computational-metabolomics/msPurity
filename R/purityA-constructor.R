@@ -95,6 +95,11 @@ NULL
 #' @param ppmInterp numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
 #'                           the precursor ion found in the neighbouring scans.
 #' @param cores numeric; Number of cores to use
+#' @details MS3/MS4 spectra are retained with their acquisition metadata, but
+#'   MS1-based precursor purity is calculated only for MS2. Higher-level
+#'   feature association is enabled with `frag4feature(includeMSn = TRUE)`.
+#'   That operation also estimates diagnostic MS3/MS4 purity from their parent
+#'   fragmentation spectra; purity thresholds still apply only to MS2.
 #'
 #' @return Returns a purityA object (pa). The MS/MS scans and their purity are
 #' stored as a \code{Spectra} object in the pa@@spectra slot, with the columns

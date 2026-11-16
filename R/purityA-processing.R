@@ -83,7 +83,7 @@
     unique(ids[!is.na(ids) & nzchar(ids)])
 }
 
-.pa_processing_input <- function(pa, step, allfrag = FALSE) {
+.pa_processing_input <- function(pa, step, allfrag = FALSE, source = NULL) {
     sp <- switch(step,
         frag4feature = pa@spectra,
         filterFragSpectra = pa@fragSpectra,
@@ -94,6 +94,8 @@
     )
     if (step == "filterFragSpectra" && allfrag)
         sp <- pa@spectra
+    if (!is.null(source))
+        sp <- source
     out <- list(
         previous_steps = .pa_processing_tips(sp),
         spectra = .pa_processing_refs(sp)

@@ -198,6 +198,14 @@ expect_legacy_equal <- function(object, expected) {
     for (s in setdiff(names(attributes(expected)), "class")) {
         a <- attr(object, s, exact = TRUE)
         b <- attr(expected, s, exact = TRUE)
+        if (s == "filter_frag_params" && length(b)) {
+            # Historical objects have no level-selection settings.
+            for (name in intersect(c("msLevel", "effective_msLevel"),
+                    names(a))) {
+                expect_identical(a[[name]], 2L, label = name)
+                a[[name]] <- NULL
+            }
+        }
         if (s == "grped_ms2") {
             a <- unrow(a)
             b <- unrow(b)
