@@ -17,6 +17,12 @@
   outDir = ".",
   dbName = NA,
   grpPeaklist = NA,
+  ms2RtMap = NULL,
+  rtTol = 0,
+  rtSource = c("precursor", "ms2"),
+  groupWindow = c("full", "median"),
+  includeFilled = FALSE,
+  estimateRtMap = FALSE,
   use_group = NA,
   out_dir = NA,
   create_db = NA,
@@ -34,9 +40,11 @@
 
 \item{plim}{numeric; minimum purity of precursor to be included}
 
-\item{intense}{boolean; If TRUE the most intense precursor will be used. If FALSE the precursor closest to the center of the isolation window will be used}
+\item{intense}{boolean; If TRUE the most intense precursor (iMz) will be used. If FALSE the precursor closest to the center of the isolation
+window (aMz) will be used. Missing values fall back to aMz and then to the precursor m/z of the mzML file. Applies to both linking modes.}
 
-\item{convert2RawRT}{boolean; If retention time correction has been used in XCMS set this to TRUE}
+\item{convert2RawRT}{boolean; If TRUE, MS/MS times are mapped to the adjusted retention time scale before being compared with XCMS windows.
+If FALSE, raw MS/MS times are compared with the XCMS windows as they are.}
 
 \item{useGroup}{boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature}
 
@@ -47,6 +55,28 @@
 \item{dbName}{character; name to assign to (optionally exported) database.}
 
 \item{grpPeaklist}{dataframe; Can use any peak dataframe to add to databse. Still needs to be derived from the "obj" object though}
+
+\item{ms2RtMap}{object; mapping to the adjusted scale for MS/MS files the XCMS object does not align. Either an XCMS object holding those files
+with adjusted retention times, a list of functions from raw to adjusted time, or a numeric vector of offsets (adjusted = raw + offset).
+Lists and vectors are named by file. Files aligned in \code{xcmsObj} keep that alignment.}
+
+\item{rtTol}{numeric; tolerance in seconds added to both sides of each retention time window, to absorb error left after mapping}
+
+\item{rtSource}{character; MS/MS time to compare: "precursor" uses the time of the MS1 survey scan (falling back to the MS/MS scan time),
+"ms2" uses the time of the MS/MS scan}
+
+\item{groupWindow}{character; window of a feature when \code{useGroup = TRUE}: "full" uses the minimum rtmin and maximum rtmax of the
+representative peak of each sample, "median" their median rtmin and rtmax}
+
+\item{includeFilled}{boolean; If TRUE, peaks added by xcms::fillChromPeaks are used for linking and flagged in the is_filled column.
+A link through a filled peak means the MS/MS fell where the feature was expected in that file, not inside a detected peak.
+DDA files have sparse MS1 data, so many of their features exist only as filled peaks.}
+
+\item{estimateRtMap}{boolean; If TRUE and \code{useGroup = TRUE}, files with no mapping get one estimated from their precursors. Scans matching exactly one
+feature are landmarks: a first pass looks 60 seconds (or rtTol if wider) either side of each feature rtmed and takes the median
+offset, and two more passes look 15 and 8 seconds around the current estimate. A robust loess of the offset against time is used
+when it fits the landmarks clearly better than a constant offset. The method and the number of landmarks are reported in the
+diagnostics. An estimate is weaker than a mapping from xcms, so it is off by default}
 
 \item{use_group}{boolean; (Deprecated, to be removed - replaced with useGroup argument for style consistency)}
 
@@ -63,7 +93,17 @@
 \value{
 Returns a purityA object (pa) with the following slots populated:
 \itemize{
-\item pa@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here
+\item pa@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here.
+Besides the XCMS columns and the precursor details, it holds
+\itemize{
+\item precurMtchRTadj: the MS/MS time on the adjusted scale, as compared with the window
+\item rtMapStatus: the mapping status of the file (see above)
+\item precurMzSource: the precursor m/z used (iMz, aMz or precursorMZ)
+\item is_filled: whether the peak was added by fillChromPeaks (individual mode)
+\item rtminWin, rtmaxWin: the feature window used (grouped mode)
+\item rtApexDist: distance from the peak or feature apex, divided by the window width
+\item matchRank: rank of the match among the matches of the scan, by rtApexDist then ppm error
+}
 \item pa@fragSpectra: The linked fragmentation spectra as a \code{Spectra} object, each scan once, identified by
 its \code{pid}. \code{groupedSpectra(pa)} returns them as a list per XCMS feature
 \item pa@grped_ms2: The legacy list of fragmentation spectra for each grouped XCMS feature, filled while
@@ -89,12 +129,38 @@ linked to 1 or more individual feature and an individual XCMS feature can be lin
 }
 
 Alternatively, if the "useGroup" argument is set to TRUE, the full width of the grouped peak (determined as the minimum rtmin
-and maximum rtmax of the all associated individual peaks) will be used. This option should be used if the mzML file with
+and maximum rtmax of the representative peak of each sample, see \code{groupWindow}) will be used. This option should be used if the mzML file with
 MS/MS has very limited MS1 data and so individual chromatographic peaks might not be detected with the mzML files containing the
 MS/MS data. However, it should be noted this may lead to potential inaccurate linking.
 \itemize{
 \item [grouped XCMS peaks] * ------ * [MS/MS spectra]
 }
+}
+
+\subsection{Retention time correction}{
+
+MS/MS times are raw times read from each mzML file, while XCMS peak and feature windows are on the adjusted scale once
+retention time correction has been applied. With \code{convert2RawRT = TRUE}, the time of each MS/MS scan is mapped to the
+adjusted scale of its file, by linear interpolation between the raw and adjusted scan times XCMS holds for that file, and is
+compared there, in both linking modes. A time equal to an XCMS scan time maps exactly to the adjusted time XCMS gave that scan.
+
+Files are matched to XCMS samples by name, so the MS/MS files can be any subset of the XCMS samples in any order. Each file gets a
+mapping status, stored with the other diagnostics in \code{pa@params$frag4feature$rt_diagnostics}:
+\itemize{
+\item aligned: the file is in the XCMS object, which holds its adjusted times;
+\item unaligned: no retention time correction was applied, times are used unchanged;
+\item external: the mapping comes from \code{ms2RtMap};
+\item estimated: the mapping was estimated from the MS/MS precursors (\code{estimateRtMap = TRUE});
+\item missing: the features are aligned but nothing maps this file, so its raw times are compared with adjusted windows (with a warning);
+\item not_converted: \code{convert2RawRT = FALSE}.
+}
+
+When the MS/MS files were not part of the retention time correction (for example DDA files processed apart from the full-scan
+samples), supply their mapping with \code{ms2RtMap}. The most reliable route is landmark alignment in xcms: run
+\code{findChromPeaks} on the DDA files, then
+\code{adjustRtime(ddaObj, LamaParama(lamas = featureDefinitions(ms1Obj)[, c("mzmed", "rtmed")]))}, and pass \code{ddaObj}.
+When XCMS fits the correction, it is best fitted on the full-scan samples only, with
+\code{PeakGroupsParam(subset = <MS1 samples>, subsetAdjust = "average")}, as DDA files have sparse MS1 data.
 }
 
 \subsection{Example LC-MS/MS processing workflow}{
@@ -119,8 +185,10 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 \itemize{
 \item If using only a single file, then grouping still needs to be performed within XCMS before frag4feature can be used.
 \item Fragmentation spectra below a certain precursor ion purity can be be removed (see plim argument).
+\item Peaks added by xcms::fillChromPeaks are not used for linking unless \code{includeFilled = TRUE}.
+\item One MS/MS scan can be linked to several peaks, so it can appear more than once for a feature when the feature holds two peaks
+of the same file. \code{matchRank} orders the matches of each scan.
 \item A SQLite database can be created directly here but the functionality has been deprecated and the createDatabase function should now be used
-\item Can experience some problems when using XCMS version < 3 and obiwarp retention time correction.
 }
 }
 }

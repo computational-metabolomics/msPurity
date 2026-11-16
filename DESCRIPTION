@@ -39,7 +39,7 @@ Depends:
     Rcpp
 Imports:
     plyr,
-    dplyr,
+    dplyr (>= 1.1.0),
     dbplyr,
     magrittr,
     foreach,
@@ -114,6 +114,7 @@ Collate:
     'purityA-create-msp.R'
     'purityA-filter-frag-spectra.R'
     'purityA-filter-parameters.R'
+    'purityA-frag4feature-rt.R'
     'purityA-frag4feature.R'
     'purityA-processing.R'
     'purityA-spectra.R'

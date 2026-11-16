@@ -517,7 +517,7 @@
         }
     }
     g <- g[keep, , drop = FALSE]
-    fileid <- if ("sample" %in% names(g)) g$sample else g$fileid
+    fileid <- if ("fileid" %in% names(g)) g$fileid else g$sample
     data.frame(grpid = as.integer(as.character(g$grpid)),
                pid = as.integer(g$pid),
                fileid = as.integer(as.character(fileid)),

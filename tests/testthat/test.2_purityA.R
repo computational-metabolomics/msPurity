@@ -95,7 +95,8 @@ test_that("checking frag4feature", {
     }else{
       expect_equal(pa@grped_ms2,  pa@grped_ms2)
     }
-    expect_equal(pa@grped_df, pa_saved@grped_df)
+    # frag4feature() appends columns after the saved ones
+    expect_equal(pa@grped_df[, names(pa_saved@grped_df)], pa_saved@grped_df)
 
   }
 
@@ -158,6 +159,8 @@ test_that("checking frag4feature (fillpeaks)", {
     }
 
     pa <- frag4feature(pa = pa, xcmsObj = xcmsObj, createDb = FALSE)
+    # Filled peaks are not used for linking by default
+    expect_false(any(pa@grped_df$is_filled))
 
     #saveRDS(pa, file.path("inst", "extdata", "test_data", "purityA", "2_frag4feature_pa.rds"))
 
@@ -186,7 +189,8 @@ test_that("checking frag4feature (fillpeaks)", {
       expect_equal(pa@grped_ms2,  pa@grped_ms2)
     }
 
-    expect_equal(pa@grped_df, pa_saved@grped_df)
+    # frag4feature() appends columns after the saved ones
+    expect_equal(pa@grped_df[, names(pa_saved@grped_df)], pa_saved@grped_df)
 
   }
 })
