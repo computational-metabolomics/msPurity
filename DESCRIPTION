@@ -112,6 +112,7 @@ Collate:
     'purityA-av-spectra.R'
     'purityA-constructor.R'
     'purityA-isolation.R'
+    'purityA-ms1-observations.R'
     'purityA-create-msp.R'
     'purityA-filter-frag-spectra.R'
     'purityA-filter-parameters.R'

@@ -373,7 +373,7 @@ setMethod(f="frag4feature", signature="purityA",
       grpm[[field]] <- pa@spectra[[field]][match(grpm$pid, pa@spectra$pid)]
     pa@params$msnLineage <- preparation
   } else if (!is.na(plim) && plim > 0) {
-    grpm <- grpm[grpm$inPurity>plim,]
+    grpm <- grpm[which(grpm$inPurity > plim), , drop = FALSE]
   }
 
   # Record the arguments for provenance.
