@@ -147,12 +147,14 @@
     has_native <- !is.na(scans$spectrumRef) & scans$ms_level > 1L
     convention <- parentReference
     if (convention == "auto") {
-        for (i in seq_len(nrow(scans))) {
-            resolved <- vapply(candidates, function(candidate) {
-                if (candidate$valid[i]) candidate$parent[i] else NA_integer_
-            }, integer(1L))
-            if (length(unique(resolved[!is.na(resolved)])) > 1L)
+        resolved <- rep(NA_integer_, nrow(scans))
+        for (candidate in candidates) {
+            conflict <- candidate$valid & !is.na(resolved) &
+                candidate$parent != resolved
+            if (any(conflict))
                 stop("Ambiguous parent references; specify parentReference.")
+            selected <- candidate$valid & is.na(resolved)
+            resolved[selected] <- candidate$parent[selected]
         }
         numeric_candidates <- candidates[conventions != "spectrumId"]
         counts <- vapply(numeric_candidates,
