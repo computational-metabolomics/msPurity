@@ -306,13 +306,9 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
     invisible(fallback)
 }
 
-.pa_filter_resolve <- function(source, param, fallback) {
-    objects <- .pa_filter_inputs(param)
-    .pa_filter_call_controls(fallback)
-    metadata <- .pa_filter_metadata(source)
-    specs <- lapply(objects, as.list)
-    matched <- lapply(specs, function(spec) {
-        keep <- rep(TRUE, length(source))
+.pa_parameter_matches <- function(metadata, specs) {
+    lapply(specs, function(spec) {
+        keep <- rep(TRUE, nrow(metadata))
         for (axis in names(spec$select)) {
             wanted <- spec$select[[axis]]
             value <- metadata[[axis]]
@@ -325,8 +321,12 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
         }
         keep
     })
-    fields <- c("ilim", "plim", "ra", "snr", "snmeth")
-    values <- c(lapply(specs, `[`, fields), list(fallback[fields]))
+}
+
+# Callers supply applicable settings and matches; assignment and identities use
+# the same rules for filtering and purity. Fallbacks may differ by MS level.
+.pa_parameter_assign <- function(source, metadata, objects, matched, values,
+    fallback_index) {
     equal <- function(a, b) {
         isTRUE(all.equal(a, b, check.attributes = FALSE, tolerance = 0))
     }
@@ -340,16 +340,17 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
         }
         groups[i] <- same[1L]
     }
-    fallback_index <- length(values)
-    choice <- rep(fallback_index, length(source))
+    choice <- rep(fallback_index, length.out = length(source))
+    assigned <- rep(FALSE, length(source))
     conflicts <- integer()
     set_names <- rep(list(character()), length(source))
     for (i in seq_along(matched)) {
         rows <- which(matched[[i]])
         previous <- choice[rows]
-        conflict <- previous != fallback_index & groups[previous] != groups[i]
+        conflict <- assigned[rows] & groups[previous] != groups[i]
         conflicts <- c(conflicts, rows[conflict])
-        choice[rows[previous == fallback_index]] <- i
+        choice[rows[!assigned[rows]]] <- i
+        assigned[rows] <- TRUE
         set_names[rows] <- lapply(set_names[rows], c, names(matched)[i])
     }
     if (length(conflicts))
@@ -363,12 +364,24 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
         settings[match(order, selected_groups)], ids) else list()
     assignment <- data.frame(spectrum_index = seq_along(source),
         parameter_id = ids[match(selected_groups, order)],
-        fallback_used = choice == fallback_index, stringsAsFactors = FALSE)
+        fallback_used = !assigned, stringsAsFactors = FALSE)
     if ("pid" %in% Spectra::spectraVariables(source))
         assignment$pid <- source$pid
     assignment$parameter_set_names <- set_names
     list(parameters = settings, assignments = assignment, metadata = metadata,
         parameter_sets = sets, parameter_objects = objects,
-        unused_parameter_sets = names(matched)[
-            !vapply(matched, any, logical(1))])
+        unused_parameter_sets = names(objects)[!names(objects) %in%
+                names(matched)[vapply(matched, any, logical(1))]])
+}
+
+.pa_filter_resolve <- function(source, param, fallback) {
+    objects <- .pa_filter_inputs(param)
+    .pa_filter_call_controls(fallback)
+    metadata <- .pa_filter_metadata(source)
+    specs <- lapply(objects, as.list)
+    matched <- .pa_parameter_matches(metadata, specs)
+    fields <- c("ilim", "plim", "ra", "snr", "snmeth")
+    values <- c(lapply(specs, `[`, fields), list(fallback[fields]))
+    .pa_parameter_assign(source, metadata, objects, matched, values,
+        fallback_index = length(values))
 }

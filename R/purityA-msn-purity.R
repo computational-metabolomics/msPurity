@@ -19,7 +19,8 @@
 
 # Read the supplied parent measurement, including its queued peak processing.
 .pa_msn_purity <- function(source, ancestry, pids, mostIntense = FALSE,
-    offsets = NA_real_, ilim = 0, isotopes = FALSE, im = NULL) {
+    offsets = NA_real_, ilim = 0, isotopes = FALSE, im = NULL,
+    configuration = NULL) {
     scans <- ancestry$scans
     rows <- which(scans$ms_level > 2L & scans$pid %in% pids)
     parent <- match(scans$parent_id[rows], scans$spectrum_id)
@@ -45,7 +46,23 @@
         status = rep("missing_parent", length(rows)))
     if (is.null(offsets)) offsets <- NA_real_
     windows <- .pa_isolation_windows(result$precursor_mz, result$lower_mz,
-        result$upper_mz, result$native_isolation_target_mz, offsets)
+        result$upper_mz, result$native_isolation_target_mz,
+        if (is.null(configuration)) offsets else NA_real_)
+    settings <- rep(list(list(mostIntense = mostIntense, ilim = ilim,
+                isotopes = isotopes, im = im)), length(rows))
+    if (!is.null(configuration)) {
+        assignment <- configuration$assignments
+        ids <- assignment$parameter_id[match(result$pid, assignment$pid)]
+        settings <- unname(configuration$parameter_sets[ids])
+        for (id in unique(ids)) {
+            group <- which(ids == id)
+            windows[group, ] <- .pa_isolation_windows(
+                result$precursor_mz[group], result$lower_mz[group],
+                result$upper_mz[group],
+                result$native_isolation_target_mz[group],
+                configuration$parameter_sets[[id]]$offsets)
+        }
+    }
     result$lower_mz <- windows$isolationWindowLowerMz
     result$upper_mz <- windows$isolationWindowUpperMz
     result$window_source <- windows$source
@@ -59,6 +76,7 @@
     arrays <- if (length(parents)) .msp_peaks(measurements) else list()
     centroided <- Spectra::centroided(measurements)
     for (i in which(valid)) {
+        rule <- settings[[i]]
         k <- match(parent[i], parents)
         peaks <- as.matrix(arrays[[k]])
         result$status[i] <- "profile_parent"
@@ -70,7 +88,7 @@
                 any(peaks[, "intensity"] < 0)) next
         selected <- .pa_precursor_candidates(peaks, result$precursor_mz[i],
             result$precursor_intensity[i], result$lower_mz[i],
-            result$upper_mz[i], mostIntense)
+            result$upper_mz[i], rule$mostIntense)
         result$status[i] <- "missing_precursor_peak"
         if (!length(selected)) next
         result$status[i] <- "ambiguous_precursor_peak"
@@ -84,7 +102,7 @@
         if (peaks[selected, "intensity"] == 0) next
         estimate <- pcalc(peaks, mzmin = result$lower_mz[i],
             mzmax = result$upper_mz[i], mztarget = result$matched_mz[i],
-            ilim = ilim, isotopes = isotopes, im = im)
+            ilim = rule$ilim, isotopes = rule$isotopes, im = rule$im)
         result$status[i] <- "invalid_estimate"
         if (!is.finite(estimate[1L]) || estimate[1L] < 0 || estimate[1L] > 1)
             next
@@ -108,5 +126,8 @@
     parameters <- list(method = "parent_spectrum", mostIntense = mostIntense,
         offsets = offsets, ilim = ilim, isotopes = isotopes, im = im,
         iwNorm = FALSE, interpolation = "none", observations = result)
+    if (!is.null(configuration))
+        parameters <- parameters[c("method", "iwNorm", "interpolation",
+                "observations")]
     list(spectra = source, parameters = parameters)
 }

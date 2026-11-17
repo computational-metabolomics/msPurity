@@ -121,6 +121,8 @@ Collate:
     'purityA-msn-purity.R'
     'purityA-msn-retention.R'
     'purityA-processing.R'
+    'purityA-purity-parameters.R'
+    'purityA-purity-processing.R'
     'purityA-spectra.R'
     'purityA-validate.R'
     'purityD-class.R'

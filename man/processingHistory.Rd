@@ -47,6 +47,14 @@ Where worker settings differ, cores records the requested value and
 effective_cores records the execution used. Imported settings do not
 invent missing execution information.
 
+When parameter objects assign settings by acquisition metadata, the
+top-level scalar settings are fallbacks, not settings applied to every
+spectrum. Use \code{parameters$configuration$assignments} to find each
+spectrum's \code{parameter_id}, then retrieve that entry from
+\code{parameters$configuration$parameter_sets}. Matching parameter objects
+supply complete settings. Call-wide scope and execution controls remain
+at the top level. For scalar-only calls, no assignment lookup is needed.
+
 For new purity assessments, \code{parameters$resolved} contains one settings
 list per input file, keyed by file position. Each list identifies the file,
 the isolation offsets actually selected, their source and selection method,
