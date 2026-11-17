@@ -195,6 +195,41 @@ test_that("every scan has one best match, and rtTol and groupWindow change the w
     expect_lte(nrow(med), nrow(full))
 })
 
+test_that("a Frag4FeatureParam with the RT settings links as the scalar call", {
+    skip_if_no_mspuritydata()
+    suppressPackageStartupMessages(library(xcms))
+    pa <- .golden_pa("1_purityA_pa.rds")
+    x <- .golden_xcms("msms_only_xcmsnexp.rds")
+    param <- Frag4FeatureParam(useGroup = TRUE, rtTol = 2,
+                               rtSource = "ms2", groupWindow = "median")
+    scalar <- .q(frag4feature(pa, x, useGroup = TRUE, rtTol = 2,
+                              rtSource = "ms2", groupWindow = "median"))
+    typed <- .q(frag4feature(pa, x, param = param))
+    expect_gt(nrow(typed@grped_df), 0L)
+    expect_identical(typed@grped_df, scalar@grped_df)
+    record <- tail(processingParameters(typed, "frag4feature"), 1L)[[1L]]
+    expect_identical(record[names(as.list(param))], as.list(param))
+    expect_error(frag4feature(pa, x, param = param, rtTol = 3),
+                 "rtTol conflicts")
+})
+
+test_that("MS3 and MS4 rows keep their own precursor m/z and time", {
+    skip_if_not_installed("xcms")
+    prepared <- .msn_standard_feature("tryptophan", "MSn")
+    pa <- .q(purityA(.msn_standard_file("tryptophan", "MSn"), cores = 1L,
+                     plotP = FALSE, msLevel = 2:4,
+                     parentReference = "acquisitionNum"))
+    g <- .q(frag4feature(pa, prepared$xe, ppm = 10, msLevel = 2:4,
+                         parentReference = "acquisitionNum"))@grped_df
+    child <- g[g$msLevel > 2L, , drop = FALSE]
+    expect_gt(nrow(child), 0L)
+    expect_true(all(child$precurMzSource == "precursorMZ"))
+    # No retention time correction, so the mapped time is the precursor time.
+    expect_equal(child$precurMtchRTadj, child$precurMtchRT)
+    expect_true(all(g$precurMzSource[g$msLevel == 2L] %in%
+                    c("iMz", "aMz", "precursorMZ")))
+})
+
 test_that("MS/MS files outside the XCMS object are mapped by ms2RtMap or estimated", {
     skip_if_no_mspuritydata()
     suppressPackageStartupMessages(library(xcms))

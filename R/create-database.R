@@ -63,6 +63,8 @@
 #' db_pth <- create_database(pa, xset, out_dir = tempdir())
 #' @export
 create_database <-  function(pa, xset, xsa=NULL, out_dir='.', grp_peaklist=NA, db_name=NA){
+  pa <- .pa_update(pa)
+  .pa_require_ms2_export(pa)
   .msp_deprecate_sqlite("create_database()",
                         "Use createDatabase(format = \"parquet\") instead.")
   ########################################################

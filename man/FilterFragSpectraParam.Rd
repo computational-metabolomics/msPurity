@@ -22,8 +22,11 @@ FilterFragSpectraParam(
 
 \item{ilim}{Minimum peak intensity in recorded units.}
 
-\item{plim}{Minimum MS2 precursor purity, between zero and one. \code{NA}
-explicitly skips purity filtering for spectra matched by this object.}
+\item{plim}{Minimum precursor purity, between zero and one, for each
+spectrum matched by this object, including MS3/MS4. Purity must be
+strictly greater than this value; an unavailable assessment fails an
+active threshold. \code{NA} skips purity filtering. Each spectrum uses
+its own assessment from \code{purityA()}, independently of its ancestors.}
 
 \item{ra}{Minimum relative abundance on the existing 0 to 100 scale.}
 
@@ -43,11 +46,18 @@ its complete settings, including the selectors.
 A complete filtering parameter set extending \code{ProtGenerics::Param}.
 Defaults are fixed when the object is constructed. Supply one object or a
 named list of objects to \code{filterFragSpectra(param = )}. Scalar calls
-remain available. Call-wide \code{rmp}, \code{allfrag} and \code{cores}
+remain available. Call-wide \code{rmp}, \code{allfrag}, \code{msLevel}
+and \code{cores}
 are not fields of this object; parameter-set filtering requires one core.
+Input scope (\code{msLevel}, \code{allfrag}), flag retention versus peak
+removal (\code{rmp}) and execution controls stay on the call, allowing the
+same scientific settings to be reused for different processing choices.
+Processing history records both; see \code{\link{processingParameters}}.
 }
 \details{
-\code{select} assigns settings to spectra; it does not discard spectra.
+\code{select} assigns settings within the spectra selected by the call;
+it does not discard spectra or include levels beyond the call's
+\code{msLevel} argument, which defaults to MS2.
 Fields are combined with AND and values within a field with OR. Supported
 fields are \code{msLevel}, \code{massAnalyzer}, \code{scanFilterAnalyzer},
 \code{activationType}, \code{collisionEnergy}, \code{collisionEnergyUnit}
@@ -64,8 +74,9 @@ can supply the final CID/HCD activation type and an \code{FTMS} or
 or ambiguous filters leave the activation type unknown. Collision energies
 and their units are not inferred from scan filters.
 Use \code{NA} to select unknown metadata. Spectra matched by no parameter
-set receive the filtering call's scalar settings. Overlapping sets must
-have the same complete effective settings.
+set receive the filtering call's scalar settings. For unmatched MS3/MS4,
+purity filtering is skipped unless the call explicitly supplies
+\code{plim}. Overlapping sets must have the same complete effective settings.
 }
 \examples{
 filter_param <- FilterFragSpectraParam(plim = 0.7, snr = 3)

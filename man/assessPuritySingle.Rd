@@ -30,9 +30,15 @@ assessPuritySingle(
 
 \item{mostIntense}{boolean; True if the most intense peak is used for calculation. False if the centered peak is used}
 
-\item{nearest}{boolean; True if the peak selected is as the nearest MS1 scan. If False then the preceding scan is used}
+\item{nearest}{logical; TRUE uses the nearest usable MS1 on either side.
+FALSE requires the reported preceding reference. Missing permitted measurements
+produce NA purity; a later measurement is not substituted.}
 
-\item{offsets}{vector; Overide the isolation offsets found in the mzML filee.g. c(0.5, 0.5)}
+\item{offsets}{numeric; Two nonnegative lower and upper offsets
+in Da, with positive total width. Explicit offsets set a window
+around the selected precursor m/z. NA uses each event's recorded
+absolute bounds. A selected precursor outside those bounds has
+unavailable purity.}
 
 \item{cores}{numeric; Number of cores to use}
 
@@ -44,7 +50,10 @@ assessPuritySingle(
 
 \item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 
-\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+\item{iwNormFun}{function; Receives m/z offsets from the isolation-window
+midpoint and returns intensity weights. The default Gaussian accounts for
+edge effects and spans the resolved isolation bounds. Caller functions are
+used without shifting or rescaling.}
 
 \item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 

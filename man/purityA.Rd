@@ -19,7 +19,10 @@ purityA(
   mzRback = "pwiz",
   isotopes = TRUE,
   im = NULL,
-  ppmInterp = 7
+  ppmInterp = 7,
+  msLevel = 2L,
+  parentReference = "auto",
+  param = NULL
 )
 }
 \arguments{
@@ -32,9 +35,17 @@ filtering applied to them also applies to the purity calculation}
 
 \item{mostIntense}{boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.}
 
-\item{nearest}{boolean; True if the peak selected is from either the preceding scan or the nearest.}
+\item{nearest}{logical; TRUE uses the nearest usable MS1 measurement on either
+side. FALSE requires the reported preceding MS1 reference. When references are
+absent throughout a file, the preceding MS1 is used. A later measurement never
+substitutes for an unavailable preceding reference. Missing permitted
+measurements produce NA purity; one usable measurement supports a single estimate.}
 
-\item{offsets}{vector; Override the isolation offsets found in the mzML file e.g. c(0.5, 0.5)}
+\item{offsets}{numeric; Two nonnegative lower and upper offsets
+in Da, with positive total width. Explicit offsets set a window
+around the selected precursor m/z. NA uses each event's recorded
+absolute bounds. A selected precursor outside those bounds has
+unavailable purity.}
 
 \item{plotP}{boolean; If TRUE a plot of the purity is to be saved}
 
@@ -45,7 +56,10 @@ linear should be used for all standard cases, isotope removal is also not availa
 
 \item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 
-\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+\item{iwNormFun}{function; Receives m/z offsets from the isolation-window
+midpoint and returns intensity weights. The default Gaussian accounts for
+edge effects and spans the resolved isolation bounds. Caller functions are
+used without shifting or rescaling.}
 
 \item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
@@ -57,6 +71,21 @@ linear should be used for all standard cases, isotope removal is also not availa
 
 \item{ppmInterp}{numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
 the precursor ion found in the neighbouring scans.}
+
+\item{msLevel}{nonempty numeric vector of levels to assess, from 2 to 4.
+Defaults to MS2. Use \code{msLevel = 2:4} to assess all supported levels.
+Other fragmentation spectra are retained as context; existing assessments
+and their history remain available without being recalculated.}
+
+\item{parentReference}{interpretation of parent identifiers for MS3/MS4.
+See \code{\link{frag4feature}} for native identifiers, acquisition numbers,
+original file positions and backend keys. The default is \code{"auto"}.}
+
+\item{param}{A \code{\link{PurityAParam}} object or named list of objects.
+Matching objects supply complete settings for the child spectrum being
+assessed. Unmatched MS2 spectra use the scalar arguments. Unmatched higher
+levels use \code{mostIntense} and \code{offsets}, without intensity or
+isotope correction. Parameter-set assessment requires \code{cores = 1}.}
 }
 \value{
 Returns a purityA object (pa). The MS/MS scans and their purity are
@@ -158,12 +187,36 @@ Other options to model the isolation efficiency the  gaussian isolation window m
 A user can also define their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
 }
 
-\subsection{Notes regarding instrument specific isolation window offsets used:}{
-\itemize{
-\item The isolation widths offsets will be automatically determined from extracting metadata from the mzML file. However, for some vendors though this is not recorded, in these cases the offsets should be given by the user as an argument (offsets).
-\item In the case of Agilent only the "narrow" isolation is supported. This roughly equates to +/- 0.65 Da (depending on the instrument). If the file is detected as originating from an Agilent instrument the isolation widths will automatically be set as +/- 0.65 Da.
+\subsection{Isolation windows}{
+
+Each MS2 event uses its recorded isolation bounds. If bounds are missing or
+invalid, its purity is NA and a warning identifies the affected count.
+Supply explicit lower and upper offsets when the acquisition settings are
+known; no instrument-specific width is assumed. For example,
+\code{offsets = c(0.65, 0.65)} is appropriate only for a known 1.3 Da window.
+Resolved bounds and their sources are retained in processing history.
 }
 }
+\details{
+MS2 purity uses neighbouring MS1 measurements. MS3/MS4 purity uses
+the linked parent fragmentation spectrum and the child's isolation window,
+independently of chromatographic features. Supplied Spectra peak processing
+is evaluated before assessment. The recorded precursor intensity helps
+select the parent peak; otherwise its closest in-window mass is used.
+\code{mostIntense = TRUE} selects the strongest in-window peak instead.
+Ambiguous, invalid or unavailable parent measurements give \code{NA} and
+an explanatory \code{msPurityPurityStatus}. Known profile parents are not
+assessed. No additional ppm or Da cutoff is applied to parent peaks.
+
+Higher levels use no interpolation or isolation-efficiency weighting.
+Request intensity and isotope corrections with \code{PurityAParam};
+choose an isotope model appropriate to the measured parent peaks.
+Their results are
+available as \code{inPurity} on \code{pa@spectra}; \code{purityTable(pa)}
+retains its MS2 table format. Processing history records the selected
+levels, parent measurements, bounds and settings. Association thresholds
+apply to MS2 only. In \code{filterFragSpectra()}, explicit or assigned
+purity thresholds can also apply to MS3/MS4.
 }
 \examples{
 filepths <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")

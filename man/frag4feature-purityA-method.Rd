@@ -28,7 +28,10 @@
   create_db = NA,
   grp_peaklist = NA,
   db_name = NA,
-  xset = NA
+  xset = NA,
+  msLevel = 2L,
+  parentReference = "auto",
+  param = NULL
 )
 }
 \arguments{
@@ -38,7 +41,8 @@
 
 \item{ppm}{numeric; ppm tolerance between precursor mz and XCMS feature mz}
 
-\item{plim}{numeric; minimum purity of precursor to be included}
+\item{plim}{numeric; minimum MS2 precursor purity to be included.
+This threshold does not apply to MS3/MS4 diagnostic purity.}
 
 \item{intense}{boolean; If TRUE the most intense precursor (iMz) will be used. If FALSE the precursor closest to the center of the isolation
 window (aMz) will be used. Missing values fall back to aMz and then to the precursor m/z of the mzML file. Applies to both linking modes.}
@@ -89,6 +93,30 @@ diagnostics. An estimate is weaker than a mapping from xcms, so it is off by def
 \item{db_name}{character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp}
 
 \item{xset}{object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object}
+
+\item{msLevel}{Nonempty numeric vector of output levels selected from
+2, 3 and 4. The default retains MS2-only links. MS3/MS4 inherit membership
+through their validated MS2 acquisition ancestors.}
+
+\item{parentReference}{How to interpret parent references. Numeric
+\code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
+original file positions (\code{"scanIndex"}), or backend source keys
+(\code{"sourceSpectrumId"}). The last option is msPurity-specific and
+uses retained \code{spectrum_id_} or \code{source_spectrum_id} keys.
+\code{"spectrumId"} matches native \code{spectrumRef} metadata to native
+\code{spectrumId}; it requires these fields to have been supplied by the
+reader. No new metadata extraction is performed. None of these identifiers
+is the current position in a filtered object. All matches use the same run.
+\code{"auto"} tries these interpretations and accepts a consistent mapping;
+conflicting valid parents or inconsistent conventions raise an error.
+Missing references remain unresolved. No parent is inferred from peak
+similarity or proximity in retention time.}
+
+\item{param}{One complete \code{\link{Frag4FeatureParam}} object, or
+\code{NULL} to use scalar settings. Explicit scalar association arguments
+supplied alongside the object must agree, including \code{use_group}.
+\code{ms2RtMap} is an input rather than a setting and is always supplied
+as an argument.}
 }
 \value{
 Returns a purityA object (pa) with the following slots populated:
@@ -135,6 +163,19 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 \itemize{
 \item [grouped XCMS peaks] * ------ * [MS/MS spectra]
 }
+
+With \code{msLevel = 2:4}, MS3 and MS4 inherit feature membership through
+validated, same-file acquisition relationships. Root MS2 associations are
+established before \code{plim} is applied, so a rejected MS2 precursor does
+not remove valid descendant links. Higher levels retain their own precursor
+and acquisition metadata and their own recorded purity assessments.
+Missing or invalid ancestry does not establish a descendant feature link.
+Only MS2 precursors are compared with peak and feature windows; the
+precursor time of an MS3/MS4 row is mapped to the adjusted scale of its file
+for reference.
+Selecting only higher levels, such as \code{msLevel = 4L}, retains their
+required MS2/MS3 source context while returning only the selected feature
+links.
 }
 
 \subsection{Retention time correction}{
@@ -191,6 +232,28 @@ of the same file. \code{matchRank} orders the matches of each scan.
 \item A SQLite database can be created directly here but the functionality has been deprecated and the createDatabase function should now be used
 }
 }
+}
+\details{
+Purity is assessed by \code{purityA(msLevel = 2:4)} before feature
+association. This function reuses prepared parent relationships and keeps
+the recorded assessments when features are relinked; it does not calculate
+purity. When requested by \code{msLevel}, MS3/MS4 inherit their MS2
+ancestors' feature links and retain their own purity values and status.
+This function's \code{plim} applies only to MS2. Use
+\code{filterFragSpectra()} for optional purity thresholds at each level.
+For unassessed MS2
+roots, use \code{intense = FALSE} to associate recorded precursor m/z.
+MSn averaging and processed export are separate operations.
+
+Processing history records requested and effective workers, whether the
+retention time mapping was requested and applied, and a fingerprint of the
+prepared feature bounds and memberships used for association. The mapping
+is used by both association modes. No XCMS object or peak arrays are
+copied into history. The fingerprint identifies the prepared association
+inputs, not the complete original data or a replayable analysis.
+Association runs as one serial join, so effective workers is one when
+matching runs and zero when no matching runs because MS2 roots or
+chromatographic peaks are unavailable.
 }
 \examples{
 #====== XCMS =================================

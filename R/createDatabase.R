@@ -125,11 +125,16 @@
 #'     metadata = list(polarity = "positive", instrument = "Q-Exactive"))
 #'
 #' @md
+#' @details Processed-result export currently supports MS2 outputs. Processed
+#'   MS3/MS4 fragment or averaged spectra must remain in the Spectra workflow;
+#'   these writers reject them explicitly. Higher-level measurements already
+#'   present in source files retain their existing raw-data conversion support.
 #' @export
 createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA,
                             format = c("sqlite", "parquet"), study = NULL, studyKey = "study",
                             fileMap = NULL, overwrite = FALSE){
   pa <- .pa_update(pa)
+  .pa_require_ms2_export(pa)
   format <- match.arg(format)
   if (format == "parquet"){
     return(.createDatabase_parquet(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
@@ -772,4 +777,16 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
   allm$cXg_id <- 1:nrow(allm)
   return(allm)
 
+}
+
+# Both public writers share the current processed-MS2 storage contract.
+.pa_require_ms2_export <- function(pa) {
+    for (field in c("fragSpectra", "avSpectra")) {
+        sp <- methods::slot(pa, field)
+        if (length(sp) && any(Spectra::msLevel(sp) > 2L, na.rm = TRUE))
+            stop("Processed MS3/MS4 database export is not supported by ",
+                "this writer. Retain the processed Spectra object or ",
+                "export MS2-only results.")
+    }
+    invisible(TRUE)
 }

@@ -74,8 +74,7 @@
                     !is.finite(value) || value < 0))
             stop(name, " must be one finite, nonnegative number.")
         if (name == "plim" && !skip && value > 1)
-            stop("plim must be between zero and one, ",
-                "or NA in a parameter object.")
+            stop("plim must be between zero and one, or NA.")
     }
     if (!is.character(values$snmeth) || length(values$snmeth) != 1L ||
             anyNA(values$snmeth) || !values$snmeth %in% c("median", "mean"))
@@ -93,10 +92,17 @@
 #' A complete filtering parameter set extending \code{ProtGenerics::Param}.
 #' Defaults are fixed when the object is constructed. Supply one object or a
 #' named list of objects to \code{filterFragSpectra(param = )}. Scalar calls
-#' remain available. Call-wide \code{rmp}, \code{allfrag} and \code{cores}
+#' remain available. Call-wide \code{rmp}, \code{allfrag}, \code{msLevel}
+#' and \code{cores}
 #' are not fields of this object; parameter-set filtering requires one core.
+#' Input scope (\code{msLevel}, \code{allfrag}), flag retention versus peak
+#' removal (\code{rmp}) and execution controls stay on the call, allowing the
+#' same scientific settings to be reused for different processing choices.
+#' Processing history records both; see \code{\link{processingParameters}}.
 #'
-#' \code{select} assigns settings to spectra; it does not discard spectra.
+#' \code{select} assigns settings within the spectra selected by the call;
+#' it does not discard spectra or include levels beyond the call's
+#' \code{msLevel} argument, which defaults to MS2.
 #' Fields are combined with AND and values within a field with OR. Supported
 #' fields are \code{msLevel}, \code{massAnalyzer}, \code{scanFilterAnalyzer},
 #' \code{activationType}, \code{collisionEnergy}, \code{collisionEnergyUnit}
@@ -113,13 +119,17 @@
 #' or ambiguous filters leave the activation type unknown. Collision energies
 #' and their units are not inferred from scan filters.
 #' Use \code{NA} to select unknown metadata. Spectra matched by no parameter
-#' set receive the filtering call's scalar settings. Overlapping sets must
-#' have the same complete effective settings.
+#' set receive the filtering call's scalar settings. For unmatched MS3/MS4,
+#' purity filtering is skipped unless the call explicitly supplies
+#' \code{plim}. Overlapping sets must have the same complete effective settings.
 #'
 #' @param select Named list of exact acquisition-metadata selectors.
 #' @param ilim Minimum peak intensity in recorded units.
-#' @param plim Minimum MS2 precursor purity, between zero and one. \code{NA}
-#'   explicitly skips purity filtering for spectra matched by this object.
+#' @param plim Minimum precursor purity, between zero and one, for each
+#'   spectrum matched by this object, including MS3/MS4. Purity must be
+#'   strictly greater than this value; an unavailable assessment fails an
+#'   active threshold. \code{NA} skips purity filtering. Each spectrum uses
+#'   its own assessment from \code{purityA()}, independently of its ancestors.
 #' @param ra Minimum relative abundance on the existing 0 to 100 scale.
 #' @param snr Minimum signal-to-noise ratio, using the existing statistic.
 #' @param snmeth Noise statistic: \code{"median"} or \code{"mean"}.
@@ -290,7 +300,7 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
 }
 
 .pa_filter_call_controls <- function(fallback) {
-    .pa_filter_values(fallback, allow_skip = FALSE)
+    .pa_filter_values(fallback)
     for (name in c("rmp", "allfrag")) {
         if (!is.logical(fallback[[name]]) || length(fallback[[name]]) != 1L ||
                 anyNA(fallback[[name]]))
@@ -302,13 +312,9 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
     invisible(fallback)
 }
 
-.pa_filter_resolve <- function(source, param, fallback) {
-    objects <- .pa_filter_inputs(param)
-    .pa_filter_call_controls(fallback)
-    metadata <- .pa_filter_metadata(source)
-    specs <- lapply(objects, as.list)
-    matched <- lapply(specs, function(spec) {
-        keep <- rep(TRUE, length(source))
+.pa_parameter_matches <- function(metadata, specs) {
+    lapply(specs, function(spec) {
+        keep <- rep(TRUE, nrow(metadata))
         for (axis in names(spec$select)) {
             wanted <- spec$select[[axis]]
             value <- metadata[[axis]]
@@ -321,39 +327,76 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
         }
         keep
     })
-    settings <- sets <- list()
-    assignment <- data.frame(spectrum_index = seq_along(source),
-        parameter_id = rep(NA_character_, length(source)),
-        fallback_used = rep(FALSE, length(source)), stringsAsFactors = FALSE)
-    if ("pid" %in% Spectra::spectraVariables(source))
-        assignment$pid <- source$pid
-    assignment$parameter_set_names <- rep(list(character()), length(source))
+}
+
+# Callers supply applicable settings and matches; assignment and identities use
+# the same rules for filtering and purity. Fallbacks may differ by MS level.
+.pa_parameter_assign <- function(source, metadata, objects, matched, values,
+    fallback_index) {
     equal <- function(a, b) {
         isTRUE(all.equal(a, b, check.attributes = FALSE, tolerance = 0))
     }
-    fields <- c("ilim", "plim", "ra", "snr", "snmeth")
-    for (i in seq_along(source)) {
-        ids <- names(matched)[vapply(matched, `[`, logical(1), i)]
-        current <- if (length(ids)) specs[[ids[1L]]][fields]
-        else fallback[fields]
-        if (length(ids) > 1L && any(!vapply(specs[ids], function(spec) {
-            equal(spec[fields], current)
-        }, logical(1))))
-            stop("Conflicting overlapping parameter sets at spectrum ", i, ".")
-        same <- which(vapply(sets, equal, logical(1), current))
+    representatives <- list()
+    groups <- integer(length(values))
+    for (i in seq_along(values)) {
+        same <- which(vapply(representatives, equal, logical(1L), values[[i]]))
         if (!length(same)) {
-            id <- sprintf("parameter-%04d", length(sets) + 1L)
-            sets[[id]] <- current
-        } else {
-            id <- names(sets)[same[1L]]
+            representatives[[length(representatives) + 1L]] <- values[[i]]
+            same <- length(representatives)
         }
-        settings[[i]] <- current
-        assignment$parameter_id[i] <- id
-        assignment$fallback_used[i] <- !length(ids)
-        assignment$parameter_set_names[i] <- list(ids)
+        groups[i] <- same[1L]
     }
+    choice <- rep(fallback_index, length.out = length(source))
+    assigned <- rep(FALSE, length(source))
+    conflicts <- integer()
+    set_names <- rep(list(character()), length(source))
+    for (i in seq_along(matched)) {
+        rows <- which(matched[[i]])
+        previous <- choice[rows]
+        conflict <- assigned[rows] & groups[previous] != groups[i]
+        conflicts <- c(conflicts, rows[conflict])
+        choice[rows[!assigned[rows]]] <- i
+        assigned[rows] <- TRUE
+        set_names[rows] <- lapply(set_names[rows], c, names(matched)[i])
+    }
+    if (length(conflicts))
+        stop("Conflicting overlapping parameter sets at spectrum ",
+            min(conflicts), ".")
+    settings <- unname(values[choice])
+    selected_groups <- groups[choice]
+    order <- unique(selected_groups)
+    ids <- sprintf("parameter-%04d", seq_along(order))
+    sets <- if (length(order)) stats::setNames(
+        settings[match(order, selected_groups)], ids) else list()
+    assignment <- data.frame(spectrum_index = seq_along(source),
+        parameter_id = ids[match(selected_groups, order)],
+        fallback_used = !assigned, stringsAsFactors = FALSE)
+    if ("pid" %in% Spectra::spectraVariables(source))
+        assignment$pid <- source$pid
+    assignment$parameter_set_names <- set_names
     list(parameters = settings, assignments = assignment, metadata = metadata,
         parameter_sets = sets, parameter_objects = objects,
-        unused_parameter_sets = names(matched)[
-            !vapply(matched, any, logical(1))])
+        unused_parameter_sets = names(objects)[!names(objects) %in%
+                names(matched)[vapply(matched, any, logical(1))]])
+}
+
+.pa_filter_resolve <- function(source, param, fallback) {
+    objects <- if (is.null(param)) list() else .pa_filter_inputs(param)
+    controls <- fallback
+    if (is.null(param)) controls$cores <- 1L
+    .pa_filter_call_controls(controls)
+    metadata <- .pa_filter_metadata(source)
+    specs <- lapply(objects, as.list)
+    matched <- .pa_parameter_matches(metadata, specs)
+    fields <- c("ilim", "plim", "ra", "snr", "snmeth")
+    values <- c(lapply(specs, `[`, fields), list(fallback[fields]))
+    fallback_index <- rep(length(values), length(source))
+    if (!isTRUE(fallback$plim_explicit) && any(metadata$msLevel > 2L)) {
+        higher <- fallback[fields]
+        higher$plim <- NA_real_
+        values[[length(values) + 1L]] <- higher
+        fallback_index[metadata$msLevel > 2L] <- length(values)
+    }
+    .pa_parameter_assign(source, metadata, objects, matched, values,
+        fallback_index = fallback_index)
 }

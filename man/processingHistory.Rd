@@ -29,6 +29,10 @@ extracted Spectra object. Records are named by unique processing step
 identifiers. Repeated calls retain earlier records. For Spectra,
 only records reachable from the retained spectra are returned, including
 their input steps. Subsetting therefore selects the corresponding history.
+The optional \code{msPurityFilterProcessingId} links exposed
+\code{purity_pass_flag} values to their filtering operation. On raw spectra,
+it does not replace the primary processing identifier or indicate that their
+peak arrays were filtered. Older objects may lack this flag-specific link.
 Concatenating subsets with the same processing history is supported;
 histories from independently processed Spectra objects are not merged.
 Retrieve their histories separately before combining spectra.
@@ -46,6 +50,14 @@ marked incomplete; dates and missing settings stay unknown.
 Where worker settings differ, cores records the requested value and
 effective_cores records the execution used. Imported settings do not
 invent missing execution information.
+
+When parameter objects assign settings by acquisition metadata, the
+top-level scalar settings are fallbacks, not settings applied to every
+spectrum. Use \code{parameters$configuration$assignments} to find each
+spectrum's \code{parameter_id}, then retrieve that entry from
+\code{parameters$configuration$parameter_sets}. Matching parameter objects
+supply complete settings. Call-wide scope and execution controls remain
+at the top level. For scalar-only calls, no assignment lookup is needed.
 
 For new purity assessments, \code{parameters$resolved} contains one settings
 list per input file, keyed by file position. Each list identifies the file,

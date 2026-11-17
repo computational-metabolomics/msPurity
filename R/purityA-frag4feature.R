@@ -42,6 +42,19 @@
 #'
 #' * \[grouped XCMS peaks\] &ast; ------ &ast; \[MS/MS spectra\]
 #'
+#' With \code{msLevel = 2:4}, MS3 and MS4 inherit feature membership through
+#' validated, same-file acquisition relationships. Root MS2 associations are
+#' established before \code{plim} is applied, so a rejected MS2 precursor does
+#' not remove valid descendant links. Higher levels retain their own precursor
+#' and acquisition metadata and their own recorded purity assessments.
+#' Missing or invalid ancestry does not establish a descendant feature link.
+#' Only MS2 precursors are compared with peak and feature windows; the
+#' precursor time of an MS3/MS4 row is mapped to the adjusted scale of its file
+#' for reference.
+#' Selecting only higher levels, such as \code{msLevel = 4L}, retains their
+#' required MS2/MS3 source context while returning only the selected feature
+#' links.
+#'
 #' ## Retention time correction
 #'
 #' MS/MS times are raw times read from each mzML file, while XCMS peak and feature windows are on the adjusted scale once
@@ -91,7 +104,8 @@
 #' @param pa object; purityA object
 #' @param xcmsObj object; XcmsExperiment, XCMSnExp, xcmsSet or xsAnnotate object derived from the same files as those used to create the purityA object
 #' @param ppm numeric; ppm tolerance between precursor mz and XCMS feature mz
-#' @param plim numeric; minimum purity of precursor to be included
+#' @param plim numeric; minimum MS2 precursor purity to be included.
+#'   This threshold does not apply to MS3/MS4 diagnostic purity.
 #' @param intense boolean; If TRUE the most intense precursor (iMz) will be used. If FALSE the precursor closest to the center of the isolation
 #'        window (aMz) will be used. Missing values fall back to aMz and then to the precursor m/z of the mzML file. Applies to both linking modes.
 #' @param useGroup boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature
@@ -123,6 +137,47 @@
 #' @param grp_peaklist dataframe; (Deprecated, to be removed - use createDatabase function) Can use any peak dataframe to add to databse. Still needs to be derived from the xset object though
 #' @param db_name character; (Deprecated, to be removed - use createDatabase function) If create_db is TRUE, a custom database name can be used, default is a time stamp
 #' @param xset object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object
+#' @param msLevel Nonempty numeric vector of output levels selected from
+#'   2, 3 and 4. The default retains MS2-only links. MS3/MS4 inherit membership
+#'   through their validated MS2 acquisition ancestors.
+#' @param param One complete \code{\link{Frag4FeatureParam}} object, or
+#'   \code{NULL} to use scalar settings. Explicit scalar association arguments
+#'   supplied alongside the object must agree, including \code{use_group}.
+#'   \code{ms2RtMap} is an input rather than a setting and is always supplied
+#'   as an argument.
+#' @param parentReference How to interpret parent references. Numeric
+#'   \code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
+#'   original file positions (\code{"scanIndex"}), or backend source keys
+#'   (\code{"sourceSpectrumId"}). The last option is msPurity-specific and
+#'   uses retained \code{spectrum_id_} or \code{source_spectrum_id} keys.
+#'   \code{"spectrumId"} matches native \code{spectrumRef} metadata to native
+#'   \code{spectrumId}; it requires these fields to have been supplied by the
+#'   reader. No new metadata extraction is performed. None of these identifiers
+#'   is the current position in a filtered object. All matches use the same run.
+#'   \code{"auto"} tries these interpretations and accepts a consistent mapping;
+#'   conflicting valid parents or inconsistent conventions raise an error.
+#'   Missing references remain unresolved. No parent is inferred from peak
+#'   similarity or proximity in retention time.
+#' @details Purity is assessed by \code{purityA(msLevel = 2:4)} before feature
+#'   association. This function reuses prepared parent relationships and keeps
+#'   the recorded assessments when features are relinked; it does not calculate
+#'   purity. When requested by \code{msLevel}, MS3/MS4 inherit their MS2
+#'   ancestors' feature links and retain their own purity values and status.
+#'   This function's \code{plim} applies only to MS2. Use
+#'   \code{filterFragSpectra()} for optional purity thresholds at each level.
+#'   For unassessed MS2
+#'   roots, use \code{intense = FALSE} to associate recorded precursor m/z.
+#'   MSn averaging and processed export are separate operations.
+#'
+#'   Processing history records requested and effective workers, whether the
+#'   retention time mapping was requested and applied, and a fingerprint of the
+#'   prepared feature bounds and memberships used for association. The mapping
+#'   is used by both association modes. No XCMS object or peak arrays are
+#'   copied into history. The fingerprint identifies the prepared association
+#'   inputs, not the complete original data or a replayable analysis.
+#'   Association runs as one serial join, so effective workers is one when
+#'   matching runs and zero when no matching runs because MS2 roots or
+#'   chromatographic peaks are unavailable.
 #'
 #' @return Returns a purityA object (pa) with the following slots populated:
 #'
@@ -188,8 +243,44 @@ setMethod(f="frag4feature", signature="purityA",
                                 outDir='.', dbName=NA, grpPeaklist=NA, ms2RtMap=NULL, rtTol=0,
                                 rtSource=c("precursor", "ms2"), groupWindow=c("full", "median"),
                                 includeFilled=FALSE, estimateRtMap=FALSE, use_group = NA, out_dir = NA, create_db = NA,
-                                grp_peaklist = NA, db_name = NA, xset = NA){
+                                grp_peaklist = NA, db_name = NA, xset = NA,
+                                msLevel = 2L, parentReference = "auto",
+                                param = NULL) {
+  supplied <- c(ppm = !missing(ppm), plim = !missing(plim),
+    intense = !missing(intense), convert2RawRT = !missing(convert2RawRT),
+    useGroup = !missing(useGroup), parentReference = !missing(parentReference),
+    rtTol = !missing(rtTol), rtSource = !missing(rtSource),
+    groupWindow = !missing(groupWindow), includeFilled = !missing(includeFilled),
+    estimateRtMap = !missing(estimateRtMap))
   pa <- .pa_update(pa)
+
+  if (!is.numeric(msLevel) || !length(msLevel) || anyNA(msLevel) ||
+      any(!msLevel %in% 2:4))
+    stop("msLevel must be a nonempty numeric vector of levels 2, 3 or 4.")
+  msLevel <- unique(as.integer(msLevel))
+  parentReference <- match.arg(parentReference,
+    c("auto", "acquisitionNum", "scanIndex", "spectrumId", "sourceSpectrumId"))
+  if (!is.null(param)) {
+    settings <- list(ppm = ppm, plim = plim, intense = intense,
+      convert2RawRT = convert2RawRT, useGroup = useGroup,
+      parentReference = parentReference, rtTol = rtTol, rtSource = rtSource,
+      groupWindow = groupWindow, includeFilled = includeFilled,
+      estimateRtMap = estimateRtMap)[supplied]
+    if (!is.na(use_group)) settings$use_group <- use_group
+    settings <- .pa_feature_resolve(param, settings)
+    ppm <- settings$ppm
+    plim <- settings$plim
+    intense <- settings$intense
+    convert2RawRT <- settings$convert2RawRT
+    useGroup <- settings$useGroup
+    parentReference <- settings$parentReference
+    rtTol <- settings$rtTol
+    rtSource <- settings$rtSource
+    groupWindow <- settings$groupWindow
+    includeFilled <- settings$includeFilled
+    estimateRtMap <- settings$estimateRtMap
+  }
+  .pa_msn_validate_preparation(pa)
   processing_started <- Sys.time()
   processing_input <- .pa_processing_input(pa, "frag4feature")
 
@@ -223,6 +314,11 @@ setMethod(f="frag4feature", signature="purityA",
     dbName <- db_name
   }
 
+  if (any(msLevel > 2L) && isTRUE(createDb))
+    stop("MSn feature association cannot use the deprecated createDb route. ",
+      "Associate spectra first; higher-level database export requires a ",
+      "supported MSn export route.")
+
   rtSource <- match.arg(rtSource)
   groupWindow <- match.arg(groupWindow)
   if (!is.numeric(rtTol) || length(rtTol) != 1L || is.na(rtTol) || rtTol < 0)
@@ -239,7 +335,8 @@ setMethod(f="frag4feature", signature="purityA",
 
   # Files are matched to XCMS samples by name
   pa_files <- unname(as.character(pa@fileList))
-  sample_idx <- .f4f_file_index(pa_files, .xcms_files(xcmsObj))
+  source_files <- .xcms_files(xcmsObj)
+  sample_idx <- .f4f_file_index(pa_files, source_files)
   if (!useGroup) {
     if (all(is.na(sample_idx)))
       stop("None of the purityA files are in the XCMS object (",
@@ -261,58 +358,102 @@ setMethod(f="frag4feature", signature="purityA",
   maps <- .f4f_rt_maps(pa_files, sample_idx, if (convert2RawRT) aligned,
                        convert2RawRT, ms2RtMap)
 
-  scans <- .f4f_scans(purityTable(pa), intense, rtSource)
+  # No MS2 roots or no chromatographic peaks still yield a typed empty result.
+  puritydf <- purityTable(pa)
+  n_peaks <- nrow(if (.xcms_is_modern(xcmsObj)) xcms::chromPeaks(xcmsObj)
+                  else xcmsObj@peaks)
+  run <- nrow(puritydf) > 0L && n_peaks > 0L
+  grpm <- .f4f_empty_links()
+  scans <- data.frame(fileid = numeric())
   features <- .f4f_features(xcmsObj)
-
   estimated <- list()
-  if (estimateRtMap && useGroup) {
-    # In individual mode a file the XCMS object lacks has no peaks to link to
-    for (i in which(maps$status == "missing")) {
-      est <- .f4f_estimate_map(scans[scans$fileid == i, , drop = FALSE],
-                               features, ppm, max(60, rtTol),
-                               if (is.na(plim)) 0 else plim)
-      estimated[[as.character(i)]] <- est[c("method", "landmarks")]
-      if (est$method != "none") {
-        maps$fun[[i]] <- est$fun
-        maps$status[i] <- "estimated"
-      } else {
-        warning("Too few landmarks (", est$landmarks, ") to estimate a retention time map for ",
-                .f4f_basename(pa_files[i]), call. = FALSE)
+  effective_cores <- 0L
+  association_input <- "not_used"
+  used_bounds <- membership <- NULL
+
+  if (run) {
+    scans <- .f4f_scans(puritydf, intense, rtSource)
+
+    if (estimateRtMap && useGroup) {
+      # In individual mode a file the XCMS object lacks has no peaks to link to
+      for (i in which(maps$status == "missing")) {
+        est <- .f4f_estimate_map(scans[scans$fileid == i, , drop = FALSE],
+                                 features, ppm, max(60, rtTol),
+                                 if (is.na(plim)) 0 else plim)
+        estimated[[as.character(i)]] <- est[c("method", "landmarks")]
+        if (est$method != "none") {
+          maps$fun[[i]] <- est$fun
+          maps$status[i] <- "estimated"
+        } else {
+          warning("Too few landmarks (", est$landmarks, ") to estimate a retention time map for ",
+                  .f4f_basename(pa_files[i]), call. = FALSE)
+        }
       }
     }
+
+    missing_map <- maps$status == "missing" & (useGroup | !is.na(sample_idx)) &
+      seq_along(pa_files) %in% scans$fileid
+    if (any(missing_map))
+      warning("No retention time map for ",
+              paste(.f4f_basename(pa_files[missing_map]), collapse = ", "),
+              ": their raw MS/MS times are compared with adjusted XCMS windows. ",
+              "Supply ms2RtMap, or set estimateRtMap = TRUE.", call. = FALSE)
+
+    scans$rtAdj <- NA_real_
+    scans$rtMapStatus <- NA_character_
+    for (i in unique(scans$fileid)) {
+      r <- which(scans$fileid == i)
+      scans$rtAdj[r] <- maps$fun[[i]](scans$rtRaw[r])
+      scans$rtMapStatus[r] <- maps$status[i]
+    }
+
+    if (useGroup) {
+      linked <- .f4f_link_group(scans, xcmsObj, ppm, rtTol, groupWindow)
+      association_input <- "group_bounds"
+    } else {
+      scans$sample <- sample_idx[scans$fileid]
+      linked <- .f4f_link_individual(scans, xcmsObj, ppm, rtTol, includeFilled,
+                                     convert2RawRT, aligned)
+      association_input <- "individual_peaks"
+    }
+    effective_cores <- 1L
+    used_bounds <- linked$bounds
+    membership <- linked$membership
+    if (nrow(linked$links))
+      grpm <- linked$links
   }
 
-  missing_map <- maps$status == "missing" & (useGroup | !is.na(sample_idx)) &
-    seq_along(pa_files) %in% scans$fileid
-  if (any(missing_map))
-    warning("No retention time map for ",
-            paste(.f4f_basename(pa_files[missing_map]), collapse = ", "),
-            ": their raw MS/MS times are compared with adjusted XCMS windows. ",
-            "Supply ms2RtMap, or set estimateRtMap = TRUE.", call. = FALSE)
+  mapped <- any(maps$status %in% c("aligned", "external", "estimated"))
+  rt_conversion <- list(
+    preparation = if (!convert2RawRT) "not_requested"
+                  else if (!n_peaks) "no_chromatographic_peaks"
+                  else if (mapped) "applied" else "no_adjustment",
+    used_for_association = convert2RawRT && run && mapped)
 
-  scans$rtAdj <- NA_real_
-  scans$rtMapStatus <- NA_character_
-  for (i in unique(scans$fileid)) {
-    r <- which(scans$fileid == i)
-    scans$rtAdj[r] <- maps$fun[[i]](scans$rtRaw[r])
-    scans$rtMapStatus[r] <- maps$status[i]
-  }
+  processing_input$xcms <- .pa_feature_input_reference(
+    class(xcmsObj)[1L], source_files, association_input,
+    used_bounds, membership)
 
-  if (useGroup) {
-    grpm <- .f4f_link_group(scans, xcmsObj, ppm, rtTol, groupWindow)
-  } else {
-    scans$sample <- sample_idx[scans$fileid]
-    grpm <- .f4f_link_individual(scans, xcmsObj, ppm, rtTol, includeFilled,
-                                 convert2RawRT, aligned)
-  }
-
-  # Filter out any precursor below purity threshold
-  if (!is.na(plim) && plim>0){
-    grpm <- grpm[which(grpm$inPurity>plim), , drop = FALSE]
+  # Descendants use the MS2 associations before MS2 precursor-purity exclusion.
+  pa <- .pa_processing_relink(pa)
+  if (any(msLevel > 2L)) {
+    preparation <- .pa_msn_preparation(pa, parentReference)
+    grpm <- .pa_msn_feature_links(grpm, preparation, plim)
+    fields <- intersect(c("inPurity", "msPurityStagePurity",
+        "msPurityPurityStatus"), Spectra::spectraVariables(pa@spectra))
+    for (field in fields)
+      grpm[[field]] <- pa@spectra[[field]][match(grpm$pid, pa@spectra$pid)]
+    pa@params$msnLineage <- preparation
+    grpm <- grpm[grpm$msLevel %in% msLevel, , drop = FALSE]
+    grpm <- .f4f_descendant_times(grpm, maps)
+  } else if (!is.na(plim) && plim > 0) {
+    grpm <- grpm[which(grpm$inPurity > plim), , drop = FALSE]
   }
   rownames(grpm) <- NULL
 
-  diagnostics <- .f4f_diagnostics(grpm, scans, features, pa_files,
+  roots <- if ("msLevel" %in% names(grpm))
+    grpm[grpm$msLevel == 2L, , drop = FALSE] else grpm
+  diagnostics <- .f4f_diagnostics(roots, scans, features, pa_files,
                                   sample_idx, maps$status, estimated)
 
   # Record the arguments for provenance.
@@ -326,14 +467,25 @@ setMethod(f="frag4feature", signature="purityA",
                            groupWindow = groupWindow,
                            includeFilled = includeFilled,
                            estimateRtMap = estimateRtMap,
-                           rt_diagnostics = diagnostics)
+                           rt_diagnostics = diagnostics,
+                           cores = pa@cores, effective_cores = effective_cores,
+                           rt_conversion = rt_conversion,
+                           msLevel = msLevel,
+                           effective_msLevel = unique(Spectra::msLevel(
+                             pa@spectra)[match(grpm$pid, pa@spectra$pid)]),
+                           parentReference = parentReference,
+                           param = param)
   pa@params <- prm
+  if (any(msLevel > 2L)) {
+    pa@params$frag4feature$resolvedParentReference <-
+      preparation$parentReference
+  }
 
   # add to the slots
-  pa <- .pa_processing_relink(pa)
   pa@grped_df <- grpm
   # Each linked scan is stored once; grped_ms2 is rebuilt from the links.
-  pa@fragSpectra <- .pa_raw_scans(pa, unique(grpm$pid))
+  pa@fragSpectra <- if (nrow(grpm)) .pa_raw_scans(pa, unique(grpm$pid)) else
+    pa@spectra[integer()]
   pa <- .pa_sync_legacy(pa, grped_ms2 = .pa_grouped_legacy(pa))
 
   if (createDb){
@@ -357,7 +509,60 @@ setMethod(f="frag4feature", signature="purityA",
 })
 
 
+.pa_feature_input_reference <- function(
+  class, files, mode, bounds, membership
+) {
+  reference <- list(class = class, files = files, association_input = mode,
+    fingerprint = NULL)
+  if (identical(mode, "not_used")) return(reference)
+  schema <- "frag4feature-input-v1"
+  path <- tempfile(fileext = ".rds")
+  on.exit(unlink(path))
+  saveRDS(list(schema = schema, association_input = mode, bounds = bounds,
+      memberships = membership), path, compress = FALSE, version = 2L)
+  reference$fingerprint <- list(schema = schema, serialization_version = 2L,
+    algorithm = "sha256", value = .mzs_sha256(path))
+  reference
+}
+
 check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
+
+#' grped_df with no links, with the column types of a linked result.
+#'
+#' @noRd
+.f4f_empty_links <- function() {
+  data.frame(grpid = character(), pid = integer(), sample = integer(),
+             cid = integer(), inPurity = numeric(), fileid = integer(),
+             seqNum = integer(), retentionTime = numeric(),
+             precurMtchMZ = numeric(), precurMtchRTadj = numeric(),
+             rtMapStatus = character(), precurMzSource = character(),
+             rtApexDist = numeric(), matchRank = integer(),
+             stringsAsFactors = FALSE)
+}
+
+#' MS3/MS4 rows inherit the link of their MS2 root. Their precursor time and
+#' m/z are their own, so the adjusted time is mapped again from the precursor
+#' time and the m/z source is the recorded precursor m/z.
+#'
+#' @noRd
+.f4f_descendant_times <- function(grpm, maps) {
+  child <- which(grpm$msLevel > 2L)
+  if (!length(child))
+    return(grpm)
+  if ("precurMtchRTadj" %in% names(grpm)) {
+    file <- as.integer(as.character(grpm$fileid[child]))
+    rt <- as.numeric(grpm$precurMtchRT[child])
+    adj <- rep(NA_real_, length(child))
+    for (i in unique(file[!is.na(file)])) {
+      r <- which(file == i)
+      adj[r] <- maps$fun[[i]](rt[r])
+    }
+    grpm$precurMtchRTadj[child] <- adj
+  }
+  if ("precurMzSource" %in% names(grpm))
+    grpm$precurMzSource[child] <- "precursorMZ"
+  grpm
+}
 
 #' The MS/MS scans of the purity table, with the precursor m/z and the raw
 #' time to compare.
@@ -367,13 +572,18 @@ check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
 #'
 #' @noRd
 .f4f_scans <- function(puritydf, intense, rtSource) {
+  # Purity tables built from Spectra can lack columns of the mzML route.
+  col <- function(name) {
+    v <- puritydf[[name]]
+    if (is.null(v)) rep(NA_real_, nrow(puritydf)) else v
+  }
   s <- data.frame(pid = puritydf$pid,
                   fileid = as.numeric(as.character(puritydf$fileid)),
                   seqNum = puritydf$seqNum,
-                  inPurity = puritydf$inPurity,
-                  precursorScanNum = puritydf$precursorScanNum,
-                  precursorRT = puritydf$precursorRT,
-                  retentionTime = puritydf$retentionTime)
+                  inPurity = col("inPurity"),
+                  precursorScanNum = col("precursorScanNum"),
+                  precursorRT = col("precursorRT"),
+                  retentionTime = col("retentionTime"))
   candidates <- if (intense) c("iMz", "aMz", "precursorMZ") else c("aMz", "precursorMZ")
   s$mz1 <- NA_real_
   s$precurMzSource <- NA_character_
@@ -495,6 +705,7 @@ check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
 #' Link MS/MS scans to the individual peaks of their own file, then to the
 #' features holding those peaks.
 #'
+#' @return The links, and the peak windows and feature memberships used.
 #' @noRd
 .f4f_link_individual <- function(scans, xcmsObj, ppm, rtTol, includeFilled,
                                  convert2RawRT, aligned) {
@@ -547,11 +758,16 @@ check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
   out$is_filled <- filled[m$.wi]
   out <- .f4f_rank(out, peaks$rt[m$.wi], adj_min[m$.wi], adj_max[m$.wi])
   rownames(out) <- NULL
-  out
+  bounds <- peaks
+  bounds$is_filled <- filled
+  bounds$rtminWin <- windows$.lo
+  bounds$rtmaxWin <- windows$.hi
+  list(links = out, bounds = bounds, membership = idx)
 }
 
 #' Link MS/MS scans to feature windows.
 #'
+#' @return The links, and the feature windows used.
 #' @noRd
 .f4f_link_group <- function(scans, xcmsObj, ppm, rtTol, groupWindow) {
   modern <- .xcms_is_modern(xcmsObj)
@@ -579,7 +795,10 @@ check_ppm <- function(mz1, mz2){ return(abs(1e6*(mz1-mz2)/mz2)) }
   out$rtmaxWin <- hi[m$.wi]
   out <- .f4f_rank(out, fd$rtmed[m$.wi], lo[m$.wi], hi[m$.wi])
   rownames(out) <- NULL
-  out
+  bounds <- fd
+  bounds$rtminWin <- windows$.lo
+  bounds$rtmaxWin <- windows$.hi
+  list(links = out, bounds = bounds, membership = NULL)
 }
 
 #' Per-file linking diagnostics, as a JSON-safe list.
