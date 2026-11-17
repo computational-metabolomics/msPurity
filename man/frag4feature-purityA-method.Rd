@@ -23,8 +23,9 @@
   grp_peaklist = NA,
   db_name = NA,
   xset = NA,
-  includeMSn = FALSE,
-  parentReference = "auto"
+  msLevel = 2L,
+  parentReference = "auto",
+  param = NULL
 )
 }
 \arguments{
@@ -63,8 +64,9 @@ This threshold does not apply to MS3/MS4 diagnostic purity.}
 
 \item{xset}{object; (Deprecated, to be removed - use xcmsObj) 'xcmsSet' object derived from the same files as those used to create the purityA object}
 
-\item{includeMSn}{logical; also associate MS3 and MS4 spectra through their
-validated MS2 acquisition ancestors. The default retains MS2-only links.}
+\item{msLevel}{Nonempty numeric vector of output levels selected from
+2, 3 and 4. The default retains MS2-only links. MS3/MS4 inherit membership
+through their validated MS2 acquisition ancestors.}
 
 \item{parentReference}{How to interpret parent references. Numeric
 \code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
@@ -79,6 +81,10 @@ is the current position in a filtered object. All matches use the same run.
 conflicting valid parents or inconsistent conventions raise an error.
 Missing references remain unresolved. No parent is inferred from peak
 similarity or proximity in retention time.}
+
+\item{param}{One complete \code{\link{Frag4FeatureParam}} object, or
+\code{NULL} to use scalar settings. Explicit scalar association arguments
+supplied alongside the object must agree, including \code{use_group}.}
 }
 \value{
 Returns a purityA object (pa) with the following slots populated:
@@ -116,14 +122,17 @@ MS/MS data. However, it should be noted this may lead to potential inaccurate li
 \item [grouped XCMS peaks] * ------ * [MS/MS spectra]
 }
 
-With \code{includeMSn = TRUE}, MS3 and MS4 inherit feature membership through
+With \code{msLevel = 2:4}, MS3 and MS4 inherit feature membership through
 validated, same-file acquisition relationships. Root MS2 associations are
 established before \code{plim} is applied, so a rejected MS2 precursor does
 not remove valid descendant links. Higher levels retain their own precursor
-and acquisition metadata and have no MS1-based precursor-purity value.
+and acquisition metadata and their own recorded purity assessments.
 Missing or invalid ancestry does not establish a descendant feature link.
 Acquisition times remain raw; \code{convert2RawRT} converts feature bounds
 using the existing xcms retention-time mapping.
+Selecting only higher levels, such as \code{msLevel = 4L}, retains their
+required MS2/MS3 source context while returning only the selected feature
+links.
 }
 
 \subsection{Example LC-MS/MS processing workflow}{
@@ -157,12 +166,23 @@ using the existing xcms retention-time mapping.
 Purity is assessed by \code{purityA(msLevel = 2:4)} before feature
 association. This function reuses prepared parent relationships and keeps
 the recorded assessments when features are relinked; it does not calculate
-purity. With \code{includeMSn = TRUE}, MS3/MS4 inherit the feature links of
-their MS2 ancestors and retain their own purity values and status.
+purity. When requested by \code{msLevel}, MS3/MS4 inherit their MS2
+ancestors' feature links and retain their own purity values and status.
 Both this function's \code{plim} and the purity threshold in
 \code{filterFragSpectra()} currently apply only to MS2. For unassessed MS2
 roots, use \code{intense = FALSE} to associate recorded precursor m/z.
 MSn averaging and processed export are separate operations.
+
+Processing history records requested and effective workers, whether raw-RT
+conversion was requested and applied, and a fingerprint of the prepared
+feature bounds and memberships used for association. The grouped route
+uses separately prepared group bounds; converting individual-peak bounds
+does not change those group bounds. No XCMS object or peak arrays are
+copied into history. The fingerprint identifies the prepared association
+inputs, not the complete original data or a replayable analysis.
+Effective workers are one for serial or grouped association, the parallel
+worker count for individual-peak association, and zero when no matching
+runs because MS2 roots or chromatographic peaks are unavailable.
 }
 \examples{
 #====== XCMS =================================

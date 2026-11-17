@@ -114,6 +114,7 @@ Collate:
     'purityA-isolation.R'
     'purityA-ms1-observations.R'
     'purityA-create-msp.R'
+    'purityA-feature-parameters.R'
     'purityA-filter-frag-spectra.R'
     'purityA-filter-parameters.R'
     'purityA-frag4feature.R'

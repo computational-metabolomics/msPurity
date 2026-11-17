@@ -42,14 +42,17 @@
 #'
 #' * \[grouped XCMS peaks\] &ast; ------ &ast; \[MS/MS spectra\]
 #'
-#' With \code{includeMSn = TRUE}, MS3 and MS4 inherit feature membership through
+#' With \code{msLevel = 2:4}, MS3 and MS4 inherit feature membership through
 #' validated, same-file acquisition relationships. Root MS2 associations are
 #' established before \code{plim} is applied, so a rejected MS2 precursor does
 #' not remove valid descendant links. Higher levels retain their own precursor
-#' and acquisition metadata and have no MS1-based precursor-purity value.
+#' and acquisition metadata and their own recorded purity assessments.
 #' Missing or invalid ancestry does not establish a descendant feature link.
 #' Acquisition times remain raw; \code{convert2RawRT} converts feature bounds
 #' using the existing xcms retention-time mapping.
+#' Selecting only higher levels, such as \code{msLevel = 4L}, retains their
+#' required MS2/MS3 source context while returning only the selected feature
+#' links.
 #'
 #' ## Example LC-MS/MS processing workflow
 #'
@@ -79,8 +82,12 @@
 #' @param intense boolean; If TRUE the most intense precursor will be used. If FALSE the precursor closest to the center of the isolation window will be used
 #' @param useGroup boolean; Ignore individual peaks and just find matching fragmentation spectra within the (full) rtmin rtmax of each grouped feature
 #' @param convert2RawRT boolean; If retention time correction has been used in XCMS set this to TRUE
-#' @param includeMSn logical; also associate MS3 and MS4 spectra through their
-#'   validated MS2 acquisition ancestors. The default retains MS2-only links.
+#' @param msLevel Nonempty numeric vector of output levels selected from
+#'   2, 3 and 4. The default retains MS2-only links. MS3/MS4 inherit membership
+#'   through their validated MS2 acquisition ancestors.
+#' @param param One complete \code{\link{Frag4FeatureParam}} object, or
+#'   \code{NULL} to use scalar settings. Explicit scalar association arguments
+#'   supplied alongside the object must agree, including \code{use_group}.
 #' @param parentReference How to interpret parent references. Numeric
 #'   \code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
 #'   original file positions (\code{"scanIndex"}), or backend source keys
@@ -97,12 +104,23 @@
 #' @details Purity is assessed by \code{purityA(msLevel = 2:4)} before feature
 #'   association. This function reuses prepared parent relationships and keeps
 #'   the recorded assessments when features are relinked; it does not calculate
-#'   purity. With \code{includeMSn = TRUE}, MS3/MS4 inherit the feature links of
-#'   their MS2 ancestors and retain their own purity values and status.
+#'   purity. When requested by \code{msLevel}, MS3/MS4 inherit their MS2
+#'   ancestors' feature links and retain their own purity values and status.
 #'   Both this function's \code{plim} and the purity threshold in
 #'   \code{filterFragSpectra()} currently apply only to MS2. For unassessed MS2
 #'   roots, use \code{intense = FALSE} to associate recorded precursor m/z.
 #'   MSn averaging and processed export are separate operations.
+#'
+#'   Processing history records requested and effective workers, whether raw-RT
+#'   conversion was requested and applied, and a fingerprint of the prepared
+#'   feature bounds and memberships used for association. The grouped route
+#'   uses separately prepared group bounds; converting individual-peak bounds
+#'   does not change those group bounds. No XCMS object or peak arrays are
+#'   copied into history. The fingerprint identifies the prepared association
+#'   inputs, not the complete original data or a replayable analysis.
+#'   Effective workers are one for serial or grouped association, the parallel
+#'   worker count for individual-peak association, and zero when no matching
+#'   runs because MS2 roots or chromatographic peaks are unavailable.
 #' @param createDb boolean; if yes, generate a database of MS2 spectra
 #' @param outDir string; path where (optionally generated) database file should be saved
 #' @param grpPeaklist dataframe; Can use any peak dataframe to add to databse. Still needs to be derived from the "obj" object though
@@ -169,13 +187,32 @@ setMethod(f="frag4feature", signature="purityA",
           definition = function(pa, xcmsObj, ppm=5, plim=NA, intense=TRUE, convert2RawRT=TRUE, useGroup=FALSE, createDb=FALSE,
                                 outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA, create_db = NA,
                                 grp_peaklist = NA, db_name = NA, xset = NA,
-                                includeMSn = FALSE, parentReference = "auto") {
+                                msLevel = 2L, parentReference = "auto",
+                                param = NULL) {
+  supplied <- c(ppm = !missing(ppm), plim = !missing(plim),
+    intense = !missing(intense), convert2RawRT = !missing(convert2RawRT),
+    useGroup = !missing(useGroup), parentReference = !missing(parentReference))
   pa <- .pa_update(pa)
 
-  if (!is.logical(includeMSn) || length(includeMSn) != 1L || anyNA(includeMSn))
-    stop("includeMSn must be TRUE or FALSE.")
+  if (!is.numeric(msLevel) || !length(msLevel) || anyNA(msLevel) ||
+      any(!msLevel %in% 2:4))
+    stop("msLevel must be a nonempty numeric vector of levels 2, 3 or 4.")
+  msLevel <- unique(as.integer(msLevel))
   parentReference <- match.arg(parentReference,
     c("auto", "acquisitionNum", "scanIndex", "spectrumId", "sourceSpectrumId"))
+  if (!is.null(param)) {
+    settings <- list(ppm = ppm, plim = plim, intense = intense,
+      convert2RawRT = convert2RawRT, useGroup = useGroup,
+      parentReference = parentReference)[supplied]
+    if (!is.na(use_group)) settings$use_group <- use_group
+    settings <- .pa_feature_resolve(param, settings)
+    ppm <- settings$ppm
+    plim <- settings$plim
+    intense <- settings$intense
+    convert2RawRT <- settings$convert2RawRT
+    useGroup <- settings$useGroup
+    parentReference <- settings$parentReference
+  }
   .pa_msn_validate_preparation(pa)
   processing_started <- Sys.time()
   processing_input <- .pa_processing_input(pa, "frag4feature")
@@ -210,7 +247,7 @@ setMethod(f="frag4feature", signature="purityA",
     dbName <- db_name
   }
 
-  if (includeMSn && isTRUE(createDb))
+  if (any(msLevel > 2L) && isTRUE(createDb))
     stop("MSn feature association cannot use the deprecated createDb route. ",
       "Associate spectra first; higher-level database export requires a ",
       "supported MSn export route.")
@@ -250,18 +287,23 @@ setMethod(f="frag4feature", signature="purityA",
   puritydf <- purityTable(pa)
   puritydf$fileid <- as.numeric(as.character(puritydf$fileid))
 
+    source_files <- .xcms_files(xcmsObj)
   if(XCMSnExp_bool){
     allpeaks <- data.frame(xcms::chromPeaks(xcmsObj))
-    allpeaks$filename = basename(.xcms_files(xcmsObj))[allpeaks$sample]
+    allpeaks$filename = basename(source_files)[allpeaks$sample]
     #allpeaks$filename = basename(xcmsObj$sampleName)[allpeaks$sample]
   }else{
     allpeaks <- data.frame(xcmsObj@peaks)
-    allpeaks$filename <- basename(xcmsObj@filepaths)[allpeaks$sample]
+    allpeaks$filename <- basename(source_files)[allpeaks$sample]
     #allpeaks <- plyr::ddply(allpeaks, ~ sample, getname, xcmsObj=xcmsObj)
   }
 
   allpeaks$cid <- seq_len(nrow(allpeaks))
 
+    rt_preparation <- if (!convert2RawRT) "not_requested" else
+      if (!nrow(allpeaks)) "no_chromatographic_peaks" else "no_adjustment"
+    rt_conversion <- list(preparation = rt_preparation,
+      used_for_association = FALSE)
   if (convert2RawRT && nrow(allpeaks)) {
 
     conv_check = FALSE
@@ -280,6 +322,7 @@ setMethod(f="frag4feature", signature="purityA",
       allpeaks$rtminCorrected <- allpeaks$rtmin
       allpeaks$rtmaxCorrected <- allpeaks$rtmax
       allpeaks <- plyr::ddply(allpeaks, ~ sample, convert2Raw, xcmsObj=xcmsObj, XCMSnExp_bool=XCMSnExp_bool)
+      rt_conversion$preparation <- "applied"
     }else{
       message('convert2RawRT == TRUE but retention time alignment not applied to xcmsObj. Using raw retention times for features')
       allpeaks$rtminCorrected <- NA
@@ -295,6 +338,9 @@ setMethod(f="frag4feature", signature="purityA",
     seqNum = integer(), retentionTime = numeric(), precurMtchMZ = numeric())
   for (name in setdiff(names(empty), names(grpm))) grpm[[name]] <- empty[[name]]
 
+    effective_cores <- 0L
+    association_input <- "not_used"
+    used_bounds <- membership <- NULL
   if (nrow(puritydf) && nrow(allpeaks)) {
     para <- pa@cores > 1
     if (para) {
@@ -307,9 +353,17 @@ setMethod(f="frag4feature", signature="purityA",
       fullpeakw <- data.frame(get_full_peak_width(definitions,
         xcmsObj = xcmsObj))
       fullpeakw$grpid <- seq_len(nrow(fullpeakw))
+      used_bounds <- fullpeakw
+      association_input <- "group_bounds"
+      effective_cores <- 1L
       matched <- plyr::ddply(puritydf, ~ pid, fsub2, allpeaks = fullpeakw,
         intense = intense, ppm = ppm, fullp = TRUE, use_grped = TRUE)
     } else {
+      used_bounds <- allpeaks
+      association_input <- "individual_peaks"
+      effective_cores <- if (para) pa@cores else 1L
+      rt_conversion$used_for_association <-
+        identical(rt_conversion$preparation, "applied")
       matched <- plyr::ddply(puritydf, ~ fileid, .parallel = para, fsub1,
         allpeaks = allpeaks, ppm = ppm, intense = intense)
     }
@@ -331,12 +385,16 @@ setMethod(f="frag4feature", signature="purityA",
     }
   }
 
+    processing_input$xcms <- .pa_feature_input_reference(
+      class(xcmsObj)[1L], source_files, association_input,
+      used_bounds, membership)
+
   # Make sure order is by grpid
   grpm <- grpm[order(grpm$grpid), , drop = FALSE]
 
   # Descendants use the MS2 associations before MS2 precursor-purity exclusion.
   pa <- .pa_processing_relink(pa)
-  if (includeMSn) {
+  if (any(msLevel > 2L)) {
     preparation <- .pa_msn_preparation(pa, parentReference)
     grpm <- .pa_msn_feature_links(grpm, preparation, plim)
     fields <- intersect(c("inPurity", "msPurityStagePurity",
@@ -344,6 +402,7 @@ setMethod(f="frag4feature", signature="purityA",
     for (field in fields)
       grpm[[field]] <- pa@spectra[[field]][match(grpm$pid, pa@spectra$pid)]
     pa@params$msnLineage <- preparation
+    grpm <- grpm[grpm$msLevel %in% msLevel, , drop = FALSE]
   } else if (!is.na(plim) && plim > 0) {
     grpm <- grpm[which(grpm$inPurity > plim), , drop = FALSE]
   }
@@ -353,10 +412,15 @@ setMethod(f="frag4feature", signature="purityA",
   prm$frag4feature <- list(ppm = ppm, plim = plim, intense = intense,
                            convert2RawRT = convert2RawRT, useGroup = useGroup,
                            xcmsObj_class = class(xcmsObj)[1],
-                           includeMSn = includeMSn,
-                           parentReference = parentReference)
+                           cores = pa@cores, effective_cores = effective_cores,
+                           rt_conversion = rt_conversion,
+                           msLevel = msLevel,
+                           effective_msLevel = unique(Spectra::msLevel(
+                             pa@spectra)[match(grpm$pid, pa@spectra$pid)]),
+                           parentReference = parentReference,
+                           param = param)
   pa@params <- prm
-  if (includeMSn) {
+  if (any(msLevel > 2L)) {
     pa@params$frag4feature$resolvedParentReference <-
       preparation$parentReference
   }
@@ -388,6 +452,22 @@ setMethod(f="frag4feature", signature="purityA",
 
 })
 
+
+.pa_feature_input_reference <- function(
+  class, files, mode, bounds, membership
+) {
+  reference <- list(class = class, files = files, association_input = mode,
+    fingerprint = NULL)
+  if (identical(mode, "not_used")) return(reference)
+  schema <- "frag4feature-input-v1"
+  path <- tempfile(fileext = ".rds")
+  on.exit(unlink(path))
+  saveRDS(list(schema = schema, association_input = mode, bounds = bounds,
+      memberships = membership), path, compress = FALSE, version = 2L)
+  reference$fingerprint <- list(schema = schema, serialization_version = 2L,
+    algorithm = "sha256", value = .mzs_sha256(path))
+  reference
+}
 
 fsub1  <- function(prod, allpeaks, intense, ppm){
   # go through all the MS/MS files from each file

@@ -1,20 +1,26 @@
-test_that("MSn association appends options after existing arguments", {
+test_that("association level and parameter options follow existing arguments", {
     existing <- c("pa", "xcmsObj", "ppm", "plim", "intense", "convert2RawRT",
         "useGroup", "createDb", "outDir", "dbName", "grpPeaklist", "use_group",
         "out_dir", "create_db", "grp_peaklist", "db_name", "xset")
     generic <- methods::getGeneric("frag4feature")
     method <- methods::selectMethod("frag4feature", "purityA")
-    expected <- c(existing, "includeMSn", "parentReference")
+    expected <- c(existing, "msLevel", "parentReference", "param")
     expect_identical(names(formals(generic)), expected)
     expect_identical(names(formals(method)), expected)
-    expect_identical(formals(method)$includeMSn, FALSE)
+    expect_identical(formals(method)$msLevel, 2L)
+    expect_null(formals(method)$param)
     expect_identical(formals(method)$parentReference, "auto")
     expect_false("linkMSnSpectra" %in% getNamespaceExports("msPurity"))
     pa <- methods::new("purityA")
-    expect_error(frag4feature(pa, NULL, includeMSn = NA), "includeMSn")
+    expect_error(frag4feature(pa, NULL, includeMSn = TRUE), "unused argument")
+    invalid_levels <- list(empty = integer(), missing = NA_integer_,
+        fractional = 2.5, unsupported = c(2L, 5L), character = "4")
+    for (name in names(invalid_levels))
+        expect_error(frag4feature(pa, NULL, msLevel = invalid_levels[[name]]),
+            "msLevel", info = name)
     expect_error(frag4feature(pa, NULL, parentReference = "invalid"),
         "arg.*should be one of")
-    expect_error(frag4feature(pa, NULL, includeMSn = TRUE, createDb = TRUE),
+    expect_error(frag4feature(pa, NULL, msLevel = 2:4, createDb = TRUE),
         "deprecated createDb route")
 })
 
@@ -80,7 +86,7 @@ for (compound in c("tryptophan", "kynurenine")) local({
         expect_identical(ordinary@params$msnLineage,
             fixture$pa@params$msnLineage)
         full <- frag4feature(fixture$pa, fixture$xe, ppm = 10,
-            includeMSn = TRUE, parentReference = "acquisitionNum",
+            msLevel = 2:4, parentReference = "acquisitionNum",
             convert2RawRT = FALSE)
         selected <- full@grped_df[
             full@grped_df$grpid %in% fixture$feature, , drop = FALSE]
@@ -92,7 +98,7 @@ for (compound in c("tryptophan", "kynurenine")) local({
             fixture$pa@spectra$inPurity[source_rows])
         expected <- full@grped_df[full@grped_df$msLevel > 2L, , drop = FALSE]
         rejected <- frag4feature(fixture$pa, fixture$xe, ppm = 10, plim = 1,
-            includeMSn = TRUE, parentReference = "acquisitionNum",
+            msLevel = 2:4, parentReference = "acquisitionNum",
             convert2RawRT = FALSE)
         actual <- rejected@grped_df
         rownames(actual) <- rownames(expected) <- NULL
@@ -100,7 +106,7 @@ for (compound in c("tryptophan", "kynurenine")) local({
         expect_true(all(Spectra::msLevel(rejected@fragSpectra) > 2L))
         history <- processingHistory(rejected, "frag4feature")
         parameters <- history[[length(history)]]$parameters
-        expect_true(parameters$includeMSn)
+        expect_identical(parameters$msLevel, 2:4)
         expect_identical(parameters$resolvedParentReference,
             "acquisitionNum")
         relinked <- frag4feature(rejected, fixture$xe, ppm = 10,
@@ -119,7 +125,7 @@ test_that("group-width association retains source acquisition times", {
     skip_if_not_installed("xcms")
     fixture <- .msn_association_fixture("tryptophan")
     linked <- frag4feature(fixture$pa, fixture$xe, ppm = 10,
-        includeMSn = TRUE, parentReference = "acquisitionNum",
+        msLevel = 2:4, parentReference = "acquisitionNum",
         convert2RawRT = FALSE, useGroup = TRUE)
     children <- linked@grped_df[linked@grped_df$msLevel > 2L, , drop = FALSE]
     source <- fixture$pa@spectra
@@ -143,11 +149,12 @@ test_that("empty associations retain diagnostics without reading peaks", {
     local_mocked_bindings(.pa_raw_scans = function(...) {
         stop("Empty associations must not request peak arrays")
     }, .package = "msPurity")
-    higher_only <- frag4feature(pa, fixture$xe, includeMSn = TRUE,
+    higher_only <- frag4feature(pa, fixture$xe, msLevel = 2:4,
         parentReference = "sourceSpectrumId", convert2RawRT = FALSE)
-    unmatched <- frag4feature(fixture$pa, fixture$xe, ppm = 0,
-        includeMSn = TRUE, parentReference = "acquisitionNum",
-        convert2RawRT = FALSE)
+    unmatched_param <- Frag4FeatureParam(ppm = 0,
+        parentReference = "acquisitionNum", convert2RawRT = FALSE)
+    unmatched <- frag4feature(fixture$pa, fixture$xe, msLevel = 2:4,
+        param = unmatched_param)
     cases <- list(higher_only = higher_only, unmatched = unmatched)
     for (name in names(cases)) {
         out <- cases[[name]]
@@ -160,11 +167,17 @@ test_that("empty associations retain diagnostics without reading peaks", {
         expect_identical(record$status, "completed", info = name)
         expect_identical(nrow(record$output$spectra), 0L, info = name)
     }
+    unused <- tail(processingHistory(higher_only, "frag4feature"), 1L)[[1L]]
+    expect_equal(unused$parameters$effective_cores, 0)
+    expect_identical(unused$input$xcms$association_input, "not_used")
+    expect_null(unused$input$xcms$fingerprint)
     expect_identical(nrow(higher_only@params$msnLineage$scans), 2L)
     expect_true(all(is.na(higher_only@params$msnLineage$scans$root_pid)))
     expect_true(any(unmatched@params$msnLineage$scans$path_status == "valid"))
     settings <- tail(processingParameters(unmatched, "frag4feature"), 1L)[[1L]]
     expect_identical(settings$ppm, 0)
+    expect_identical(settings$param, unmatched_param)
+    expect_identical(settings$effective_msLevel, integer())
 })
 
 test_that("unavailable MS2 purity cannot create missing feature-link rows", {
@@ -178,7 +191,7 @@ test_that("unavailable MS2 purity cannot create missing feature-link rows", {
     expect_equal(nrow(ordinary@grped_df), 0L)
     expect_length(ordinary@fragSpectra, 0L)
     higher <- frag4feature(pa, fixture$xe, ppm = 10, plim = 0.7,
-        includeMSn = TRUE, parentReference = "acquisitionNum",
+        msLevel = 2:4, parentReference = "acquisitionNum",
         convert2RawRT = FALSE)
     expect_gt(nrow(higher@grped_df), 0L)
     expect_false(anyNA(higher@grped_df$pid))
@@ -198,7 +211,7 @@ test_that("unassessed MS2 roots support association by recorded precursor", {
 
     # Without an assessed MS2 target, use its recorded precursor mass.
     linked <- frag4feature(pa, fixture$xe, ppm = 10, intense = FALSE,
-        includeMSn = TRUE, convert2RawRT = FALSE)
+        msLevel = 2:4, convert2RawRT = FALSE)
     children <- linked@grped_df[linked@grped_df$msLevel == 4L, , drop = FALSE]
     rows <- match(children$pid, pa@spectra$pid)
 
@@ -206,4 +219,68 @@ test_that("unassessed MS2 roots support association by recorded precursor", {
     expect_false(anyNA(rows))
     expect_equal(children$inPurity, pa@spectra$inPurity[rows])
     expect_identical(processingHistory(linked, "purityA"), history)
+})
+
+test_that("typed association agrees with scalars and retains typed history", {
+    skip_if_not_installed("xcms")
+    fixture <- .msn_association_fixture("tryptophan")
+    param <- Frag4FeatureParam(ppm = 10, plim = 0.5, intense = FALSE,
+        convert2RawRT = FALSE, useGroup = TRUE)
+    scalar <- frag4feature(fixture$pa, fixture$xe, ppm = 10, plim = 0.5,
+        intense = FALSE, convert2RawRT = FALSE, useGroup = TRUE, msLevel = 2:4)
+    typed <- frag4feature(fixture$pa, fixture$xe, msLevel = 2:4, param = param)
+    expect_message(mixed <- frag4feature(fixture$pa, fixture$xe,
+            ppm = 10L, plim = 0.5, intense = FALSE, convert2RawRT = FALSE,
+            useGroup = TRUE, use_group = TRUE, parentReference = "auto",
+            msLevel = 2:4, param = param), "use_group is deprecated")
+
+    expect_gt(nrow(typed@grped_df), 0L)
+    expect_identical(typed@grped_df, scalar@grped_df)
+    expect_identical(mixed@grped_df, scalar@grped_df)
+    expect_identical(Spectra::peaksData(typed@fragSpectra),
+        Spectra::peaksData(scalar@fragSpectra))
+    record <- processingParameters(typed, "frag4feature")[[1L]]
+    expect_identical(record$param, param)
+    expect_identical(record[names(as.list(param))], as.list(param))
+    expect_identical(record$msLevel, 2:4)
+    expect_identical(record$effective_msLevel, 2:4)
+    expect_identical(processingHistory(typed, "purityA"),
+        processingHistory(fixture$pa, "purityA"))
+
+    path <- tempfile(fileext = ".rds")
+    on.exit(unlink(path))
+    saveRDS(typed, path)
+    expect_identical(processingHistory(readRDS(path)), processingHistory(typed))
+})
+
+test_that("MS4-only links retain repeated occurrences and source parents", {
+    skip_if_not_installed("xcms")
+    fixture <- .msn_association_fixture("tryptophan")
+    xe <- fixture$xe
+    definitions <- xcms::featureDefinitions(xe)
+    repeated <- definitions[rep(fixture$feature, 3L), , drop = FALSE]
+    rownames(repeated) <- make.unique(rownames(repeated))
+    xcms::featureDefinitions(xe) <- repeated
+    local_mocked_bindings(.pa_msn_ancestry = function(...) {
+        stop("Automatic association must reuse prepared parents")
+    }, .pa_msn_purity = function(...) {
+        stop("Feature association must not calculate purity")
+    }, .package = "msPurity")
+    param <- Frag4FeatureParam(ppm = 10, plim = 1, convert2RawRT = FALSE)
+    out <- frag4feature(fixture$pa, xe, msLevel = 4L, param = param)
+
+    expect_identical(nrow(out@grped_df), 18L)
+    expected_groups <- factor(rep(as.character(1:3), 6L),
+        levels = as.character(1:3))
+    expect_identical(out@grped_df$grpid, expected_groups)
+    expect_identical(out@grped_df$pid, rep(out@fragSpectra$pid, each = 3L))
+    expect_identical(Spectra::msLevel(out@fragSpectra), rep(4L, 6L))
+    expect_identical(out@spectra$pid, fixture$pa@spectra$pid)
+    expect_identical(Spectra::peaksData(out@spectra),
+        Spectra::peaksData(fixture$pa@spectra))
+    expect_identical(out@params$msnLineage, fixture$pa@params$msnLineage)
+    record <- processingParameters(out, "frag4feature")[[1L]]
+    expect_identical(record$msLevel, 4L)
+    expect_identical(record$effective_msLevel, 4L)
+    expect_identical(record$resolvedParentReference, "acquisitionNum")
 })
