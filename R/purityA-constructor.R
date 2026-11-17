@@ -97,7 +97,10 @@ NULL
 #' @param interpol character; type of interolation to be performed "linear" or "spline" (Spline option is only included for testing purposes,
 #'                            linear should be used for all standard cases, isotope removal is also not available for the spline option)
 #' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param iwNormFun function; Receives m/z offsets from the isolation-window
+#' midpoint and returns intensity weights. The default Gaussian accounts for
+#' edge effects and spans the resolved isolation bounds. Caller functions are
+#' used without shifting or rescaling.
 #' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
@@ -299,7 +302,10 @@ purityA <- function(fileList,
 #' @param plotdir vector; If plotP is TRUE plots will be saved to this directory
 #' @param interpol character; Type of interolation to be performed "linear", "spline" or "none"
 #' @param iwNorm boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
-#' @param iwNormFun function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
+#' @param iwNormFun function; Receives m/z offsets from the isolation-window
+#' midpoint and returns intensity weights. The default Gaussian accounts for
+#' edge effects and spans the resolved isolation bounds. Caller functions are
+#' used without shifting or rescaling.
 #' @param ilim numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
 #' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param isotopes boolean; TRUE if isotopes are to be removed
@@ -423,11 +429,16 @@ assessPuritySingle <- function(filepth,
   }
   windows$seqNum <- mrdfshrt$seqNum
   windows$acquisitionNum <- mrdfshrt$acquisitionNum
-  invalid <- windows$status != "valid"
+  invalid <- windows$status == "invalid_isolation_window"
   if (any(invalid))
     warning(sum(invalid), " MS2 spectra have missing or invalid isolation ",
         "bounds; their purity is unavailable. Supply offsets when known.",
         call. = FALSE)
+  outside <- windows$status == "precursor_outside_window"
+  if (any(outside))
+    warning(sum(outside), " MS2 precursors are outside their recorded ",
+      "isolation bounds; purity is unavailable. Supply offsets when known.",
+      call. = FALSE)
   isolation <- .pa_isolation_history(windows, iwNorm, iwNormFun)
   resolved[names(isolation)] <- isolation
   resolved$status <- "assessed"

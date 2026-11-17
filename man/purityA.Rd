@@ -53,7 +53,10 @@ linear should be used for all standard cases, isotope removal is also not availa
 
 \item{iwNorm}{boolean; If TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function}
 
-\item{iwNormFun}{function; A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects}
+\item{iwNormFun}{function; Receives m/z offsets from the isolation-window
+midpoint and returns intensity weights. The default Gaussian accounts for
+edge effects and spans the resolved isolation bounds. Caller functions are
+used without shifting or rescaling.}
 
 \item{ilim}{numeric; All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5\% (0.05)}
 
