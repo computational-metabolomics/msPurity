@@ -60,6 +60,27 @@ test_that("ambiguous conventions and duplicate source keys are rejected", {
         "source spectrum identities must be unique")
 })
 
+test_that("automatic references compare only valid parent interpretations", {
+    metadata <- .ancestry_fixture()[1:3, ]
+    metadata$ms_level <- c(2L, 2L, 3L)
+    metadata$acquisition_num <- 1:3
+    metadata$source_spectrum_id <- as.character(1:3)
+    metadata$spectrumId <- paste0("scan=", 1:3)
+    metadata$spectrumRef <- c(NA, NA, "scan=1")
+    metadata$parent_reference_raw <- c(NA, NA, "1")
+    agreed <- .prepare_ancestry(metadata)
+    expect_identical(agreed$scans$parent_pid, c(NA_integer_, NA_integer_, 1L))
+    expect_identical(agreed$parentReference, "spectrumId")
+
+    metadata$scan_index <- c(2L, 1L, 3L)
+    metadata$rtime[2L] <- 14
+    invalid_competitor <- .prepare_ancestry(metadata)
+    expect_identical(invalid_competitor$scans$parent_pid,
+        agreed$scans$parent_pid)
+    metadata$rtime[2L] <- 11
+    expect_error(.prepare_ancestry(metadata), "Ambiguous parent")
+})
+
 test_that("invalid and incomplete paths remain explicit and unlinked", {
     metadata <- .ancestry_fixture()
     metadata$parent_reference_raw[2L] <- "999"
