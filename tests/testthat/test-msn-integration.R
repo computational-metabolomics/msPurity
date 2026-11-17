@@ -4,8 +4,7 @@ test_that("MSn association appends options after existing arguments", {
         "out_dir", "create_db", "grp_peaklist", "db_name", "xset")
     generic <- methods::getGeneric("frag4feature")
     method <- methods::selectMethod("frag4feature", "purityA")
-    expected <- c(existing, "includeMSn", "parentReference",
-        "purityPpm", "purityTolerance")
+    expected <- c(existing, "includeMSn", "parentReference")
     expect_identical(names(formals(generic)), expected)
     expect_identical(names(formals(method)), expected)
     expect_identical(formals(method)$includeMSn, FALSE)
@@ -15,9 +14,6 @@ test_that("MSn association appends options after existing arguments", {
     expect_error(frag4feature(pa, NULL, includeMSn = NA), "includeMSn")
     expect_error(frag4feature(pa, NULL, parentReference = "invalid"),
         "arg.*should be one of")
-    expect_error(frag4feature(pa, NULL, purityPpm = -1), "purityPpm")
-    expect_error(frag4feature(pa, NULL, purityTolerance = NA),
-        "purityTolerance")
     expect_error(frag4feature(pa, NULL, includeMSn = TRUE, createDb = TRUE),
         "deprecated createDb route")
 })
@@ -31,6 +27,9 @@ test_that("stored ancestry follows acquisition metadata rather than flags", {
     pa@spectra <- source
     pa@params$msnLineage <- preparation
     expect_true(msPurity:::.pa_msn_validate_preparation(pa))
+    expect_identical(msPurity:::.pa_msn_preparation(pa), preparation)
+    expect_error(msPurity:::.pa_msn_preparation(pa, "acquisitionNum"),
+        "conflicts with the prepared parents")
     pa@spectra$purity_pass_flag <- c(TRUE, NA, NA)
     expect_true(msPurity:::.pa_msn_validate_preparation(pa))
     reordered <- pa
@@ -58,7 +57,8 @@ test_that("stored ancestry follows acquisition metadata rather than flags", {
             stopifnot(length(prepared$selected) == 1L,
                 length(prepared$feature) == 1L)
             prepared$pa <- purityA(.msn_standard_file(compound, "MSn"),
-                cores = 1L, plotP = FALSE)
+                cores = 1L, plotP = FALSE, msLevel = 2:4,
+                parentReference = "acquisitionNum")
             cache[[compound]] <<- prepared
         }
         cache[[compound]]
@@ -70,10 +70,15 @@ for (compound in c("tryptophan", "kynurenine")) local({
     test_that(paste(name, "links descendants before MS2 purity exclusion"), {
         skip_if_not_installed("xcms")
         fixture <- .msn_association_fixture(name)
+        purity_history <- processingHistory(fixture$pa, "purityA")
+        local_mocked_bindings(.pa_msn_purity = function(...) {
+            stop("Feature association must not calculate purity")
+        }, .package = "msPurity")
         ordinary <- frag4feature(fixture$pa, fixture$xe, ppm = 10,
             convert2RawRT = FALSE)
         expect_true(all(Spectra::msLevel(ordinary@fragSpectra) == 2L))
-        expect_null(ordinary@params$msnLineage)
+        expect_identical(ordinary@params$msnLineage,
+            fixture$pa@params$msnLineage)
         full <- frag4feature(fixture$pa, fixture$xe, ppm = 10,
             includeMSn = TRUE, parentReference = "acquisitionNum",
             convert2RawRT = FALSE)
@@ -82,7 +87,9 @@ for (compound in c("tryptophan", "kynurenine")) local({
         expected <- if (name == "tryptophan") c(17L, 11L, 6L) else
             c(34L, 21L, 12L)
         expect_identical(tabulate(selected$msLevel - 1L, nbins = 3L), expected)
-        expect_true(all(is.na(selected$inPurity[selected$msLevel > 2L])))
+        source_rows <- match(selected$pid, fixture$pa@spectra$pid)
+        expect_equal(selected$inPurity,
+            fixture$pa@spectra$inPurity[source_rows])
         expected <- full@grped_df[full@grped_df$msLevel > 2L, , drop = FALSE]
         rejected <- frag4feature(fixture$pa, fixture$xe, ppm = 10, plim = 1,
             includeMSn = TRUE, parentReference = "acquisitionNum",
@@ -98,8 +105,11 @@ for (compound in c("tryptophan", "kynurenine")) local({
             "acquisitionNum")
         relinked <- frag4feature(rejected, fixture$xe, ppm = 10,
             convert2RawRT = FALSE)
-        expect_null(relinked@params$msnLineage)
+        expect_identical(relinked@params$msnLineage,
+            fixture$pa@params$msnLineage)
         expect_true(all(Spectra::msLevel(relinked@fragSpectra) == 2L))
+        expect_identical(processingHistory(relinked, "purityA"), purity_history)
+        expect_identical(relinked@spectra$inPurity, fixture$pa@spectra$inPurity)
         expect_gt(length(processingHistory(relinked)),
             length(processingHistory(rejected)))
     })
@@ -117,7 +127,7 @@ test_that("group-width association retains source acquisition times", {
     expect_gt(nrow(children), 0L)
     expect_false(anyNA(rows))
     expect_equal(children$retentionTime, Spectra::rtime(source)[rows])
-    expect_true(all(is.na(children$inPurity)))
+    expect_equal(children$inPurity, source$inPurity[rows])
     expect_identical(linked@f4f_link_type, "group")
 })
 
@@ -161,7 +171,7 @@ test_that("unavailable MS2 purity cannot create missing feature-link rows", {
     skip_if_not_installed("xcms")
     fixture <- .msn_association_fixture("tryptophan")
     pa <- fixture$pa
-    pa@spectra$inPurity[] <- NA_real_
+    pa@spectra$inPurity[Spectra::msLevel(pa@spectra) == 2L] <- NA_real_
     pa@puritydf$inPurity[] <- NA_real_
     ordinary <- frag4feature(pa, fixture$xe, ppm = 10, plim = 0.7,
         convert2RawRT = FALSE)
@@ -173,4 +183,27 @@ test_that("unavailable MS2 purity cannot create missing feature-link rows", {
     expect_gt(nrow(higher@grped_df), 0L)
     expect_false(anyNA(higher@grped_df$pid))
     expect_true(all(higher@grped_df$msLevel > 2L))
+})
+
+test_that("unassessed MS2 roots support association by recorded precursor", {
+    skip_if_not_installed("xcms")
+    fixture <- .msn_association_fixture("tryptophan")
+    pa <- purityA(.msn_standard_file("tryptophan", "MSn"), msLevel = 4L,
+        parentReference = "acquisitionNum")
+    history <- processingHistory(pa, "purityA")
+    expect_true(all(is.na(purityTable(pa)$aMz)))
+    local_mocked_bindings(.pa_msn_purity = function(...) {
+        stop("Feature association must not calculate missing purity")
+    }, .package = "msPurity")
+
+    # Without an assessed MS2 target, use its recorded precursor mass.
+    linked <- frag4feature(pa, fixture$xe, ppm = 10, intense = FALSE,
+        includeMSn = TRUE, convert2RawRT = FALSE)
+    children <- linked@grped_df[linked@grped_df$msLevel == 4L, , drop = FALSE]
+    rows <- match(children$pid, pa@spectra$pid)
+
+    expect_gt(nrow(children), 0L)
+    expect_false(anyNA(rows))
+    expect_equal(children$inPurity, pa@spectra$inPurity[rows])
+    expect_identical(processingHistory(linked, "purityA"), history)
 })

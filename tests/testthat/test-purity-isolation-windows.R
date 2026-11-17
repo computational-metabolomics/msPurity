@@ -134,4 +134,6 @@ test_that("an outside precursor has its own unavailable reason", {
         c("valid", "precursor_outside_window"))
     expect_identical(settings$observations$method[2L],
         "precursor_outside_window")
+    expect_identical(pa@spectra$msPurityPurityStatus[2L],
+        "precursor_outside_window")
 })

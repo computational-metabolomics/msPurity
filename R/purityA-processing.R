@@ -137,6 +137,8 @@
     if (!length(sp))
         return(pa)
     idx <- seq_along(sp)
+    if (step == "purityA" && !is.null(pa@params$purityA$msLevel))
+        idx <- which(Spectra::msLevel(sp) %in% pa@params$purityA$msLevel)
     if (slot == "avSpectra") {
         level <- switch(step,
             averageIntraFragSpectra = "av_intra",

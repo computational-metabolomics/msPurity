@@ -91,8 +91,7 @@ setGeneric(name="frag4feature",
                         outDir='.', dbName=NA, grpPeaklist=NA, use_group = NA, out_dir = NA,
                         create_db = NA, grp_peaklist = NA, db_name = NA,
                         xset = NA, includeMSn = FALSE,
-                        parentReference = "auto",
-                        purityPpm = 10, purityTolerance = 0) {
+                        parentReference = "auto") {
              standardGeneric("frag4feature")
            }
 )

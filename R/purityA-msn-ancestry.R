@@ -239,17 +239,35 @@
 
 # Cached ancestry is valid only for the same acquisition metadata. Processing
 # flags and history may change independently and are not acquisition fields.
+.pa_msn_preparation <- function(pa, parentReference = "auto") {
+    .pa_msn_validate_preparation(pa)
+    previous <- pa@params$msnLineage
+    if (!is.null(previous) && parentReference == "auto") return(previous)
+    source <- .pa_msn_spectra_metadata(pa@spectra)
+    prepared <- .pa_msn_ancestry(source, parentReference)
+    prepared$source_metadata <- source
+    if (!is.null(previous)) {
+        old <- previous$scans
+        rows <- match(prepared$scans$pid, old$pid)
+        if (!identical(prepared$scans$parent_id, old$parent_id[rows]))
+            stop("parentReference conflicts with the prepared parents. ",
+                "Reassess with purityA() using the intended interpretation.")
+        return(previous)
+    }
+    prepared
+}
+
 .pa_msn_validate_preparation <- function(pa) {
     preparation <- pa@params$msnLineage
     if (is.null(preparation)) return(invisible(TRUE))
     stored <- preparation$source_metadata
     if (!is.data.frame(stored) || !"pid" %in% names(stored))
         stop("Stored MSn ancestry lacks its source metadata. ",
-            "Run frag4feature(includeMSn = TRUE) again.")
+            "Reassess the current source with purityA().")
     current <- .pa_msn_spectra_metadata(pa@spectra)
     if (anyDuplicated(current$pid) || !setequal(current$pid, stored$pid))
         stop("Stored MSn ancestry no longer matches the source spectra. ",
-            "Run frag4feature(includeMSn = TRUE) again.")
+            "Reassess the current source with purityA().")
     fields <- unique(c(.PA_ACQUISITION_FIELDS, .MSP_HEADER_COLS,
             unname(.MSP_HEADER_RENAME), unlist(.PA_FILTER_AXES),
             "spectrum_id", "spectrum_id_", "source_spectrum_id", "run_id",
@@ -264,7 +282,7 @@
                 stored[match(current$pid, stored$pid), fields, drop = FALSE],
                 check.attributes = FALSE, tolerance = 0)))
         stop("Stored MSn ancestry no longer matches acquisition metadata. ",
-            "Run frag4feature(includeMSn = TRUE) again.")
+            "Reassess the current source with purityA().")
     invisible(TRUE)
 }
 

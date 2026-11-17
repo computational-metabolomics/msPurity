@@ -20,9 +20,16 @@
     df <- if (length(columns)) puritydf[rows, , drop = FALSE] else
         data.frame(row.names = seq_along(selected))
     higher <- which(level[selected] > 2L)
-    if (!"pid" %in% names(df)) df$pid <- rep(NA_integer_, nrow(df))
-    next_pid <- if (nrow(puritydf)) max(puritydf$pid) else 0L
-    df$pid[higher] <- next_pid + seq_along(higher)
+    if ("pid" %in% Spectra::spectraVariables(sp)) {
+        pid <- sp$pid
+        if (!is.numeric(pid) || any(!is.finite(pid)) || anyDuplicated(pid))
+            stop("Supplied fragmentation pids must be unique finite numbers.")
+        df$pid <- pid
+    } else {
+        if (!"pid" %in% names(df)) df$pid <- rep(NA_integer_, nrow(df))
+        next_pid <- if (nrow(puritydf)) max(puritydf$pid) else 0L
+        df$pid[higher] <- next_pid + seq_along(higher)
+    }
     if (!"fileid" %in% names(df)) df$fileid <- rep(NA_integer_, nrow(df))
     df$fileid[higher] <- fileid[selected[higher]]
     mapping <- c(seqNum = "scanIndex", acquisitionNum = "acquisitionNum",
@@ -39,10 +46,30 @@
         df$filename[higher] <- basename(native$dataOrigin[higher])
     if ("id" %in% names(df)) df$id[higher] <- native$scanIndex[higher]
     for (field in names(df)) sp[[field]] <- df[[field]]
-    offsets <- .pa_raw_peak_offsets(raw)
-    sp$msPurityRawPeakOffset <- offsets$offset[selected]
-    sp$msPurityRawPeakCount <- offsets$count[selected]
-    sp$msPurityRawPeakIdBasis <- rep("source_reference", length(sp))
+    provenance <- c("msPurityRawPeakOffset", "msPurityRawPeakCount",
+        "msPurityRawPeakIdBasis")
+    supplied <- provenance %in% Spectra::spectraVariables(sp)
+    if (any(supplied)) {
+        if (!all(supplied))
+            stop("Supplied source peak provenance is incomplete.")
+        for (field in provenance[1:2]) {
+            value <- sp[[field]]
+            if (!is.numeric(value) || length(value) != length(sp) ||
+                    any(!is.finite(value) | value < 0 | value != trunc(value)))
+                stop("Supplied source peak offsets and counts must be ",
+                    "nonnegative finite whole numbers.")
+        }
+        basis <- sp$msPurityRawPeakIdBasis
+        if (!is.character(basis) || length(basis) != length(sp) ||
+                anyNA(basis) ||
+                any(!basis %in% c("source_reference", "filter_input")))
+            stop("Supplied source peak identity bases are invalid.")
+    } else {
+        offsets <- .pa_raw_peak_offsets(raw)
+        sp$msPurityRawPeakOffset <- offsets$offset[selected]
+        sp$msPurityRawPeakCount <- offsets$count[selected]
+        sp$msPurityRawPeakIdBasis <- rep("source_reference", length(sp))
+    }
     purity <- if ("inPurity" %in% Spectra::spectraVariables(sp))
         sp$inPurity else rep(NA_real_, length(sp))
     sp$msPurityPurityStatus <- ifelse(level[selected] != 2L,
