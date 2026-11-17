@@ -78,3 +78,60 @@ test_that("normalization and history use the same event windows", {
     expect_identical(lapply(readRDS(path)$iwNormFunctions, function(f) f(0)),
         lapply(settings$iwNormFunctions, function(f) f(0)))
 })
+
+test_that("generated weights use the midpoint of asymmetric windows", {
+    target <- 200.1234
+    d <- S4Vectors::DataFrame(msLevel = c(1L, 2L, 1L), rtime = 1:3,
+        scanIndex = 1:3, acquisitionNum = 1:3,
+        precScanNum = c(NA_integer_, 1L, NA_integer_),
+        precursorMz = c(NA_real_, target, NA_real_),
+        precursorIntensity = c(NA_real_, 1000, NA_real_),
+        isolationWindowTargetMz = c(NA_real_, target, NA_real_),
+        isolationWindowLowerMz = c(NA_real_, 199.9234, NA_real_),
+        isolationWindowUpperMz = c(NA_real_, 200.9234, NA_real_),
+        dataOrigin = "asymmetric-window", centroided = TRUE)
+    d$mz <- list(c(199.9734, target, 200.7234), c(57.0344, 70.0456),
+        c(199.9734, target, 200.7234))
+    d$intensity <- list(c(100, 1000, 100), c(10, 20), c(100, 500, 100))
+    spectra <- Spectra::Spectra(d, source = Spectra::MsBackendMemory())
+    initial <- assessPuritySingle(spectra, interpol = "none", iwNorm = TRUE,
+        ilim = 0, isotopes = FALSE)
+
+    # Analytic weights at exact knots of the default, rescaled Gaussian.
+    weights <- (exp(-c(-2.7, -1.8, 1.8)^2 / 2) - exp(-9 / 2)) /
+        (1 - exp(-9 / 2))
+    ratios <- c(1000 * weights[2L] / sum(c(100, 1000, 100) * weights),
+        500 * weights[2L] / sum(c(100, 500, 100) * weights))
+    expect_equal(initial$aPurity, ratios[1L])
+    # Moving or omitting the reported target does not move recorded bounds.
+    for (target_label in c(target, 200.4234, NA_real_)) {
+        spectra$isolationWindowTargetMz[2L] <- target_label
+        pa <- purityA(spectra, iwNorm = TRUE, ilim = 0, isotopes = FALSE)
+        settings <- processingParameters(pa, "purityA")[[1L]]$resolved[[1L]]
+        expect_equal(purityTable(pa)$inPurity, mean(ratios),
+            info = paste("target", target_label))
+        expect_equal(settings$iwNormFun(c(-0.45, -0.30, 0.30)), weights,
+            info = paste("target", target_label))
+    }
+})
+
+test_that("symmetric defaults retain the existing Gaussian calculation", {
+    spectra <- .window_spectra()[c(1L, 2L, 4L)]
+    generated <- purityA(spectra, iwNorm = TRUE, isotopes = FALSE)
+    explicit <- purityA(spectra, iwNorm = TRUE, isotopes = FALSE,
+        iwNormFun = iwNormGauss(minOff = -0.4, maxOff = 0.4))
+    expect_equal(purityTable(generated), purityTable(explicit))
+})
+
+test_that("an outside precursor has its own unavailable reason", {
+    input <- .window_spectra()
+    input$precursorMz[3L] <- 101.1234
+    expect_warning(pa <- purityA(input, isotopes = FALSE, mostIntense = TRUE),
+        "1 MS2 precursors are outside")
+    settings <- processingParameters(pa, "purityA")[[1L]]$resolved[[1L]]
+    expect_equal(purityTable(pa)$inPurity, c(0.5, NA_real_))
+    expect_identical(settings$windows$status,
+        c("valid", "precursor_outside_window"))
+    expect_identical(settings$observations$method[2L],
+        "precursor_outside_window")
+})

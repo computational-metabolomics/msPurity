@@ -25,16 +25,19 @@
     offset_reference[unknown_target] <-
         (lower[unknown_target] + upper[unknown_target]) / 2
     valid <- is.finite(lower) & is.finite(upper) & is.finite(precursor) &
-        lower >= 0 & lower < upper & precursor >= lower & precursor <= upper &
+        lower >= 0 & lower < upper & precursor > 0 &
         offset_reference >= lower & offset_reference <= upper
     valid[is.na(valid)] <- FALSE
+    outside <- valid & (precursor < lower | precursor > upper)
+    status <- ifelse(valid, "valid", "invalid_isolation_window")
+    status[outside] <- "precursor_outside_window"
     data.frame(precursorMz = precursor, isolationWindowTargetMz = target,
         isolationWindowLowerMz = lower, isolationWindowUpperMz = upper,
         lowerOffset = offset_reference - lower,
         upperOffset = upper - offset_reference,
         source = rep(if (automatic) "recorded_metadata" else "caller",
             length(precursor)),
-        status = ifelse(valid, "valid", "invalid_isolation_window"))
+        status = status)
 }
 
 .msp_isolation_settings <- function(sp) {
@@ -42,6 +45,13 @@
         Spectra::isolationWindowLowerMz(sp),
         Spectra::isolationWindowUpperMz(sp),
         Spectra::isolationWindowTargetMz(sp))
+}
+
+# pcalc evaluates weights at distances from the isolation-window midpoint.
+.pa_isolation_weighting <- function(window) {
+    half_width <- (window$isolationWindowUpperMz -
+            window$isolationWindowLowerMz) / 2
+    iwNormGauss(minOff = -half_width, maxOff = half_width)
 }
 
 # Keep a scalar summary for uniform windows; the table is authoritative when
@@ -53,8 +63,7 @@
     functions <- if (iwNorm && generated) lapply(seq_len(nrow(windows)),
         function(i) {
             if (windows$status[i] != "valid") return(NULL)
-            iwNormGauss(minOff = -windows$lowerOffset[i],
-                maxOff = windows$upperOffset[i])
+            .pa_isolation_weighting(windows[i, , drop = FALSE])
         }) else NULL
     list(offsets = if (uniform) unname(unlist(offsets)) else
             c(NA_real_, NA_real_),
@@ -73,8 +82,7 @@
 .pa_purity_window <- function(row, windows, iwNormFun) {
     window <- windows[match(row$seqNum, windows$seqNum), , drop = FALSE]
     if (is.null(iwNormFun) && window$status == "valid")
-        iwNormFun <- iwNormGauss(minOff = -window$lowerOffset,
-            maxOff = window$upperOffset)
+        iwNormFun <- .pa_isolation_weighting(window)
     list(valid = identical(window$status, "valid"),
         minoff = row$precursorMZ - window$isolationWindowLowerMz,
         maxoff = window$isolationWindowUpperMz - row$precursorMZ,
