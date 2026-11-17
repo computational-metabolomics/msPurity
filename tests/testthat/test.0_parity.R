@@ -4,7 +4,10 @@ context("Parity with the results before the move to Spectra containers")
 # workflow before the Spectra transition. Only raw peak identities and their
 # purity/overall flags were corrected to match file positions. Calculated
 # values allow floating-point rounding across platforms; identity checks
-# remain exact.
+# remain exact. The frag4feature_group stage compares MS/MS times with feature
+# windows on the adjusted retention time scale and uses iMz (intense = TRUE),
+# so it holds the links of that comparison. grped_df is compared on the legacy
+# columns; frag4feature() appends its newer columns after them.
 
 suppressPackageStartupMessages(library(xcms))
 

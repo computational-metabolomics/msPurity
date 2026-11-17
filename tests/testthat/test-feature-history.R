@@ -50,7 +50,8 @@ test_that("association records actual serial, parallel and grouped workers", {
     grouped <- frag4feature(input$pa, input$xe, convert2RawRT = FALSE,
         useGroup = TRUE)
     cases <- list(serial = serial, parallel = parallel, grouped = grouped)
-    expected <- list(serial = c(1, 1), parallel = c(2, 2), grouped = c(2, 1))
+    # Association is one serial join whatever the number of cores.
+    expected <- list(serial = c(1, 1), parallel = c(2, 1), grouped = c(2, 1))
     for (name in names(cases)) {
         record <- .feature_history_record(cases[[name]])
         expect_equal(unname(unlist(record$parameters[
@@ -81,7 +82,7 @@ test_that("history distinguishes prepared and consumed RT conversion", {
     expected <- list(unadjusted = list(preparation = "no_adjustment",
             used_for_association = FALSE),
         converted = list(preparation = "applied", used_for_association = TRUE),
-        grouped = list(preparation = "applied", used_for_association = FALSE))
+        grouped = list(preparation = "applied", used_for_association = TRUE))
     for (name in names(cases))
         expect_identical(.feature_history_record(cases[[name]])$parameters$
                 rt_conversion, expected[[name]], info = name)

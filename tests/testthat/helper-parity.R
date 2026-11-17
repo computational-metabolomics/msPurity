@@ -14,6 +14,19 @@
 
 .parity_ref <- function(name) readRDS(file.path(.parity_dir(), paste0(name, ".rds")))
 
+# Columns frag4feature() appends to grped_df after the legacy ones.
+.f4f_added_cols <- c("precurMtchRTadj", "rtMapStatus", "precurMzSource",
+                     "is_filled", "rtminWin", "rtmaxWin", "rtApexDist",
+                     "matchRank")
+
+# grped_df without the appended columns, in the legacy column order.
+.parity_grped_df <- function(g) {
+    added <- intersect(names(g), .f4f_added_cols)
+    if (!length(added))
+        return(g)
+    g[, setdiff(names(g), added), drop = FALSE]
+}
+
 # The legacy view of a purityA object, read from the legacy slots or, once
 # they exist, rebuilt from the Spectra slots by the accessors. The same
 # references check both.
@@ -25,7 +38,7 @@
         else methods::slot(pa, slot)
     }
     list(puritydf = acc("purityTable", "puritydf"),
-         grped_df = pa@grped_df,
+         grped_df = .parity_grped_df(pa@grped_df),
          grped_ms2 = acc("groupedSpectra", "grped_ms2"),
          all_frag_scans = acc("allFragSpectra", "all_frag_scans"),
          av_spectra = acc("averagedSpectra", "av_spectra"))

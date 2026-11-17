@@ -17,6 +17,24 @@
             "scanIndex", "spectrumId", "sourceSpectrumId"))
         stop("parentReference must be 'auto', 'acquisitionNum', 'scanIndex', ",
             "'spectrumId' or 'sourceSpectrumId'.")
+    rtTol <- values$rtTol
+    if (!is.numeric(rtTol) || length(rtTol) != 1L || !is.finite(rtTol) ||
+            rtTol < 0)
+        stop("rtTol must be one finite, nonnegative number of seconds.")
+    choices <- list(rtSource = c("precursor", "ms2"),
+        groupWindow = c("full", "median"))
+    for (name in names(choices)) {
+        value <- values[[name]]
+        if (!is.character(value) || length(value) != 1L || anyNA(value) ||
+                !value %in% choices[[name]])
+            stop(name, " must be '", paste(choices[[name]], collapse = "' or '"),
+                "'.")
+    }
+    for (name in c("includeFilled", "estimateRtMap")) {
+        value <- values[[name]]
+        if (!is.logical(value) || length(value) != 1L || anyNA(value))
+            stop(name, " must be TRUE or FALSE.")
+    }
     invisible(values)
 }
 
@@ -38,17 +56,28 @@
 #'   \code{NA} to skip exclusion. A positive threshold retains MS2 links with
 #'   purity strictly greater than the threshold. Descendant links are retained
 #'   independently of this exclusion.
-#' @param intense Use the most intense precursor for individual-peak
-#'   association instead of the closest precursor to the isolation-window
-#'   centre.
-#' @param convert2RawRT Convert adjusted XCMS feature retention-time bounds
-#'   to raw retention times.
-#' @param useGroup Use the full grouped-feature retention-time bounds instead
-#'   of individual chromatographic peaks.
+#' @param intense Use the most intense precursor (\code{iMz}) instead of
+#'   the closest precursor to the isolation-window centre (\code{aMz}), in
+#'   both association modes.
+#' @param convert2RawRT Map MS2 precursor times to the adjusted XCMS
+#'   retention-time scale of their file before comparing them with peak and
+#'   feature windows.
+#' @param useGroup Use grouped-feature retention-time windows instead of
+#'   individual chromatographic peaks.
 #' @param parentReference Parent-reference interpretation used by
 #'   \code{\link{frag4feature}}.
+#' @param rtTol Tolerance in seconds added to both sides of each
+#'   retention-time window.
+#' @param rtSource MS2 time to compare: \code{"precursor"} (the MS1 survey
+#'   scan) or \code{"ms2"} (the MS2 scan).
+#' @param groupWindow Feature window when \code{useGroup = TRUE}:
+#'   \code{"full"} or \code{"median"} peak bounds.
+#' @param includeFilled Use peaks added by \code{xcms::fillChromPeaks} for
+#'   association.
+#' @param estimateRtMap Estimate a retention-time map for files without one
+#'   (grouped association only).
 #' @return A \code{Frag4FeatureParam} extending \code{ProtGenerics::Param}.
-#'   \code{as.list()} returns all six settings.
+#'   \code{as.list()} returns all eleven settings.
 #' @name Frag4FeatureParam
 #' @aliases Frag4FeatureParam-class
 #' @importClassesFrom ProtGenerics Param
@@ -64,9 +93,13 @@ methods::setClass("Frag4FeatureParam",
     contains = "Param",
     slots = c(ppm = "numeric", plim = "numeric", intense = "logical",
         convert2RawRT = "logical", useGroup = "logical",
-        parentReference = "character"),
+        parentReference = "character", rtTol = "numeric",
+        rtSource = "character", groupWindow = "character",
+        includeFilled = "logical", estimateRtMap = "logical"),
     prototype = list(ppm = 5, plim = NA_real_, intense = TRUE,
-        convert2RawRT = TRUE, useGroup = FALSE, parentReference = "auto"),
+        convert2RawRT = TRUE, useGroup = FALSE, parentReference = "auto",
+        rtTol = 0, rtSource = "precursor", groupWindow = "full",
+        includeFilled = FALSE, estimateRtMap = FALSE),
     validity = function(object) {
         tryCatch({
             .pa_feature_values(as.list(object))
@@ -78,11 +111,15 @@ methods::setClass("Frag4FeatureParam",
 #' @rdname Frag4FeatureParam
 #' @export
 Frag4FeatureParam <- function(ppm = 5, plim = NA_real_, intense = TRUE,
-    convert2RawRT = TRUE, useGroup = FALSE, parentReference = "auto") {
+    convert2RawRT = TRUE, useGroup = FALSE, parentReference = "auto",
+    rtTol = 0, rtSource = "precursor", groupWindow = "full",
+    includeFilled = FALSE, estimateRtMap = FALSE) {
     if (identical(plim, NA)) plim <- NA_real_
     methods::new("Frag4FeatureParam", ppm = ppm, plim = plim,
         intense = intense, convert2RawRT = convert2RawRT,
-        useGroup = useGroup, parentReference = parentReference)
+        useGroup = useGroup, parentReference = parentReference,
+        rtTol = rtTol, rtSource = rtSource, groupWindow = groupWindow,
+        includeFilled = includeFilled, estimateRtMap = estimateRtMap)
 }
 
 .pa_feature_resolve <- function(param, supplied) {

@@ -2,7 +2,7 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.99.0
+Version: 1.99.1
 Date: 2026-11-15
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
@@ -39,7 +39,7 @@ Depends:
     Rcpp
 Imports:
     plyr,
-    dplyr,
+    dplyr (>= 1.1.0),
     dbplyr,
     magrittr,
     foreach,
@@ -117,6 +117,7 @@ Collate:
     'purityA-feature-parameters.R'
     'purityA-filter-frag-spectra.R'
     'purityA-filter-parameters.R'
+    'purityA-frag4feature-rt.R'
     'purityA-frag4feature.R'
     'purityA-msn-ancestry.R'
     'purityA-msn-purity.R'

@@ -11,7 +11,12 @@ Frag4FeatureParam(
   intense = TRUE,
   convert2RawRT = TRUE,
   useGroup = FALSE,
-  parentReference = "auto"
+  parentReference = "auto",
+  rtTol = 0,
+  rtSource = "precursor",
+  groupWindow = "full",
+  includeFilled = FALSE,
+  estimateRtMap = FALSE
 )
 }
 \arguments{
@@ -23,22 +28,38 @@ XCMS feature.}
 purity strictly greater than the threshold. Descendant links are retained
 independently of this exclusion.}
 
-\item{intense}{Use the most intense precursor for individual-peak
-association instead of the closest precursor to the isolation-window
-centre.}
+\item{intense}{Use the most intense precursor (\code{iMz}) instead of
+the closest precursor to the isolation-window centre (\code{aMz}), in
+both association modes.}
 
-\item{convert2RawRT}{Convert adjusted XCMS feature retention-time bounds
-to raw retention times.}
+\item{convert2RawRT}{Map MS2 precursor times to the adjusted XCMS
+retention-time scale of their file before comparing them with peak and
+feature windows.}
 
-\item{useGroup}{Use the full grouped-feature retention-time bounds instead
-of individual chromatographic peaks.}
+\item{useGroup}{Use grouped-feature retention-time windows instead of
+individual chromatographic peaks.}
 
 \item{parentReference}{Parent-reference interpretation used by
 \code{\link{frag4feature}}.}
+
+\item{rtTol}{Tolerance in seconds added to both sides of each
+retention-time window.}
+
+\item{rtSource}{MS2 time to compare: \code{"precursor"} (the MS1 survey
+scan) or \code{"ms2"} (the MS2 scan).}
+
+\item{groupWindow}{Feature window when \code{useGroup = TRUE}:
+\code{"full"} or \code{"median"} peak bounds.}
+
+\item{includeFilled}{Use peaks added by \code{xcms::fillChromPeaks} for
+association.}
+
+\item{estimateRtMap}{Estimate a retention-time map for files without one
+(grouped association only).}
 }
 \value{
 A \code{Frag4FeatureParam} extending \code{ProtGenerics::Param}.
-\code{as.list()} returns all six settings.
+\code{as.list()} returns all eleven settings.
 }
 \description{
 Supply one complete object to \code{frag4feature(param = )}. Explicit

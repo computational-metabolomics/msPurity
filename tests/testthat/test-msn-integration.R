@@ -1,7 +1,8 @@
 test_that("association level and parameter options follow existing arguments", {
     existing <- c("pa", "xcmsObj", "ppm", "plim", "intense", "convert2RawRT",
-        "useGroup", "createDb", "outDir", "dbName", "grpPeaklist", "use_group",
-        "out_dir", "create_db", "grp_peaklist", "db_name", "xset")
+        "useGroup", "createDb", "outDir", "dbName", "grpPeaklist", "ms2RtMap",
+        "rtTol", "rtSource", "groupWindow", "includeFilled", "estimateRtMap",
+        "use_group", "out_dir", "create_db", "grp_peaklist", "db_name", "xset")
     generic <- methods::getGeneric("frag4feature")
     method <- methods::selectMethod("frag4feature", "purityA")
     expected <- c(existing, "msLevel", "parentReference", "param")

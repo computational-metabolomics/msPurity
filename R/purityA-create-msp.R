@@ -151,10 +151,10 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         for(j in 1:length(group_id)){
 
           grpdj <- grpd[j,]
-          if ('sample' %in% colnames(grpd)){
-            fileid = grpdj$sample
-          }else{
+          if ('fileid' %in% colnames(grpd)){
             fileid = grpdj$fileid
+          }else{
+            fileid = grpdj$sample
           }
 
           spectrum <- spec[[j]]
@@ -180,10 +180,10 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
         grpdi <- grpd[idx,]
 
-        if ('sample' %in% colnames(grpdi)){
-          fileid = grpdi$sample
-        }else{
+        if ('fileid' %in% colnames(grpdi)){
           fileid = grpdi$fileid
+        }else{
+          fileid = grpdi$sample
         }
         specmax <- spec[[idx]]
 
