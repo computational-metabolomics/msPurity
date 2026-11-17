@@ -136,8 +136,9 @@ NULL
 #'   Their results are
 #'   available as \code{inPurity} on \code{pa@@spectra}; \code{purityTable(pa)}
 #'   retains its MS2 table format. Processing history records the selected
-#'   levels, parent measurements, bounds and settings. Purity thresholds in
-#'   association and filtering currently apply only to MS2.
+#'   levels, parent measurements, bounds and settings. Association thresholds
+#'   apply to MS2 only. In \code{filterFragSpectra()}, explicit or assigned
+#'   purity thresholds can also apply to MS3/MS4.
 #'
 #' @return Returns a purityA object (pa). The MS/MS scans and their purity are
 #' stored as a \code{Spectra} object in the pa@@spectra slot, with the columns

@@ -29,6 +29,10 @@ extracted Spectra object. Records are named by unique processing step
 identifiers. Repeated calls retain earlier records. For Spectra,
 only records reachable from the retained spectra are returned, including
 their input steps. Subsetting therefore selects the corresponding history.
+The optional \code{msPurityFilterProcessingId} links exposed
+\code{purity_pass_flag} values to their filtering operation. On raw spectra,
+it does not replace the primary processing identifier or indicate that their
+peak arrays were filtered. Older objects may lack this flag-specific link.
 Concatenating subsets with the same processing history is supported;
 histories from independently processed Spectra objects are not merged.
 Retrieve their histories separately before combining spectra.

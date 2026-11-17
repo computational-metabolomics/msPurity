@@ -106,8 +106,9 @@
 #'   the recorded assessments when features are relinked; it does not calculate
 #'   purity. When requested by \code{msLevel}, MS3/MS4 inherit their MS2
 #'   ancestors' feature links and retain their own purity values and status.
-#'   Both this function's \code{plim} and the purity threshold in
-#'   \code{filterFragSpectra()} currently apply only to MS2. For unassessed MS2
+#'   This function's \code{plim} applies only to MS2. Use
+#'   \code{filterFragSpectra()} for optional purity thresholds at each level.
+#'   For unassessed MS2
 #'   roots, use \code{intense = FALSE} to associate recorded precursor m/z.
 #'   MSn averaging and processed export are separate operations.
 #'

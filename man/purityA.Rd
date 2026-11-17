@@ -214,8 +214,9 @@ choose an isotope model appropriate to the measured parent peaks.
 Their results are
 available as \code{inPurity} on \code{pa@spectra}; \code{purityTable(pa)}
 retains its MS2 table format. Processing history records the selected
-levels, parent measurements, bounds and settings. Purity thresholds in
-association and filtering currently apply only to MS2.
+levels, parent measurements, bounds and settings. Association thresholds
+apply to MS2 only. In \code{filterFragSpectra()}, explicit or assigned
+purity thresholds can also apply to MS3/MS4.
 }
 \examples{
 filepths <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")

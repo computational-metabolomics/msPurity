@@ -24,21 +24,24 @@
 
 \item{ilim}{numeric; min intensity of a peak}
 
-\item{plim}{numeric; minimum MS2 precursor ion purity. MS3/MS4 spectra
-use fragment-quality thresholds without another precursor-purity
-requirement. Diagnostic MS3/MS4 purity estimates are retained for
-inspection and never determine whether spectra or peaks pass this filter.}
+\item{plim}{numeric; minimum precursor purity. An explicit value applies
+to all requested MS levels unless a matching parameter object supplies
+different settings. Without an explicit value or matching object, the
+default threshold applies to MS2 only. Purity must be strictly greater
+than the threshold; an unavailable assessment fails an active threshold.
+Use \code{NA} to skip the purity criterion.}
 
 \item{ra}{numeric; minimum relative abundance of a peak}
 
-\item{snr}{numeric; minimum signal-to-noise of a peak within each file}
+\item{snr}{numeric; minimum signal-to-noise of a peak within each spectrum}
 
 \item{cores}{numeric; Accepted for compatibility.
 Fragment filtering is serial.}
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.}
 
-\item{snmeth}{character; Method to calculate signal to noise ration (either median or mean)}
+\item{snmeth}{character; estimate noise from the median or mean peak
+intensity within each spectrum.}
 
 \item{allfrag}{logical; consider all retained fragmentation spectra when
 TRUE, or only feature-associated spectra when FALSE. In either case,
@@ -72,9 +75,12 @@ following columns
 \item pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
 }
 
-For MS3/MS4, \code{purity_pass_flag} is unknown (\code{NA});
-\code{pass_flag} describes product-quality criteria only. Filtering an MS2
-spectrum does not automatically exclude its linked MS3/MS4 descendants.
+Each spectrum uses its own purity assessment from \code{purityA()}.
+\code{msPurityFilterThreshold} and \code{msPurityFilterDecision} record
+the threshold and whether purity passed, failed, was missing or was skipped.
+Skipping purity sets \code{purity_pass_flag} to TRUE; fragment-peak criteria
+still apply. Assessment status remains in \code{msPurityPurityStatus}.
+Filtering a spectrum does not automatically exclude its descendants.
 }
 \description{
 \strong{General}

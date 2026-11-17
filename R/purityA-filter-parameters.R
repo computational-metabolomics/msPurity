@@ -74,8 +74,7 @@
                     !is.finite(value) || value < 0))
             stop(name, " must be one finite, nonnegative number.")
         if (name == "plim" && !skip && value > 1)
-            stop("plim must be between zero and one, ",
-                "or NA in a parameter object.")
+            stop("plim must be between zero and one, or NA.")
     }
     if (!is.character(values$snmeth) || length(values$snmeth) != 1L ||
             anyNA(values$snmeth) || !values$snmeth %in% c("median", "mean"))
@@ -96,6 +95,10 @@
 #' remain available. Call-wide \code{rmp}, \code{allfrag}, \code{msLevel}
 #' and \code{cores}
 #' are not fields of this object; parameter-set filtering requires one core.
+#' Input scope (\code{msLevel}, \code{allfrag}), flag retention versus peak
+#' removal (\code{rmp}) and execution controls stay on the call, allowing the
+#' same scientific settings to be reused for different processing choices.
+#' Processing history records both; see \code{\link{processingParameters}}.
 #'
 #' \code{select} assigns settings within the spectra selected by the call;
 #' it does not discard spectra or include levels beyond the call's
@@ -116,14 +119,17 @@
 #' or ambiguous filters leave the activation type unknown. Collision energies
 #' and their units are not inferred from scan filters.
 #' Use \code{NA} to select unknown metadata. Spectra matched by no parameter
-#' set receive the filtering call's scalar settings. Overlapping sets must
-#' have the same complete effective settings.
+#' set receive the filtering call's scalar settings. For unmatched MS3/MS4,
+#' purity filtering is skipped unless the call explicitly supplies
+#' \code{plim}. Overlapping sets must have the same complete effective settings.
 #'
 #' @param select Named list of exact acquisition-metadata selectors.
 #' @param ilim Minimum peak intensity in recorded units.
-#' @param plim Minimum MS2 precursor purity, between zero and one. \code{NA}
-#'   explicitly skips purity filtering for spectra matched by this object.
-#'   MS3/MS4 diagnostic purity is never used by this threshold.
+#' @param plim Minimum precursor purity, between zero and one, for each
+#'   spectrum matched by this object, including MS3/MS4. Purity must be
+#'   strictly greater than this value; an unavailable assessment fails an
+#'   active threshold. \code{NA} skips purity filtering. Each spectrum uses
+#'   its own assessment from \code{purityA()}, independently of its ancestors.
 #' @param ra Minimum relative abundance on the existing 0 to 100 scale.
 #' @param snr Minimum signal-to-noise ratio, using the existing statistic.
 #' @param snmeth Noise statistic: \code{"median"} or \code{"mean"}.
@@ -294,7 +300,7 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
 }
 
 .pa_filter_call_controls <- function(fallback) {
-    .pa_filter_values(fallback, allow_skip = FALSE)
+    .pa_filter_values(fallback)
     for (name in c("rmp", "allfrag")) {
         if (!is.logical(fallback[[name]]) || length(fallback[[name]]) != 1L ||
                 anyNA(fallback[[name]]))
@@ -375,13 +381,22 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
 }
 
 .pa_filter_resolve <- function(source, param, fallback) {
-    objects <- .pa_filter_inputs(param)
-    .pa_filter_call_controls(fallback)
+    objects <- if (is.null(param)) list() else .pa_filter_inputs(param)
+    controls <- fallback
+    if (is.null(param)) controls$cores <- 1L
+    .pa_filter_call_controls(controls)
     metadata <- .pa_filter_metadata(source)
     specs <- lapply(objects, as.list)
     matched <- .pa_parameter_matches(metadata, specs)
     fields <- c("ilim", "plim", "ra", "snr", "snmeth")
     values <- c(lapply(specs, `[`, fields), list(fallback[fields]))
+    fallback_index <- rep(length(values), length(source))
+    if (!isTRUE(fallback$plim_explicit) && any(metadata$msLevel > 2L)) {
+        higher <- fallback[fields]
+        higher$plim <- NA_real_
+        values[[length(values) + 1L]] <- higher
+        fallback_index[metadata$msLevel > 2L] <- length(values)
+    }
     .pa_parameter_assign(source, metadata, objects, matched, values,
-        fallback_index = length(values))
+        fallback_index = fallback_index)
 }

@@ -36,14 +36,17 @@
 #'
 #' @param pa object; purityA object
 #' @param ilim numeric; min intensity of a peak
-#' @param plim numeric; minimum MS2 precursor ion purity. MS3/MS4 spectra
-#'   use fragment-quality thresholds without another precursor-purity
-#'   requirement. Diagnostic MS3/MS4 purity estimates are retained for
-#'   inspection and never determine whether spectra or peaks pass this filter.
+#' @param plim numeric; minimum precursor purity. An explicit value applies
+#'   to all requested MS levels unless a matching parameter object supplies
+#'   different settings. Without an explicit value or matching object, the
+#'   default threshold applies to MS2 only. Purity must be strictly greater
+#'   than the threshold; an unavailable assessment fails an active threshold.
+#'   Use \code{NA} to skip the purity criterion.
 #' @param ra numeric; minimum relative abundance of a peak
-#' @param snr numeric; minimum signal-to-noise of a peak within each file
+#' @param snr numeric; minimum signal-to-noise of a peak within each spectrum
 #' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged.
-#' @param snmeth character; Method to calculate signal to noise ration (either median or mean)
+#' @param snmeth character; estimate noise from the median or mean peak
+#'   intensity within each spectrum.
 #' @param cores numeric; Accepted for compatibility.
 #'   Fragment filtering is serial.
 #' @param param NULL, a complete \code{FilterFragSpectraParam}, or a named list
@@ -102,15 +105,20 @@
 #' * ra_pass_flag: Relative abundance pass flag (1 pass, 0 fail)
 #' * pass_flag: Overall pass flag, all flags must pass for this to pass (1 pass, 0 fail)
 #'
-#' For MS3/MS4, \code{purity_pass_flag} is unknown (\code{NA});
-#' \code{pass_flag} describes product-quality criteria only. Filtering an MS2
-#' spectrum does not automatically exclude its linked MS3/MS4 descendants.
+#' Each spectrum uses its own purity assessment from \code{purityA()}.
+#' \code{msPurityFilterThreshold} and \code{msPurityFilterDecision} record
+#' the threshold and whether purity passed, failed, was missing or was skipped.
+#' Skipping purity sets \code{purity_pass_flag} to TRUE; fragment-peak criteria
+#' still apply. Assessment status remains in \code{msPurityPurityStatus}.
+#' Filtering a spectrum does not automatically exclude its descendants.
 #' @md
 #' @export
 setMethod(f = "filterFragSpectra", signature = "purityA",
     definition = function(pa, ilim = 0, plim = 0.8, ra = 0, snr = 3,
         cores = 1, rmp = FALSE, snmeth = "median", allfrag = FALSE,
         param = NULL, msLevel = 2L) {
+        plim_explicit <- !missing(plim)
+        if (identical(plim, NA)) plim <- NA_real_
         pa <- .pa_update(pa)
         if (length(pa@filter_frag_params) && pa@filter_frag_params$rmp) {
             message("Fragmentation peaks have been previously filtered and ",
@@ -127,9 +135,10 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
 
         settings <- list(ilim = ilim, plim = plim, ra = ra, snr = snr,
             snmeth = snmeth, rmp = rmp, allfrag = allfrag)
-        if (!is.null(param)) {
+        if (!is.null(param) || any(msLevel > 2L) || is.na(plim)) {
             fallback <- c(settings, list(cores = cores, msLevel = msLevel,
-                    effective_msLevel = selection$levels))
+                    effective_msLevel = selection$levels,
+                    plim_explicit = plim_explicit))
             return(.pa_filter_parameters(pa, param, fallback,
                     selection, processing_started))
         }
@@ -154,13 +163,15 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
 
         if (allfrag) {
             puritydf <- purityTable(pa)
-            selected <- puritydf$pid %in% selection$pids
-            puritydf$purity_pass_flag <- rep(NA, nrow(puritydf))
-            puritydf$purity_pass_flag[selected] <-
-                puritydf$inPurity[selected] > plim
-            pa@spectra <- .pa_set_purity_vars(pa@spectra, puritydf)
             pa@fragSpectra <- .pa_frag_all(pa, filter_frag_params, puritydf,
                 selection$pids)
+            flags <- if (length(pa@fragSpectra))
+                pa@fragSpectra$purity_pass_flag else logical()
+            pids <- if (length(pa@fragSpectra)) pa@fragSpectra$pid
+            else selection$pids[0]
+            puritydf$purity_pass_flag <- flags[
+                match(puritydf$pid, pids)]
+            pa@spectra <- .pa_set_purity_vars(pa@spectra, puritydf)
             all_frag_scans <- if (.pa_legacy()) .pa_allfrag_legacy(pa)
             pa <- .pa_sync_legacy(pa, puritydf = puritydf,
                 grped_ms2 = .pa_grouped_legacy(pa),
@@ -188,6 +199,10 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
                 pa@fragSpectra$purity_pass_flag <- assessment$flag[rows]
                 pa@fragSpectra$msPurityStagePurity <- assessment$purity[rows]
                 pa@fragSpectra$msPurityPurityStatus <- assessment$status[rows]
+                pa@fragSpectra$msPurityFilterThreshold <-
+                    assessment$threshold[rows]
+                pa@fragSpectra$msPurityFilterDecision <-
+                    assessment$decision[rows]
             }
             pa <- .pa_sync_legacy(pa,
                 grped_ms2 = .pa_grouped_legacy(pa),
@@ -197,6 +212,13 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
         pa <- .pa_processing_invalidate(pa)
         effective <- c(filter_frag_params,
             list(cores = cores, effective_cores = 1L))
+        effective$purity_filter <- data.frame(
+            pid = if (length(pa@fragSpectra)) pa@fragSpectra$pid
+            else selection$pids[0],
+            threshold = if (length(pa@fragSpectra))
+                pa@fragSpectra$msPurityFilterThreshold else numeric(),
+            decision = if (length(pa@fragSpectra))
+                pa@fragSpectra$msPurityFilterDecision else character())
         .pa_processing_record(pa, "filterFragSpectra", effective,
             processing_started, processing_input)
 
@@ -231,8 +253,7 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
         levels = unique(Spectra::msLevel(source)))
 }
 
-.pa_filter_purity <- function(level, purity, threshold, typed = FALSE,
-    source = NULL) {
+.pa_filter_purity <- function(level, purity, threshold, source = NULL) {
     if (anyNA(level) || any(!level %in% 2:4))
         stop("Fragment filtering requires known MS2-MS4 spectra.")
     if (!length(purity)) purity <- rep(NA_real_, length(level))
@@ -240,26 +261,23 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
         stop("Purity measurements do not match the selected spectra.")
     threshold <- rep(threshold, length.out = length(level))
     ms2 <- level == 2L
-    flag <- rep(NA, length(level))
-    flag[ms2] <- purity[ms2] > threshold[ms2]
-    if (typed) {
-        flag[ms2 & !is.na(threshold) & is.na(purity)] <- FALSE
-        flag[ms2 & is.na(threshold)] <- TRUE
-    }
     status <- rep("not_assessed", length(level))
     status[ms2] <- "assessed"
     status[ms2 & is.na(purity)] <- "missing"
-    status[ms2 & is.na(threshold)] <- if (typed) "skipped" else
-        "unavailable_threshold"
-    purity[!ms2] <- NA_real_
-    if (!is.null(source) && "msPurityStagePurity" %in%
-            Spectra::spectraVariables(source)) {
-        purity[!ms2] <- source$msPurityStagePurity[!ms2]
-        status[!ms2] <- source$msPurityPurityStatus[!ms2]
+    if (!is.null(source)) {
+        variables <- Spectra::spectraVariables(source)
+        if ("msPurityStagePurity" %in% variables)
+            purity[!ms2] <- source$msPurityStagePurity[!ms2]
+        if ("msPurityPurityStatus" %in% variables)
+            status <- source$msPurityPurityStatus
     }
-    gate <- flag
-    gate[!ms2] <- TRUE
-    list(flag = flag, gate = gate, status = status, purity = purity)
+    skipped <- is.na(threshold)
+    missing <- !is.finite(purity)
+    flag <- skipped | (!missing & purity > threshold)
+    decision <- as.character(ifelse(skipped, "skipped",
+            ifelse(missing, "missing", ifelse(flag, "passed", "failed"))))
+    list(flag = flag, gate = flag, status = status, purity = purity,
+        threshold = threshold, decision = decision)
 }
 
 
@@ -282,8 +300,7 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
     purity <- if (length(source_ids))
         tab$inPurity[match(source_ids, tab$pid)] else numeric()
     thresholds <- vapply(resolved$parameters, `[[`, numeric(1), "plim")
-    assessment <- .pa_filter_purity(levels, purity, thresholds, typed = TRUE,
-        source = source)
+    assessment <- .pa_filter_purity(levels, purity, thresholds, source = source)
     mats <- lapply(seq_along(source), function(i) {
         if (!nrow(pk[[i]])) return(NULL)
         settings <- resolved$parameters[[i]]
@@ -311,6 +328,8 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
     sv$msPurityFilterInputPeakCount <- vapply(pk, nrow, integer(1))
     sv$msPurityStagePurity <- assessment$purity
     sv$msPurityPurityStatus <- assessment$status
+    sv$msPurityFilterThreshold <- assessment$threshold
+    sv$msPurityFilterDecision <- assessment$decision
     frag <- .msp_memory(sv, mats, c(.PA_FRAG_PEAK_VARS, "original_peak_index"))
     .pa_spectra_metadata(frag) <- .pa_spectra_metadata(source)
     pa@fragSpectra <- frag
@@ -321,6 +340,8 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
     settings <- fallback
     settings$configuration <- resolved[c("assignments", "parameter_sets",
             "parameter_objects", "unused_parameter_sets")]
+    settings$purity_filter <- data.frame(pid = source_ids,
+        threshold = assessment$threshold, decision = assessment$decision)
     pa@filter_frag_params <- settings
     if (fallback$allfrag) {
         tab$purity_pass_flag <- if (nrow(tab))
