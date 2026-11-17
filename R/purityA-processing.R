@@ -77,9 +77,11 @@
 }
 
 .pa_processing_tips <- function(sp) {
-    if (!"msPurityProcessingId" %in% Spectra::spectraVariables(sp))
-        return(character())
-    ids <- as.character(sp$msPurityProcessingId)
+    fields <- intersect(c("msPurityProcessingId", "msPurityFilterProcessingId"),
+        Spectra::spectraVariables(sp))
+    ids <- as.character(unlist(lapply(fields, function(field) {
+        as.character(sp[[field]])
+    }), use.names = FALSE))
     unique(ids[!is.na(ids) & nzchar(ids)])
 }
 
@@ -167,6 +169,25 @@
     paste0("imported-", step, "-", unname(tools::md5sum(path)))
 }
 
+.pa_processing_set_filter_tip <- function(pa, id, allfrag) {
+    slots <- if (allfrag) c("fragSpectra", "spectra") else "fragSpectra"
+    for (slot in slots) {
+        sp <- methods::slot(pa, slot)
+        if (!"purity_pass_flag" %in% Spectra::spectraVariables(sp))
+            next
+        # All-fragment filtering also updates the MS2 purity-table flags.
+        rows <- if (slot == "spectra") which(Spectra::msLevel(sp) == 2L)
+        else seq_along(sp)
+        ids <- if ("msPurityFilterProcessingId" %in%
+                Spectra::spectraVariables(sp)) sp$msPurityFilterProcessingId
+        else rep(NA_character_, length(sp))
+        ids[rows] <- ifelse(is.na(sp$purity_pass_flag[rows]), NA_character_, id)
+        sp$msPurityFilterProcessingId <- ids
+        methods::slot(pa, slot) <- sp
+    }
+    pa
+}
+
 .pa_processing_record <- function(
     pa, step, parameters, started, input,
     imported = FALSE
@@ -179,6 +200,8 @@
     if (imported)
         started <- as.POSIXct(NA)
     pa <- .pa_processing_set_tip(pa, step, id)
+    if (!imported && step == "filterFragSpectra")
+        pa <- .pa_processing_set_filter_tip(pa, id, isTRUE(parameters$allfrag))
     slot <- switch(step,
         purityA = "spectra",
         frag4feature = "fragSpectra",
@@ -269,6 +292,8 @@
     pa@params$processing$active$filterFragSpectra <- NULL
     if ("purity_pass_flag" %in% Spectra::spectraVariables(pa@spectra))
         pa@spectra$purity_pass_flag <- NULL
+    if ("msPurityFilterProcessingId" %in% Spectra::spectraVariables(pa@spectra))
+        pa@spectra$msPurityFilterProcessingId <- NULL
     meta <- .pa_spectra_metadata(pa@spectra)
     meta$puritydfColumns <- setdiff(meta$puritydfColumns, "purity_pass_flag")
     .pa_spectra_metadata(pa@spectra) <- meta
@@ -297,6 +322,10 @@
 #' identifiers. Repeated calls retain earlier records. For Spectra,
 #' only records reachable from the retained spectra are returned, including
 #' their input steps. Subsetting therefore selects the corresponding history.
+#' The optional \code{msPurityFilterProcessingId} links exposed
+#' \code{purity_pass_flag} values to their filtering operation. On raw spectra,
+#' it does not replace the primary processing identifier or indicate that their
+#' peak arrays were filtered. Older objects may lack this flag-specific link.
 #' Concatenating subsets with the same processing history is supported;
 #' histories from independently processed Spectra objects are not merged.
 #' Retrieve their histories separately before combining spectra.

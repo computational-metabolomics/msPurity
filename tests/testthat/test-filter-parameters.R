@@ -174,10 +174,6 @@ test_that("parameter identities follow first use of shared settings", {
 
 test_that("typed fixed settings equal corresponding scalar scientific output", {
     pa <- .filter_param_fixture()
-    # Keep missing purity out of the scalar comparison; its historical NA
-    # behavior remains distinct from the parameter route's explicit policy.
-    pa@spectra$inPurity[3] <- 0.95
-    pa@grped_df$inPurity[3] <- 0.95
     typed <- filterFragSpectra(pa, snr = 100,
         param = FilterFragSpectraParam(plim = 0.7, snr = 0))
     scalar <- filterFragSpectra(pa, plim = 0.7, snr = 0)
@@ -186,6 +182,68 @@ test_that("typed fixed settings equal corresponding scalar scientific output", {
     expect_identical(Spectra::msLevel(typed@fragSpectra), rep(2L, 4))
     expect_identical(typed@fragSpectra$activationType,
         c("CID", "HCD", NA_character_, "ETD"))
+})
+
+test_that("raw flags retain history independently of peak arrays", {
+    pa <- .filter_param_fixture()
+    pa@params$purityA <- list(msLevel = 2L)
+    pa <- updateObject(pa)
+    original <- pa@spectra
+    path <- tempfile(fileext = ".rds")
+    on.exit(unlink(path))
+    for (typed in c(FALSE, TRUE)) {
+        case <- paste("typed:", typed)
+        param <- if (typed) FilterFragSpectraParam(plim = 0.7, snr = 0)
+        out <- filterFragSpectra(pa, allfrag = TRUE, plim = 0.7, snr = 0,
+            param = param)
+        record <- processingHistory(out, "filterFragSpectra")[[1L]]
+        raw <- purityTable(out, legacy = FALSE)
+        expect_identical(raw$msPurityFilterProcessingId,
+            rep(record$step_id, 4L), info = case)
+        expect_identical(raw$msPurityProcessingId,
+            original$msPurityProcessingId, info = case)
+        expect_identical(Spectra::peaksData(raw),
+            Spectra::peaksData(original), info = case)
+        expect_identical(raw$purity_pass_flag, c(TRUE, TRUE, FALSE, TRUE),
+            info = case)
+        selected <- raw[c(4L, 2L)]
+        expect_identical(processingHistory(selected, "filterFragSpectra"),
+            setNames(list(record), record$step_id), info = case)
+        saveRDS(selected, path)
+        expect_identical(processingHistory(readRDS(path)),
+            processingHistory(selected), info = case)
+        expect_length(processingHistory(raw[integer()]), 0L)
+    }
+})
+
+test_that("repeated filtering preserves valid flag-history references", {
+    first <- filterFragSpectra(.filter_param_fixture(), allfrag = TRUE,
+        plim = 0.7, snr = 0)
+    prior <- processingHistory(first, "filterFragSpectra")[[1L]]
+    second <- filterFragSpectra(first, allfrag = TRUE, plim = 0.9, snr = 0)
+    history <- processingHistory(second, "filterFragSpectra")
+    current <- history[[2L]]
+    expect_identical(history[[1L]], prior)
+    expect_true(prior$step_id %in% current$input$previous_steps)
+    expect_false(current$step_id %in% current$input$previous_steps)
+    expect_identical(second@spectra$msPurityFilterProcessingId,
+        rep(current$step_id, 4L))
+    expect_identical(second@fragSpectra$msPurityFilterProcessingId,
+        rep(current$step_id, 4L))
+    linked <- filterFragSpectra(second, allfrag = FALSE, plim = 0.6, snr = 0)
+    expect_identical(linked@spectra$purity_pass_flag,
+        second@spectra$purity_pass_flag)
+    expect_identical(linked@spectra$msPurityFilterProcessingId,
+        second@spectra$msPurityFilterProcessingId)
+    historical <- second
+    historical@spectra$msPurityFilterProcessingId <- NULL
+    historical@fragSpectra$msPurityFilterProcessingId <- NULL
+    historical@params$processing <- NULL
+    historical <- updateObject(historical)
+    expect_false("msPurityFilterProcessingId" %in%
+            Spectra::spectraVariables(historical@spectra))
+    expect_false("msPurityFilterProcessingId" %in%
+            Spectra::spectraVariables(historical@fragSpectra))
 })
 
 test_that("unmatched spectra use scalar fallback without being discarded", {
@@ -208,8 +266,10 @@ test_that("typed purity skipping is explicit and missing purity fails", {
     assessed <- filterFragSpectra(.filter_param_fixture(),
         param = FilterFragSpectraParam(snr = 0))
     expect_true(all(skipped@fragSpectra$purity_pass_flag))
-    expect_identical(skipped@fragSpectra$msPurityPurityStatus,
+    expect_identical(skipped@fragSpectra$msPurityFilterDecision,
         rep("skipped", 4))
+    expect_identical(skipped@fragSpectra$msPurityPurityStatus,
+        c("assessed", "assessed", "missing", "assessed"))
     expect_false(assessed@fragSpectra$purity_pass_flag[3])
     expect_identical(assessed@fragSpectra$msPurityPurityStatus[3], "missing")
 })
@@ -226,6 +286,8 @@ test_that("destructive filtering retains peak positions and refuses rerun", {
         identical(unname(m[, "original_peak_index"]), 9)
     }, logical(1))))
     before <- processingHistory(out)
+    expect_identical(out@fragSpectra$msPurityFilterProcessingId,
+        rep(tail(names(before), 1L), length(out@fragSpectra)))
     expect_message(refused <- filterFragSpectra(out,
             param = FilterFragSpectraParam()), "previously filtered")
     expect_identical(processingHistory(refused), before)

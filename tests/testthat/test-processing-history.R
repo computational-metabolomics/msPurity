@@ -207,6 +207,9 @@ test_that("invalid history and unresolved processing references fail", {
     sp <- groupedSpectra(pa, legacy = FALSE)
     sp$msPurityProcessingId[1] <- "absent"
     expect_error(processingHistory(sp), "absent from its history")
+    sp <- groupedSpectra(pa, legacy = FALSE)
+    sp$msPurityFilterProcessingId[1] <- "absent"
+    expect_error(processingHistory(sp), "absent from its history")
     expect_length(processingHistory(Spectra::Spectra(
         Spectra::MsBackendMemory())), 0)
 })
@@ -255,6 +258,9 @@ test_that("relinking invalidates filtered and averaged state", {
             "msms_only_xcmsnexp.rds", package = "msPurity"))
     q <- .d05_history_quiet
     pa <- .d05_history_average(q(filterFragSpectra(raw, plim = 0.7)))
+    pa@spectra$purity_pass_flag <- rep(TRUE, length(pa@spectra))
+    pa@spectra$msPurityFilterProcessingId <- rep(
+        .d05_history_last(pa, "filterFragSpectra")$step_id, length(pa@spectra))
     before <- processingHistory(pa)
     pa <- q(frag4feature(pa, x))
     expect_length(pa@filter_frag_params, 0)
@@ -263,6 +269,10 @@ test_that("relinking invalidates filtered and averaged state", {
     expect_length(averagedSpectra(pa), 0)
     expect_false("pass_flag" %in% Spectra::peaksVariables(pa@fragSpectra))
     expect_false("purity_pass_flag" %in% names(purityTable(pa)))
+    expect_false("msPurityFilterProcessingId" %in%
+            Spectra::spectraVariables(pa@spectra))
+    expect_false("msPurityFilterProcessingId" %in%
+            Spectra::spectraVariables(pa@fragSpectra))
     expect_identical(processingHistory(pa)[names(before)], before)
     expect_identical(.d05_history_last(pa, "frag4feature")$status, "completed")
     expect_no_error(q(filterFragSpectra(pa, plim = 0.7)))

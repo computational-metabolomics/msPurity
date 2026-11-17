@@ -470,6 +470,8 @@
     sv$purity_pass_flag <- assessment$flag
     sv$msPurityStagePurity <- assessment$purity
     sv$msPurityPurityStatus <- assessment$status
+    sv$msPurityFilterThreshold <- assessment$threshold
+    sv$msPurityFilterDecision <- assessment$decision
     sv$single_peak <- vapply(pk, nrow, integer(1)) == 1L
     .pa_fragment_metadata(.msp_memory(sv, mats,
             c(.PA_FRAG_PEAK_VARS, "original_peak_index")), pa)

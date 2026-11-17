@@ -106,6 +106,21 @@ test_that("source peak identities survive reassessment after reordering", {
     expect_equal(second@spectra$inPurity, c(0.3, 0.8))
 })
 
+test_that("purity reassessment retains existing flag references", {
+    pa <- purityA(.msn_assessment_history_input(), msLevel = 2:4,
+        parentReference = "acquisitionNum", offsets = c(0.5, 0.5))
+    pa <- filterFragSpectra(pa, allfrag = TRUE, msLevel = 2:4, snr = 0)
+    input <- pa@spectra
+    filtering <- processingHistory(input, "filterFragSpectra")
+    out <- purityA(input, msLevel = 3L, parentReference = "acquisitionNum",
+        offsets = c(0.5, 0.5))
+    expect_identical(out@spectra$purity_pass_flag, input$purity_pass_flag)
+    expect_identical(out@spectra$msPurityFilterProcessingId,
+        input$msPurityFilterProcessingId)
+    expect_identical(processingHistory(out@spectra, "filterFragSpectra"),
+        filtering)
+})
+
 test_that("incomplete source peak provenance is rejected", {
     input <- .msn_assessment_history_input()
     input$msPurityRawPeakOffset <- rep(0, length(input))
