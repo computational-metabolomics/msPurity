@@ -21,7 +21,8 @@ purityA(
   im = NULL,
   ppmInterp = 7,
   msLevel = 2L,
-  parentReference = "auto"
+  parentReference = "auto",
+  param = NULL
 )
 }
 \arguments{
@@ -79,6 +80,12 @@ and their history remain available without being recalculated.}
 \item{parentReference}{interpretation of parent identifiers for MS3/MS4.
 See \code{\link{frag4feature}} for native identifiers, acquisition numbers,
 original file positions and backend keys. The default is \code{"auto"}.}
+
+\item{param}{A \code{\link{PurityAParam}} object or named list of objects.
+Matching objects supply complete settings for the child spectrum being
+assessed. Unmatched MS2 spectra use the scalar arguments. Unmatched higher
+levels use \code{mostIntense} and \code{offsets}, without intensity or
+isotope correction. Parameter-set assessment requires \code{cores = 1}.}
 }
 \value{
 Returns a purityA object (pa). The MS/MS scans and their purity are
@@ -201,9 +208,11 @@ Ambiguous, invalid or unavailable parent measurements give \code{NA} and
 an explanatory \code{msPurityPurityStatus}. Known profile parents are not
 assessed. No additional ppm or Da cutoff is applied to parent peaks.
 
-Higher levels currently use no interpolation, isolation-efficiency
-weighting, isotope removal or low-intensity exclusion. Their results are
-available as \code{inPurity} on \code{spectra(pa)}; \code{purityTable(pa)}
+Higher levels use no interpolation or isolation-efficiency weighting.
+Request intensity and isotope corrections with \code{PurityAParam};
+choose an isotope model appropriate to the measured parent peaks.
+Their results are
+available as \code{inPurity} on \code{pa@spectra}; \code{purityTable(pa)}
 retains its MS2 table format. Processing history records the selected
 levels, parent measurements, bounds and settings. Purity thresholds in
 association and filtering currently apply only to MS2.

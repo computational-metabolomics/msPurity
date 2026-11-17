@@ -115,6 +115,11 @@ NULL
 #' @param parentReference interpretation of parent identifiers for MS3/MS4.
 #'   See \code{\link{frag4feature}} for native identifiers, acquisition numbers,
 #'   original file positions and backend keys. The default is \code{"auto"}.
+#' @param param A \code{\link{PurityAParam}} object or named list of objects.
+#'   Matching objects supply complete settings for the child spectrum being
+#'   assessed. Unmatched MS2 spectra use the scalar arguments. Unmatched higher
+#'   levels use \code{mostIntense} and \code{offsets}, without intensity or
+#'   isotope correction. Parameter-set assessment requires \code{cores = 1}.
 #' @details MS2 purity uses neighbouring MS1 measurements. MS3/MS4 purity uses
 #'   the linked parent fragmentation spectrum and the child's isolation window,
 #'   independently of chromatographic features. Supplied Spectra peak processing
@@ -125,9 +130,11 @@ NULL
 #'   an explanatory \code{msPurityPurityStatus}. Known profile parents are not
 #'   assessed. No additional ppm or Da cutoff is applied to parent peaks.
 #'
-#'   Higher levels currently use no interpolation, isolation-efficiency
-#'   weighting, isotope removal or low-intensity exclusion. Their results are
-#'   available as \code{inPurity} on \code{spectra(pa)}; \code{purityTable(pa)}
+#'   Higher levels use no interpolation or isolation-efficiency weighting.
+#'   Request intensity and isotope corrections with \code{PurityAParam};
+#'   choose an isotope model appropriate to the measured parent peaks.
+#'   Their results are
+#'   available as \code{inPurity} on \code{pa@@spectra}; \code{purityTable(pa)}
 #'   retains its MS2 table format. Processing history records the selected
 #'   levels, parent measurements, bounds and settings. Purity thresholds in
 #'   association and filtering currently apply only to MS2.
@@ -193,13 +200,17 @@ purityA <- function(fileList,
                     im=NULL,
                     ppmInterp = 7,
                     msLevel = 2L,
-                    parentReference = "auto") {
+                    parentReference = "auto",
+                    param = NULL) {
 
     processing_started <- Sys.time()
   if (!is.numeric(msLevel) || !length(msLevel) || anyNA(msLevel) ||
       any(!msLevel %in% 2:4))
     stop("msLevel must be a nonempty numeric vector of levels 2, 3 or 4.")
   msLevel <- unique(as.integer(msLevel))
+  if (!is.null(param) && (!is.numeric(cores) || length(cores) != 1L ||
+        !is.finite(cores) || cores != 1))
+    stop("Parameter-set purity assessment currently supports cores = 1 only.")
   parentReference <- match.arg(parentReference,
     c("auto", "acquisitionNum", "scanIndex", "spectrumId", "sourceSpectrumId"))
 
@@ -238,6 +249,20 @@ purityA <- function(fileList,
                             ilim = ilim, mzRback = mzRback, isotopes = isotopes, im = im,
                             ppmInterp = ppmInterp, msLevel = msLevel,
                             parentReference = parentReference)
+  configuration <- NULL
+  if (!is.null(param)) {
+    selected <- which(Spectra::msLevel(raw) %in% msLevel)
+    configuration <- .pa_purity_resolve(raw[selected], param, pa@params$purityA)
+    configuration$assignments$source_spectrum_index <- selected
+    origin <- Spectra::dataOrigin(raw)
+    file_positions <- split(seq_along(raw),
+      factor(origin, levels = unique(origin)))
+    ms2_configuration <- lapply(file_positions, function(positions) {
+      rows <- match(positions[Spectra::msLevel(raw)[positions] == 2L], selected)
+      rows <- rows[!is.na(rows)]
+      configuration$assignments$parameter_id[rows]
+    })
+  }
 
   # Check cores and choose if parallel or not (do or dopar)
   if(pa@cores<=1){
@@ -255,9 +280,9 @@ purityA <- function(fileList,
     foreach::foreach(
       i = 1:length(pa@fileList),
       .packages = "Spectra",
-      .export = ".pa_assess_purity_single"
+      .export = ".pa_assess_purity_configured"
     ),
-    .pa_assess_purity_single(
+    .pa_assess_purity_configured(
       filepth = sps[[i]],
       mostIntense = mostIntense,
       nearest = nearest,
@@ -272,7 +297,10 @@ purityA <- function(fileList,
       isotopes = isotopes,
       im = im,
       ppmInterp = ppmInterp,
-      assess = 2L %in% msLevel
+      assess = 2L %in% msLevel,
+      parameter_ids = if (is.null(configuration)) NULL else
+        ms2_configuration[[i]],
+      parameter_sets = configuration$parameter_sets
     )
   )
 
@@ -298,6 +326,11 @@ purityA <- function(fileList,
 
   o <- Spectra::dataOrigin(raw)
   pa@spectra <- .pa_spectra_new(raw, match(o, unique(o)), puritydf)
+  if (!is.null(configuration)) {
+    retained <- which(Spectra::msLevel(raw) %in% 2:4)
+    rows <- match(configuration$assignments$source_spectrum_index, retained)
+    configuration$assignments$pid <- pa@spectra$pid[rows]
+  }
   context <- which(!Spectra::msLevel(pa@spectra) %in% msLevel)
   if (length(context)) {
     prior <- raw[which(Spectra::msLevel(raw) %in% 2:4)]
@@ -322,7 +355,8 @@ purityA <- function(fileList,
     preparation <- .pa_msn_preparation(pa, parentReference)
     selected <- pa@spectra$pid[Spectra::msLevel(pa@spectra) %in% msLevel]
     assessment <- .pa_msn_purity(pa@spectra, preparation, selected,
-      mostIntense = mostIntense, offsets = offsets)
+      mostIntense = mostIntense, offsets = offsets,
+      configuration = configuration)
     pa@spectra <- assessment$spectra
     pa@params$msnLineage <- preparation
   }
@@ -333,6 +367,11 @@ purityA <- function(fileList,
   effective_parameters <- pa@params$purityA
   effective_parameters$effective_cores <- max(1L, as.integer(pa@cores))
   effective_parameters$resolved <- resolved
+  if (!is.null(configuration)) {
+    configuration$parameters <- NULL
+    effective_parameters$configuration <- configuration
+    pa@params$purityA$configuration <- configuration
+  }
   if (any(msLevel > 2L)) {
     effective_parameters$resolvedParentReference <- preparation$parentReference
     effective_parameters$msn_purity <- assessment$parameters
@@ -430,7 +469,9 @@ assessPuritySingle <- function(filepth,
   isotopes = TRUE,
   im = NULL,
   ppmInterp = 7,
-  assess = TRUE
+  assess = TRUE,
+  target_positions = NULL,
+  scans = NULL
 ) {
   #=================================
   # Load in files and initial setup
@@ -472,6 +513,9 @@ assessPuritySingle <- function(filepth,
   mrdfshrt <- mrdf[mrdf$msLevel==2,][,c("seqNum","acquisitionNum","precursorIntensity",
                                         "precursorMZ", "precursorRT",
                                         "precursorScanNum", "id", "filename", "retentionTime")]
+  ms2_positions <- which(mrdf$msLevel == 2L)
+  if (is.null(target_positions)) target_positions <- seq_len(nrow(mrdfshrt))
+  mrdfshrt <- mrdfshrt[target_positions, , drop = FALSE]
 
   if (!assess || !any(mrdf$msLevel == 1L)) {
     if (assess)
@@ -485,9 +529,9 @@ assessPuritySingle <- function(filepth,
   }
 
   # get scans (list of mz and i) from mzR
-  scans <- getscans(sp, mzRback)
+  if (is.null(scans)) scans <- getscans(sp, mzRback)
 
-  selected <- sp[Spectra::msLevel(sp) == 2L]
+  selected <- sp[ms2_positions[target_positions]]
   if (automatic_offsets) {
     windows <- .msp_isolation_settings(selected)
   } else {
@@ -535,11 +579,12 @@ assessPuritySingle <- function(filepth,
   }, logical(1L))
   prec_scans <- get_prec_scans(mrdf, nump, usable)
   nearest_position <- vapply(prec_scans, `[[`, integer(1L), "nearest")
+  nearest_position <- nearest_position[target_positions]
   mrdfshrt$precursorNearest <- mrdf$seqNum[nearest_position]
   reference_position <- match(mrdfshrt$precursorScanNum, mrdf$acquisitionNum)
   permitted <- !is.na(reference_position) &
       mrdf$msLevel[reference_position] == 1L & usable[reference_position] &
-      reference_position < which(mrdf$msLevel == 2L)
+      reference_position < ms2_positions[target_positions]
   permitted[is.na(permitted)] <- FALSE
   reference_position[!permitted] <- NA_integer_
   mrdfshrt$.purity_position <- if (nearest) nearest_position else reference_position
