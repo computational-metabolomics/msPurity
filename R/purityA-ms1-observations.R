@@ -4,7 +4,7 @@
     count <- lengths(used)
     method <- rep(method, length.out = nrow(purity))
     unavailable <- count == 0L & !method %in% c("invalid_isolation_window",
-        "precursor_outside_window")
+        "precursor_outside_window", "not_assessed")
     method[unavailable] <- "no_usable_ms1"
     method[count == 1L] <- "single_ms1"
     result <- data.frame(seqNum = purity$seqNum,

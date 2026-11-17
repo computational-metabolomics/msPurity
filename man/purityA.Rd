@@ -19,7 +19,9 @@ purityA(
   mzRback = "pwiz",
   isotopes = TRUE,
   im = NULL,
-  ppmInterp = 7
+  ppmInterp = 7,
+  msLevel = 2L,
+  parentReference = "auto"
 )
 }
 \arguments{
@@ -68,6 +70,15 @@ used without shifting or rescaling.}
 
 \item{ppmInterp}{numeric; Set the ppm tolerance for the precursor ion purity interpolation. i.e. the ppm tolerence between
 the precursor ion found in the neighbouring scans.}
+
+\item{msLevel}{nonempty numeric vector of levels to assess, from 2 to 4.
+Defaults to MS2. Use \code{msLevel = 2:4} to assess all supported levels.
+Other fragmentation spectra are retained as context; existing assessments
+and their history remain available without being recalculated.}
+
+\item{parentReference}{interpretation of parent identifiers for MS3/MS4.
+See \code{\link{frag4feature}} for native identifiers, acquisition numbers,
+original file positions and backend keys. The default is \code{"auto"}.}
 }
 \value{
 Returns a purityA object (pa). The MS/MS scans and their purity are
@@ -180,11 +191,22 @@ Resolved bounds and their sources are retained in processing history.
 }
 }
 \details{
-MS3/MS4 spectra are retained with their acquisition metadata, but
-MS1-based precursor purity is calculated only for MS2. Higher-level
-feature association is enabled with \code{frag4feature(includeMSn = TRUE)}.
-That operation also estimates diagnostic MS3/MS4 purity from their parent
-fragmentation spectra; purity thresholds still apply only to MS2.
+MS2 purity uses neighbouring MS1 measurements. MS3/MS4 purity uses
+the linked parent fragmentation spectrum and the child's isolation window,
+independently of chromatographic features. Supplied Spectra peak processing
+is evaluated before assessment. The recorded precursor intensity helps
+select the parent peak; otherwise its closest in-window mass is used.
+\code{mostIntense = TRUE} selects the strongest in-window peak instead.
+Ambiguous, invalid or unavailable parent measurements give \code{NA} and
+an explanatory \code{msPurityPurityStatus}. Known profile parents are not
+assessed. No additional ppm or Da cutoff is applied to parent peaks.
+
+Higher levels currently use no interpolation, isolation-efficiency
+weighting, isotope removal or low-intensity exclusion. Their results are
+available as \code{inPurity} on \code{spectra(pa)}; \code{purityTable(pa)}
+retains its MS2 table format. Processing history records the selected
+levels, parent measurements, bounds and settings. Purity thresholds in
+association and filtering currently apply only to MS2.
 }
 \examples{
 filepths <- system.file("extdata", "lcms", "mzML", "LCMSMS_1.mzML", package="msPurityData")
