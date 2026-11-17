@@ -1,3 +1,70 @@
+# msPurity 1.99.1
+
+- **Retention-time correction in `frag4feature()`** (#137): precursor times
+  of each file are mapped to the adjusted XCMS scale by interpolation and
+  compared with peak and feature windows on that scale, in both modes.
+  Before, individual mode converted peak bounds back to raw time by exact
+  match, which silently dropped every filled peak, and grouped mode compared
+  raw precursor times with adjusted feature windows, so `convert2RawRT` had
+  no effect there.
+- purityA files are matched to XCMS samples by file name instead of by
+  position. Each file gets a mapping status (`aligned`, `unaligned`,
+  `external`, `estimated` or `missing`) in the new `rtMapStatus` column, and
+  files without a mapping are named in a warning.
+- Filled peaks are excluded explicitly; `includeFilled = TRUE` links them,
+  flagged by `is_filled`. `intense` applies in both modes, falling back from
+  `iMz` to `aMz` to `precursorMZ`, and `precurMzSource` records the value
+  used.
+- New `frag4feature()` arguments: `ms2RtMap` maps DDA files outside the XCMS
+  object (an XCMS object, named functions or named offsets),
+  `estimateRtMap = TRUE` estimates the shift for them in grouped mode,
+  `rtTol` widens the windows, `rtSource = "ms2"` uses the MS/MS scan time
+  and `groupWindow = "median"` uses median feature bounds.
+  `Frag4FeatureParam` holds the same settings, apart from `ms2RtMap`.
+- New `grped_df` columns `matchRank` and `rtApexDist` order the matches of
+  each scan; per-file diagnostics are stored in `pa@params$frag4feature`.
+  Legacy columns keep their order and types. MS3 and MS4 rows keep their own
+  precursor m/z and time.
+- **Faster linking**: the nested `plyr::ddply` matching and the SNOW cluster
+  are replaced by one `dplyr` interval join, so `dplyr (>= 1.1.0)` is
+  required. On 32 files linking takes about 5 s instead of 870 s. Processing
+  history records one effective worker, and grouped mode now records the RT
+  conversion as used for association.
+- Data frames passed to the deprecated `grp_peaklist`/`grpPeaklist`
+  arguments no longer error, the `plim` filter handles missing purity, and
+  the SQLite and Parquet writers and `createMSP()` prefer `fileid` over
+  `sample` when mapping links to files.
+
+# msPurity 1.99.0
+
+- **MS3 and MS4 spectra** (#138): `purityA()`, `frag4feature()` and
+  `filterFragSpectra()` take `msLevel` to process MS2 to MS4. `purityA()`
+  calculates MS3/MS4 precursor purity from the linked parent spectrum;
+  `frag4feature(msLevel = 2:4)` associates MS3/MS4 spectra with features
+  through their validated MS2 ancestors, with `parentReference` choosing how
+  parent spectra are identified. `filterFragSpectra()` applies purity
+  thresholds to each spectrum's own assessment, so a failed parent does not
+  exclude its descendants. MS3/MS4 averaging and processed export are not
+  supported yet.
+- **Parameter objects**: `PurityAParam`, `Frag4FeatureParam` and
+  `FilterFragSpectraParam` extend `ProtGenerics::Param` and are passed
+  through `param`. Purity and filtering settings can be assigned by MS level,
+  activation method, collision energy or mass analyzer. Explicit arguments
+  that conflict with `param` are an error.
+- **Processing history** records the resolved settings and their
+  assignments, the MS1 measurements used for each purity estimate, the
+  inputs used for feature association, the RT conversion and the number of
+  workers, and which filtering call produced each purity flag on extracted
+  Spectra.
+- **Bug fixes** (#133, #103, #107): each MS2 event uses its recorded
+  isolation window, with explicit offsets taking precedence; an Agilent
+  isolation width is no longer assumed. Isolation-efficiency weighting is
+  corrected for asymmetric windows. Purity is `NA` with a distinct reason
+  outside valid isolation bounds or when no neighbouring MS1 measurement can
+  be used, and a later spectrum no longer replaces a missing preceding one.
+- `purityTable()` returns MS2 rows only. Filtering reads unchanged peak
+  arrays once, and equivalent parameter settings are resolved once.
+
 # msPurity 1.39.4
 
 - **Faster on Windows** (#136): raw spectra are read serially through
