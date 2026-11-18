@@ -74,3 +74,37 @@ test_that("combined and unmapped activation identifiers are not collapsed", {
     expect_identical(msPurity:::.pa_activation_type(c("ETD+HCD", "other")),
         c("ETD+HCD", "other"))
 })
+
+test_that("an activation recorded as a PSI-MS accession reads as its method", {
+    meta <- function(labels, accessions = rep(NA_character_, length(labels)),
+                     filters = NULL) {
+        d <- data.frame(msLevel = 2L, activationType = labels,
+                        activationTypeAccession = accessions)
+        if (!is.null(filters)) d$filterString <- filters
+        msPurity:::.pa_filter_metadata(d)
+    }
+    ## A Parquet study records the accession; mzML input names the method
+    ## through its filter string. Both read as the same method.
+    study <- meta(c("MS:1000422", "MS:1000133", NA))
+    expect_identical(study$activationType, c("HCD", "CID", NA))
+    expect_identical(attr(study, "activationTypeAccession"),
+                     c("MS:1000422", "MS:1000133", NA))
+    expect_identical(attr(study, "basis")$activationType,
+                     c("recorded", "recorded", NA))
+    mzml <- meta(rep(NA_character_, 2L), filters = c(
+        "FTMS + p ESI d Full ms2 205.0971@hcd30.00 [50.0000-215.0000]",
+        "ITMS + c ESI d Full ms2 205.0971@cid35.00 [50.0000-215.0000]"))
+    expect_identical(mzml$activationType, c("HCD", "CID"))
+    expect_identical(attr(mzml, "basis")$activationType,
+                     rep("filter_string", 2L))
+    ## A recorded accession is kept even where a filter string disagrees.
+    both <- meta("MS:1000422", filters =
+        "ITMS + c ESI d Full ms2 205.0971@cid35.00 [50.0000-215.0000]")
+    expect_identical(both$activationType, "HCD")
+    expect_error(meta("MS:1000422", "MS:1000133"),
+                 "Conflicting activation label")
+    ## An accession msPurity does not map stays as recorded.
+    ecd <- meta("MS:1000250")
+    expect_identical(ecd$activationType, "MS:1000250")
+    expect_identical(attr(ecd, "basis")$activationType, "recorded")
+})

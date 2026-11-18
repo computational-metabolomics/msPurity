@@ -62,7 +62,7 @@ Imports:
     BiocParallel,
     arrow (>= 14.0.0),
     jsonlite,
-    MsBackendParquet (>= 0.99.10),
+    MsBackendParquet (>= 0.99.12),
     methods,
     stats,
     tools,
@@ -126,6 +126,7 @@ Collate:
     'purityA-purity-parameters.R'
     'purityA-purity-processing.R'
     'purityA-spectra.R'
+    'purityA-study.R'
     'purityA-validate.R'
     'purityD-class.R'
     'purityD-constructor.R'

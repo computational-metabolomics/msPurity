@@ -27,7 +27,8 @@
     run[missing] <- ifelse(is.na(file[missing]), "input",
         paste0("fileid:", file[missing]))
     source_key <- NULL
-    if ("spectrum_id_" %in% names(metadata)) {
+    dataset_key <- "spectrum_id_" %in% names(metadata)
+    if (dataset_key) {
         source_key <- as.character(metadata$spectrum_id_)
         id <- source_key
     } else if ("spectrum_id" %in% names(metadata)) {
@@ -53,6 +54,7 @@
     for (name in names(normalized)) metadata[[name]] <- normalized[[name]]
     metadata$spectrum_id <- id
     metadata$source_spectrum_id <- source_key
+    metadata$source_key_assigned <- rep(dataset_key, n)
     metadata$run_id <- run
     metadata$data_origin <- origin
     metadata$source_index <- seq_len(n)
@@ -145,6 +147,17 @@
     }), conventions)
     native <- candidates$spectrumId
     has_native <- !is.na(scans$spectrumRef) & scans$ms_level > 1L
+    # A Parquet dataset assigns spectrum_id_ itself, numbering every run of
+    # the dataset in one sequence. Where precScanNum reads as acquisitionNum,
+    # as mzR and Spectra define it, a spectrum_id_ that happens to equal it
+    # is a coincidence of the two numberings, not a second reading.
+    assigned <- "source_key_assigned" %in% names(scans) &&
+        isTRUE(all(scans$source_key_assigned))
+    if (parentReference == "auto" && assigned &&
+            any(candidates$acquisitionNum$valid & !has_native)) {
+        candidates$sourceSpectrumId$parent[] <- NA_integer_
+        candidates$sourceSpectrumId$valid[] <- FALSE
+    }
     convention <- parentReference
     if (convention == "auto") {
         resolved <- rep(NA_integer_, nrow(scans))

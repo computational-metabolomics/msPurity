@@ -376,6 +376,8 @@ getScanPeaks <- function(pa) {
     if (anyNA(scans$fileid) || anyNA(scans$seqNum) ||
             anyNA(scans$pid) || anyDuplicated(key) || anyDuplicated(scans$pid))
         stop("Spectrum identities must be unique by pid and file position.")
+    if (.pa_is_parquet(pa@spectra))
+        return(.pa_scan_peaks_from_spectra(pa, scans))
     parts <- lapply(seq_along(pa@fileList), function(fileid) {
         sp <- .msp_read(as.character(pa@fileList[[fileid]]))
         header <- .msp_header(sp)
@@ -400,6 +402,41 @@ getScanPeaks <- function(pa) {
     peaks$type <- rep("scan", nrow(peaks))
     rownames(peaks) <- NULL
     peaks[, c("sid", "pid", "fileid", "scan", "mz", "i", "type")]
+}
+
+# getScanPeaks() for spectra read from a Parquet dataset: the peaks come from
+# the dataset, numbered by the source peak positions recorded at purityA(),
+# which number every MS>1 peak of the files in file order as the mzML route
+# does.
+.pa_scan_peaks_from_spectra <- function(pa, scans) {
+    .pa_study_check(pa)
+    sp <- pa@spectra[match(scans$pid, pa@spectra$pid)]
+    if (!length(sp))
+        return(.pa_empty_scan_peaks(scans$pid))
+    if (!all(c("msPurityRawPeakOffset", "msPurityRawPeakCount") %in%
+             Spectra::spectraVariables(sp)) ||
+            any(!sp$msPurityRawPeakIdBasis %in% "source_reference"))
+        stop("Source peak positions are unavailable for these spectra.")
+    pk <- .msp_peaks(.msp_unprocessed(sp))
+    n <- vapply(pk, nrow, integer(1L))
+    if (any(n != sp$msPurityRawPeakCount))
+        stop("The source peaks changed after purityA() read them.")
+    if (!sum(n))
+        return(.pa_empty_scan_peaks(scans$pid))
+    values <- do.call(rbind, pk)
+    peaks <- data.frame(
+        sid = as.integer(unlist(Map(function(o, k) o + seq_len(k),
+                                    sp$msPurityRawPeakOffset, n))),
+        pid = rep(scans$pid, n),
+        fileid = rep(as.integer(scans$fileid), n),
+        scan = as.character(rep(scans$seqNum, n)),
+        mz = values[, 1L], i = values[, 2L])
+    peaks <- peaks[order(peaks$sid), , drop = FALSE]
+    peaks$scan <- factor(peaks$scan, levels = unique(as.character(
+        scans$seqNum)))
+    peaks$type <- rep("scan", nrow(peaks))
+    rownames(peaks) <- NULL
+    peaks
 }
 
 resetGrpedMS2 <- function(m){
