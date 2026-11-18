@@ -250,8 +250,10 @@ test_that("Parquet results reference every MS2-MS4 scan and its parents", {
 
 test_that("datasets written before MSn export stay valid and readable", {
     skip_if_no_arrow()
-    v1 <- testthat::test_path("fixtures", "parquet-v1.0", "d02_ms2.parquet")
-    p <- .copy_dataset(v1)
+    dir <- tempfile("v1.0-")
+    utils::unzip(testthat::test_path("fixtures", "parquet-v1.0.zip"),
+                 exdir = dir)
+    p <- file.path(dir, "d02_ms2.parquet")
     expect_identical(.manifest(p)$results$version, "1.0.0")
     expect_false(any(validateParquet(p)$level == "MUST"))
     sc <- .read_table(p, "x_mspurity_scan")

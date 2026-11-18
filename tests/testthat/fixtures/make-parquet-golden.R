@@ -38,8 +38,11 @@ if ("v1.0" %in% commandArgs(trailingOnly = TRUE)) {
     w <- .d02_ms2_workflow()
     p <- createDatabase(w$pa, w$xe, outDir = td, dbName = "d02_ms2.parquet",
                         format = "parquet")
-    dest <- file.path("tests", "testthat", "fixtures", "parquet-v1.0")
-    unlink(dest, recursive = TRUE)
-    dir.create(dest)
-    file.copy(p, dest, recursive = TRUE)
+    ## Zipped: its file paths are too long for a package tarball.
+    dest <- normalizePath(file.path("tests", "testthat", "fixtures",
+                                    "parquet-v1.0.zip"), mustWork = FALSE)
+    unlink(dest)
+    owd <- setwd(td)
+    utils::zip(dest, basename(p), flags = "-qrX9")
+    setwd(owd)
 }
