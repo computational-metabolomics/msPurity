@@ -36,8 +36,8 @@ group1d <- function(v, thr){
   return(cl)
 }
 
-# Use the same distance and cutoff for clustering and safe chunk boundaries.
-.msp_hc_distance <- function(difference, mean_mz, ppm, tolerance) {
+# Clustering and batch boundaries share the same distance and cutoff.
+.hc_distance <- function(difference, mean_mz, ppm, tolerance) {
   if (tolerance > 0) {
     # Absolute and relative tolerances add, with the numerical margin of
     # MsCoreUtils::closest().
@@ -51,7 +51,11 @@ group1d <- function(v, thr){
 performHc <- function(mzs, ppm, tolerance = 0){
   if (length(mzs) == 1L)
     return(1L)
-  distance <- .msp_hc_distance(stats::dist(mzs),
+  span <- .hc_distance(mzs[length(mzs)] - mzs[1L],
+    (mzs[1L] + mzs[length(mzs)]) / 2, ppm, tolerance)
+  if (span$distance <= span$height)
+    return(rep.int(1L, length(mzs)))
+  distance <- .hc_distance(stats::dist(mzs),
     stats::as.dist(outer(mzs, mzs, "+") / 2), ppm, tolerance)
   clh <- fastcluster::hclust(distance$distance, method = "complete")
   stats::cutree(clh, h = distance$height)
@@ -60,12 +64,12 @@ performHc <- function(mzs, ppm, tolerance = 0){
 # Sorted positive masses have increasing distance across a gap. Thus a gap
 # above the cutoff separates every pair on opposite sides, including ties.
 # Connected runs only locate safe boundaries; clustering remains complete-linkage.
-.msp_hc_blocks <- function(mz, ppm, tolerance, max_size = 5000L) {
+.hc_blocks <- function(mz, ppm, tolerance, max_size = 5000L) {
   n <- length(mz)
   if (n <= max_size)
     return(data.frame(first = 1L, last = n, one_cluster = FALSE))
 
-  adjacent <- .msp_hc_distance(diff(mz),
+  adjacent <- .hc_distance(diff(mz),
     (mz[-n] + mz[-1L]) / 2, ppm, tolerance)
   ends <- c(which(adjacent$distance > adjacent$height), n)
   # One vectorized lookup avoids repeatedly scanning all safe boundaries.
@@ -81,7 +85,7 @@ performHc <- function(mzs, ppm, tolerance = 0){
     } else {
       end_index <- first_run
       last <- ends[end_index]
-      span <- .msp_hc_distance(mz[last] - mz[first],
+      span <- .hc_distance(mz[last] - mz[first],
         (mz[first] + mz[last]) / 2, ppm, tolerance)
       if (span$distance > span$height)
         stop("A tolerance-connected group of ", last - first + 1L,
@@ -113,7 +117,7 @@ clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0){
     if (!length(mz))
       return(integer())
 
-    blocks <- .msp_hc_blocks(mz, ppm, tolerance)
+    blocks <- .hc_blocks(mz, ppm, tolerance)
     clustlist <- vector("list", nrow(blocks))
     for (i in which(blocks$one_cluster))
       clustlist[[i]] <- rep.int(1L, blocks$last[i] - blocks$first[i] + 1L)
@@ -122,17 +126,16 @@ clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0){
     if (length(regular)) {
       mzsplit <- lapply(regular, function(i)
         mz[seq.int(blocks$first[i], blocks$last[i])])
-      parallelBool <- cores > 1L
-      if (parallelBool) {
-        clust <- parallel::makeCluster(cores)
-        on.exit({
-          parallel::stopCluster(clust)
-          foreach::registerDoSEQ()
-        }, add = TRUE)
-        doSNOW::registerDoSNOW(clust)
+      workers <- min(cores, length(regular))
+      if (workers > 1L) {
+        clust <- parallel::makeCluster(workers)
+        on.exit(parallel::stopCluster(clust), add = TRUE)
+        clustlist[regular] <- parallel::parLapply(clust, mzsplit, performHc,
+          ppm = ppm, tolerance = tolerance)
+      } else {
+        clustlist[regular] <- lapply(mzsplit, performHc,
+          ppm = ppm, tolerance = tolerance)
       }
-      clustlist[regular] <- plyr::llply(mzsplit, performHc,
-        ppm = ppm, tolerance = tolerance, .parallel = parallelBool)
     }
 
     offset <- 0L

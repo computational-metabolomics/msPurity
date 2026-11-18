@@ -42,10 +42,7 @@
 #'    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> **averageIntraFragSpectra** -> averageIntraFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
 #'
-#' @details
-#' Hierarchical clustering splits inputs only at gaps exceeding the m/z tolerance.
-#' An unsplittable run above 5,000 peaks must fit within one tolerance window;
-#' otherwise the call stops with an error to limit distance-matrix allocation.
+#' @inherit groupPeaksEx details
 #'
 #' @param pa object; purityA object
 #' @param ppm numeric; ppm threshold to average within each file
@@ -163,10 +160,7 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #'
 #'
 #'
-#' @details
-#' Hierarchical clustering splits inputs only at gaps exceeding the m/z tolerance.
-#' An unsplittable run above 5,000 peaks must fit within one tolerance window;
-#' otherwise the call stops with an error to limit distance-matrix allocation.
+#' @inherit groupPeaksEx details
 #'
 #' @param pa object; purityA object
 #' @param cores numeric; Number of cores for multiprocessing
@@ -291,10 +285,7 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> **averageAllFragSpectra** -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
 #'
-#' @details
-#' Hierarchical clustering splits inputs only at gaps exceeding the m/z tolerance.
-#' An unsplittable run above 5,000 peaks must fit within one tolerance window;
-#' otherwise the call stops with an error to limit distance-matrix allocation.
+#' @inherit groupPeaksEx details
 #'
 #' @param pa object; purityA object
 #' @param cores numeric; Number of cores for multiprocessing

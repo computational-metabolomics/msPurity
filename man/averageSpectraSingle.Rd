@@ -78,9 +78,9 @@ columns. The precalculated SNR can then be chosen by using the option 'precalc' 
 The function will work for both LC-MS or DI-MS datasets.
 }
 \details{
-Hierarchical clustering splits inputs only at gaps exceeding the m/z tolerance.
-An unsplittable run above 5,000 peaks must fit within one tolerance window;
-otherwise the call stops with an error to limit distance-matrix allocation.
+With hierarchical clustering, matching peaks stay together. The call stops
+with an error if more than 5,000 nearby peaks cannot form one group or be
+separated without splitting matching peaks.
 }
 \examples{
 mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
