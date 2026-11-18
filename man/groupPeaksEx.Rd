@@ -21,6 +21,11 @@ data.frame of peaklists grouped together by mz
 \description{
 Group a list of dataframes by their m/z values
 }
+\details{
+Hierarchical clustering splits inputs only at gaps exceeding the m/z tolerance.
+An unsplittable run above 5,000 peaks must fit within one tolerance window;
+otherwise the call stops with an error to limit distance-matrix allocation.
+}
 \examples{
 
 peak_list <- list(

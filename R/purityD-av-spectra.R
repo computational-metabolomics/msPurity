@@ -140,6 +140,11 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #'
 #' The function will work for both LC-MS or DI-MS datasets.
 #'
+#' @details
+#' Hierarchical clustering splits inputs only at gaps exceeding the m/z tolerance.
+#' An unsplittable run above 5,000 peaks must fit within one tolerance window;
+#' otherwise the call stops with an error to limit distance-matrix allocation.
+#'
 #' @param filePth character; Path of the file to be processed
 #' @param rtscn character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. \['rt', 'scns', 'all'\]
 #' @param scanRange vector; Scan range (if rtscn='scns') e.g. c(40, 69)
@@ -391,6 +396,11 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #'
 #' @description
 #' Group a list of dataframes by their m/z values
+#'
+#' @details
+#' Hierarchical clustering splits inputs only at gaps exceeding the m/z tolerance.
+#' An unsplittable run above 5,000 peaks must fit within one tolerance window;
+#' otherwise the call stops with an error to limit distance-matrix allocation.
 #'
 #' @param peak_list list = A list (named) of dataframes consiting of a least the following columns \['peakID', 'mz'\]
 #' @param ppm numeric = The ppm tolerance to group peaklists
