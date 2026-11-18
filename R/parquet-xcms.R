@@ -182,6 +182,14 @@
         sf$x_mspurity_precursor_mz_error_exact <- NA_real_
         sf$x_mspurity_precursor_mz_error_exact[have] <-
             match_details$precurMtchPPM[k[have]]
+        ## How frag4feature() mapped each link's retention time.
+        for (c in intersect(names(.MZS_LINK_DETAILS), names(match_details))) {
+            v <- match_details[[c]]
+            out <- if (is.numeric(v)) rep(NA_real_, nrow(sf))
+                   else rep(NA_character_, nrow(sf))
+            out[have] <- v[k[have]]
+            sf[[paste0("x_mspurity_", .MZS_LINK_DETAILS[[c]])]] <- out
+        }
     }
     if (any(is.na(sf$feature_id_)))
         .mzs_abort("semantic", "An MS2 link names a feature absent from ",

@@ -22,9 +22,9 @@ for (h in c("helper-sqlite-golden.R", "helper-parquet.R",
 out <- file.path("tests", "testthat", "fixtures", "parquet-golden")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 writers <- .parquet_golden_writers()
-names <- commandArgs(trailingOnly = TRUE)
-if (!length(names)) names <- names(writers)
-for (nm in setdiff(names, "v1.0")) {
+cases <- commandArgs(trailingOnly = TRUE)
+if (!length(cases)) cases <- names(writers)
+for (nm in setdiff(cases, "v1.0")) {
     message(nm)
     saveRDS(.parquet_golden_run(nm, writers), file.path(out, paste0(nm, ".rds")),
             compress = "xz")

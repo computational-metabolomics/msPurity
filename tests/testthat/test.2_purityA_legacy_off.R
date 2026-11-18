@@ -47,11 +47,26 @@ test_that("the Parquet output does not depend on the legacy slots", {
     off <- .workflow_db("parquet")
     tables <- names(.manifest(on$path)$results$tables)
     expect_setequal(names(.manifest(off$path)$results$tables), tables)
-    # Tables that record when and where the dataset was written differ.
+    # Tables that record when and where the dataset was written differ, as
+    # do the times and ids of the processing history.
+    read <- function(path, t) {
+        d <- .read_table(path, t)
+        if (!is.null(d$x_mspurity_history))
+            d$x_mspurity_history <- lapply(d$x_mspurity_history, function(h) {
+                if (is.na(h)) return(NULL)
+                lapply(jsonlite::fromJSON(h, simplifyVector = FALSE),
+                       function(r) {
+                           r$time <- NULL
+                           r$step_id <- NULL
+                           r$input$previous_steps <- NULL
+                           r
+                       })
+            })
+        d
+    }
     for (t in setdiff(tables, c("activity", "activity_input", "software",
                                 "conversion")))
-        expect_identical(.read_table(off$path, t), .read_table(on$path, t),
-                         label = t)
+        expect_identical(read(off$path, t), read(on$path, t), label = t)
     v <- validateParquet(off$path)
     expect_identical(sum(v$level == "MUST"), 0L)
 })

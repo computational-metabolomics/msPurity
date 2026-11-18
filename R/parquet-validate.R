@@ -544,7 +544,7 @@ validateParquet <- function(path, sourcePaths = NULL) {
             src <- df[[paste0(p, "_source")]]
             run <- df[[paste0(p, "_run_id")]]
             id <- df[[paste0(p, "_spectrum_id_")]]
-            bad <- unique(src[!src %in% keys])
+            bad <- unique(src[!is.na(src) & !src %in% keys])
             if (length(bad))
                 add("R-018", paste0(p, "_source names undeclared source(s): ",
                                     paste(bad, collapse = ", ")), n)
@@ -566,6 +566,73 @@ validateParquet <- function(path, sourcePaths = NULL) {
         }
     }
     do.call(.mzs_findings, f)
+}
+
+#' The acquisition lineage of x_mspurity_scan and x_mspurity_msn_feature:
+#' levels, parents one level down, MS2 roots, and references that agree
+#' with the rows they name.
+#'
+#' @return a list of findings.
+#'
+#' @noRd
+.mzs_v_lineage <- function(read, have) {
+    f <- list()
+    add <- function(level, msg, table = "x_mspurity_scan")
+        f[[length(f) + 1L]] <<- .mzs_finding(level, "R-099", table, msg)
+    if (!have("x_mspurity_scan"))
+        return(f)
+    sc <- read("x_mspurity_scan")
+    if (is.null(sc$ms_level))
+        return(f)
+    lvl <- sc$ms_level
+    if (any(!is.na(lvl) & !lvl %in% 2:4))
+        add("MUST", "ms_level must be 2, 3 or 4.")
+    row <- function(id) match(id, sc$scan_annotation_id_)
+    p <- row(sc$parent_scan_annotation_id_)
+    r <- row(sc$root_scan_annotation_id_)
+    has_p <- !is.na(p)
+    if (any(has_p & lvl[p] != lvl - 1L, na.rm = TRUE))
+        add("MUST", "A scan's parent must be one MS level below it.")
+    if (any(!is.na(r) & lvl[r] != 2L, na.rm = TRUE))
+        add("MUST", "A scan's root must be an MS2 scan.")
+    for (k in list(list(pre = "parent", at = p), list(pre = "root", at = r))) {
+        at <- k$at
+        i <- which(!is.na(at))
+        if (!length(i))
+            next
+        same <- function(a, b) (is.na(a) & is.na(b)) | (!is.na(a) & !is.na(b) &
+                                                        a == b)
+        agree <- same(sc[[paste0(k$pre, "_source")]][i], sc$ms2_source[at[i]]) &
+            same(sc[[paste0(k$pre, "_run_id")]][i], sc$ms2_run_id[at[i]]) &
+            same(sc[[paste0(k$pre, "_spectrum_id_")]][i],
+                 sc$ms2_spectrum_id_[at[i]]) &
+            same(sc[[paste0(k$pre, "_native_id")]][i],
+                 sc$ms2_native_id[at[i]])
+        if (any(!agree))
+            add("MUST", paste0(sum(!agree), " ", k$pre, " reference(s) ",
+                               "disagree with the scan row they name."))
+    }
+    known <- c("valid", "root", "missing_reference", "unresolved_reference",
+               "invalid_reference", "missing_stage", "missing_precursor")
+    for (c in c("parent_status", "path_status")) {
+        v <- unique(sc[[c]][!is.na(sc[[c]])])
+        if (length(setdiff(v, known)))
+            add("SHOULD", paste0("Unknown ", c, " value(s): ",
+                                 paste(setdiff(v, known), collapse = ", ")))
+    }
+    if (have("x_mspurity_msn_feature")) {
+        mf <- read("x_mspurity_msn_feature")
+        s <- row(mf$scan_annotation_id_)
+        if (any(!is.na(s) & mf$ms_level != lvl[s]))
+            add("MUST", "An MSn feature link's level differs from its scan's.",
+                "x_mspurity_msn_feature")
+        if (any(!is.na(s) & !is.na(mf$root_scan_annotation_id_) &
+                !is.na(sc$root_scan_annotation_id_[s]) &
+                mf$root_scan_annotation_id_ != sc$root_scan_annotation_id_[s]))
+            add("MUST", "An MSn feature link's root differs from its scan's.",
+                "x_mspurity_msn_feature")
+    }
+    f
 }
 
 #' Foreign keys, reported as orphan rows.
@@ -630,8 +697,21 @@ validateParquet <- function(path, sourcePaths = NULL) {
     orphan("x_mspurity_combined_annotation", "feature_id_", fid, "feature")
     orphan("x_mspurity_combined_annotation", "compound_id_",
            key("compound", "compound_id_"), "compound")
-    orphan("x_mspurity_scan_peak", "scan_annotation_id_",
-           key("x_mspurity_scan", "scan_annotation_id_"), "x_mspurity_scan")
+    sid <- key("x_mspurity_scan", "scan_annotation_id_")
+    orphan("x_mspurity_scan_peak", "scan_annotation_id_", sid,
+           "x_mspurity_scan")
+    orphan("x_mspurity_scan", "parent_scan_annotation_id_", sid,
+           "x_mspurity_scan")
+    orphan("x_mspurity_scan", "root_scan_annotation_id_", sid,
+           "x_mspurity_scan")
+    orphan("x_mspurity_msn_feature", "scan_annotation_id_", sid,
+           "x_mspurity_scan")
+    orphan("x_mspurity_msn_feature", "root_scan_annotation_id_", sid,
+           "x_mspurity_scan")
+    orphan("x_mspurity_msn_feature", "feature_id_", fid, "feature")
+    orphan("x_mspurity_msn_feature", "chromatographic_peak_id_", pid,
+           "chromatographic_peak")
+    f <- c(f, .mzs_v_lineage(read, have))
     acts <- vapply(m$provenance %||% list(), function(a) as.character(a$id),
                    "")
     for (n in names(m$results$tables))

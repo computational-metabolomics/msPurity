@@ -130,3 +130,46 @@
         writers[[name]](td))))
     .parquet_canon(res)
 }
+
+# Whether dump `got` holds everything frozen in `ref` unchanged: every native
+# run, the manifest's runs and sources, every table, column and row, with
+# rows of the loss ledger and source identifiers kept as a subset (their ids
+# renumbered). Added tables, columns and ledger rows are allowed; the results
+# version and the manifest's table bookkeeping may change.
+.parquet_golden_contains <- function(got, ref) {
+    msg <- character()
+    fail <- function(...) msg <<- c(msg, paste0(...))
+    if (!identical(got$runs, ref$runs)) fail("native runs differ")
+    for (k in c("runs", "sources"))
+        if (!identical(got$manifest[[k]], ref$manifest[[k]]))
+            fail("manifest ", k, " differ")
+    if (!identical(got$manifest$results$runs, ref$manifest$results$runs))
+        fail("manifest results runs differ")
+    row_key <- function(d, drop) do.call(paste, c(lapply(
+        d[setdiff(names(d), drop)], function(v) ifelse(is.na(v), "<NA>",
+                                                      as.character(v))),
+        sep = "\r"))
+    for (t in names(ref$tables)) {
+        r <- ref$tables[[t]]
+        g <- got$tables[[t]]
+        if (is.null(r)) next
+        if (is.null(g)) { fail("table ", t, " is gone"); next }
+        gone <- setdiff(names(r), names(g))
+        if (length(gone)) fail(t, ": columns gone: ", paste(gone, collapse = ", "))
+        if (t %in% c("loss_ledger", "source_identifier")) {
+            id <- if (t == "loss_ledger") "loss_ledger_id_"
+                  else "source_identifier_id_"
+            missing <- setdiff(row_key(r, id), row_key(g[names(r)], id))
+            if (length(missing))
+                fail(t, ": ", length(missing), " row(s) gone, e.g. ",
+                     gsub("\r", " | ", missing[1L]))
+            next
+        }
+        if (nrow(g) != nrow(r)) { fail(t, ": rows ", nrow(r), " -> ", nrow(g)); next }
+        cols <- intersect(names(r), names(g))
+        if (t == "conversion") cols <- setdiff(cols, "results_version")
+        for (c in cols)
+            if (!identical(g[[c]], r[[c]])) fail(t, ".", c, " changed")
+    }
+    if (length(msg)) msg else TRUE
+}

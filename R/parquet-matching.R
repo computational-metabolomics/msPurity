@@ -322,7 +322,7 @@
         peaks <- c(peaks, pk)
     }
     if ("scan" %in% types) {
-        sc <- tab("x_mspurity_scan")
+        sc <- .mzs_ms2_scans(tab("x_mspurity_scan"))
         keys <- unique(sc$ms2_source)
         for (k in keys) {
             s <- sc[sc$ms2_source == k, ]

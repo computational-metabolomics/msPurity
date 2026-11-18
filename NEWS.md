@@ -1,5 +1,41 @@
 # msPurity 1.99.1
 
+- **Raw MS1-MS4 data in Parquet studies** (#127): a `Spectra` on a dataset
+  written by MsBackendParquet's `mzMLToParquet()` (0.99.12 or later) runs
+  through `purityA()`, `frag4feature()`, `filterFragSpectra()` and averaging
+  with the same results as the mzML files, for MS2 to MS4. Peaks are read
+  from the dataset, never from the mzML files, so these need not exist; a
+  dataset that has moved or changed since `purityA()` read it is reported as
+  such. A selected or processed input numbers its raw peak rows as the
+  matching mzML input does. An activation method the dataset records as a
+  PSI-MS accession is read as its method name, so selectors match it as they
+  match a filter string, and `activationTypeBasis` records which applied.
+- With automatic `parentReference`, a Parquet dataset's own spectrum ids are
+  no longer read as parent scan numbers once acquisition numbers resolve,
+  which made parent references ambiguous in studies of several runs.
+- **Parquet results written directly, for MS2 to MS4** (#127, #128):
+  `createDatabase(format = "parquet")` no longer stages an SQLite database;
+  the MS2 output is unchanged. Results version 1.1.0 adds, without changing
+  what 1.0.0 datasets hold:
+  - MS3 and MS4 scans in `x_mspurity_scan`, with `ms_level`, MSn stage
+    purity and status, the activation method used and its basis, and each
+    scan's parent and MS2 root, as references and as rows of the table;
+  - MS3/MS4 feature links in the new `x_mspurity_msn_feature`, and the
+    retention-time mapping of MS2 links in `spectrum_feature`;
+  - filter flags of every filtered spectrum in `x_mspurity_scan_peak`,
+    including those of feature-linked scans when `allfrag = FALSE`, which
+    were lost before;
+  - each step's processing history in `tool_provenance`.
+- **Study links without the mzML files** (#127): with `study`, scans and the
+  MS1 scans their MS2 precursors name are matched from the study's own
+  metadata by native id, then scan number at the same position and level;
+  files are no longer read or checksummed for this. When `purityA()` read
+  a Parquet dataset it is the default `study`; `study = NA` opts out.
+  Conditions the study does not record are reported as unavailable in the
+  loss ledger.
+- The SQLite writer refuses MS3/MS4 feature links as it refuses MS3/MS4
+  spectra.
+
 - **Retention-time correction in `frag4feature()`** (#137): precursor times
   of each file are mapped to the adjusted XCMS scale by interpolation and
   compared with peak and feature windows on that scale, in both modes.

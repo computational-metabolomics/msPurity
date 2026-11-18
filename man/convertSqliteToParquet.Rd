@@ -37,8 +37,11 @@ dataset, as \code{createDatabase(format = "parquet")} would write it. The
 database is not modified.
 
 MS2 scans are referenced, not copied. With \code{study}, each scan resolves to
-its spectrum in that dataset; otherwise each source file is an external
-source and scans are identified by mzML native id.
+its spectrum in that dataset, matched by scan number from the study's own
+metadata, and its parent to the study's MS1 scan; otherwise each source
+file is an external source and scans are identified by mzML native id. The
+database holds no MS3/MS4 results or acquisition lineage, which only
+\code{\link[=createDatabase]{createDatabase()}} writes from a purityA object.
 
 Historical raw peak identities are resolved from file and spectrum position.
 A warning reports stored identities that disagree with that mapping.

@@ -10,7 +10,8 @@
                            "software", "coverage", "conversion",
                            "tool_provenance",
                            "source_identifier", "loss_ledger",
-                           "x_mspurity_scan", "x_mspurity_scan_peak")
+                           "x_mspurity_scan", "x_mspurity_scan_peak",
+                           "x_mspurity_msn_feature")
 
 # Nothing is dropped as unmappable, so lossy_conversion is not declared.
 .MZS_LOSSY <- FALSE

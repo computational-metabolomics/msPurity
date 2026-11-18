@@ -163,11 +163,17 @@ test_that("processed higher levels cannot enter the MS2-only writers", {
         methods::slot(pa, field) <- higher
         expect_error(create_database(pa, NULL),
             "Processed MS3/MS4 database export is not supported", info = field)
-        for (format in c("sqlite", "parquet"))
-            expect_error(createDatabase(pa, NULL, format = format),
-                "Processed MS3/MS4 database export is not supported",
-                info = paste(field, format))
+        expect_error(createDatabase(pa, NULL, format = "sqlite"),
+            "Processed MS3/MS4 database export is not supported", info = field)
     }
+    ## The Parquet writer takes filtered MS3/MS4 spectra, not averages,
+    ## which are not produced yet.
+    pa <- methods::new("purityA")
+    pa@avSpectra <- higher
+    expect_error(createDatabase(pa, NULL, format = "parquet"),
+        "Averaged MS3/MS4 spectra cannot be exported yet")
+    expect_no_error(msPurity:::.pa_require_msn_export(
+        methods::new("purityA", fragSpectra = higher)))
 })
 
 test_that("empty selections retain empty filtering history", {

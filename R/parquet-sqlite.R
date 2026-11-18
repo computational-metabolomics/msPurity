@@ -331,8 +331,11 @@
 #' database is not modified.
 #'
 #' MS2 scans are referenced, not copied. With `study`, each scan resolves to
-#' its spectrum in that dataset; otherwise each source file is an external
-#' source and scans are identified by mzML native id.
+#' its spectrum in that dataset, matched by scan number from the study's own
+#' metadata, and its parent to the study's MS1 scan; otherwise each source
+#' file is an external source and scans are identified by mzML native id. The
+#' database holds no MS3/MS4 results or acquisition lineage, which only
+#' [createDatabase()] writes from a purityA object.
 #'
 #' Historical raw peak identities are resolved from file and spectrum position.
 #' A warning reports stored identities that disagree with that mapping.
@@ -581,7 +584,7 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
         c("grpid", "cid", "idi", "bestpeak"), c("grpid", "cid", "idi",
                                                "bestpeak"))
 
-    sc <- tab("x_mspurity_scan")
+    sc <- .mzs_ms2_scans(tab("x_mspurity_scan"))
     scan_pid <- num(src_id("x_mspurity_scan", "pid", sc$scan_annotation_id_))
     sm <- data.frame(pid = scan_pid, fileid = fileid_of_run(sc$ms2_run_id),
                      seqNum = sc$x_mspurity_seq_num)
@@ -666,6 +669,8 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
     scp <- NULL
     if (!is.null(m$results$tables$x_mspurity_scan_peak)) {
         s <- tab("x_mspurity_scan_peak")
+        s <- s[s$scan_annotation_id_ %in% sc$scan_annotation_id_, ,
+               drop = FALSE]
         scp <- data.frame(
             pid = scan_pid[match(s$scan_annotation_id_,
                                  sc$scan_annotation_id_)],

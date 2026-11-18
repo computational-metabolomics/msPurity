@@ -51,9 +51,10 @@
 #' @param format character; \code{"sqlite"} (the default) writes the SQLite database described above, and raises a
 #'               deprecation warning: SQLite output is frozen and receives bug fixes only. \code{"parquet"} writes a
 #'               Parquet dataset instead (experimental). See Details.
-#' @param study character (optional, parquet only); path of the Parquet dataset the mzML files were converted into, for
-#'              example with MsBackendParquet::mzMLToParquet(). MS2 scans are then referenced by their spectrum ids in that
-#'              dataset. Without it, every source file is recorded as an external source.
+#' @param study character (optional, parquet only); path of the Parquet dataset the mzML files were converted into with
+#'              MsBackendParquet::mzMLToParquet(). Scans and their parent scans are then referenced by their spectrum ids
+#'              in that dataset. By default, when \code{purityA()} was given a Spectra on that dataset, it is the study;
+#'              otherwise, and with \code{study = NA}, every source file is recorded as an external source.
 #' @param studyKey character (parquet only); the key the study is declared under in the results dataset.
 #' @param fileMap named character (optional, parquet only); source file path (as in \code{pa@fileList}) -> run_id.
 #'                Required when two source files share a file name, and to match files whose recorded paths
@@ -72,15 +73,29 @@
 #'    \code{chromatographic_peak}, \code{chromatographic_peak_feature} and \code{abundance} tables, with
 #'    \code{assay} and \code{sample} for the source files;
 #'  * the links between MS2 scans and features become \code{spectrum_feature}, with the precursor m/z,
-#'    error, retention time and purity each scan was matched at;
+#'    error, retention time and purity each scan was matched at and how its retention time was mapped;
+#'    MS3 and MS4 scans linked through their MS2 scan are in \code{x_mspurity_msn_feature};
 #'  * averaged fragmentation spectra become spectra of the dataset, one run per source file for spectra
 #'    averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
 #'    (\code{av_inter}, \code{av_all}), with their per-peak statistics;
 #'  * the scans each averaged spectrum was made from are recorded in \code{merge_member};
-#'  * every assessed MS2 scan keeps its precursor purity measures (\code{x_mspurity_scan}); MS2 scans are
-#'    referenced, not copied;
-#'  * the processing parameters, what was converted and anything that could not be mapped are recorded
-#'    in \code{tool_provenance}, \code{conversion}, \code{source_identifier} and \code{loss_ledger}.
+#'  * every assessed MS2 to MS4 scan is listed in \code{x_mspurity_scan} with its MS2 precursor purity or
+#'    MSn stage purity, the scan it fragments and the MS2 scan its path starts from, and the activation
+#'    method msPurity used with where that came from; peaks flagged by \code{filterFragSpectra()} are in
+#'    \code{x_mspurity_scan_peak}. Raw scans are referenced, not copied;
+#'  * the processing parameters and history, what was converted and anything that could not be mapped are
+#'    recorded in \code{tool_provenance}, \code{conversion}, \code{source_identifier} and \code{loss_ledger}.
+#'
+#' **Raw data in a Parquet study**
+#'
+#' Raw MS1-MS4 files converted with \code{MsBackendParquet::mzMLToParquet()} are read by passing
+#' \code{purityA()} a \code{Spectra} on the dataset; msPurity then reads their peaks from the dataset, never
+#' from the mzML files. A scan is linked to the study by the dataset's own key when \code{purityA()} read it
+#' there, otherwise by native id, then by scan number at the same position, all from the study's own metadata.
+#' An MS2 scan's parent is the study's MS1 scan its precursor scan number names. Acquisition conditions the
+#' study does not record, such as the activation method of mzXML input, are reported in the loss ledger as
+#' unavailable rather than inferred; where msPurity used a method named by a scan's filter string,
+#' \code{activation_type_basis} says so.
 #'
 #' The dataset is written to \code{file.path(outDir, dbName)}; the default name ends in \code{.parquet}. It is built
 #' beside its destination and moved into place only once complete, so an interrupted write leaves nothing behind.
@@ -125,24 +140,25 @@
 #'     metadata = list(polarity = "positive", instrument = "Q-Exactive"))
 #'
 #' @md
-#' @details Processed-result export currently supports MS2 outputs. Processed
-#'   MS3/MS4 fragment or averaged spectra must remain in the Spectra workflow;
-#'   these writers reject them explicitly. Higher-level measurements already
-#'   present in source files retain their existing raw-data conversion support.
+#' @details The SQLite database holds MS2 results only and refuses MS3/MS4
+#'   feature links and processed spectra; the Parquet dataset holds MS2-MS4
+#'   scans, links and filtered spectra. Averaged MS3/MS4 spectra cannot be
+#'   exported yet.
 #' @export
 createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA,
                             format = c("sqlite", "parquet"), study = NULL, studyKey = "study",
                             fileMap = NULL, overwrite = FALSE){
   pa <- .pa_update(pa)
-  .pa_require_ms2_export(pa)
   format <- match.arg(format)
   if (format == "parquet"){
+    .pa_require_msn_export(pa)
     return(.createDatabase_parquet(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
                                    grpPeaklist = grpPeaklist, dbName = dbName,
                                    metadata = metadata, xset = xset, study = study,
                                    studyKey = studyKey, fileMap = fileMap,
                                    overwrite = overwrite))
   }
+  .pa_require_ms2_export(pa)
   db <- .createDatabase_sqlite(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
                                grpPeaklist = grpPeaklist, dbName = dbName,
                                metadata = metadata, xset = xset)
@@ -822,14 +838,27 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
 
 }
 
-# Both public writers share the current processed-MS2 storage contract.
+# The SQLite schema holds MS2 scans, feature links and spectra only.
 .pa_require_ms2_export <- function(pa) {
     for (field in c("fragSpectra", "avSpectra")) {
         sp <- methods::slot(pa, field)
         if (length(sp) && any(Spectra::msLevel(sp) > 2L, na.rm = TRUE))
             stop("Processed MS3/MS4 database export is not supported by ",
-                "this writer. Retain the processed Spectra object or ",
-                "export MS2-only results.")
+                "the SQLite writer. Use createDatabase(format = \"parquet\") ",
+                "or export MS2-only results.")
     }
+    g <- pa@grped_df
+    if (nrow(g) && "msLevel" %in% names(g) && any(g$msLevel > 2L, na.rm = TRUE))
+        stop("MS3/MS4 feature links are not supported by the SQLite writer. ",
+            "Use createDatabase(format = \"parquet\") or link MS2 only.")
+    invisible(TRUE)
+}
+
+# The Parquet writer holds MS2-MS4 scans, links and filtered spectra; averaged
+# spectra above MS2 are not produced yet.
+.pa_require_msn_export <- function(pa) {
+    sp <- pa@avSpectra
+    if (length(sp) && any(Spectra::msLevel(sp) > 2L, na.rm = TRUE))
+        stop("Averaged MS3/MS4 spectra cannot be exported yet.")
     invisible(TRUE)
 }

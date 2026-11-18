@@ -10,7 +10,7 @@
 # source resolution, and provenance activity records.
 
 .MZS_SPEC_VERSION <- "0.1.0"
-.MZS_RESULTS_VERSION <- "1.0.0"
+.MZS_RESULTS_VERSION <- "1.1.0"
 .MZS_RESULTS_MAJOR <- 1L
 .MZS_MANIFEST <- "mzStack.json"
 .MZS_COLUMN_MAP_PATH <- "results/column_map.json"
@@ -300,6 +300,38 @@
         out[[want[k]]] <- if (have[k])
             .mzs_storage_value(want[k], sd[[vars[k]]])
         else rep(NA, length(ids))
+    out
+}
+
+#' Spectra variables of a study, read through the backend by their Spectra
+#' names (`spectrumId`, `acquisitionNum`, `msLevel`, ...), so they do not
+#' depend on how the dataset stores them.
+#'
+#' @return data.frame with `run_id`, `spectrum_id_` and one column per
+#'     variable (`NA` where the dataset lacks it), in manifest run order.
+#'
+#' @noRd
+.mzs_read_spectra_vars <- function(dataset, m, vars, run_ids = NULL) {
+    rf <- .mzs_runs_frame(m)
+    if (!is.null(run_ids))
+        rf <- rf[rf$run_id %in% run_ids, , drop = FALSE]
+    ids <- unlist(lapply(seq_len(nrow(rf)), function(i)
+        rf$uid_base[i] + seq_len(rf$n_spectra[i]) - 1L))
+    out <- data.frame(run_id = rep(rf$run_id, rf$n_spectra),
+                      spectrum_id_ = as.numeric(ids),
+                      stringsAsFactors = FALSE)
+    if (!length(ids)) {
+        for (v in vars) out[[v]] <- logical()
+        return(out)
+    }
+    be <- Spectra::backendInitialize(MsBackendParquet::MsBackendParquet(),
+                                     path = dataset)
+    be <- be[as.character(ids)]
+    have <- intersect(vars, Spectra::spectraVariables(be))
+    sd <- as.data.frame(Spectra::spectraData(be, columns = have),
+                        optional = TRUE)
+    for (v in vars)
+        out[[v]] <- if (v %in% have) sd[[v]] else rep(NA, length(ids))
     out
 }
 

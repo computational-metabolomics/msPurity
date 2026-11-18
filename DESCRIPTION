@@ -101,6 +101,7 @@ Collate:
     'parquet-library.R'
     'parquet-manifest.R'
     'parquet-matching.R'
+    'parquet-msn.R'
     'parquet-purityA.R'
     'parquet-schemas.R'
     'parquet-sqlite.R'
