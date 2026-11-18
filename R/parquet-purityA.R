@@ -586,7 +586,9 @@
                     "ra_pass_flag", "snr_pass_flag"))
             peak[[f]] <- if (f %in% ann) sp[[f]] else NA
     }
-    list(scan = scan, peak = peak, raw_peaks = nrow(sp),
+    ## Raw scan peaks the direct route counted rather than read.
+    uncopied <- as.integer(attr(src$s_peaks, "raw_scan_peaks") %||% 0L)
+    list(scan = scan, peak = peak, raw_peaks = nrow(sp) + uncopied,
          annotated = !is.null(peak))
 }
 
@@ -695,7 +697,8 @@
         if ("sid" %in% names(pk))
             list(construct = "s_peaks.sid",
                  disposition = "dropped_by_configuration",
-                 affected_rows = nrow(pk),
+                 affected_rows = nrow(pk) +
+                     as.integer(attr(pk, "raw_scan_peaks") %||% 0L),
                  reason = "A positional row number with no identity."),
         if (is.null(live))
             list(construct = "processing parameters",
@@ -985,17 +988,7 @@
         study <- normalizePath(study, mustWork = TRUE)
     .mzs_check_destination(path, overwrite, study)
 
-    tmp <- tempfile("mzs-createDatabase-")
-    dir.create(tmp)
-    on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
-    db <- .createDatabase_sqlite(pa = pa, xcmsObj = xcmsObj, xsa = NULL,
-                                 outDir = tmp, grpPeaklist = NA,
-                                 dbName = "staging.sqlite",
-                                 metadata = metadata, xset = xset)
-    if (is.null(db))
-        .mzs_abort("semantic", "createDatabase() could not match the files ",
-                   "of 'pa' and 'xcmsObj'.")
-    src <- .mzs_read_sqlite(db)
+    src <- .mzs_src(pa, xcmsObj, xset, metadata)
     message("Writing the Parquet dataset '", path, "'")
     .mzs_mspurity_convert(
         src, path, study, studyKey, fileMap, overwrite, route = "live-object",
@@ -1003,6 +996,37 @@
         fn = "createDatabase", started = started, inputs = list(),
         parameters = list(), source_uri = NA_character_)
     invisible(normalizePath(path))
+}
+
+#' The msPurity table set of `pa` and `xcmsObj`, built in memory as
+#' createDatabase()'s SQLite writer would store it.
+#'
+#' The option `msPurity.parquet.route = "bridge"` writes and reads back a
+#' temporary SQLite database instead, so the two can be compared.
+#'
+#' @noRd
+.mzs_src <- function(pa, xcmsObj, xset, metadata) {
+    if (!is.na(xset))
+        xcmsObj <- xset
+    route <- getOption("msPurity.parquet.route", "direct")
+    if (identical(route, "bridge")) {
+        tmp <- tempfile("mzs-createDatabase-")
+        dir.create(tmp)
+        on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+        db <- .createDatabase_sqlite(pa = pa, xcmsObj = xcmsObj, xsa = NULL,
+                                     outDir = tmp, grpPeaklist = NA,
+                                     dbName = "staging.sqlite",
+                                     metadata = metadata)
+        prep <- if (!is.null(db)) db
+    } else {
+        prep <- .db_prepare(pa, .db_peaklist(xcmsObj), xcmsObj, xsa = NULL,
+                            metadata = metadata, scanPeaks = "count")
+    }
+    if (is.null(prep))
+        .mzs_abort("semantic", "createDatabase() could not match the files ",
+                   "of 'pa' and 'xcmsObj'.")
+    if (identical(route, "bridge")) .mzs_read_sqlite(prep)
+    else .mzs_src_from_tables(prep)
 }
 
 #' Precursor match details per MS2 scan from frag4feature().

@@ -1,0 +1,273 @@
+{
+  "format": "mzStack",
+  "version": "0.1.0",
+  "generation": 1,
+  "created": "2026-11-18T09:47:17Z",
+  "runs": [
+    {
+      "run_id": "av_all",
+      "kind": "native",
+      "path": "spectra/run_id=av_all",
+      "n_spectra": 1,
+      "uid_base": 1,
+      "ingested_at": 1,
+      "signal": {
+        "layout": "list",
+        "profile": null,
+        "centroid": null,
+        "source": "mspurity:95e0587b-9f89-4b13-96f6-323650629591:av_all"
+      },
+      "projections": {}
+    }
+  ],
+  "uid": "95e0587b-9f89-4b13-96f6-323650629591",
+  "role": "results",
+  "sources": [
+    {
+      "key": "run-dad4c9253e85",
+      "role": "study",
+      "resolution": "external",
+      "uid": null,
+      "path": null,
+      "generation": null,
+      "location": "/Users/ossama-edbali/university/pcb/msPurity/inst/extdata/msn-standards/msPurity_L_tryptophan_6305_MSn.mzML.gz",
+      "runs": null
+    }
+  ],
+  "provenance": [
+    {
+      "id": "act-0001",
+      "generation": 1,
+      "started": "2026-11-18T09:47:16Z",
+      "ended": "2026-11-18T09:47:17Z",
+      "action": "convert",
+      "agent": {
+        "name": "msPurity",
+        "version": "1.99.1",
+        "function": "createDatabase"
+      },
+      "environment": {
+        "language": "R",
+        "language_version": "4.6.0",
+        "platform": "x86_64-apple-darwin20"
+      },
+      "inputs": [
+        {
+          "source": "run-dad4c9253e85"
+        }
+      ],
+      "outputs": {
+        "runs": [
+          "av_all"
+        ],
+        "tables": [
+          "feature",
+          "chromatographic_peak",
+          "chromatographic_peak_feature",
+          "abundance",
+          "assay",
+          "sample",
+          "spectrum_feature",
+          "x_mspurity_scan",
+          "merge_member",
+          "conversion",
+          "tool_provenance",
+          "loss_ledger",
+          "source_identifier"
+        ]
+      },
+      "parameters": {
+        "route": "mspurity:live-object",
+        "fileMap": null,
+        "pass_criteria": {
+          "scan": "purity_pass_flag & intensity_pass_flag & ra_pass_flag & snr_pass_flag",
+          "averaged": "minfrac_pass_flag & snr_pass_flag & ra_pass_flag & minnum_pass_flag"
+        },
+        "precursor_definition": "An averaged spectrum's precursor m/z and retention time are those of its feature (xcms featureDefinitions() mzmed and rtmed, or peakTable() mz and rt), as createDatabase() records them."
+      }
+    }
+  ],
+  "results": {
+    "version": "1.0.0",
+    "column_mapping_path": "results/column_map.json",
+    "runs": {
+      "av_all": {
+        "method": "all",
+        "scope": "dataset",
+        "source": null,
+        "source_run_id": null
+      }
+    },
+    "tables": {
+      "feature": {
+        "entity": "feature",
+        "path": "results/feature/rev-1",
+        "rows": 5,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "exp_mass_to_charge",
+          "feature_id_"
+        ]
+      },
+      "chromatographic_peak": {
+        "entity": "chromatographic_peak",
+        "path": "results/chromatographic_peak/rev-1",
+        "rows": 5,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "run_id",
+          "retention_time_in_seconds",
+          "chromatographic_peak_id_"
+        ],
+        "partitioning": [
+          "run_id"
+        ]
+      },
+      "chromatographic_peak_feature": {
+        "entity": "chromatographic_peak_feature",
+        "path": "results/chromatographic_peak_feature/rev-1",
+        "rows": 5,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "feature_id_",
+          "chromatographic_peak_id_"
+        ]
+      },
+      "abundance": {
+        "entity": "abundance",
+        "path": "results/abundance/rev-1",
+        "rows": 5,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "feature_id_",
+          "assay_id_",
+          "quantity_kind"
+        ],
+        "fill_policy": "dense"
+      },
+      "assay": {
+        "entity": "assay",
+        "path": "results/assay/rev-1",
+        "rows": 1,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "assay_id_"
+        ]
+      },
+      "sample": {
+        "entity": "sample",
+        "path": "results/sample/rev-1",
+        "rows": 1,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "sample_id_"
+        ]
+      },
+      "spectrum_feature": {
+        "entity": "spectrum_feature",
+        "path": "results/spectrum_feature/rev-1",
+        "rows": 18,
+        "parts": 2,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "feature_id_",
+          "ms2_run_id",
+          "ms2_spectrum_id_",
+          "ms2_native_id",
+          "association_id_"
+        ],
+        "partitioning": [
+          "ms2_run_id"
+        ]
+      },
+      "x_mspurity_scan": {
+        "entity": "x_mspurity_scan",
+        "path": "results/x_mspurity_scan/rev-1",
+        "rows": 78,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "ms2_run_id",
+          "ms2_spectrum_id_",
+          "ms2_native_id",
+          "scan_annotation_id_"
+        ],
+        "partitioning": [
+          "ms2_run_id"
+        ]
+      },
+      "merge_member": {
+        "entity": "merge_member",
+        "path": "results/merge_member/rev-1",
+        "rows": 17,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "merged_spectrum_id_",
+          "member_rank"
+        ]
+      },
+      "conversion": {
+        "entity": "conversion",
+        "path": "results/conversion/rev-1",
+        "rows": 1,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "conversion_id_"
+        ]
+      },
+      "tool_provenance": {
+        "entity": "tool_provenance",
+        "path": "results/tool_provenance/rev-1",
+        "rows": 5,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "tool_provenance_id_"
+        ]
+      },
+      "loss_ledger": {
+        "entity": "loss_ledger",
+        "path": "results/loss_ledger/rev-1",
+        "rows": 46,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "loss_ledger_id_"
+        ]
+      },
+      "source_identifier": {
+        "entity": "source_identifier",
+        "path": "results/source_identifier/rev-1",
+        "rows": 115,
+        "parts": 1,
+        "generation": 1,
+        "revision": 1,
+        "sorted_by": [
+          "target_table",
+          "target_key",
+          "source_identifier_id_"
+        ]
+      }
+    }
+  }
+}
