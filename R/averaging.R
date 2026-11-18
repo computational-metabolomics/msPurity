@@ -64,16 +64,16 @@ performHc <- function(mzs, ppm, tolerance = 0){
 # Sorted positive masses have increasing distance across a gap. Thus a gap
 # above the cutoff separates every pair on opposite sides, including ties.
 # Connected runs only locate safe boundaries; clustering remains complete-linkage.
-.hc_blocks <- function(mz, ppm, tolerance, max_size = 5000L) {
+.hc_blocks <- function(mz, ppm, tolerance, blockSize) {
   n <- length(mz)
-  if (n <= max_size)
+  if (n <= blockSize)
     return(data.frame(first = 1L, last = n, one_cluster = FALSE))
 
   adjacent <- .hc_distance(diff(mz),
     (mz[-n] + mz[-1L]) / 2, ppm, tolerance)
   ends <- c(which(adjacent$distance > adjacent$height), n)
   # One vectorized lookup avoids repeatedly scanning all safe boundaries.
-  end_indices <- findInterval(c(0L, ends[-length(ends)]) + max_size, ends)
+  end_indices <- findInterval(c(0L, ends[-length(ends)]) + blockSize, ends)
   blocks <- list()
   first <- 1L
   first_run <- 1L
@@ -89,7 +89,7 @@ performHc <- function(mzs, ppm, tolerance = 0){
         (mz[first] + mz[last]) / 2, ppm, tolerance)
       if (span$distance > span$height)
         stop("A tolerance-connected group of ", last - first + 1L,
-          " peaks exceeds the ", max_size,
+          " peaks exceeds the ", blockSize,
           "-peak clustering limit and cannot be split safely.",
           call. = FALSE)
       one_cluster <- TRUE
@@ -102,7 +102,22 @@ performHc <- function(mzs, ppm, tolerance = 0){
   do.call(rbind, blocks)
 }
 
-clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0){
+# Shared validation for the public execution controls and numerical worker.
+.clustering_controls <- function(cores, blockSize) {
+  values <- list(cores = cores, blockSize = blockSize)
+  for (name in names(values)) {
+    value <- values[[name]]
+    if (!is.numeric(value) || length(value) != 1L || !is.finite(value) ||
+        value < 1 || value > .Machine$integer.max || value != floor(value))
+      stop("'", name, "' must be a positive integer <= ", .Machine$integer.max,
+        ".", call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0,
+    blockSize=5000L){
+  .clustering_controls(cores, blockSize)
   if (clustType == "hc") {
     if (!is.numeric(ppm) || length(ppm) != 1L || !is.finite(ppm) || ppm < 0)
       stop("'ppm' must be a finite, non-negative numeric scalar.", call. = FALSE)
@@ -117,7 +132,7 @@ clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0){
     if (!length(mz))
       return(integer())
 
-    blocks <- .hc_blocks(mz, ppm, tolerance)
+    blocks <- .hc_blocks(mz, ppm, tolerance, blockSize)
     clustlist <- vector("list", nrow(blocks))
     for (i in which(blocks$one_cluster))
       clustlist[[i]] <- rep.int(1L, blocks$last[i] - blocks$first[i] + 1L)

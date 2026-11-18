@@ -1,3 +1,16 @@
+# msPurity 1.99.2
+
+- **Fragment clustering** (#141): matching peaks stay together across
+  processing blocks, preventing incorrect support counts and lost averaged
+  fragments. Blocks whose peaks all fit within one m/z tolerance window are
+  grouped directly, reducing computation and memory use. Groups above
+  `blockSize` that cannot be grouped directly or split without separating
+  matching peaks now raise an error.
+- **Execution controls**: `blockSize` (default 5,000 peaks) sets the clustering
+  block limit in intra/inter/all fragmentation averaging and DIMS
+  averaging/grouping. Explicit `cores` values apply to the current call;
+  omitting `cores` uses the object's stored setting.
+
 # msPurity 1.99.1
 
 - **Retention-time correction in `frag4feature()`** (#137): precursor times

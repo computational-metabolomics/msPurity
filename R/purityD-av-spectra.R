@@ -31,6 +31,8 @@ NULL
 #'
 #' @param Object object; purityD object
 #' @inheritParams averageSpectraSingle
+#' @param cores numeric; Maximum number of workers for this call. If omitted,
+#'   uses \code{Object@@cores} without changing that stored setting.
 #
 #' @aliases averageSpectra
 #' @return  purityD object with averaged spectra
@@ -46,7 +48,9 @@ setMethod(f="averageSpectra", signature="purityD", definition =
                   function(Object, rtscn = "all", scanRange=NA, timeRange = NA,
                            clustType="hc", ppm=1.5, snthr = 3, av="median",
                            missingV="zero", minfrac=0.6667, normTIC=FALSE,
-                           snMeth="median") {
+                           snMeth="median", mzRback="pwiz", cores=1, blockSize=5000L) {
+  if (missing(cores)) cores <- max(1L, Object@cores)
+  .clustering_controls(cores, blockSize)
   Object <- .pd_begin(Object)
   nfiles <- nrow(Object@fileList)
 
@@ -57,20 +61,24 @@ setMethod(f="averageSpectra", signature="purityD", definition =
   }
 
   # Check if multicore
-  if (Object@cores>1){
+  if (cores>1){
     operator <- foreach::'%dopar%'
     # The cores are split across the files. If enough cores available they
     # are also split across the clustering algorithm as well
 
-    if (Object@cores>nfiles){
-      cores4cl = floor(Object@cores/nfiles)
+    if (cores>nfiles){
+      cores4cl = floor(cores/nfiles)
       cores4files <- nfiles
     } else {
       cores4cl = 1
-      cores4files <- Object@cores
+      cores4files <- cores
     }
 
     cl<-parallel::makeCluster(cores4files, type = "SOCK")
+    on.exit({
+      parallel::stopCluster(cl)
+      foreach::registerDoSEQ()
+    }, add = TRUE)
     doSNOW::registerDoSNOW(cl)
 
   }else{
@@ -95,13 +103,11 @@ setMethod(f="averageSpectra", signature="purityD", definition =
                                                       minfrac=minfrac,
                                                       snMeth = snMeth,
                                                       cores = cores4cl,
+                                                      blockSize = blockSize,
                                                       csvFile = msfrOpt,
                                                       normTIC = normTIC,
                                                       mzRback=Object@mzRback) )
 
-  if(Object@cores>1){
-    parallel::stopCluster(cl)
-  }
 
   names(Object@avPeaks$orig) <- Object@fileList[,'name']
   Object@avPeaks$processed <- Object@avPeaks$orig
@@ -116,6 +122,8 @@ setMethod(f="averageSpectra", signature="purityD", definition =
   Object@avParam$rtscn <- rtscn
   Object@avParam$scanRange <- scanRange
   Object@avParam$timeRange <- timeRange
+  Object@avParam$cores <- cores
+  Object@avParam$blockSize <- blockSize
 
   return(.pd_end(Object))
 
@@ -152,7 +160,7 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #' @param av character; What type of averaging to do between peaks
 #' @param missingV character; What to do with missing values (zero or ignore)
 #' @param minfrac numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak
-#' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2
+#' @inheritParams groupPeaksEx
 #' @param csvFile boolean; A csv file can be used as input. Useful for thermo files where the MSFileReader API can extract peaklist. This can consist of an .csv file with
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
 #' @param snMeth character; Type of snMethod to use \['mean', 'median', 'precalc'\]. Precalc only applicable when using the csvFile parameter as TRUE
@@ -179,7 +187,9 @@ averageSpectraSingle <- function(filePth,
                                  csvFile=FALSE,
                                  normTIC = FALSE,
                                  mzRback='pwiz',
-                                 MSFileReader=FALSE){
+                                 MSFileReader=FALSE,
+                                 blockSize=5000L){
+  .clustering_controls(cores, blockSize)
 
   if (MSFileReader){
     message('MSFileReader option deprecated, please use csvFile parameter for further development')
@@ -216,7 +226,8 @@ averageSpectraSingle <- function(filePth,
   peaklist <- peaklist[order(peaklist$mz, decreasing = FALSE),]
 
   # Perform clustering
-  cl <- clustering(peaklist$mz, ppm=ppm, clustType=clustType, cores = cores)
+  cl <- clustering(peaklist$mz, ppm=ppm, clustType=clustType, cores = cores,
+    blockSize = blockSize)
 
   # add groups onto the peaklist
   peaklist <- cbind(peaklist, cl)
@@ -226,6 +237,10 @@ averageSpectraSingle <- function(filePth,
 
   if (cores>1){
     clust <- parallel::makeCluster(cores, type = "SOCK")
+    on.exit({
+      parallel::stopCluster(clust)
+      foreach::registerDoSEQ()
+    }, add = TRUE)
     doSNOW::registerDoSNOW(clust)
     parallelBool <- TRUE
   }else{
@@ -240,9 +255,6 @@ averageSpectraSingle <- function(filePth,
                     totalScans=minnum,
                     normTIC = normTIC)
 
-  if(cores>1){
-    parallel::stopCluster(cl)
-  }
 
   # get rid of the first column (the cluster id)
   if(nrow(averages)>1){
@@ -357,6 +369,9 @@ msfrProcess <- function(filePth, scanRange, snthr, snMeth){
 #' @param ppm numeric = The ppm tolerance to group peaklists
 #' @param clustType = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
 #' @param sampleOnly = if TRUE the sample peaks will only be grouped
+#' @inheritParams groupPeaksEx
+#' @param cores numeric; Maximum number of workers for this call. If omitted,
+#'   uses \code{Object@@cores} without changing that stored setting.
 #'
 #' @aliases groupPeaks
 #' @return data.frame of peaklists grouped together by mz
@@ -370,7 +385,10 @@ msfrProcess <- function(filePth, scanRange, snthr, snMeth){
 #' grpedP <- groupPeaks(ppDIMS)
 #' @export
 setMethod(f="groupPeaks", signature="purityD", definition =
-            function(Object, ppm=3, sampleOnly=FALSE, clustType='hc') {
+            function(Object, ppm=3, sampleOnly=FALSE, clustType='hc',
+                     cores=1, blockSize=5000L) {
+              if (missing(cores)) cores <- max(1L, Object@cores)
+              .clustering_controls(cores, blockSize)
               Object <- .pd_begin(Object)
               if (sampleOnly){
                 idx = Object@sampleIdx
@@ -382,7 +400,8 @@ setMethod(f="groupPeaks", signature="purityD", definition =
                 x <- x[ , which(names(x) %in% c("peakID","mz",'i', 'snr', 'inorm', 'medianPurity'))]
               })
 
-              Object@groupedPeaks <- groupPeaksEx(shrt, cores = Object@cores, clustType = clustType, ppm = ppm)
+              Object@groupedPeaks <- groupPeaksEx(shrt, cores = cores, clustType = clustType,
+                ppm = ppm, blockSize = blockSize)
 
               return(.pd_end(Object))
 
@@ -396,13 +415,19 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #'
 #' @details
 #' With hierarchical clustering, matching peaks stay together. The call stops
-#' with an error if more than 5,000 nearby peaks cannot form one group or be
+#' with an error if more than \code{blockSize} nearby peaks cannot form one group or be
 #' separated without splitting matching peaks.
 #'
 #' @param peak_list list = A list (named) of dataframes consiting of a least the following columns \['peakID', 'mz'\]
 #' @param ppm numeric = The ppm tolerance to group peaklists
 #' @param clustType = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
-#' @param cores = number of cores used for calculation
+#' @param cores numeric; Maximum number of workers, as a positive integer.
+#'   More workers can increase memory use.
+#' @param blockSize numeric; Maximum input peak rows per hierarchical-clustering
+#'   calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+#'   larger groups fitting one tolerance window need no distance matrix. Used only
+#'   for hierarchical clustering; distance-matrix memory grows quadratically
+#'   with this limit.
 #'
 #' @aliases groupPeaksEx
 #' @return data.frame of peaklists grouped together by mz
@@ -413,16 +438,11 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #'     sample = data.frame(peakID = 1:4, mz = c(100.0012, 150.0585, 175.0500, 200.1003)))
 #' grpedP <- groupPeaksEx(peak_list, ppm = 3)
 #' @export
-groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
+groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2,
+    blockSize = 5000L){
+  .clustering_controls(cores, blockSize)
   comb <- plyr::ldply(peak_list)
 
-  if (cores>1) {
-    clust<-parallel::makeCluster(cores)
-    doSNOW::registerDoSNOW(clust)
-    parallelBool = TRUE
-  } else {
-    parallelBool = FALSE
-  }
   # Need to be ordered! important for when clustering (especially if when the peaks have
   # to be split for hc
   comb <- comb[order(comb$mz),]
@@ -430,7 +450,8 @@ groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2){
   mz <- comb$mz
 
   # Cluster the peaks togther
-  comb$cl <- clustering(mz, clustType = clustType, cores = cores, ppm = ppm)
+  comb$cl <- clustering(mz, clustType = clustType, cores = cores, ppm = ppm,
+    blockSize = blockSize)
 
   # Create a dataframe with each file is a column
   sampnms <- unique(comb$.id)

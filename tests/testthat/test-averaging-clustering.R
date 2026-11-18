@@ -1,18 +1,13 @@
 test_that("chunk boundaries keep compatible fragments together", {
     # The former 5000-row split divided the 51 occurrences of m/z 198.
-    blocks <- msPurity:::.hc_blocks(rep(100:199, each = 51), 5, 0)
+    blocks <- msPurity:::.hc_blocks(rep(100:199, each = 51), 5, 0, blockSize = 5000L)
     expect_equal(blocks$first, c(1L, 4999L))
     expect_equal(blocks$last, c(4998L, 5100L))
 
     # Exercise the full worker with small blocks, avoiding a large matrix.
-    plan_blocks <- msPurity:::.hc_blocks
     for (tolerance in c(0, 0.0002)) {
-        observed <- with_mocked_bindings(
-            msPurity:::clustering(rep(c(100, 200), each = 3), ppm = 5,
-                tolerance = tolerance, cores = 1),
-            .hc_blocks = function(mz, ppm, tolerance)
-                plan_blocks(mz, ppm, tolerance, max_size = 4L),
-            .package = "msPurity")
+        observed <- msPurity:::clustering(rep(c(100, 200), each = 3),
+            ppm = 5, tolerance = tolerance, cores = 1, blockSize = 4L)
         expect_identical(observed, rep(1:2, each = 3),
             info = paste("tolerance", tolerance))
     }
@@ -48,13 +43,21 @@ test_that("parallel blocks preserve results and the registered backend", {
     foreach::setDoPar(function(...) stop("Unrelated backend"),
         info = function(data, item) switch(item, name = "existing", workers = 1L))
     on.exit(foreach::registerDoSEQ(), add = TRUE)
-    plan_blocks <- msPurity:::.hc_blocks
-    observed <- with_mocked_bindings(
-        msPurity:::clustering(c(100, 100.0006, 200, 200.0012),
-            ppm = 5, cores = 2),
-        .hc_blocks = function(mz, ppm, tolerance)
-            plan_blocks(mz, ppm, tolerance, max_size = 2L),
-        .package = "msPurity")
+    observed <- msPurity:::clustering(c(100, 100.0006, 200, 200.0012),
+        ppm = 5, cores = 2, blockSize = 2L)
     expect_identical(observed, 1:4)
     expect_identical(foreach::getDoParName(), "existing")
+})
+
+test_that("execution controls require positive whole numbers", {
+    for (name in c("cores", "blockSize")) {
+        for (value in list(0, -1, 1.5, NA_real_, Inf, numeric(), c(1, 2),
+                .Machine$integer.max + 1, TRUE)) {
+            args <- list(mz = numeric(), cores = 1)
+            args[[name]] <- value
+            expect_error(do.call(msPurity:::clustering, args),
+                paste0("'", name, "' must be a positive integer"),
+                info = paste(name, paste(value, collapse = ",")))
+        }
+    }
 })

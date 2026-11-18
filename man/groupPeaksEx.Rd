@@ -4,16 +4,29 @@
 \alias{groupPeaksEx}
 \title{Group peaklists from a list of dataframes}
 \usage{
-groupPeaksEx(peak_list, cores = 1, clustType = "hc", ppm = 2)
+groupPeaksEx(
+  peak_list,
+  cores = 1,
+  clustType = "hc",
+  ppm = 2,
+  blockSize = 5000L
+)
 }
 \arguments{
 \item{peak_list}{list = A list (named) of dataframes consiting of a least the following columns ['peakID', 'mz']}
 
-\item{cores}{= number of cores used for calculation}
+\item{cores}{numeric; Maximum number of workers, as a positive integer.
+More workers can increase memory use.}
 
 \item{clustType}{= if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method}
 
 \item{ppm}{numeric = The ppm tolerance to group peaklists}
+
+\item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
+calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+larger groups fitting one tolerance window need no distance matrix. Used only
+for hierarchical clustering; distance-matrix memory grows quadratically
+with this limit.}
 }
 \value{
 data.frame of peaklists grouped together by mz
@@ -23,7 +36,7 @@ Group a list of dataframes by their m/z values
 }
 \details{
 With hierarchical clustering, matching peaks stay together. The call stops
-with an error if more than 5,000 nearby peaks cannot form one group or be
+with an error if more than \code{blockSize} nearby peaks cannot form one group or be
 separated without splitting matching peaks.
 }
 \examples{
