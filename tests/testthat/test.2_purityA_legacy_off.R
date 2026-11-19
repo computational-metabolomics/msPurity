@@ -12,9 +12,8 @@ test_that("results are unchanged when only the Spectra slots are filled", {
                      tolerance = 1e-12, label = stage)
 })
 
-# The full workflow up to createDatabase(), with allfrag = TRUE so that the
-# corrected all_frag_scans table is rebuilt when the legacy slot is empty.
-.workflow_db <- function(format) {
+# Use allfrag = TRUE so the export rebuilds all_frag_scans when its slot is empty.
+.workflow_inputs <- function() {
     q <- .parity_quiet
     pa <- q(purityA(unname(.lcmsms_paths())))
     xcmsObj <- .golden_xcms("msms_only_xcmsnexp.rds")
@@ -22,18 +21,31 @@ test_that("results are unchanged when only the Spectra slots are filled", {
     pa <- q(filterFragSpectra(pa, plim = 0.7, snr = 3, allfrag = TRUE))
     pa <- q(averageAllFragSpectra(q(averageInterFragSpectra(
         q(averageIntraFragSpectra(pa))))))
-    out <- tempfile("legacy-off-")
-    dir.create(out)
-    list(pa = pa, path = q(createDatabase(pa, xcmsObj, outDir = out,
-                                          dbName = paste0("out.", format),
-                                          format = format)))
+    list(pa = pa, xcmsObj = xcmsObj)
 }
 
+# Each format gets a fresh destination and the same analysis for its slot setting.
+.workflow_db <- local({
+    inputs <- list()
+    function(format, legacy) {
+        old <- options(msPurity.legacySlots = legacy)
+        on.exit(options(old))
+        mode <- if (legacy) "on" else "off"
+        if (is.null(inputs[[mode]]))
+            inputs[[mode]] <<- .workflow_inputs()
+        input <- inputs[[mode]]
+        out <- tempfile("legacy-off-")
+        dir.create(out)
+        path <- .parity_quiet(createDatabase(input$pa, input$xcmsObj, outDir = out,
+                                             dbName = paste0("out.", format),
+                                             format = format))
+        list(pa = input$pa, path = path)
+    }
+})
+
 test_that("the SQLite output does not depend on the legacy slots", {
-    on <- .workflow_db("sqlite")
-    old <- options(msPurity.legacySlots = FALSE)
-    on.exit(options(old))
-    off <- .workflow_db("sqlite")
+    on <- .workflow_db("sqlite", legacy = TRUE)
+    off <- .workflow_db("sqlite", legacy = FALSE)
     expect_identical(length(off$pa@grped_ms2), 0L)
     expect_identical(nrow(off$pa@all_frag_scans), 0L)
     expect_identical(.sqlite_dump(off$path), .sqlite_dump(on$path))
@@ -41,10 +53,8 @@ test_that("the SQLite output does not depend on the legacy slots", {
 
 test_that("the Parquet output does not depend on the legacy slots", {
     skip_if_no_arrow()
-    on <- .workflow_db("parquet")
-    old <- options(msPurity.legacySlots = FALSE)
-    on.exit(options(old))
-    off <- .workflow_db("parquet")
+    on <- .workflow_db("parquet", legacy = TRUE)
+    off <- .workflow_db("parquet", legacy = FALSE)
     tables <- names(.manifest(on$path)$results$tables)
     expect_setequal(names(.manifest(off$path)$results$tables), tables)
     # Tables that record when and where the dataset was written differ, as
