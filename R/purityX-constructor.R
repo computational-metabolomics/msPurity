@@ -33,11 +33,15 @@
 #'
 #' Given an XCMS object get the anticipated precursor purity of the grouped peaks
 #'
-#' @param xset object; xcms object
+#' @param xset An \code{XcmsExperiment}, \code{XCMSnExp} or legacy
+#'   \code{xcmsSet} containing detected chromatographic peaks. Grouped
+#'   prediction also requires feature grouping.
 #' @param cores numeric; number of cores to use
 #' @param purityType character; Area and average used for the purity predictions. Options are
 #'                               "purityFWHMmedian", "purityFWmedian", "purityFWHMmean", "purityFWmean"
-#' @param offsets vector; vector of the isolation window upper and lower offsets
+#' @param offsets Isolation-window offsets in Da, in historical upper, lower
+#'   order. For example, \code{c(0.7, 0.3)} assesses
+#'   \code{[target - 0.3, target + 0.7]}. This order differs from purityA.
 #' @param fileignore vector; vector of files to ignore for the prediction calculation
 #' @param xgroups vector; vector of xcms groups to perform prediction on
 #' @param iwNorm boolean; if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
@@ -47,11 +51,26 @@
 #' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param isotopes boolean; TRUE if isotopes are to be removed
 #' @param im matrix; Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
-#' @param rtrawColumns boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)
+#' @param rtrawColumns Use explicit \code{rt_raw}, \code{rtmin_raw} and
+#'   \code{rtmax_raw} peak bounds when supplied. Otherwise compare current
+#'   chromatographic-peak and spectrum retention times.
 #' @param singleFile numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.
-#' @param saveEIC boolean; If True extracted ion chromatograms will be saved to SQLite database (deprecated: writing
-#'                SQLite raises a deprecation warning; Parquet output stores no chromatograms, extract them with xcms::chromatogram())
+#' @param saveEIC Save chromatograms for grouped predictions to SQLite. Ignored
+#'   when \code{singleFile > 0}. SQLite writing is deprecated. Parquet output
+#'   stores no chromatograms; extract them with \code{xcms::chromatogram()}.
 #' @param sqlitePth character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics
+
+#' @details Predictions use the selected MS1 observations, including their
+#'   surrounding isolation-window signal. Modern inputs retain Spectra subsets
+#'   and pending peak processing. Removing interfering peaks before prediction
+#'   can change the result. Full-width predictions summarize the chromatographic
+#'   peak interval; FWHM predictions use its nearest half-height bounds. Missing
+#'   flanks or absent signal leave FWHM predictions unavailable.
+#'   Acquisition retention times are retained where available. If the caller
+#'   has already applied adjusted times, original acquisition times cannot be
+#'   recovered; the legacy EIC column \code{rt_raw} then contains the available
+#'   input spectrum times.
+#'   Prediction estimates anticipated isolation purity, not fragmentation quality.
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -66,536 +85,293 @@
 #' px <- purityX(xset, singleFile = 1)
 #'
 #' @export
-purityX <- function(xset, purityType="purityFWHMmedian", offsets=c(0.5, 0.5),
-                    fileignore=NULL, cores=1, xgroups=NULL,
-                    iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, plotP=FALSE, mzRback='pwiz', isotopes=FALSE, im=NULL,
-                    singleFile=0, rtrawColumns=FALSE, saveEIC=FALSE, sqlitePth=NULL){
-  .msp_deprecate_mzRback(mzRback)
-
-  # Warn here: EICs may be written by a parallel worker.
-  if (isTRUE(saveEIC) && singleFile <= 0){
-    .msp_deprecate_sqlite("purityX(saveEIC = TRUE)",
-                          paste("Parquet output stores no chromatograms; extract EICs",
-                                "when needed with xcms::chromatogram()."))
-  }
-
-  if (singleFile>0){
-
-    ppLCMS <- xcmsSinglePurity(xset, fileidx=singleFile, offsets=offsets, iwNorm=iwNorm,
-                               iwNormFun=iwNormFun, ilim=ilim, plotP=plotP, mzRback=mzRback,
-                               isotopes=isotopes, im=im, rtrawColumns=rtrawColumns)
-  }else{
-    ppLCMS <- xcmsGroupPurity(xset, offsets=offsets, fileignore=fileignore, purityType=purityType,
-                              cores=cores, xgroups=xgroups, iwNorm=iwNorm, iwNormFun=iwNormFun,
-                              ilim=ilim, plotP=plotP, mzRback=mzRback, isotopes=isotopes, im=im,
-                              rtrawColumns=rtrawColumns, saveEIC=saveEIC, sqlitePth=sqlitePth)
-  }
-
-
-  return(ppLCMS)
-
-}
-
-xcmsSinglePurity <- function(xset, fileidx, offsets, iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im,
-                             rtrawColumns){
-
-  # get the filepaths from the xcms object
-  filepth <- xset@filepaths[fileidx]
-
-  # get xcms peaklist
-  peaklist <- xset@peaks
-
-  peaklist <- peaklist[peaklist[,'sample'] == fileidx,]
-
-  scanpeaks <- list()
-  scanpeaks[[fileidx]] <- getscans(filepth, mzRback)
-
-
-  # Create a purityX object
-  ppLCMS <- new("purityX")
-
-
-  maxscan <- minscan <- rep(NA, nrow(peaklist))
-  id <- seq(1, nrow(peaklist))
-  peaklist <- cbind(peaklist, minscan, maxscan, id)
-
-  # remove peaks that do not have SN value (means that they will be created from
-  #  the 'fillpeaks' function)
-  peaklist <- peaklist[!is.na( peaklist[,'sn']),]
-
-  msLevelTracking <- get_mslevel_tracking(filepth)
-
-  for(i in 1:nrow(peaklist)){
-    peak <- peaklist[i,]
-    lidx <- get_rt_idx(peak, xset, rtrawColumns, msLevelTracking)
-
-    peaklist[i,]['minscan'] <- lidx$rtminidx
-    peaklist[i,]['maxscan'] <- lidx$rtmaxidx
-
-  }
-  dfp <- data.frame(peaklist)
-
-
-  if(plotP){
-    dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
-  }
-
-
-  sgrp <- plyr::ddply(dfp, ~ id, pp4file, scanpeaks,
-                      rtmed=NA, offsets=offsets, iwNorm=iwNorm, iwNormFun=iwNormFun,
-                      ilim=ilim, plotP=plotP, isotopes=isotopes, im=im, singleCheck=FALSE,
-                      msLevelTracking=msLevelTracking)
-
-  ppLCMS@predictions <- sgrp
-
-
-  return(ppLCMS)
-
-}
-
-
-
-xcmsGroupPurity <- function(xset, purityType, offsets,
-                            fileignore, cores, xgroups,
-                            iwNorm, iwNormFun, ilim, plotP, mzRback, isotopes, im, rtrawColumns,
-                            saveEIC, sqlitePth){
-  # get the filepaths from the xcms object
-  filepths <- xset@filepaths
-
-  # get xcms peaklist
-  peaklist <- xset@peaks
-
-  peaklist <- cbind(peaklist, 'c_peak_id'=1:nrow(peaklist))
-
-  # Create a purityX object
-  ppLCMS <- new("purityX")
-
-  # assign a blank grpid column
-  grpid <- rep(0, nrow(peaklist))
-  peaklist <- cbind(peaklist, grpid)
-
-  # Add the associated grpid to each peak
-  for(i in 1:length(xset@groupidx)){
-    if(is.vector(peaklist[xset@groupidx[[i]],])){
-      peaklist[xset@groupidx[[i]],]['grpid'] <- i
-    }else{
-      peaklist[xset@groupidx[[i]],][,'grpid'] <- i
+purityX <- function(xset, purityType = "purityFWHMmedian",
+    offsets = c(0.5, 0.5),
+    fileignore = NULL, cores = 1, xgroups = NULL,
+    iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05, plotP = FALSE,
+    mzRback = "pwiz", isotopes = FALSE, im = NULL,
+    singleFile = 0, rtrawColumns = FALSE, saveEIC = FALSE,
+    sqlitePth = NULL) {
+    scalars <- list(purityType = purityType, offsets = offsets,
+        iwNorm = iwNorm, iwNormFun = iwNormFun, ilim = ilim,
+        isotopes = isotopes, im = im)
+    settings <- scalars
+    .px_validate_parameters(settings)
+    if (!is.numeric(cores) || length(cores) != 1L || !is.finite(cores) ||
+            cores < 1 || cores > .Machine$integer.max ||
+            cores != as.integer(cores))
+        stop("cores must be one positive integer.")
+    for (name in c("plotP", "rtrawColumns", "saveEIC")) {
+        value <- get(name)
+        if (!is.logical(value) || length(value) != 1L || is.na(value))
+            stop(name, " must be TRUE or FALSE.")
     }
-  }
-
-  # remove peaks that have not been grouped together (i.e. only found in 1 file)
-  grouplist <- peaklist[peaklist[,'grpid']>0,]
-
-  # remove peaks that do not have SN value (means that they will be created from
-  #  the 'fillpeaks' function)
-  grouplist <- grouplist[!is.na(grouplist[,'sn']),]
-
-  # Remove files that we do not want to look at
-  if(!is.null(fileignore)){
-    grouplist <- grouplist[!grouplist[,'sample'] %in% fileignore, ]
-  }
-
-
-  # Select which groups to perform the predictions on
-  if(!is.null(xgroups)){
-    grouplist <- grouplist[grouplist[,'grpid'] %in% xgroups, ]
-  }
-
-  if(is.vector(grouplist)){
-    grouplist <- matrix(grouplist, nrow = 1)
-    colnames(grouplist) <- colnames(peaklist)
-  }
-
-  #print(grouplist)
-
-  # create blank columns for additional useful group info
-  rtmedscan <- maxscan <- minscan <- rtmaxraw <- rtminraw <- rtraw <- rep(NA, nrow(grouplist))
-  grouplist <- cbind(grouplist, rtraw, rtminraw, rtmaxraw, minscan, maxscan, rtmedscan)
-
-
-  # Need to get the raw retention time and scans
-  # (i.e. the times prior to retention time correction)
-  msLevelTracking <- get_mslevel_tracking(filepths)
-
-
-  for(i in 1:nrow(grouplist)){
-    peak <- grouplist[i,]
-
-    lidx <- get_rt_idx(peak, xset, rtrawColumns, msLevelTracking)
-
-    grouplist[i,]['rtraw'] <- lidx$rtraw
-    grouplist[i,]['rtminraw'] <- lidx$rtminraw
-    grouplist[i,]['rtmaxraw'] <- lidx$rtmaxraw
-    grouplist[i,]['rtmedscan'] <- lidx$rtmedidx
-    grouplist[i,]['minscan'] <- lidx$rtminidx
-    grouplist[i,]['maxscan'] <- lidx$rtmaxidx
-
-
-  }
-
-  #print(nrow(grouplist))
-
-  # Trn into dataframe for ease of use with plyr
-  grouplist <- data.frame(grouplist)
-
-  # get in order (for visual checking)
-  grouplist <- grouplist[order(grouplist$grpid),]
-
-  # get all the peaks from scans
-  scanpeaks <- getscans(filepths, mzRback)
-
-  # Check if it is going to be multi-core
-  if(cores<=1){
-    para = FALSE
-  }else{
-    cl<-parallel::makeCluster(cores)
-    doSNOW::registerDoSNOW(cl)
-    para = TRUE
-  }
-
-  # if iwNorm is TRUE and iwNormFun is NULL then a gaussian model of the
-  # isolation window will be used to normalise intensity
-  if(is.null(iwNormFun)){
-    # Using a gaussian curve 3 SD either side
-    iwNormFun <- iwNormGauss(minOff=-offsets[1], maxOff=offsets[2])
-  }
-
-  if(plotP){
-    dir.create(file.path(getwd(), "purityXplots"), showWarnings = FALSE)
-  }
-
-
-
-  # perform predictions
-  purityPredictions <- plyr::dlply(grouplist,
-                                   ~ grpid,
-                                   .parallel = para,
-                                   predictPurityLCMSloop,
-                                   average="median",
-                                   scanpeaks=scanpeaks,
-                                   offsets=offsets,
-                                   iwNorm=iwNorm,
-                                   iwNormFun=iwNormFun,
-                                   ilim=ilim,
-                                   plotP=plotP,
-                                   isotopes=isotopes,
-                                   im=im,
-                                   xset=xset,
-                                   saveEIC=saveEIC,
-                                   sqlitePth=sqlitePth,
-                                   msLevelTracking=msLevelTracking)
-
-  if(cores>1){
-    parallel::stopCluster(cl)
-  }
-
-  # Extract the choosen metric
-  dataout <- plyr::ldply(purityPredictions, function(x){ x[,purityType] })
-
-  if(purityType=="purityFWHMmedian"){
-
-    pknmout <- plyr::ldply(purityPredictions, function(x){ x[,"pknmFWHMmedian"] })
-  }else{
-    pknmout <- plyr::ldply(purityPredictions, function(x){ x[,"pknmFWmedian"] })
-  }
-
-  dataout$pknm <- pknmout$median
-
-  # get the median intensity for each group, useful for comparisons
-  xcmsgrpi <- xcms::groupval(xset, value="into")
-  xcmsgrpmz <- xset@groups[,'mzmed']
-
-  if(!is.null(xgroups)){
-    xcmsgrpi <- xcmsgrpi[xgroups,]
-    xcmsgrpmz <- xcmsgrpmz[xgroups]
-  }
-
-  if((is.null(xgroups)) || (length(xgroups)>1)){
-    dataout$i <- apply(xcmsgrpi, 1, median, na.rm = TRUE)
-  }else{
-    dataout$i <- median(xcmsgrpi, na.rm = TRUE)
-  }
-
-  dataout$mz <- xcmsgrpmz
-
-  # save to object
-  ppLCMS@predictions <- dataout
-  ppLCMS@purityType <- purityType
-  ppLCMS@cores <- cores
-  if(is.null(fileignore)){
-    ppLCMS@fileignore <- NA
-  }else{
-    ppLCMS@fileignore <- fileignore
-  }
-
-  return(ppLCMS)
-
-
-}
-
-
-get_rt_idx <- function(peak, xset, rtrawColumns, msLevelTracking){
-
-  sid <- as.numeric(peak['sample'])
-  raw <- xset@rt$raw[[sid]]
-  corrected <- xset@rt$corrected[[sid]]
-
-  if (rtrawColumns){
-    rtmedraw <- as.numeric(peak['rt_raw'])
-    rtminraw <- as.numeric(peak['rtmin_raw'])
-    rtmaxraw <- as.numeric(peak['rtmax_raw'])
-    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmedraw]
-    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtminraw]
-    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmaxraw]
-
-
-  }else{
-    rtmed <- as.numeric(peak['rt'])
-    rtmin <- as.numeric(peak['rtmin'])
-    rtmax <- as.numeric(peak['rtmax'])
-    rtmedraw <- raw[which(corrected==rtmed)]
-    rtminraw <- raw[which(corrected==rtmin)]
-    rtmaxraw <- raw[which(corrected==rtmax)]
-    rtmedidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmedraw]
-    rtminidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtminraw]
-    rtmaxidx <- msLevelTracking$scan[msLevelTracking$retentionTime==rtmaxraw]
-  }
-
-  return(list('rtmedidx'=rtmedidx, 'rtminidx'=rtminidx, 'rtmaxidx'=rtmaxidx,
-              'rtraw'=rtmedraw, 'rtminraw'=rtminraw,
-              'rtmaxraw'=rtmaxraw))
-
-}
-
-predictPurityLCMSloop <- function(grp, average="median", scanpeaks,
-                                  offsets, iwNorm, iwNormFun, ilim,
-                                  plotP, isotopes, im, xset, saveEIC,
-                                  sqlitePth, msLevelTracking){
-
-  # Need to loop through for each file in each group
-  grp <- data.frame(grp)
-  rtmed <- median(grp$rt)
-
-
-  sgrp <- plyr::ddply(grp, ~ sample, pp4file, scanpeaks,
-                      rtmed, offsets, iwNorm, iwNormFun, ilim, plotP, isotopes, im, xset,
-                      singleCheck=TRUE, saveEIC=saveEIC, sqlitePth=sqlitePth, msLevelTracking)
-
-  puritySummary <- apply(sgrp[,2:ncol(sgrp)], 2, function(x){
-    x <- na.omit(x)
-    c("mean"=mean(x), "median"=median(x), "sd"=sd(x), "stde"=stde(x), "RSD"=CV(x))
-  })
-
-
-}
-
-pp4file <- function(grpi, scanpeaks, rtmed, offsets, iwNorm, iwNormFun, ilim,
-                    plotP, isotopes, im, xset, singleCheck=TRUE, saveEIC=FALSE,
-                    sqlitePth=NULL, msLevelTracking){
-
-  # Sometimes XCMS groups more than 1 peak from the same file in the XCMS
-  # grouping stage.
-  #we get the peak closet to the median retention time if this happens
-  if(nrow(grpi)>1 | singleCheck==TRUE){
-    mtchidx <- which(abs(grpi$rt-rtmed)==min(abs(grpi$rt-rtmed)))
-    # if two rt the same then pick the one with the highest intensity
-    if(length(mtchidx)>1){
-      mtchidx <- which(abs(grpi$rt-rtmed)==min(abs(grpi$rt-rtmed)))
-
+    .msp_deprecate_mzRback(mzRback)
+    if (isTRUE(saveEIC) && singleFile <= 0)
+        .msp_deprecate_sqlite("purityX(saveEIC = TRUE)",
+            paste("Parquet output stores no chromatograms; extract EICs",
+                "when needed with xcms::chromatogram()."))
+    if (settings$iwNorm && is.null(settings$iwNormFun)) {
+        half_width <- sum(settings$offsets) / 2
+        settings$iwNormFun <- iwNormGauss(minOff = -half_width,
+            maxOff = half_width)
     }
-    # if still more than one, (i.e. intensitys are the same,
-    #just pick the first in list)
-    if(length(mtchidx)>1){
-      mtchidx <- mtchidx[1]
+    prepared <- .px_prepare(xset, singleFile, fileignore, xgroups,
+        rtrawColumns)
+    chosen <- .px_choose_targets(prepared$targets, singleFile > 0)
+    targets <- chosen$targets
+    workers <- if (!nrow(targets)) 0L else if (singleFile > 0) 1L else
+        min(as.integer(cores), nrow(targets))
+    tasks <- split(targets, seq_len(nrow(targets)))
+    if (workers > 1L) {
+        cl <- parallel::makeCluster(workers)
+        on.exit(parallel::stopCluster(cl), add = TRUE)
+        predictions <- parallel::parLapply(cl, tasks, .px_predict_one,
+            prepared = prepared, settings = settings)
+    } else {
+        predictions <- lapply(tasks, .px_predict_one,
+            prepared = prepared, settings = settings)
     }
-    target <- grpi[mtchidx, ]
-  }else{
-    target <- grpi
-
-  }
-
-  # Get the peaks from each scan of the region of interest (ROI)
-  roi_scns <- scanpeaks[[target$sample]][target$minscan:target$maxscan]
-
-  mzmax <- target$mz + offsets[1]
-  mzmin <- target$mz - offsets[2]
-
-
-
-  #get purity for that region
-  dfp <- plyr::ldply(roi_scns, pcalc,
-                     mzmin=mzmin,
-                     mzmax=mzmax,
-                     mztarget=target$mz,
-                     iwNorm=iwNorm,
-                     iwNormFun=iwNormFun,
-                     ilim=ilim,
-                     targetMinMZ=target$mzmin,
-                     targetMaxMZ=target$mzmax,
-                     isotopes=isotopes,
-                     im=im)
-
-  colnames(dfp) <- c("purity", "pknm")
-
-  scan <- seq(target$minscan, target$maxscan)
-  dfp <- cbind(dfp, scan)
-
-  intensity <- plyr::ldply(roi_scns, getEic, target)
-
-  dfp <- cbind(dfp, "intensity"=intensity[,1])
-
-  # Calculate FWHM
-  fwhm <- calculateFWHM(dfp)
-
-  # we wan't to ignore any ms2 or above scans for any of the proceeding calculations
-  msLevelTrackingShrt <- msLevelTracking[msLevelTracking$sample==target$sample,]
-
-  dfp <- merge(x = dfp, y = msLevelTrackingShrt, by = "scan")
-  dfp <- dfp[dfp$msLevel==1, ]
-
-  mslevel1_indx <- as.numeric(rownames(dfp))
-
-  if(plotP){
-    if (singleCheck){
-      tid = target$grpid
-    }else{
-      tid = target$id
+    if (plotP && length(predictions)) {
+        dir.create("purityXplots", showWarnings = FALSE)
+        for (prediction in predictions) .px_plot(prediction)
     }
-    plotnm <- paste(paste(tid, "sample", target$sample, "mz",
-                          round(target$mz, 3), "rt", round(target$rt, 3), sep="_"),
-                    "png", sep=".")
+    if (saveEIC && singleFile <= 0 && length(predictions))
+        .px_write_eics(predictions, sqlitePth)
 
-    tic <- plyr::ldply(roi_scns, getTic, target = target, minOff = offsets[1],
-                       maxOff = offsets[2])
-    tic <- tic[mslevel1_indx,]
-
-    contamination <- tic-dfp$intensity
-    maxi <- max(c(max(contamination), max(dfp$intensity)))
-
-    fpth <- file.path(getwd(),"purityXplots", plotnm)
-    png(fpth)
-
-
-
-
-    plot(dfp$scan, dfp$intensity, type = "l", col="red", lwd=2.5,
-         xlab="scan number", ylab="intensity", ylim=c(0, maxi))
-
-    lines(dfp$scan, contamination, col="black", lwd=2.5)
-    legend("topright", # places a legend at the appropriate place
-           lwd=c(2.5,2.5),
-           c("EIC of feature", "contamination"),
-           col=c("red", "black"))
-    abline(v=fwhm[1])
-    abline(v=fwhm[2])
-    dev.off()
-  }
-
-  if (saveEIC){
-    if (!is.null(sqlitePth)){
-      con <- DBI::dbConnect(RSQLite::SQLite(), sqlitePth)
-    }else{
-      con <- DBI::dbConnect(RSQLite::SQLite(),'eics.sqlite')
+    object <- new("purityX")
+    object@predictions <- .px_prediction_table(predictions, prepared$groups,
+        settings$purityType, singleFile > 0)
+    if (singleFile <= 0) {
+        object@purityType <- settings$purityType
+        object@cores <- cores
+        object@fileignore <- if (is.null(fileignore)) NA else fileignore
     }
+    object
+}
 
-    colnames(dfp)[colnames(dfp)=='retentionTime'] = 'rt_raw'
-    #dfp$rt_raw <- xset@rt$raw[[target$sample]][dfp$scan]
+.px_choose_targets <- function(targets, single) {
+    empty <- data.frame(output_id = numeric(), sample = numeric(),
+        c_peak_id = numeric(), reason = character())
+    if (!nrow(targets)) return(list(targets = targets, excluded = empty))
+    if (single) {
+        targets$output_id <- targets$id
+        return(list(targets = targets, excluded = empty))
+    }
+    targets$output_id <- targets$grpid
+    chosen <- integer()
+    for (group in unique(targets$grpid)) {
+        rows <- which(targets$grpid == group)
+        middle <- median(targets$rt[rows])
+        for (sample in unique(targets$sample[rows])) {
+            members <- rows[targets$sample[rows] == sample]
+            # Preserve the first occurrence when RT distances tie.
+            distances <- abs(targets$rt[members] - middle)
+            closest <- if (all(is.na(distances))) 1L else which.min(distances)
+            chosen <- c(chosen, members[closest])
+        }
+    }
+    excluded <- targets[setdiff(seq_len(nrow(targets)), chosen),
+        c("output_id", "sample", "c_peak_id"), drop = FALSE]
+    excluded$reason <- rep("alternate_peak", nrow(excluded))
+    list(targets = targets[chosen, , drop = FALSE], excluded = excluded)
+}
 
-    dfp$rt_corrected <- xset@rt$corrected[[target$sample]][which(xset@rt$raw[[target$sample]] %in% dfp$rt_raw)]
+.px_predict_one <- function(target, prepared, settings) {
+    metric_names <- c("purityFWHMmedian", "purityFWmedian",
+        "pknmFWHMmedian", "pknmFWmedian", "purityFWHMmean", "purityFWmean")
+    metrics <- stats::setNames(rep(NA_real_, length(metric_names)),
+        metric_names)
+    result <- list(target = target, metrics = metrics, trace = data.frame(),
+        observations = prepared$tracking[FALSE, , drop = FALSE],
+        fwhm = c(NA_real_, NA_real_), status = "invalid_rt_bounds",
+        fwhm_status = "unavailable")
+    if ("observation_status" %in% names(target) &&
+            target$observation_status != "available") {
+        result$status <- target$observation_status
+        return(result)
+    }
+    bounds <- unlist(target[c("minscan", "maxscan")], use.names = FALSE)
+    if (length(bounds) != 2L || any(!is.finite(bounds)) ||
+            bounds[1] > bounds[2])
+        return(result)
+    tracking <- prepared$tracking
+    sample_rows <- which(tracking$sample == target$sample)
+    if ("scan_positions" %in% names(target)) {
+        use <- sample_rows[match(target$scan_positions[[1L]],
+                tracking$scan[sample_rows])]
+        if (anyNA(use))
+            stop("Prepared purityX observations have missing identities.")
+    } else {
+        use <- sample_rows[tracking$msLevel[sample_rows] == 1L &
+                tracking$scan[sample_rows] >= bounds[1] &
+                tracking$scan[sample_rows] <= bounds[2]]
+    }
+    use <- use[order(tracking$rt_corrected[use], tracking$scan[use])]
+    observed <- tracking[use, , drop = FALSE]
+    result$observations <- observed
+    if (!length(use)) {
+        result$status <- "no_ms1_observations"
+        return(result)
+    }
+    arrays <- prepared$scanpeaks[[target$sample]][observed$scan]
+    lower <- target$mz - settings$offsets[2]
+    upper <- target$mz + settings$offsets[1]
+    scores <- vapply(arrays, pcalc, numeric(2L), mzmin = lower,
+        mzmax = upper, mztarget = target$mz, iwNorm = settings$iwNorm,
+        iwNormFun = settings$iwNormFun, ilim = settings$ilim,
+        targetMinMZ = target$mzmin, targetMaxMZ = target$mzmax,
+        isotopes = settings$isotopes, im = settings$im)
+    intensity <- vapply(arrays, getEic, numeric(1L), target = target)
+    window_signal <- vapply(arrays, function(peaks) {
+        if (is.null(peaks) || !nrow(peaks)) return(c(0, 0))
+        isolated <- peaks[peaks[, 1] > lower & peaks[, 1] < upper,
+            , drop = FALSE]
+        c(sum(isolated[, 2]), getEic(isolated, target))
+    }, numeric(2L))
+    trace <- data.frame(scan = observed$scan, purity = scores[1, ],
+        pknm = scores[2, ], intensity = intensity,
+        sample = observed$sample, msLevel = observed$msLevel,
+        acquisitionNum = observed$acquisitionNum,
+        retentionTime = observed$retentionTime,
+        rt_corrected = observed$rt_corrected,
+        isolationIntensity = window_signal[1, ],
+        isolatedTargetIntensity = window_signal[2, ])
+    positions <- seq_len(nrow(trace))
+    fwhm_rows <- calculateFWHM(data.frame(scan = positions,
+            intensity = trace$intensity))
+    within <- if (all(is.finite(fwhm_rows)))
+        positions >= fwhm_rows[1] & positions <= fwhm_rows[2] else
+        rep(FALSE, nrow(trace))
+    fwhm <- if (all(is.finite(fwhm_rows))) trace$scan[fwhm_rows] else
+        c(NA_real_, NA_real_)
+    summarise <- function(x, fun) {
+        x <- x[!is.na(x)]
+        if (length(x)) fun(x) else NA_real_
+    }
+    metrics[] <- c(summarise(trace$purity[within], median),
+        summarise(trace$purity, median),
+        summarise(trace$pknm[within], median), summarise(trace$pknm, median),
+        summarise(trace$purity[within], mean), summarise(trace$purity, mean))
+    result$metrics <- metrics
+    result$trace <- trace
+    result$fwhm <- fwhm
+    result$status <- if (any(!is.na(trace$purity))) "available" else
+        "no_usable_purity"
+    result$fwhm_status <- if (all(is.finite(fwhm))) "available" else
+        "missing_flank_or_signal"
+    result
+}
 
-    dfp$grpid <- target$grpid
-    dfp$c_peak_id <- target$c_peak_id
-    dfp$eicidi <- 1:nrow(dfp)
-    DBI::dbWriteTable(con, name='eics', value=dfp, row.names=FALSE, append=TRUE)
-    #custom_dbWriteTable(name_pk = 'eicid', fks=NA, table_name = 'eic', df=dfp, con=con)
-  }
-
-
-  purityFWHMmedian <- median(dfp$purity[dfp$scan>=fwhm[1] & dfp$scan<=fwhm[2]],
-                             na.rm = TRUE)
-
-  purityFWmedian <- median(dfp$purity, na.rm = TRUE)
-
-
-  pknmFWHMmedian <- median(dfp$pknm[dfp$scan>=fwhm[1] & dfp$scan<=fwhm[2]],
-                           na.rm = TRUE)
-
-  pknmFWmedian <- median(dfp$pknm, na.rm = TRUE)
-
-  purityMedianRT <- dfp[dfp$time==target$rtmedscan,]$purity
-
-
-
-
-
-  return(c("purityFWHMmedian"=purityFWHMmedian, "purityFWmedian"=purityFWmedian,
-           "purityMedianRT"=purityMedianRT, "pknmFWHMmedian"=pknmFWHMmedian,
-           "pknmFWmedian"=pknmFWmedian))
-
+.px_prediction_table <- function(predictions, groups, purityType, single) {
+    single_fields <- c("purityFWHMmedian", "purityFWmedian",
+        "pknmFWHMmedian", "pknmFWmedian")
+    if (grepl("mean$", purityType))
+        single_fields <- c(single_fields, purityType)
+    if (single) {
+        out <- as.data.frame(matrix(numeric(), nrow = 0L,
+                ncol = length(single_fields) + 1L))
+        names(out) <- c("id", single_fields)
+        if (!length(predictions)) return(out)
+        out <- do.call(rbind, lapply(predictions, function(x) {
+            as.data.frame(as.list(c(id = as.numeric(x$target$id),
+                        x$metrics[single_fields])))
+        }))
+        rownames(out) <- NULL
+        return(out)
+    }
+    out <- data.frame(grpid = numeric(), mean = numeric(), median = numeric(),
+        sd = numeric(), stde = numeric(), RSD = numeric(), pknm = numeric(),
+        i = numeric(), mz = numeric())
+    if (!nrow(groups)) return(out)
+    group_ids <- unique(groups$grpid)
+    prediction_groups <- vapply(predictions, function(x) x$target$grpid,
+        numeric(1L))
+    members_by_group <- split(predictions, factor(prediction_groups,
+            levels = group_ids))
+    group_index <- match(groups$grpid, group_ids)
+    rows <- lapply(seq_len(nrow(groups)), function(i) {
+        group <- groups[i, , drop = FALSE]
+        members <- members_by_group[[group_index[i]]]
+        values <- vapply(members, function(x) x$metrics[[purityType]],
+            numeric(1L))
+        values <- values[!is.na(values)]
+        stat <- if (length(values)) c(mean(values), median(values), sd(values),
+            stde(values), CV(values)) else rep(NA_real_, 5L)
+        count_name <- if (startsWith(purityType, "purityFWHM"))
+            "pknmFWHMmedian" else "pknmFWmedian"
+        counts <- vapply(members, function(x) x$metrics[[count_name]],
+            numeric(1L))
+        count <- if (any(!is.na(counts))) median(counts, na.rm = TRUE) else
+            NA_real_
+        as.data.frame(as.list(stats::setNames(c(as.numeric(group$grpid), stat,
+                        count, group$i, group$mz), names(out))))
+    })
+    do.call(rbind, rows)
 }
 
 
-calculateFWHM <- function(df){
-  # Calculate FWHM
-  xmax <- df$scan[df$i==max(df$intensity)]
-  x1 <- df$scan[df$scan < xmax][which.min(abs(df$intensity[df$scan < xmax]-max(df$intensity)/2))]
-  x2 <- df$scan[df$scan > xmax][which.min(abs(df$intensity[df$scan > xmax]-max(df$intensity)/2))]
-  # http://stackoverflow.com/questions/25015410/r-find-full-width-at-half-maximum-for-a-gausian-density-distribution
-  # stack overflow explanation as to performing FWHM for any kind of peak shape (not specifically for gaussian)
-  return(c(x1, x2))
-
+.px_plot <- function(prediction) {
+    trace <- prediction$trace
+    if (!nrow(trace)) return(invisible(NULL))
+    target <- prediction$target
+    name <- paste(target$output_id, "sample", target$sample, "mz",
+        round(target$mz, 3), "rt", round(target$rt, 3), sep = "_")
+    contamination <- trace$isolationIntensity - trace$isolatedTargetIntensity
+    upper <- max(c(trace$intensity, contamination), na.rm = TRUE)
+    if (!is.finite(upper) || upper <= 0) upper <- 1
+    grDevices::png(file.path("purityXplots", paste0(name, ".png")))
+    on.exit(grDevices::dev.off())
+    graphics::plot(trace$scan, trace$intensity, type = "l", col = "red",
+        lwd = 2.5, xlab = "scan number", ylab = "intensity", ylim = c(0, upper))
+    graphics::lines(trace$scan, contamination, col = "black", lwd = 2.5)
+    graphics::legend("topright", lwd = c(2.5, 2.5),
+        legend = c("EIC of feature", "contamination"), col = c("red", "black"))
+    if (all(is.finite(prediction$fwhm))) graphics::abline(v = prediction$fwhm)
+    invisible(NULL)
 }
 
-getEic <- function(roi_scn, target){
-  if(is.null(roi_scn)){
-    return(0)
-  }else if(nrow(roi_scn)==0){
-    return(0)
-  }else{
-    roi_scn <- data.frame(roi_scn)
-  }
-
-  sub <- roi_scn[(roi_scn[,1]>=target$mzmin) & (roi_scn[,1]<=target$mzmax),]
-
-  if(nrow(sub)>1){
-    # Use the mz value nearest to the
-    closeMtch <- sub[which.min(abs(sub[,1] - target$mz)),]
-    return(unlist(closeMtch[2]))
-  }else if(nrow(sub)==0){
-    return(0)
-  }else{
-    return(sub[,2])
-  }
+.px_write_eics <- function(predictions, sqlitePth) {
+    path <- if (is.null(sqlitePth)) "eics.sqlite" else sqlitePth
+    con <- DBI::dbConnect(RSQLite::SQLite(), path)
+    on.exit(DBI::dbDisconnect(con))
+    for (prediction in predictions) {
+        dfp <- prediction$trace
+        if (!nrow(dfp)) next
+        dfp$isolationIntensity <- NULL
+        dfp$isolatedTargetIntensity <- NULL
+        dfp$sample <- as.character(dfp$sample)
+        names(dfp)[names(dfp) == "retentionTime"] <- "rt_raw"
+        # Retain the existing SQLite table's column order.
+        dfp <- dfp[, c("scan", "purity", "pknm", "intensity", "sample",
+                "msLevel", "acquisitionNum", "rt_raw", "rt_corrected")]
+        dfp$grpid <- as.numeric(prediction$target$grpid)
+        dfp$c_peak_id <- as.numeric(prediction$target$c_peak_id)
+        dfp$eicidi <- seq_len(nrow(dfp))
+        DBI::dbWriteTable(con, "eics", dfp, row.names = FALSE, append = TRUE)
+    }
+    invisible(NULL)
 }
 
-
-getTic <- function(roi_scn, target, minOff, maxOff ){
-  roi_scn <- data.frame(roi_scn)
-
-  sub <- roi_scn[(roi_scn[,1]>=target$mz-minOff) & (roi_scn[,1]<=target$mzmax+maxOff),]
-
-  sum(sub[,2])
+calculateFWHM <- function(df) {
+    if (nrow(df) < 3L || any(!is.finite(df$intensity)) ||
+            max(df$intensity) <= 0) return(c(NA_real_, NA_real_))
+    apex <- which.max(df$intensity)
+    left <- which(df$scan < df$scan[apex])
+    right <- which(df$scan > df$scan[apex])
+    if (!length(left) || !length(right)) return(c(NA_real_, NA_real_))
+    half <- df$intensity[apex] / 2
+    c(df$scan[left[which.min(abs(df$intensity[left] - half))]],
+        df$scan[right[which.min(abs(df$intensity[right] - half))]])
 }
 
-
-
-stde <- function(x) sd(x)/sqrt(length(x))
-CV <- function(x) (sd(x)/mean(x))*100
-
-get_mslevel_tracking <- function(filepths){
-  msLevelTracking <- getmrdf_standard_all(filepths)
-  msLevelTracking <- msLevelTracking[,c('seqNum','sample', 'msLevel', 'acquisitionNum', 'retentionTime')]
-  colnames(msLevelTracking)[1] <- 'scan'
-  return(msLevelTracking)
+getEic <- function(roi_scn, target) {
+    if (is.null(roi_scn) || !nrow(roi_scn)) return(0)
+    within <- which(roi_scn[, 1] >= target$mzmin & roi_scn[, 1] <= target$mzmax)
+    if (!length(within)) return(0)
+    chosen <- within[which.min(abs(roi_scn[within, 1] - target$mz))]
+    unname(roi_scn[chosen, 2])
 }
 
-getmrdf_standard_all <- function(filepths, backend=NULL){
-  mrdf <- plyr::adply(filepths, 1, getmrdf_standard, backend=backend)
-  colnames(mrdf)[1] <- 'sample'
-  return(mrdf)
-}
-
-# get the standard mrdf
-getmrdf_standard <- function(filepth, backend=NULL){
-  return(.msp_header(.msp_read(filepth)))
-}
+stde <- function(x) sd(x) / sqrt(length(x))
+CV <- function(x) (sd(x) / mean(x)) * 100
