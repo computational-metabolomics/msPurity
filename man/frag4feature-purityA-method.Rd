@@ -127,6 +127,8 @@ Returns a purityA object (pa) with the following slots populated:
 \item pa@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here.
 Besides the XCMS columns and the precursor details, it holds
 \itemize{
+\item linkId, an integer identifying this association occurrence through filtering,
+reordering and averaging. Multiple occurrences can refer to the same pid.
 \item precurMtchRTadj: the MS/MS time on the adjusted scale, as compared with the window
 \item rtMapStatus: the mapping status of the file (see above)
 \item precurMzSource: the precursor m/z used (iMz, aMz or precursorMZ)

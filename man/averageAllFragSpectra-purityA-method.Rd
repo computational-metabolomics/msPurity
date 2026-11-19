@@ -17,7 +17,8 @@ and across MS data files (ignoring intra and inter relationships)}
   sumi = TRUE,
   rmp = FALSE,
   cores = 1,
-  blockSize = 5000L
+  blockSize = 5000L,
+  param = NULL
 )
 }
 \arguments{
@@ -39,22 +40,28 @@ and across MS data files (ignoring intra and inter relationships)}
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
 
-\item{cores}{numeric; Maximum number of workers for this call. If omitted,
-uses \code{pa@cores}; an explicit value leaves that stored setting unchanged.}
+\item{cores}{Maximum number of workers; defaults to \code{pa@cores}.
+Overrides apply to the current call. With \code{param}, workers process
+independent clustering blocks; a single block runs directly.}
 
 \item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
 calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
 larger groups fitting one tolerance window need no distance matrix. Used only
 for hierarchical clustering; distance-matrix memory grows quadratically
 with this limit.}
+
+\item{param}{NULL, one \code{\link{AverageFragSpectraParam}} object or a
+named list of them, averaged independently.}
 }
 \value{
 Returns a purityA object (pa) with the following slots now with data
 \itemize{
 \item pa@avSpectra: the averaged spectra as a \code{Spectra} object, one spectrum per grouped feature, averaging
-level and file, with the averaging statistics as peak variables.
+level and file, with the averaging statistics as peak variables. With \code{param}, a feature can have
+several all-spectrum averages, one per parameter set and group.
 \item pa@av_spectra: the legacy list of averaged spectra, filled while \code{options(msPurity.legacySlots = TRUE)}.
-E.g. averagedSpectra(pa)$\code{1}$av_all gives the average spectra for grouped feature 1.
+E.g. averagedSpectra(pa)$\code{1}$av_all gives the average spectra for grouped feature 1. Averages computed with
+\code{param} are stored only in pa@avSpectra.
 \item pa@av_all_params: The parameters used are recorded here
 }
 
@@ -82,6 +89,8 @@ Each averaged spectrum in the legacy list contains the following columns (peak v
 Average and filter fragmentation spectra for each XCMS feature within and across MS data files (ignoring intra and inter relationships).
 
 The averaging is performed using hierarchical clustering of the m/z values of each peaks, where m/z values within a set ppm tolerance will be clustered. The clustered peaks are then averaged (or summed).
+With \code{param}, the tolerance can also include an absolute part (see
+\code{\link{AverageFragSpectraParam}}).
 
 The fragmentation can be filtered on the averaged spectra (with the arguments snr, rsd, minfrac, ra)
 
@@ -101,6 +110,52 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 \item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> \strong{averageAllFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
+
+\strong{Averaging with parameter objects}
+
+With \code{param}, each parameter set averages the feature-linked MS2, MS3
+and MS4 spectra it selects and keeps incompatible acquisition conditions and
+precursor paths apart (see \code{\link{AverageFragSpectraParam}}), so a
+feature can have several averaged spectra. The settings come from the
+parameter objects: an explicitly supplied \code{minfrac}, \code{minnum},
+\code{ppm}, \code{snr}, \code{ra}, \code{av} or \code{sumi} must agree
+with them. \code{rmp} and \code{cores} apply to the whole call.
+
+These averages are available from \code{averagedSpectra(pa, legacy = FALSE)}.
+Each records its parameter set (\code{msPurityParameterSet}; a single
+object is named \code{"default"}) and its group within the feature
+(\code{msPurityAverageGroup}, \code{"<set>/<number>"}). With
+\code{rmp = FALSE}, output peaks include a \code{pass_flag} column:
+\code{1} for peaks passing the averaging thresholds and \code{0} for
+failed peaks. Retrieve it with \code{Spectra::peaksData(s,
+columns = c("mz", "intensity", "pass_flag"))}, where \code{s} is the
+averaged Spectra object. With \code{rmp = TRUE}, failed peaks are removed.
+Empty peak arrays indicate that no output peaks are stored.
+Each averaged spectrum has an object-local character \code{spectrumId}. Use it with
+\code{\link{averageMembers}} to inspect selected inputs and
+\code{\link{averagePeakMembers}} to trace stored peaks. Measured spectra
+keep their existing spectrum identifiers. Use \code{msPurityProcessingId}
+to retrieve the result's processing record with
+\code{\link{processingHistory}}. In the returned Spectra,
+\code{msPurityContributors} lists original occurrences supporting stored
+peaks, and \code{msPurityClusterContributors} maps clusters to those
+occurrences. The
+acquisition summaries, precursor m/z, retention time and
+\code{msPurityPrecursorPath} (MS3 and MS4 precursor m/z) describe the
+contributing spectra; \code{msPurityAncestorConditions} gives the
+acquisition conditions of the earlier stages of MS3 and MS4 averages.
+A feature linked to the same spectrum more than once contributes it once
+per link, as without \code{param}.
+
+The legacy list returned by \code{averagedSpectra(pa)}, \code{createMSP()}
+with averaged spectra and \code{createDatabase()} hold one average per
+feature, level and file; they stop with an error while averages computed
+with \code{param} are present. For MS2-only feature links, averaging again
+without \code{param} replaces them; averaging without \code{param} does not
+support MS3/MS4 feature links. Averaging without \code{param} stops with an
+error while averages computed with \code{param} remain at another level.
+\code{averageIntraFragSpectra()} and \code{averageInterFragSpectra()} accept
+\code{param} in the same way.
 }
 \details{
 With hierarchical clustering, matching peaks stay together. The call stops
@@ -137,5 +192,13 @@ pa <- readRDS(system.file("extdata", "tests", "purityA",
                           "3_filterFragSpectra_pa.rds", package="msPurity"))
 pa <- averageAllFragSpectra(pa)
 
+## Keep activation types apart while combining collision energies
+pa_param <- averageAllFragSpectra(pa,
+    param = AverageFragSpectraParam(combine = "collisionEnergy"))
+sp <- averagedSpectra(pa_param, legacy = FALSE)
+i <- 1L
+averageMembers(pa_param, sp$spectrumId[i])
+sp$msPurityContributors[[i]]
+sp$msPurityClusterContributors[[i]]
 
 }

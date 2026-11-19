@@ -103,6 +103,10 @@ for (compound in c("tryptophan", "kynurenine")) local({
             convert2RawRT = FALSE)
         actual <- rejected@grped_df
         rownames(actual) <- rownames(expected) <- NULL
+        # Occurrence IDs belong to each independent association call.
+        expect_type(actual$linkId, "integer")
+        expect_false(anyNA(actual$linkId) || anyDuplicated(actual$linkId) > 0L)
+        actual$linkId <- expected$linkId <- NULL
         expect_identical(actual, expected)
         expect_true(all(Spectra::msLevel(rejected@fragSpectra) > 2L))
         history <- processingHistory(rejected, "frag4feature")

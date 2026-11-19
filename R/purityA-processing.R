@@ -48,6 +48,17 @@
         if (!is.character(record$input$previous_steps) ||
                 !all(record$input$previous_steps %in% earlier))
             stop("Processing history refers to an unknown or later input step.")
+        for (side in c("input", "output")) {
+            refs <- record[[side]]$spectra
+            if (!is.null(refs$msPurityKey)) {
+                refs$spectrumId <- .pa_graph_sp_ids(refs)
+                refs$msPurityKey <- NULL
+                history$records[[id]][[side]]$spectra <- refs
+            }
+        }
+        if (!is.null(record$output$key_block) &&
+                !is.null(history$records[[id]]$output$spectra$spectrumId))
+            history$records[[id]]$output$key_block <- NULL
         earlier <- c(earlier, id)
     }
     active <- history$active
@@ -69,7 +80,8 @@
         c(
             "pid", "fileid", "seqNum", "spectrumId",
             "acquisitionNum", "scanIndex", "dataOrigin",
-            "grpid", "av_level", "sample", "msPurityEffectiveParameterId"
+            "grpid", "av_level", "sample", "msPurityEffectiveParameterId",
+            "msPurityAverageGroup"
         ),
         Spectra::spectraVariables(sp)
     )
@@ -109,7 +121,7 @@
         )
     if (step != "purityA" && nrow(pa@grped_df))
         out$feature_links <- pa@grped_df[, intersect(
-            c("grpid", "pid", "sample", "cid"), names(pa@grped_df)
+            c("grpid", "pid", "sample", "cid", "linkId"), names(pa@grped_df)
         ),
         drop = FALSE
         ]
@@ -118,10 +130,12 @@
 
 .pa_processing_attach <- function(pa) {
     history <- .pa_processing_validate(pa@params$processing)
+    pa@params$processing <- history
     for (slot in c("spectra", "fragSpectra", "avSpectra")) {
         sp <- methods::slot(pa, slot)
         meta <- .pa_spectra_metadata(sp)
         meta$msPurityProcessing <- history
+        if (slot == "avSpectra") meta$msPurityAverageGraph <- pa@params$averageGraph
         .pa_spectra_metadata(sp) <- meta
         methods::slot(pa, slot) <- sp
     }
@@ -212,6 +226,15 @@
     output$previous_steps <- NULL
     sp <- methods::slot(pa, slot)
     selected <- if (length(sp)) sp[sp$msPurityProcessingId %in% id] else sp
+    if (slot == "avSpectra" && length(selected) && !imported &&
+            !is.null(pa@params$averageGraph)) {
+        g <- pa@params$averageGraph
+        rows <- match(selected$spectrumId, g$nodes$spectrumId)
+        if (anyNA(rows))
+            stop("An averaged spectrum is missing from its provenance graph.")
+        g$nodes$activity[rows] <- id
+        pa@params$averageGraph <- g
+    }
     output$spectra <- .pa_processing_refs(selected)
     pa@params$processing$records[[id]] <- list(
         step_id = id, step = step, parameters = parameters,
@@ -232,10 +255,7 @@
 }
 
 .pa_processing_init <- function(pa) {
-    if (!is.null(pa@params$processing)) {
-        .pa_processing_validate(pa@params$processing)
-        return(pa)
-    }
+    if (!is.null(pa@params$processing)) return(pa)
     pa@params$processing <- .pa_processing_empty()
     known <- list(
         purityA = pa@params$purityA,
@@ -282,11 +302,12 @@
         meta$columns <- NULL
         .pa_spectra_metadata(pa@avSpectra) <- meta
     }
-    pa
+    .pa_graph_prune(pa)
 }
 
 .pa_processing_relink <- function(pa) {
     pa <- .pa_processing_invalidate(pa)
+    if (!is.null(pa@params$averageGraph)) pa@params$averageGraph$links <- NULL
     pa@filter_frag_params <- list()
     pa@all_frag_scans <- .pa_empty_frame()
     pa@params$processing$active$filterFragSpectra <- NULL
@@ -369,6 +390,15 @@
 #' store occurrence references, not copies of peak arrays. Historical averaged
 #' inputs without cluster mappings retain unknown fine-grained contributors.
 #'
+#' Use the output's `spectrumId` with [averageMembers()] or
+#' [averagePeakMembers()] for its selected inputs or exact stored peak
+#' connections. The averaging record identifies the output spectra and preceding
+#' processing steps. To inspect the originally
+#' eligible inputs of an inter average, trace the passing peaks of its
+#' immediate file averages. Historical spectrum references keep their recorded
+#' identifiers. An earlier integer average identifier is returned as a character
+#' `spectrumId` when no spectrum ID was recorded.
+#'
 #' @param object A purityA or Spectra object.
 #' @param step NULL for all steps, or processing function names such as
 #'   "filterFragSpectra" and "averageAllFragSpectra".
@@ -382,6 +412,14 @@
 #' records[[length(records)]]$parameters
 #' processingParameters(groupedSpectra(pa, legacy = FALSE),
 #'     step = "filterFragSpectra")
+#'
+#' pa <- averageAllFragSpectra(pa, param = AverageFragSpectraParam(minfrac = 0))
+#' sp <- averagedSpectra(pa, legacy = FALSE)
+#' i <- 1L
+#' record <- processingHistory(sp)[[sp$msPurityProcessingId[i]]]
+#' averageMembers(sp, sp$spectrumId[i])
+#' sp$msPurityContributors[[i]]
+#' sp$msPurityClusterContributors[[i]]
 #' @name processingHistory
 #' @aliases processingParameters
 #' @aliases processingHistory,purityA-method

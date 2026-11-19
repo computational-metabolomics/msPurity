@@ -127,7 +127,9 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   grped_df <- pa@grped_df
   msms <- groupedSpectra(pa)
   puritydf <- purityTable(pa)
-  av_spectra <- averagedSpectra(pa)
+  # Scan-based methods do not read averages.
+  av_spectra <- if (method %in% c("av_intra", "av_inter", "av_all"))
+    averagedSpectra(pa) else list()
 
   of <- file(description = msp_file_pth, open = "w+")
   if (is.null(xcms_groupids)){
