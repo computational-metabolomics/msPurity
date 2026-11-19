@@ -150,6 +150,7 @@ Collate:
     'purityX-constructor.R'
     'purityX-inputs.R'
     'purityX-parameters.R'
+    'purityX-processing.R'
     'spectra-io.R'
     'spectral-matching.R'
     'spectralMatching.R'

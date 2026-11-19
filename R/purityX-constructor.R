@@ -73,7 +73,9 @@
 #'   has already applied adjusted times, original acquisition times cannot be
 #'   recovered; the legacy EIC column \code{rt_raw} then contains the available
 #'   input spectrum times.
-#'   Prediction estimates anticipated isolation purity, not fragmentation quality.
+#'   \code{processingParameters()} and \code{processingHistory()} retrieve
+#'   effective settings and the feature/sample observations used. Prediction
+#'   estimates anticipated isolation purity, not fragmentation quality.
 #'
 #' @return a purityX object containing a dataframe of predicted purity scores
 #' @examples
@@ -95,6 +97,7 @@ purityX <- function(xset, purityType = "purityFWHMmedian",
     mzRback = "pwiz", isotopes = FALSE, im = NULL,
     singleFile = 0, rtrawColumns = FALSE, saveEIC = FALSE,
     sqlitePth = NULL, param = NULL) {
+    started <- Sys.time()
     scalars <- list(purityType = purityType, offsets = offsets,
         iwNorm = iwNorm, iwNormFun = iwNormFun, ilim = ilim,
         isotopes = isotopes, im = im)
@@ -150,7 +153,12 @@ purityX <- function(xset, purityType = "purityFWHMmedian",
         object@cores <- cores
         object@fileignore <- if (is.null(fileignore)) NA else fileignore
     }
-    object
+    controls <- list(singleFile = singleFile, fileignore = fileignore,
+        xgroups = xgroups, rtrawColumns = rtrawColumns, plotP = plotP,
+        saveEIC = saveEIC, sqlitePth = sqlitePth,
+        cores = as.integer(cores), effective_cores = workers)
+    calculations <- .px_calculation_refs(predictions, chosen$excluded)
+    .px_record(object, prepared, calculations, settings, controls, started)
 }
 
 .px_choose_targets <- function(targets, single) {
@@ -313,6 +321,27 @@ purityX <- function(xset, purityType = "purityFWHMmedian",
     do.call(rbind, rows)
 }
 
+.px_calculation_refs <- function(predictions, excluded) {
+    status <- data.frame(output_id = numeric(), sample = numeric(),
+        c_peak_id = numeric(), status = character(), fwhm_status = character())
+    observations <- list()
+    if (length(predictions)) {
+        status <- do.call(rbind, lapply(predictions, function(x) {
+            data.frame(output_id = x$target$output_id, sample = x$target$sample,
+                c_peak_id = x$target$c_peak_id, status = x$status,
+                fwhm_status = x$fwhm_status)
+        }))
+        observations <- lapply(predictions, function(x) {
+            refs <- x$observations
+            refs$output_id <- rep(x$target$output_id, nrow(refs))
+            refs$c_peak_id <- rep(x$target$c_peak_id, nrow(refs))
+            refs
+        })
+    }
+    list(predictions = status,
+        observations = if (length(observations)) do.call(rbind, observations)
+        else data.frame(), excluded_peaks = excluded)
+}
 
 .px_plot <- function(prediction) {
     trace <- prediction$trace

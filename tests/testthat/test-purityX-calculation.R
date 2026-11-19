@@ -78,7 +78,7 @@ test_that("purityX handles one peak and asymmetric isolation windows", {
     expect_identical(boundary$status, "no_usable_purity")
 })
 
-test_that("purityX preserves repeated peak choices", {
+test_that("purityX preserves peak choices and their actual observations", {
     x <- .px_calculation_fixture()
     targets <- x$target[rep(1L, 3L), ]
     targets$grpid <- 1
@@ -88,7 +88,11 @@ test_that("purityX preserves repeated peak choices", {
     selected <- .px_choose_targets(targets, single = FALSE)
     expect_equal(selected$targets$c_peak_id, c(8, 10))
     expect_equal(selected$excluded$c_peak_id, 9)
-
+    result <- .px_predict_one(x$target, x$prepared, x$settings)
+    refs <- .px_calculation_refs(list(result), selected$excluded)
+    expect_identical(refs$observations$scan, c(1L, 2L, 4L, 5L, 6L))
+    expect_equal(refs$observations$c_peak_id, rep(1, 5))
+    expect_false(any(c("mz", "intensity") %in% names(refs$observations)))
 })
 
 test_that("purityX preserves default tables and adds requested means", {

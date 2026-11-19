@@ -32,8 +32,10 @@ setClass(
     cores = "numeric",
     offsets = "vector",
     fileignore = "vector",
-    predictions = "data.frame"
-  )
+    predictions = "data.frame",
+    params = "list"
+    ),
+    prototype = list(params = list())
 )
 
 ######################################################################

@@ -92,7 +92,9 @@ Acquisition retention times are retained where available. If the caller
 has already applied adjusted times, original acquisition times cannot be
 recovered; the legacy EIC column \code{rt_raw} then contains the available
 input spectrum times.
-Prediction estimates anticipated isolation purity, not fragmentation quality.
+\code{processingParameters()} and \code{processingHistory()} retrieve
+effective settings and the feature/sample observations used. Prediction
+estimates anticipated isolation purity, not fragmentation quality.
 }
 \examples{
 
