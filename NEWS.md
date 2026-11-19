@@ -10,6 +10,16 @@
   block limit in intra/inter/all fragmentation averaging and DIMS
   averaging/grouping. Explicit `cores` values apply to the current call;
   omitting `cores` uses the object's stored setting.
+- **MSn ancestry** uses `lineageScanId` to link scans and their parents and
+  `sourceSpectrumId` for parent references expressed as source keys.
+- **Fragmentation averaging** supports named `AverageFragSpectraParam` sets
+  to select or combine acquisition conditions for MSn (e.g. MS2-MS4) spectra.
+  Incompatible precursor paths stay separate. Inter-file averaging uses each file’s averaged spectrum
+  once per group, regardless of how many scans went into it.
+- **Averaging provenance** (#31) adds `averageMembers()`, `averagePeakMembers()`
+  and `averageProvenance()` to trace selected inputs and retained peaks through
+  intra-file and inter-file averaging. Repeated feature links remain distinct.
+- Mean averaging no longer warns when optional normalized intensities are absent.
 
 # msPurity 1.99.1
 
