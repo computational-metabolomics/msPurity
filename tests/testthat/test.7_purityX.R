@@ -33,7 +33,10 @@ test_that("checking purityX (grouped)", {
 
 
   px_saved <- readRDS(system.file("extdata", "tests", "purityX", "1_purityX_grouped_px.rds", package="msPurity"))
-  expect_equal(px, px_saved)
+  for (name in setdiff(methods::slotNames(px), "params")) {
+        expect_equal(methods::slot(px, name), methods::slot(px_saved, name),
+            info = name)
+    }
 
 })
 
@@ -61,7 +64,10 @@ test_that("checking purityX (single file)", {
   expect_equal(round(median(px@predictions$pknmFWmedian),3), 3)
 
   px_saved <- readRDS(system.file("extdata", "tests", "purityX", "1_purityX_single_px.rds", package="msPurity"))
-  expect_equal(px, px_saved)
+  for (name in setdiff(methods::slotNames(px), "params")) {
+        expect_equal(methods::slot(px, name), methods::slot(px_saved, name),
+            info = name)
+    }
 })
 
 

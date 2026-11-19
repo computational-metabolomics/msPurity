@@ -7,7 +7,7 @@
 
 .pa_processing_steps <- function() {
     c(
-        "purityA", "frag4feature", "filterFragSpectra",
+        "purityA", "purityX", "frag4feature", "filterFragSpectra",
         "averageIntraFragSpectra", "averageInterFragSpectra",
         "averageAllFragSpectra"
     )
@@ -202,6 +202,25 @@
     pa
 }
 
+.msp_processing_record <- function(step, id, parameters, started, input,
+    output, imported = FALSE, finished = Sys.time()) {
+    if (imported) started <- finished <- as.POSIXct(NA)
+    list(
+        step_id = id, step = step, parameters = parameters,
+        status = if (imported) "imported" else "completed",
+        complete = !imported,
+        software = list(package = "msPurity", version = if (imported)
+                NA_character_ else
+                as.character(utils::packageVersion("msPurity"))),
+        time = list(
+            started = started, finished = finished,
+            elapsed_seconds = if (imported) NA_real_ else
+                as.numeric(difftime(finished, started, units = "secs"))
+        ),
+        input = input, output = output
+    )
+}
+
 .pa_processing_record <- function(
     pa, step, parameters, started, input,
     imported = FALSE
@@ -236,20 +255,8 @@
         pa@params$averageGraph <- g
     }
     output$spectra <- .pa_processing_refs(selected)
-    pa@params$processing$records[[id]] <- list(
-        step_id = id, step = step, parameters = parameters,
-        status = if (imported) "imported" else "completed",
-        complete = !imported,
-        software = list(package = "msPurity", version = if (imported)
-                NA_character_ else
-                as.character(utils::packageVersion("msPurity"))),
-        time = list(
-            started = started, finished = finished,
-            elapsed_seconds = if (imported) NA_real_ else
-                as.numeric(difftime(finished, started, units = "secs"))
-        ),
-        input = input, output = output
-    )
+    pa@params$processing$records[[id]] <- .msp_processing_record(
+        step, id, parameters, started, input, output, imported, finished)
     pa@params$processing$active[[step]] <- id
     .pa_processing_attach(pa)
 }
@@ -338,7 +345,7 @@
 
 #' Processing history and effective settings
 #'
-#' Retrieve processing records from a purityA object or an
+#' Retrieve processing records from a purityA or purityX object or an
 #' extracted Spectra object. Records are named by unique processing step
 #' identifiers. Repeated calls retain earlier records. For Spectra,
 #' only records reachable from the retained spectra are returned, including
@@ -399,7 +406,7 @@
 #' identifiers. An earlier integer average identifier is returned as a character
 #' `spectrumId` when no spectrum ID was recorded.
 #'
-#' @param object A purityA or Spectra object.
+#' @param object A purityA, purityX or Spectra object.
 #' @param step NULL for all steps, or processing function names such as
 #'   "filterFragSpectra" and "averageAllFragSpectra".
 #' @return A named list of records for processingHistory(), or a named list
