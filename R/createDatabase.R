@@ -781,6 +781,10 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
 
 # Both public writers share the current processed-MS2 storage contract.
 .pa_require_ms2_export <- function(pa) {
+    if (any(.pa_av_configured(pa@avSpectra)))
+        stop("Database export of averages computed with ",
+            "AverageFragSpectraParam is not supported. Retain the processed ",
+            "Spectra object, or average without param before export.")
     for (field in c("fragSpectra", "avSpectra")) {
         sp <- methods::slot(pa, field)
         if (length(sp) && any(Spectra::msLevel(sp) > 2L, na.rm = TRUE))

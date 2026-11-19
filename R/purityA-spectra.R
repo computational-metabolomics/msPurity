@@ -275,15 +275,16 @@
     length(queue) > 0L
 }
 
-.pa_filter_source_peaks <- function(source) {
+.pa_filter_source_peaks <- function(source, values = NULL) {
     invalid <- function(x) {
         anyNA(x) || any(!is.finite(x) | x < 1 | x != trunc(x)) ||
             anyDuplicated(x) > 0L
     }
     known <- "original_peak_index" %in% Spectra::peaksVariables(source)
     columns <- c("mz", "intensity", if (known) "original_peak_index")
-    values <- as.list(Spectra::peaksData(source, columns = columns,
-                                         BPPARAM = .msp_bpparam()))
+    if (is.null(values))
+        values <- as.list(Spectra::peaksData(source, columns = columns,
+                                             BPPARAM = .msp_bpparam()))
     peaks <- lapply(values, function(m) {
         m <- as.matrix(m)
         m[, c("mz", "intensity"), drop = FALSE]
@@ -324,11 +325,11 @@
     }, logical(1)))) stop("Invalid original peak positions.")
     basis <- if ("msPurityOriginalPeakIndexBasis" %in%
             Spectra::spectraVariables(source))
-        as.character(source$msPurityOriginalPeakIndexBasis) else
-        rep("filter_input", length(source))
-    if (isTRUE(.pa_spectra_metadata(source)$msPurityRawPeaksAvailable) ||
+        as.character(source$msPurityOriginalPeakIndexBasis)
+    else if (isTRUE(.pa_spectra_metadata(source)$msPurityRawPeaksAvailable) ||
             all(Spectra::dataStorage(source) != "<memory>"))
-        basis[] <- "source_reference"
+        rep("source_reference", length(source))
+    else rep("filter_input", length(source))
     list(peaks = peaks, original_positions = positions, basis = basis,
         stored_positions = stored_positions)
 }
@@ -371,7 +372,10 @@
     positions <- lapply(mats, function(m) {
         seq_len(if (is.null(m)) 0L else nrow(m))
     })
-    basis <- rep("filter_input", length(pids))
+    # A legacy group saved after peak removal cannot recover the positions
+    # in its filter input unless the earlier spectra are available below.
+    basis <- rep(if (isTRUE(pa@filter_frag_params$rmp)) "unknown" else
+        "filter_input", length(pids))
     known <- which(!is.na(previous))
     if (length(known)) {
         input <- .pa_filter_source_peaks(pa@fragSpectra[previous[known]])
@@ -533,7 +537,7 @@
 }
 
 # grped_ms2 rebuilt from fragSpectra and grped_df.
-.pa_grouped_legacy <- function(pa) {
+.pa_grouped_legacy <- function(pa, peak_identity = FALSE) {
     g <- pa@grped_df
     frag <- pa@fragSpectra
     if (!nrow(g) || !length(frag))
@@ -547,8 +551,32 @@
     single <- if ("single_peak" %in% svars)
                   frag$single_peak else rep(NA, length(frag))
     k <- match(g$pid, frag$pid)
-    mats <- lapply(seq_along(k), function(i)
-        .pa_frag_matrix(pk[[k[i]]], pflag[k[i]], filtered, rmp, single[k[i]]))
+    used <- unique(k)
+    mats <- lapply(used, function(i)
+        .pa_frag_matrix(pk[[i]], pflag[i], filtered, rmp, single[i]))
+    if (peak_identity) {
+        # A filtered legacy scan without saved positions cannot name the raw
+        # peak that survived. Keep its edge, with the original rank unknown.
+        tracked <- "original_peak_index" %in% Spectra::peaksVariables(frag)
+        if (!tracked && rmp) {
+            positions <- lapply(pk[used], function(m) rep(NA_integer_, nrow(m)))
+            basis <- rep("unknown", length(used))
+        } else {
+            source <- frag[used]
+            ids <- .pa_filter_source_peaks(source, pk[used])
+            positions <- ids$original_positions
+            basis <- ids$basis
+        }
+        mats <- Map(function(m, index, label) {
+            if (is.null(m)) return(NULL)
+            m <- as.data.frame(m)
+            m$memberPeak <- if (identical(label, "unknown"))
+                rep(NA_integer_, nrow(m)) else as.integer(index)
+            m$basis <- rep(label, nrow(m))
+            m
+        }, mats, positions, basis)
+    }
+    mats <- mats[match(k, used)]
     g$.row <- seq_len(nrow(g))
     out <- plyr::dlply(g, ~grpid, function(x) mats[x$.row])
     # filterFragSpectra() rebuilds the list with lapply(), which drops the
@@ -639,6 +667,14 @@
                              x = as.numeric(grped_df$precurMtchMZ))
     sv$rtime <- vapply(sv$grpid, med, numeric(1),
                        x = as.numeric(grped_df$retentionTime))
+    sp <- .pa_av_memory(sv, peaks, cols)
+    .pa_spectra_metadata(sp)$groups <- names(av)
+    .pa_spectra_metadata(sp)$columns <- cols
+    sp
+}
+
+# Averaged spectra from their metadata rows and legacy peak data frames.
+.pa_av_memory <- function(sv, peaks, cols) {
     pcols <- c("mz", "intensity", setdiff(cols, c("mz", "i")))
     mats <- lapply(peaks, function(df) {
         if (is.null(df) || !nrow(df)) return(NULL)
@@ -647,10 +683,7 @@
                     numeric(nrow(df)))
         matrix(m, ncol = length(pcols), dimnames = list(NULL, pcols))
     })
-    sp <- .msp_memory(sv, mats, pcols)
-    .pa_spectra_metadata(sp)$groups <- names(av)
-    .pa_spectra_metadata(sp)$columns <- cols
-    sp
+    .msp_memory(sv, mats, pcols)
 }
 
 # One averaged spectrum as its legacy data frame.
@@ -671,6 +704,8 @@
 # calls the averaging code uses, so they carry the same attributes; the
 # SQLite writer, and possibly other code, relies on them.
 .pa_av_legacy <- function(sp, grped_df = NULL) {
+    if (any(.pa_av_configured(sp)))
+        stop(.PA_AV_CONFIGURED_LEGACY)
     groups <- .pa_spectra_metadata(sp)$groups
     if (is.null(groups))
         return(list())
@@ -828,7 +863,10 @@ setValidity("purityA", function(object) {
 #'   Filtering defaults to MS2; request \code{msLevel = 2:4} for MS2-MS4.
 #'   \item \code{averagedSpectra()}: the averaged spectra, as the nested
 #'   \code{av_spectra} list or as \code{Spectra} with one spectrum per
-#'   feature, averaging level and sample.
+#'   feature, averaging level and sample. Averages computed with a
+#'   \code{param} argument (see \code{\link{AverageFragSpectraParam}}) can
+#'   be several per feature and are available only as \code{Spectra};
+#'   \code{legacy = TRUE} then stops with an error.
 #' }
 #'
 #' @param pa purityA object.
@@ -880,7 +918,7 @@ setMethod("allFragSpectra", "purityA", function(pa, legacy = TRUE) {
 
 setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
     pa <- .pa_update(pa)
-    if (legacy) .pa_av_legacy(pa@avSpectra, pa@grped_df) else pa@avSpectra
+    if (legacy) .pa_av_legacy(pa@avSpectra, pa@grped_df) else .pa_graph_view(pa)
 })
 
 .PA_ACQUISITION_FIELDS <- c(
@@ -915,7 +953,8 @@ setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
     out <- data.frame(featureLinkIndex = rows,
         contributorIndex = index,
         grpid = as.character(g$grpid[rows]),
-        sample = as.character(g$sample[rows]), pid = g$pid[rows],
+        sample = if ("sample" %in% names(g)) as.character(g$sample[rows]) else
+            rep(NA_character_, length(rows)), pid = g$pid[rows],
         stringsAsFactors = FALSE)
     cols <- intersect(
         c("fileid", "seqNum", "spectrumId", "nativeId", "acquisitionNum",
@@ -928,10 +967,15 @@ setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
 
 # Resolve actual inter-file peak inputs through their earlier cluster records.
 # Historical averages without these records cannot identify original members.
-.pa_inter_contributors <- function(previous, group, members) {
+.pa_inter_contributors <- function(previous, group, members, pa) {
     if (!length(members)) return(list())
     available <- "msPurityClusterContributors" %in%
         Spectra::spectraVariables(previous)
+    graph <- pa@params$averageGraph
+    refs <- graph$links[graph$links$grpid == group, , drop = FALSE]
+    live <- pa@grped_df$linkId[as.character(pa@grped_df$grpid) == group]
+    current <- match(refs$linkId, live)
+    exact <- graph$nodes$exactLeaves[match(previous$spectrumId, graph$nodes$spectrumId)]
     lapply(members, function(keys) {
         if (!available) return(NULL)
         used <- integer()
@@ -946,17 +990,27 @@ setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
             mapping <- previous$msPurityClusterContributors[[row]]
             cluster <- keys$cluster[i]
             if (is.null(mapping) || !cluster %in% names(mapping)) return(NULL)
-            used <- union(used, mapping[[cluster]])
+            index <- mapping[[cluster]]
+            if (isTRUE(exact[row])) {
+                index <- current[match(index, refs$contributorIndex)]
+                if (anyNA(index)) stop("An intra-file peak refers to an unavailable feature link.")
+            }
+            used <- union(used, index)
         }
         used
     })
 }
 
-.pa_acquisition_values <- function(sp, rows) {
+# normalise reports activation types as compared by select (names and
+# accessions mapped to CID, HCD or ETD).
+.pa_acquisition_values <- function(sp, rows, normalise = FALSE) {
     cols <- union(names(.PA_FILTER_AXES),
         intersect(.PA_ACQUISITION_FIELDS,
             Spectra::spectraVariables(sp)))
     canonical <- .pa_filter_metadata(sp[rows])
+    if (normalise)
+        canonical$activationType <- .pa_activation_type(
+            canonical$activationType)
     out <- lapply(cols, function(nm) {
         if (nm %in% names(canonical))
             return(if (length(rows)) unique(canonical[[nm]]) else NA)
@@ -993,7 +1047,8 @@ setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
 
 # Preserve metadata and history for carried-over average rows; summarize only
 # the measurements received by the unchanged averaging algorithm.
-.pa_av_metadata <- function(pa, av_level, previous, used_inputs = list()) {
+.pa_av_metadata <- function(pa, av_level, previous, used_inputs = list(),
+                            intra = previous) {
     sp <- pa@avSpectra
     if (!length(sp)) return(pa)
     level <- paste0("av_", av_level)
@@ -1002,15 +1057,15 @@ setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
     old_rows <- if (length(previous))
         match(.pa_average_key(sp)[carried], .pa_average_key(previous)) else
         rep(NA_integer_, length(carried))
-    old_vars <- setdiff(Spectra::spectraVariables(previous),
-        Spectra::peaksVariables(previous))
+    ok <- !is.na(old_rows)
+    old_vars <- if (any(ok)) setdiff(Spectra::spectraVariables(previous),
+        Spectra::peaksVariables(previous)) else character()
     base_vars <- Spectra::spectraVariables(sp)
     for (nm in old_vars) {
         old <- previous[[nm]]
         value <- if (nm %in% base_vars) sp[[nm]] else
             if (is.list(old)) rep(list(NULL), length(sp)) else
                 old[rep(NA_integer_, length(sp))]
-        ok <- !is.na(old_rows)
         value[carried[ok]] <- old[old_rows[ok]]
         sp[[nm]] <- value
     }
@@ -1032,55 +1087,71 @@ setMethod("averagedSpectra", "purityA", function(pa, legacy = TRUE) {
     for (i in changed) {
         used <- used_inputs[[as.character(sp$grpid[i])]]
         if (level == "av_inter") {
-            clusters <- .pa_inter_contributors(previous, sp$grpid[i],
-                used$inter)
+            clusters <- .pa_inter_contributors(intra, sp$grpid[i],
+                used$inter, pa)
         } else {
             clusters <- if (level == "av_intra")
                 used$intra[[as.character(sp$sample[i])]] else used$all
         }
-        if (any(vapply(clusters, is.null, logical(1)))) {
-            contributors <- NULL
-            values <- .pa_acquisition_values(pa@fragSpectra, integer())
-        } else {
-            inputs <- .pa_average_contributors(pa, sp$grpid[i],
-                unique(unlist(clusters, use.names = FALSE)))
-            contributors <- inputs$references
-            values <- .pa_acquisition_values(pa@fragSpectra, inputs$source)
-        }
-        status <- .pa_acquisition_status(values)
-        summaries[[i]] <- values
-        stored$msPurityContributors[i] <- list(contributors)
+        summary <- .pa_average_summary(pa, sp$grpid[i], clusters)
+        summaries[[i]] <- summary$values
+        stored$msPurityContributors[i] <- list(summary$contributors)
         stored$msPurityClusterContributors[i] <- list(clusters)
-        stored$msPurityAcquisitionValues[i] <- list(values)
-        stored$msPurityAcquisitionStatus[i] <- list(status)
-        axes <- intersect(c("msLevel", "massAnalyzer", "scanFilterAnalyzer",
-                "activationType",
-                "collisionEnergy", "collisionEnergyUnit", "polarity"),
-            names(status))
-        state <- unlist(status[axes], use.names = FALSE)
-        configurations[i] <- if (all(state == "unknown")) "unknown" else
-            if (any(state == "mixed")) "mixed" else
-                if (any(state == "unknown")) "incomplete" else "uniform"
+        stored$msPurityAcquisitionValues[i] <- list(summary$values)
+        stored$msPurityAcquisitionStatus[i] <- list(summary$status)
+        configurations[i] <- summary$configuration
     }
     for (nm in fields) sp[[nm]] <- stored[[nm]]
     sp$msPurityAcquisitionConfiguration <- configurations
+    pa@avSpectra <- .pa_av_scalar_columns(sp, changed, summaries[changed])
+    pa
+}
+
+# Contributors and acquisition summaries of one average, from the occurrence
+# indices of its retained clusters. Historical inputs without cluster
+# records keep unknown contributors.
+.pa_average_summary <- function(pa, group, clusters, normalise = FALSE) {
+    if (any(vapply(clusters, is.null, logical(1)))) {
+        contributors <- NULL
+        values <- .pa_acquisition_values(pa@fragSpectra, integer())
+    } else {
+        inputs <- .pa_average_contributors(pa, group,
+            unique(unlist(clusters, use.names = FALSE)))
+        contributors <- inputs$references
+        values <- .pa_acquisition_values(pa@fragSpectra, inputs$source,
+            normalise)
+    }
+    status <- .pa_acquisition_status(values)
+    axes <- intersect(c("msLevel", "massAnalyzer", "scanFilterAnalyzer",
+            "activationType",
+            "collisionEnergy", "collisionEnergyUnit", "polarity"),
+        names(status))
+    state <- unlist(status[axes], use.names = FALSE)
+    configuration <- if (all(state == "unknown")) "unknown" else
+        if (any(state == "mixed")) "mixed" else
+            if (any(state == "unknown")) "incomplete" else "uniform"
+    list(contributors = contributors, clusters = clusters, values = values,
+        status = status, configuration = configuration)
+}
+
+# Scalar acquisition columns of the averages at rows, from their summaries.
+.pa_av_scalar_columns <- function(sp, rows, summaries) {
     # Native IDs belong to contributor references, never to an invented
     # acquired identity for the average itself.
     native <- c("pid", "fileid", "seqNum", "spectrumId", "nativeId",
         "acquisitionNum", "scanIndex", "precScanNum", "precursorScanNum",
         "dataOrigin", "filterString")
-    columns <- setdiff(unique(unlist(lapply(summaries[changed], names),
+    columns <- setdiff(unique(unlist(lapply(summaries, names),
                 use.names = FALSE)), native)
     for (nm in setdiff(columns, "msLevel")) {
-        scalar <- lapply(summaries[changed], function(x) {
+        scalar <- lapply(summaries, function(x) {
             .pa_acquisition_scalar(x[[nm]], nm)
         })
         if (!length(scalar)) next
         value <- if (nm %in% Spectra::spectraVariables(sp)) sp[[nm]] else
             scalar[[1L]][rep(NA_integer_, length(sp))]
-        value[changed] <- unlist(scalar, use.names = FALSE)
+        value[rows] <- unlist(scalar, use.names = FALSE)
         sp[[nm]] <- value
     }
-    pa@avSpectra <- sp
-    pa
+    sp
 }

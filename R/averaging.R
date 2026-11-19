@@ -116,8 +116,13 @@ performHc <- function(mzs, ppm, tolerance = 0){
 }
 
 clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0,
-    blockSize=5000L){
+    blockSize=5000L, record_execution=FALSE){
   .clustering_controls(cores, blockSize)
+  result <- function(clusters, workers) {
+    if (record_execution)
+      list(clusters = clusters, effective_cores = as.integer(workers))
+    else clusters
+  }
   if (clustType == "hc") {
     if (!is.numeric(ppm) || length(ppm) != 1L || !is.finite(ppm) || ppm < 0)
       stop("'ppm' must be a finite, non-negative numeric scalar.", call. = FALSE)
@@ -130,7 +135,8 @@ clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0,
       stop("Hierarchical clustering requires sorted, positive, finite m/z values.",
         call. = FALSE)
     if (!length(mz))
-      return(integer())
+      return(result(integer(), 0L))
+    workers <- 1L
 
     blocks <- .hc_blocks(mz, ppm, tolerance, blockSize)
     clustlist <- vector("list", nrow(blocks))
@@ -158,11 +164,11 @@ clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0,
       clustlist[[i]] <- clustlist[[i]] + offset
       offset <- max(clustlist[[i]])
     }
-    return(unlist(clustlist, use.names = FALSE))
+    return(result(unlist(clustlist, use.names = FALSE), workers))
   }else if (clustType=="simple"){
     # order by mz
     #print("group1d")
-    return(group1d(mz, ppm))
+    return(result(group1d(mz, ppm), 1L))
   }
 
 

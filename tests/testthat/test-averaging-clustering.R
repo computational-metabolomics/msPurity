@@ -47,6 +47,19 @@ test_that("parallel blocks preserve results and the registered backend", {
         ppm = 5, cores = 2, blockSize = 2L)
     expect_identical(observed, 1:4)
     expect_identical(foreach::getDoParName(), "existing")
+
+    closed <- FALSE
+    stop_cluster <- parallel::stopCluster
+    expect_error(with_mocked_bindings(
+        msPurity:::clustering(c(100, 100.0006, 200, 200.0012),
+            ppm = 5, cores = 2, blockSize = 2L, record_execution = TRUE),
+        parLapply = function(...) stop("Worker failure"),
+        stopCluster = function(cl) {
+            stop_cluster(cl)
+            closed <<- TRUE
+        }, .package = "parallel"), "Worker failure")
+    expect_true(closed)
+    expect_identical(foreach::getDoParName(), "existing")
 })
 
 test_that("execution controls require positive whole numbers", {

@@ -102,21 +102,24 @@ setGeneric(name = "frag4feature",
 
 setGeneric(name="averageIntraFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        av='median', sumi=TRUE, rmp=FALSE, cores=1, blockSize=5000L) {
+                        av='median', sumi=TRUE, rmp=FALSE, cores=1, blockSize=5000L,
+                        param=NULL) {
              standardGeneric("averageIntraFragSpectra")
            }
 )
 
 setGeneric(name="averageInterFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        av='median', sumi=TRUE, rmp=FALSE, cores=1, blockSize=5000L) {
+                        av='median', sumi=TRUE, rmp=FALSE, cores=1, blockSize=5000L,
+                        param=NULL) {
              standardGeneric("averageInterFragSpectra")
            }
 )
 
 setGeneric(name="averageAllFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        av='median', sumi=TRUE,  rmp=FALSE, cores=1, blockSize=5000L) {
+                        av='median', sumi=TRUE,  rmp=FALSE, cores=1, blockSize=5000L,
+                        param=NULL) {
              standardGeneric("averageAllFragSpectra")
            }
 )
