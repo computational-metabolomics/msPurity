@@ -25,12 +25,16 @@ purityX(
 )
 }
 \arguments{
-\item{xset}{object; xcms object}
+\item{xset}{An \code{XcmsExperiment}, \code{XCMSnExp} or legacy
+\code{xcmsSet} containing detected chromatographic peaks. Grouped
+prediction also requires feature grouping.}
 
 \item{purityType}{character; Area and average used for the purity predictions. Options are
 "purityFWHMmedian", "purityFWmedian", "purityFWHMmean", "purityFWmean"}
 
-\item{offsets}{vector; vector of the isolation window upper and lower offsets}
+\item{offsets}{Isolation-window offsets in Da, in historical upper, lower
+order. For example, \code{c(0.7, 0.3)} assesses
+\code{[target - 0.3, target + 0.7]}. This order differs from purityA.}
 
 \item{fileignore}{vector; vector of files to ignore for the prediction calculation}
 
@@ -54,10 +58,13 @@ purityX(
 
 \item{singleFile}{numeric; If just a single file for purity is to be calculated (rather than the grouped XCMS peaks). Uses the index of the files in xcmsSet object. If zero this is ignored.}
 
-\item{rtrawColumns}{boolean; TRUE if the rt_raw values are included as additional columns in the @peaks slot (only required if using the obiwarp)}
+\item{rtrawColumns}{Use explicit \code{rt_raw}, \code{rtmin_raw} and
+\code{rtmax_raw} peak bounds when supplied. Otherwise compare current
+chromatographic-peak and spectrum retention times.}
 
-\item{saveEIC}{boolean; If True extracted ion chromatograms will be saved to SQLite database (deprecated: writing
-SQLite raises a deprecation warning; Parquet output stores no chromatograms, extract them with xcms::chromatogram())}
+\item{saveEIC}{Save chromatograms for grouped predictions to SQLite. Ignored
+when \code{singleFile > 0}. SQLite writing is deprecated. Parquet output
+stores no chromatograms; extract them with \code{xcms::chromatogram()}.}
 
 \item{sqlitePth}{character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics}
 }
@@ -68,6 +75,19 @@ a purityX object containing a dataframe of predicted purity scores
 Constructor for the purityX class.
 
 Given an XCMS object get the anticipated precursor purity of the grouped peaks
+}
+\details{
+Predictions use the selected MS1 observations, including their
+surrounding isolation-window signal. Modern inputs retain Spectra subsets
+and pending peak processing. Removing interfering peaks before prediction
+can change the result. Full-width predictions summarize the chromatographic
+peak interval; FWHM predictions use its nearest half-height bounds. Missing
+flanks or absent signal leave FWHM predictions unavailable.
+Acquisition retention times are retained where available. If the caller
+has already applied adjusted times, original acquisition times cannot be
+recovered; the legacy EIC column \code{rt_raw} then contains the available
+input spectrum times.
+Prediction estimates anticipated isolation purity, not fragmentation quality.
 }
 \examples{
 

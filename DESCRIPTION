@@ -141,6 +141,8 @@ Collate:
     'purityD-writeOut.R'
     'purityX-class.R'
     'purityX-constructor.R'
+    'purityX-inputs.R'
+    'purityX-parameters.R'
     'spectra-io.R'
     'spectral-matching.R'
     'spectralMatching.R'
