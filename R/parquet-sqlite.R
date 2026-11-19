@@ -618,6 +618,11 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
             next
         method <- rr[[r$run_id]]$method
         pid <- num(src_id("spectra", "pid", sp$spectrum_id_))
+        ## Averages computed with AverageFragSpectraParam have no SQLite row.
+        sp <- sp[!is.na(pid), , drop = FALSE]
+        pid <- pid[!is.na(pid)]
+        if (!nrow(sp))
+            next
         grpid <- grpid_of(self$feature_id_[match(sp$spectrum_id_,
                                                  self$ms2_spectrum_id_)])
         fid <- if (method == "intra")

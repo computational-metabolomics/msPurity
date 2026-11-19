@@ -77,8 +77,13 @@
 #'    MS3 and MS4 scans linked through their MS2 scan are in \code{x_mspurity_msn_feature};
 #'  * averaged fragmentation spectra become spectra of the dataset, one run per source file for spectra
 #'    averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
-#'    (\code{av_inter}, \code{av_all}), with their per-peak statistics;
-#'  * the scans each averaged spectrum was made from are recorded in \code{merge_member};
+#'    (\code{av_inter}, \code{av_all}), with their per-peak statistics. Averages computed with
+#'    \code{AverageFragSpectraParam}, at MS2 to MS4, keep their MS level, parameter set, acquisition
+#'    conditions and precursor path;
+#'  * the scans and averages each averaged spectrum was made from are recorded in \code{merge_member}.
+#'    Where the averaging provenance is recorded, these are the inputs it selected, with whether each
+#'    contributed a peak (\code{x_mspurity_contributes}), and \code{x_mspurity_merge_peak} gives the input
+#'    peak each averaged peak came from; otherwise the members are reconstructed from the feature links;
 #'  * every assessed MS2 to MS4 scan is listed in \code{x_mspurity_scan} with its MS2 precursor purity or
 #'    MSn stage purity, the scan it fragments and the MS2 scan its path starts from, and the activation
 #'    method msPurity used with where that came from; peaks flagged by \code{filterFragSpectra()} are in
@@ -141,9 +146,11 @@
 #'
 #' @md
 #' @details The SQLite database holds MS2 results only and refuses MS3/MS4
-#'   feature links and processed spectra; the Parquet dataset holds MS2-MS4
-#'   scans, links and filtered spectra. Averaged MS3/MS4 spectra cannot be
-#'   exported yet.
+#'   feature links and processed spectra, and averages computed with
+#'   \code{AverageFragSpectraParam}; the Parquet dataset holds MS2-MS4 scans,
+#'   links, filtered spectra and averages. Averages computed with
+#'   \code{AverageFragSpectraParam} are exported with the provenance their
+#'   averaging recorded, and not after their peaks were processed further.
 #' @export
 createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA,
                             format = c("sqlite", "parquet"), study = NULL, studyKey = "study",
@@ -858,11 +865,28 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
     invisible(TRUE)
 }
 
-# The Parquet writer holds MS2-MS4 scans, links and filtered spectra; averaged
-# spectra above MS2 are not produced yet.
+# The Parquet writer holds MS2-MS4 scans, links and filtered spectra, and the
+# averages: those computed without param as the SQLite writer stores them,
+# those computed with AverageFragSpectraParam (MS2-MS4) with the members and
+# peaks their recorded provenance gives.
 .pa_require_msn_export <- function(pa) {
     sp <- pa@avSpectra
-    if (length(sp) && any(Spectra::msLevel(sp) > 2L, na.rm = TRUE))
-        stop("Averaged MS3/MS4 spectra cannot be exported yet.")
+    if (!length(sp))
+        return(invisible(TRUE))
+    configured <- .pa_av_configured(sp)
+    if (any(!configured & Spectra::msLevel(sp) > 2L, na.rm = TRUE))
+        stop("Averaged MS3/MS4 spectra can be exported only when computed ",
+            "with AverageFragSpectraParam.")
+    if (any(configured)) {
+        g <- .pa_graph_data(pa)
+        node <- if (is.null(g)) NA_integer_ else
+            match(.pa_graph_sp_keys(sp[configured], g), g$nodes$key)
+        if (anyNA(node) || !all(g$nodes$complete[node]))
+            stop("Averages computed with AverageFragSpectraParam need their ",
+                "recorded provenance for Parquet export. Repeat the averaging.")
+        if (.mzs_av_peaks_changed(sp[configured], g$nodes$nPeaks[node]))
+            stop("Peak processing of averaged spectra is not tracked. ",
+                "Export the unmodified averaging result.")
+    }
     invisible(TRUE)
 }

@@ -166,12 +166,12 @@ test_that("processed higher levels cannot enter the MS2-only writers", {
         expect_error(createDatabase(pa, NULL, format = "sqlite"),
             "Processed MS3/MS4 database export is not supported", info = field)
     }
-    ## The Parquet writer takes filtered MS3/MS4 spectra, not averages,
-    ## which are not produced yet.
+    ## The Parquet writer takes filtered MS3/MS4 spectra, and MS3/MS4
+    ## averages only with the provenance AverageFragSpectraParam records.
     pa <- methods::new("purityA")
     pa@avSpectra <- higher
     expect_error(createDatabase(pa, NULL, format = "parquet"),
-        "Averaged MS3/MS4 spectra cannot be exported yet")
+        "only when computed with AverageFragSpectraParam")
     expect_no_error(msPurity:::.pa_require_msn_export(
         methods::new("purityA", fragSpectra = higher)))
 })

@@ -99,8 +99,13 @@ error, retention time and purity each scan was matched at and how its retention 
 MS3 and MS4 scans linked through their MS2 scan are in \code{x_mspurity_msn_feature};
 \item averaged fragmentation spectra become spectra of the dataset, one run per source file for spectra
 averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
-(\code{av_inter}, \code{av_all}), with their per-peak statistics;
-\item the scans each averaged spectrum was made from are recorded in \code{merge_member};
+(\code{av_inter}, \code{av_all}), with their per-peak statistics. Averages computed with
+\code{AverageFragSpectraParam}, at MS2 to MS4, keep their MS level, parameter set, acquisition
+conditions and precursor path;
+\item the scans and averages each averaged spectrum was made from are recorded in \code{merge_member}.
+Where the averaging provenance is recorded, these are the inputs it selected, with whether each
+contributed a peak (\code{x_mspurity_contributes}), and \code{x_mspurity_merge_peak} gives the input
+peak each averaged peak came from; otherwise the members are reconstructed from the feature links;
 \item every assessed MS2 to MS4 scan is listed in \code{x_mspurity_scan} with its MS2 precursor purity or
 MSn stage purity, the scan it fragments and the MS2 scan its path starts from, and the activation
 method msPurity used with where that came from; peaks flagged by \code{filterFragSpectra()} are in
@@ -126,9 +131,11 @@ beside its destination and moved into place only once complete, so an interrupte
 CAMERA annotation (\code{xsa}) and a custom \code{grpPeaklist} are not mapped to the Parquet output and are refused.
 
 The SQLite database holds MS2 results only and refuses MS3/MS4
-feature links and processed spectra; the Parquet dataset holds MS2-MS4
-scans, links and filtered spectra. Averaged MS3/MS4 spectra cannot be
-exported yet.
+feature links and processed spectra, and averages computed with
+\code{AverageFragSpectraParam}; the Parquet dataset holds MS2-MS4 scans,
+links, filtered spectra and averages. Averages computed with
+\code{AverageFragSpectraParam} are exported with the provenance their
+averaging recorded, and not after their peaks were processed further.
 }
 \examples{
 #====== XCMS =================================

@@ -1,5 +1,10 @@
 context("Spectrum peak identities and average membership")
 
+# The averaged runs written from a table set, peaks read as the converter
+# reads them.
+.derived_runs <- function(src, av)
+    msPurity:::.mzs_derived_runs(av, msPurity:::.mzs_av_peaks(src, av))
+
 .identity_pa <- function(empty = FALSE) {
     raw <- lapply(c("first", "second"), function(file) {
         d <- S4Vectors::DataFrame(msLevel = c(1L, 2L, 3L, 4L, 2L, 2L),
@@ -190,7 +195,7 @@ test_that("real MSn peaks retain assessed spectrum positions", {
 }
 
 test_that("raw pid collisions cannot enter averaged arrays", {
-    out <- msPurity:::.mzs_derived_runs(.membership_src(), .membership_av())
+    out <- .derived_runs(.membership_src(), .membership_av())
     expect_equal(as.numeric(out$runs[[1L]]$peaks$mz[[1L]]), 100)
     expect_equal(as.numeric(out$runs[[1L]]$peaks$intensity[[1L]]), 20)
 })
@@ -198,7 +203,7 @@ test_that("raw pid collisions cannot enter averaged arrays", {
 test_that("average membership rejects unknown or contradictory peak types", {
     for (type in c(NA_character_, "", "unsupported", "inter")) {
         src <- .membership_src(c(type, "scan"))
-        expect_error(msPurity:::.mzs_derived_runs(src, .membership_av()),
+        expect_error(.derived_runs(src, .membership_av()),
             class = "msPurity_parquet_semantic",
             info = paste("peak type:", deparse(type)))
     }
@@ -208,7 +213,7 @@ test_that("stored average types retain their peak membership", {
     for (type in c("all", "intra", "inter")) {
         src <- .membership_src(c(type, "scan"))
         src$s_peaks$count <- c(2L, 999L)
-        out <- msPurity:::.mzs_derived_runs(src, .membership_av(type))
+        out <- .derived_runs(src, .membership_av(type))
         expect_equal(as.numeric(out$runs[[1L]]$peaks$mz[[1L]]), 100,
             info = type)
         expect_equal(as.integer(out$runs[[1L]]$peaks$contributor_count[[1L]]),
@@ -219,7 +224,7 @@ test_that("stored average types retain their peak membership", {
 test_that("empty averages retain empty peak arrays", {
     src <- .membership_src()
     src$s_peaks <- src$s_peaks[FALSE, , drop = FALSE]
-    out <- msPurity:::.mzs_derived_runs(src, .membership_av())
+    out <- .derived_runs(src, .membership_av())
     expect_length(out$runs[[1L]]$peaks$mz[[1L]], 0L)
 })
 
@@ -227,7 +232,7 @@ test_that("historical all metadata retains its intra averaging method", {
     av <- .membership_av("all", "intra")
     av$source_key <- "source"
     av$source_run <- "run"
-    out <- msPurity:::.mzs_derived_runs(.membership_src(), av)
+    out <- .derived_runs(.membership_src(), av)
     expect_equal(as.numeric(out$runs[[1L]]$peaks$mz[[1L]]), 100)
     expect_identical(out$results_runs$av_all$method, "intra")
 })

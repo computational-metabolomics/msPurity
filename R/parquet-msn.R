@@ -9,8 +9,9 @@
 
 #' The MS2 core of a purityA object: what the SQLite schema can hold.
 #'
-#' Feature links and fragmentation spectra above MS2 are left out; the
-#' spectra slot and the MSn lineage are kept, as they describe the source.
+#' Feature links and fragmentation spectra above MS2, and averages computed
+#' with AverageFragSpectraParam, are left out; the spectra slot and the MSn
+#' lineage are kept, as they describe the source.
 #'
 #' @noRd
 .pa_ms2_view <- function(pa) {
@@ -20,6 +21,15 @@
     if (length(pa@fragSpectra))
         pa@fragSpectra <- pa@fragSpectra[Spectra::msLevel(pa@fragSpectra) ==
                                          2L]
+    configured <- .pa_av_configured(pa@avSpectra)
+    if (any(configured)) {
+        sp <- pa@avSpectra[!configured]
+        meta <- .pa_spectra_metadata(sp)
+        meta$groups <- if (length(sp))
+            intersect(meta$groups, unique(as.character(sp$grpid)))
+        .pa_spectra_metadata(sp) <- meta
+        pa@avSpectra <- sp
+    }
     pa
 }
 

@@ -95,6 +95,7 @@ Collate:
     'meta_extract.R'
     'msPurity.R'
     'parquet-annotations.R'
+    'parquet-average.R'
     'parquet-conditions.R'
     'parquet-converter.R'
     'parquet-index.R'

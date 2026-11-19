@@ -201,7 +201,8 @@
             feature_id_ = match(av$grpid, grp_ids),
             chromatographic_peak_id_ = NA_integer_,
             link_mode = "manual", run_scoped = av$method == "intra",
-            precursor_mz_used = av$precursor_mz,
+            precursor_mz_used = if (is.null(av$link_precursor_mz))
+                av$precursor_mz else av$link_precursor_mz,
             precursor_mz_error = NA_real_,
             precursor_retention_time = av$retention_time,
             precursor_purity = av$inPurity,

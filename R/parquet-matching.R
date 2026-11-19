@@ -290,7 +290,9 @@
     if (length(runs)) {
         sm <- .mzs_read_spectra_meta(path, m, c(
             "id", "selected_ion_mz", "scan_polarity",
-            "x_mspurity_precursor_purity"), runs)
+            "x_mspurity_precursor_purity", "ms_level"), runs)
+        ## MS3/MS4 averages are not matched (D10).
+        sm <- sm[sm$ms_level %in% c(NA, 2L), , drop = FALSE]
         self <- sf[sf$ms2_source == "self", ]
         fid <- self$feature_id_[match(sm$spectrum_id_,
                                       self$ms2_spectrum_id_)]

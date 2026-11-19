@@ -54,8 +54,17 @@
   a Parquet dataset it is the default `study`; `study = NA` opts out.
   Conditions the study does not record are reported as unavailable in the
   loss ledger.
+- **Averages in Parquet results** (#127, #128, #31): averages computed with
+  `AverageFragSpectraParam`, at MS2 to MS4, are exported with their MS level,
+  parameter set and group, acquisition conditions and precursor path. Where
+  averaging recorded its provenance, `merge_member` lists the inputs each
+  average selected, with whether each contributed a peak, and the new
+  `x_mspurity_merge_peak` gives the input peak each averaged peak came from;
+  averages without a record keep reconstructed members. Empty averages are
+  exported as spectra without peaks. Spectral matching stays on MS2
+  averages.
 - The SQLite writer refuses MS3/MS4 feature links as it refuses MS3/MS4
-  spectra.
+  spectra and averages computed with `AverageFragSpectraParam`.
 
 # msPurity 1.99.1
 

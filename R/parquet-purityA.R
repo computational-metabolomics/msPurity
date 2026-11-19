@@ -35,6 +35,13 @@
     averaged = paste("minfrac_pass_flag & snr_pass_flag & ra_pass_flag &",
                      "minnum_pass_flag"))
 
+.MZS_PRECURSOR_DEFINITION_PARAM <- paste(
+    "An average computed with AverageFragSpectraParam has the median",
+    "precursor m/z and retention time of the scans that contributed to it,",
+    "of their last stage for MS3/MS4 averages, whose earlier stages are in",
+    "x_mspurity_precursor_path; its spectrum_feature link gives the MS2",
+    "precursor of that path.")
+
 .MZS_PRECURSOR_DEFINITION <- paste(
     "An averaged spectrum's precursor m/z and retention time are those of",
     "its feature (xcms featureDefinitions() mzmed and rtmed, or",
@@ -384,15 +391,29 @@
     pk
 }
 
-#' The native runs holding the averaged spectra, for `.mzs_commit_new()`.
+#' The peaks of the averaged spectra, as `.mzs_derived_runs()` writes them:
+#' those of s_peaks and those of averages computed with
+#' AverageFragSpectraParam, by spectrum, m/z and cluster.
 #'
 #' @noRd
-.mzs_derived_runs <- function(src, av) {
+.mzs_av_peaks <- function(src, av, live = NULL) {
+    legacy <- if (is.null(av$configured)) av else
+        av[!av$configured %in% TRUE, , drop = FALSE]
+    pk <- .mzs_rbind_fill(.mzs_average_peaks(src, legacy), live$peaks)
+    if (is.null(pk))
+        return(.mzs_average_peaks(src, legacy))
+    pk[order(pk$pid, pk$mz, pk$cl), , drop = FALSE]
+}
+
+#' The native runs holding the averaged spectra, for `.mzs_commit_new()`.
+#'
+#' @param pk `.mzs_av_peaks()`.
+#'
+#' @noRd
+.mzs_derived_runs <- function(av, pk) {
     if (!nrow(av))
         return(list(runs = list(), results_runs = list(),
                     peak_columns = list()))
-    pk <- .mzs_average_peaks(src, av)
-    pk <- pk[order(pk$pid, pk$mz, pk$cl), , drop = FALSE]
     unknown <- setdiff(names(pk), c("sid", "fileid", "mz", "i", "type",
                                     "scan", "grpid", "pid", "frac",
                                     "pass_flag", "purity_pass_flag",
@@ -428,7 +449,8 @@
                                                   spec[[2L]])
         }
         meta <- data.frame(
-            ms_level = rep(2L, nrow(a)),
+            ms_level = if (is.null(a$ms_level)) rep(2L, nrow(a))
+                       else as.integer(a$ms_level),
             rtime = a$retention_time,
             scan_polarity = .mzs_scan_polarity(a$polarity),
             spectrum_representation = rep("MS:1000127", nrow(a)),
@@ -441,6 +463,10 @@
         for (c in c("instrument", "instrument_type"))
             if (c %in% names(av) && any(!is.na(av[[c]])))
                 meta[[paste0("x_mspurity_", c)]] <- a[[c]]
+        ## How averages computed with AverageFragSpectraParam were made.
+        if (any(av$configured %in% TRUE))
+            for (c in names(.MZS_AV_CONFIGURED_TYPES))
+                meta[[c]] <- a[[sub("^x_mspurity_", "", c)]]
         runs[[length(runs) + 1L]] <- list(run_id = r, meta = meta,
                                           peaks = peaks)
         m1 <- a$method[1L]
@@ -458,26 +484,42 @@
 
 #' The merge_member table: the scans each averaged spectrum drew on.
 #'
-#' All-file averages draw on the feature's passing scans, intra-file averages
-#' on those of their file, inter-file averages on the feature's intra-file
-#' averages. A scan linked twice is listed twice. Membership is complete when
-#' it matches the recorded contributor count.
+#' Where the averaging provenance is recorded (`gk`), the members are the
+#' inputs it records, selected and contributing. Otherwise they are
+#' reconstructed: all-file averages draw on the feature's passing scans,
+#' intra-file averages on those of their file, inter-file averages on the
+#' feature's intra-file averages; a scan linked twice is listed twice, and
+#' membership is complete when it matches the recorded contributor count.
 #'
 #' @param members data.frame of contributions: grpid, pid, fileid, one row
 #'     per scan-to-feature link.
 #'
+#' @param gk `.mzs_av_graph()`, or `NULL`.
+#'
 #' @noRd
-.mzs_merge_member <- function(src, av, members, scans, scan_refs) {
+.mzs_merge_member <- function(src, av, members, scans, scan_refs,
+                              gk = NULL) {
     if (!nrow(av))
         return(list(table = NULL, incomplete = 0L))
+    recorded <- if (is.null(gk)) NULL
+                else .mzs_graph_merge_member(av, gk, scans, scan_refs)
+    keep <- !(av$configured %in% TRUE) &
+        !(if (is.null(gk)) FALSE else gk$use)
+    av_all <- av
+    av <- av[keep, , drop = FALSE]
+    if (!nrow(av)) {
+        if (is.null(recorded))
+            return(list(table = NULL, incomplete = 0L))
+        return(list(table = recorded, incomplete = 0L))
+    }
     avp <- .mzs_average_peaks(src, av)
     avp <- avp[!is.na(avp$total), c("pid", "total"), drop = FALSE]
     total <- tapply(avp$total, avp$pid, max)
     out <- lapply(seq_len(nrow(av)), function(i) {
         a <- av[i, ]
         if (a$method == "inter") {
-            mem <- av[av$method == "intra" & av$grpid == a$grpid, ,
-                      drop = FALSE]
+            mem <- av_all[av_all$method == "intra" & av_all$grpid == a$grpid &
+                          !(av_all$configured %in% TRUE), , drop = FALSE]
             if (!nrow(mem))
                 return(NULL)
             return(data.frame(
@@ -514,7 +556,7 @@
     })
     mm <- do.call(.mzs_rbind_fill, out)
     if (is.null(mm) || !nrow(mm))
-        return(list(table = NULL, incomplete = 0L))
+        return(list(table = recorded, incomplete = 0L))
     mm$merged_source <- "self"
     mm$member_rank <- as.integer(stats::ave(mm$merged_spectrum_id_,
                                             mm$merged_spectrum_id_,
@@ -524,7 +566,7 @@
     got <- as.integer(stats::ave(mm$member_rank, mm$merged_spectrum_id_,
                                  FUN = length))
     mm$members_complete <- !is.na(want) & got == want
-    list(table = mm,
+    list(table = .mzs_rbind_fill(mm, recorded),
          incomplete = sum(!tapply(mm$members_complete,
                                   mm$merged_spectrum_id_, all)))
 }
@@ -1061,6 +1103,10 @@
         disposition = "not_present_in_source",
         reason = paste("Neither the source spectra nor their filter strings",
                        "name an activation method.")),
+    "x_mspurity_merge_peak.member_peak_rank" = list(
+        disposition = "not_present_in_source",
+        reason = paste("The averaging provenance does not record which",
+                       "peak of these inputs a peak came from.")),
     "x_mspurity_scan.scan_filter_analyzer" = list(
         disposition = "not_present_in_source",
         reason = "The filter strings name no analyzer."))
@@ -1116,10 +1162,16 @@
     scan_refs <- .mzs_scan_refs(files, scans, ann, fast)
     parents <- .mzs_parent_refs(files, scans, scan_refs, ann)
     av <- .mzs_derived_index(src, files, uid)
-    derived <- .mzs_derived_runs(src, av)
+    live_av <- if (!is.null(pa))
+        .mzs_live_averages(pa, files, uid, live$metadata)
+    av <- .mzs_av_combine(av, live_av, files)
+    av_peaks <- .mzs_av_peaks(src, av, live_av)
+    derived <- .mzs_derived_runs(av, av_peaks)
+    gk <- if (!is.null(pa)) .mzs_av_graph(pa, av, av_peaks)
     members <- if (!is.null(live)) .mzs_members_from_pa(live$pa)
                else .mzs_members_from_db(src, scans)
-    mm <- .mzs_merge_member(src, av, members, scans, scan_refs)
+    mm <- .mzs_merge_member(src, av, members, scans, scan_refs, gk)
+    merge_peak <- if (!is.null(gk)) .mzs_merge_peak(av, gk)
     st <- .mzs_scan_tables(src, scans, scan_refs, parents, ann, pa)
     ftabs <- .mzs_feature_tables(src, files)
     sf <- .mzs_spectrum_feature(
@@ -1139,6 +1191,8 @@
         tables$x_mspurity_scan_peak <- st$peak
     if (!is.null(mm$table))
         tables$merge_member <- mm$table
+    if (!is.null(merge_peak))
+        tables$x_mspurity_merge_peak <- merge_peak
 
     tables$conversion <- .mzs_conversion_row(
         route = paste0("mspurity:", route),
@@ -1158,13 +1212,22 @@
     tables$loss_ledger <- .mzs_loss_ledger(c(
         .mzs_mspurity_losses(src, live, st, mm$incomplete),
         .mzs_msn_losses(files, scans, pa),
+        .mzs_av_losses(av, gk, merge_peak, pa),
         .mzs_feature_losses(src, ftabs, live),
         evd$losses,
         .mzs_null_column_losses(tables, .MZS_NULL_REASONS)))
     tables$source_identifier <- .mzs_bind_source_ids(
-        .mzs_source_ids("spectra", av$spectrum_id_, "s_peak_meta", "pid",
-                        src$lexical$pid[match(av$pid, src$s_peak_meta$pid)],
+        .mzs_source_ids("spectra", av$spectrum_id_[av$pid > 0],
+                        "s_peak_meta", "pid",
+                        src$lexical$pid[match(av$pid[av$pid > 0],
+                                              src$s_peak_meta$pid)],
                         "positional"),
+        if (any(av$configured %in% TRUE))
+            .mzs_source_ids("spectra",
+                            av$spectrum_id_[av$configured %in% TRUE],
+                            "avSpectra", "spectrumId",
+                            av$spectrum_key[av$configured %in% TRUE],
+                            "name"),
         .mzs_source_ids("x_mspurity_scan",
                         st$scan$scan_annotation_id_[scans$ms_level == 2L],
                         "s_peak_meta", "pid",
@@ -1217,7 +1280,8 @@
         uid = uid, role = "results",
         runs = derived$runs,
         run_types = c(.MZS_AV_META_TYPES, x_mspurity_instrument = "str",
-                      x_mspurity_instrument_type = "str"),
+                      x_mspurity_instrument_type = "str",
+                      .MZS_AV_CONFIGURED_TYPES),
         results_runs = derived$results_runs,
         peak_columns = derived$peak_columns,
         tables = tables,
@@ -1232,7 +1296,9 @@
                 route = paste0("mspurity:", route),
                 fileMap = if (length(fileMap)) as.list(fileMap),
                 pass_criteria = .MZS_PASS_CRITERIA,
-                precursor_definition = .MZS_PRECURSOR_DEFINITION))))
+                precursor_definition = .MZS_PRECURSOR_DEFINITION,
+                precursor_definition_param = if (any(av$configured %in% TRUE))
+                    .MZS_PRECURSOR_DEFINITION_PARAM))))
     .mzs_commit_new(path, plan, overwrite)
     invisible(path)
 }

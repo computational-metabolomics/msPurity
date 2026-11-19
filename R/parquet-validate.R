@@ -635,6 +635,63 @@ validateParquet <- function(path, sourcePaths = NULL) {
     f
 }
 
+#' Recorded averaging provenance: merge_member rows that name the dataset's
+#' own averages, and the peak edges of x_mspurity_merge_peak.
+#'
+#' @return a list of findings.
+#'
+#' @noRd
+.mzs_v_averages <- function(path, m, read, have) {
+    f <- list()
+    add <- function(msg, table)
+        f[[length(f) + 1L]] <<- .mzs_finding("MUST", "R-099", table, msg)
+    if (!have("merge_member"))
+        return(f)
+    mm <- read("merge_member")
+    own <- mm$member_source %in% "self"
+    if (any(own & mm$member_spectrum_id_ %in% mm$merged_spectrum_id_ &
+            mm$member_spectrum_id_ == mm$merged_spectrum_id_))
+        add("An averaged spectrum is listed as its own member.",
+            "merge_member")
+    ids <- unique(c(mm$merged_spectrum_id_, mm$member_spectrum_id_[own]))
+    meta <- if (length(ids) && length(m$runs))
+        .mzs_read_spectra_meta(path, m, "ms_level") else NULL
+    level <- function(id) meta$ms_level[match(id, meta$spectrum_id_)]
+    if (!is.null(meta) && any(own & level(mm$member_spectrum_id_) !=
+                              level(mm$merged_spectrum_id_), na.rm = TRUE))
+        add("An averaged spectrum has a member average of another MS level.",
+            "merge_member")
+    if (!have("x_mspurity_merge_peak"))
+        return(f)
+    mp <- read("x_mspurity_merge_peak")
+    key <- paste(mm$merged_spectrum_id_, mm$member_rank)
+    at <- match(paste(mp$merged_spectrum_id_, mp$member_rank), key)
+    if (anyNA(at))
+        add("Peak edges name members absent from merge_member.",
+            "x_mspurity_merge_peak")
+    bases <- c("source_reference", "filter_input", "derived", "unknown")
+    if (any(!mp$basis %in% bases))
+        add("Unknown peak edge basis.", "x_mspurity_merge_peak")
+    if (any(is.na(mp$member_peak_rank) != (mp$basis == "unknown")))
+        add("A member peak is unknown exactly where the basis is unknown.",
+            "x_mspurity_merge_peak")
+    self <- mm$member_source[at] %in% "self"
+    if (any(!is.na(at) & self != (mp$basis == "derived")))
+        add("Edges from averaged members, and only these, are derived.",
+            "x_mspurity_merge_peak")
+    if (any(mp$merged_peak_rank < 1L | mp$member_rank < 1L |
+            mp$member_peak_rank < 1L, na.rm = TRUE))
+        add("Peak edge ranks start at 1.", "x_mspurity_merge_peak")
+    if ("x_mspurity_contributes" %in% names(mm)) {
+        known <- !is.na(mm$x_mspurity_contributes)
+        edged <- key %in% paste(mp$merged_spectrum_id_, mp$member_rank)
+        if (any(known & mm$x_mspurity_contributes != edged))
+            add("A member contributes exactly when it has a peak edge.",
+                "merge_member")
+    }
+    f
+}
+
 #' Foreign keys, reported as orphan rows.
 #'
 #' @noRd
@@ -711,7 +768,8 @@ validateParquet <- function(path, sourcePaths = NULL) {
     orphan("x_mspurity_msn_feature", "feature_id_", fid, "feature")
     orphan("x_mspurity_msn_feature", "chromatographic_peak_id_", pid,
            "chromatographic_peak")
-    f <- c(f, .mzs_v_lineage(read, have))
+    f <- c(f, .mzs_v_lineage(read, have), .mzs_v_averages(path, m, read,
+                                                         have))
     acts <- vapply(m$provenance %||% list(), function(a) as.character(a$id),
                    "")
     for (n in names(m$results$tables))

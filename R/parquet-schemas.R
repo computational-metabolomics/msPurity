@@ -320,6 +320,21 @@
                       "msn_feature_id_"),
         extension = TRUE),
 
+    ## The stored peak of each immediate input every averaged peak was made
+    ## from, as the averaging provenance records it. It joins merge_member
+    ## on (merged_spectrum_id_, member_rank). An input's peak is its rank in
+    ## an averaged spectrum of the dataset (basis "derived") or its position
+    ## in a measured scan, among its source or filtered peaks.
+    x_mspurity_merge_peak = .mzs_table(c(
+        merged_spectrum_id_ = "i64!",
+        merged_peak_rank = "i32!",
+        member_rank = "i32!",
+        member_peak_rank = "i32",
+        basis = "dict!",
+        edge_rank = "i32!"),
+        sorted_by = c("merged_spectrum_id_", "edge_rank"),
+        key = NA_character_, extension = TRUE),
+
     ## filterFragSpectra() peak flags; a peak is identified by its m/z and
     ## intensity within the scan.
     x_mspurity_scan_peak = .mzs_table(c(
