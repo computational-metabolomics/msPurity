@@ -23,14 +23,14 @@
     configuration = NULL) {
     scans <- ancestry$scans
     rows <- which(scans$ms_level > 2L & scans$pid %in% pids)
-    parent <- match(scans$parent_id[rows], scans$spectrum_id)
+    parent <- match(scans$parentLineageScanId[rows], scans$lineageScanId)
     column <- function(name) {
         if (name %in% names(scans)) scans[[name]][rows] else
             rep(NA_real_, length(rows))
     }
     result <- data.frame(pid = scans$pid[rows],
-        child_id = scans$spectrum_id[rows],
-        parent_pid = scans$pid[parent], parent_id = scans$spectrum_id[parent],
+        childLineageScanId = scans$lineageScanId[rows],
+        parentPid = scans$pid[parent], parentLineageScanId = scans$lineageScanId[parent],
         precursor_mz = scans$precursor_mz[rows],
         precursor_intensity = column("precursor_intensity"),
         native_isolation_target_mz = column("isolationWindowTargetMz"),
@@ -66,7 +66,7 @@
     result$lower_mz <- windows$isolationWindowLowerMz
     result$upper_mz <- windows$isolationWindowUpperMz
     result$window_source <- windows$source
-    valid_parent <- !is.na(parent) & scans$parent_status[rows] == "valid"
+    valid_parent <- !is.na(parent) & scans$parentStatus[rows] == "valid"
     valid_parent[valid_parent] <- scans$ms_level[parent[valid_parent]] ==
         scans$ms_level[rows[valid_parent]] - 1L
     result$status[valid_parent] <- windows$status[valid_parent]

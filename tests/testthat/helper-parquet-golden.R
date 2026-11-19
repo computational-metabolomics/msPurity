@@ -131,11 +131,28 @@
     .parquet_canon(res)
 }
 
+# Whether JSON text `got` holds every value of JSON text `ref`: an object may
+# gain keys, all else must be equal. Processing steps gain parameters.
+.json_contains <- function(got, ref) {
+    if (is.na(ref) || is.na(got)) return(identical(is.na(got), is.na(ref)))
+    within <- function(g, r) {
+        if (!is.list(r)) return(identical(g, r))
+        if (!is.list(g)) return(FALSE)
+        if (is.null(names(r)))
+            return(length(g) == length(r) && all(mapply(within, g, r)))
+        all(names(r) %in% names(g)) &&
+            all(vapply(names(r), function(k) within(g[[k]], r[[k]]), TRUE))
+    }
+    within(jsonlite::fromJSON(got, simplifyVector = FALSE),
+           jsonlite::fromJSON(ref, simplifyVector = FALSE))
+}
+
 # Whether dump `got` holds everything frozen in `ref` unchanged: every native
 # run, the manifest's runs and sources, every table, column and row, with
 # rows of the loss ledger and source identifiers kept as a subset (their ids
-# renumbered). Added tables, columns and ledger rows are allowed; the results
-# version and the manifest's table bookkeeping may change.
+# renumbered). Added tables, columns, ledger rows and step parameters are
+# allowed; the versions of msPurity and of the results layout, and the
+# manifest's table bookkeeping, may change.
 .parquet_golden_contains <- function(got, ref) {
     msg <- character()
     fail <- function(...) msg <<- c(msg, paste0(...))
@@ -167,9 +184,17 @@
         }
         if (nrow(g) != nrow(r)) { fail(t, ": rows ", nrow(r), " -> ", nrow(g)); next }
         cols <- intersect(names(r), names(g))
-        if (t == "conversion") cols <- setdiff(cols, "results_version")
-        for (c in cols)
-            if (!identical(g[[c]], r[[c]])) fail(t, ".", c, " changed")
+        ## The versions of msPurity and the results layout that wrote them.
+        if (t == "conversion")
+            cols <- setdiff(cols, c("results_version", "converter_version",
+                                    "source_format_version"))
+        if (t == "tool_provenance") cols <- setdiff(cols, "tool_version")
+        for (c in cols) {
+            same <- if (t == "tool_provenance" && c == "parameters")
+                all(mapply(.json_contains, g[[c]], r[[c]]))
+            else identical(g[[c]], r[[c]])
+            if (!same) fail(t, ".", c, " changed")
+        }
     }
     if (length(msg)) msg else TRUE
 }

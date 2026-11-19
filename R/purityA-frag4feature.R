@@ -149,7 +149,10 @@
 #'   \code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
 #'   original file positions (\code{"scanIndex"}), or backend source keys
 #'   (\code{"sourceSpectrumId"}). The last option is msPurity-specific and
-#'   uses retained \code{spectrum_id_} or \code{source_spectrum_id} keys.
+#'   uses the dataset's \code{spectrum_id_} when available. For custom
+#'   inputs, \code{lineageScanId} identifies each ancestry row and
+#'   \code{sourceSpectrumId} supplies its parent-reference key. The key
+#'   defaults to the supplied \code{lineageScanId} when missing.
 #'   \code{"spectrumId"} matches native \code{spectrumRef} metadata to native
 #'   \code{spectrumId}; it requires these fields to have been supplied by the
 #'   reader. No new metadata extraction is performed. None of these identifiers
@@ -183,6 +186,8 @@
 #'
 #' * pa@@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here.
 #'   Besides the XCMS columns and the precursor details, it holds
+#'   + linkId, an integer identifying this association occurrence through filtering,
+#'     reordering and averaging. Multiple occurrences can refer to the same pid.
 #'   + precurMtchRTadj: the MS/MS time on the adjusted scale, as compared with the window
 #'   + rtMapStatus: the mapping status of the file (see above)
 #'   + precurMzSource: the precursor m/z used (iMz, aMz or precursorMZ)
@@ -502,6 +507,7 @@ setMethod(f="frag4feature", signature="purityA",
   effective_parameters <- c(pa@params$frag4feature,
       list(createDb = createDb, outDir = outDir, dbName = dbName,
           grpPeaklist = grpPeaklist))
+  pa <- .pa_graph_mint_links(pa)
   pa <- .pa_processing_record(pa, "frag4feature", effective_parameters,
       processing_started, processing_input)
   return(pa)

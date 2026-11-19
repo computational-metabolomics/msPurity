@@ -1,5 +1,25 @@
-# msPurity 1.99.1
+# msPurity 1.99.2
 
+- **Fragment clustering** (#141): matching peaks stay together across
+  processing blocks, preventing incorrect support counts and lost averaged
+  fragments. Blocks whose peaks all fit within one m/z tolerance window are
+  grouped directly, reducing computation and memory use. Groups above
+  `blockSize` that cannot be grouped directly or split without separating
+  matching peaks now raise an error.
+- **Execution controls**: `blockSize` (default 5,000 peaks) sets the clustering
+  block limit in intra/inter/all fragmentation averaging and DIMS
+  averaging/grouping. Explicit `cores` values apply to the current call;
+  omitting `cores` uses the object's stored setting.
+- **MSn ancestry** uses `lineageScanId` to link scans and their parents and
+  `sourceSpectrumId` for parent references expressed as source keys.
+- **Fragmentation averaging** supports named `AverageFragSpectraParam` sets
+  to select or combine acquisition conditions for MSn (e.g. MS2-MS4) spectra.
+  Incompatible precursor paths stay separate. Inter-file averaging uses each file’s averaged spectrum
+  once per group, regardless of how many scans went into it.
+- **Averaging provenance** (#31) adds `averageMembers()`, `averagePeakMembers()`
+  and `averageProvenance()` to trace selected inputs and retained peaks through
+  intra-file and inter-file averaging. Repeated feature links remain distinct.
+- Mean averaging no longer warns when optional normalized intensities are absent.
 - **Raw MS1-MS4 data in Parquet studies** (#127): a `Spectra` on a dataset
   written by MsBackendParquet's `mzMLToParquet()` (0.99.12 or later) runs
   through `purityA()`, `frag4feature()`, `filterFragSpectra()` and averaging
@@ -11,8 +31,9 @@
   PSI-MS accession is read as its method name, so selectors match it as they
   match a filter string, and `activationTypeBasis` records which applied.
 - With automatic `parentReference`, a Parquet dataset's own spectrum ids are
-  no longer read as parent scan numbers once acquisition numbers resolve,
-  which made parent references ambiguous in studies of several runs.
+  no longer offered as `sourceSpectrumId` readings of parent scan numbers
+  once acquisition numbers resolve, which made parent references ambiguous
+  in studies of several runs.
 - **Parquet results written directly, for MS2 to MS4** (#127, #128):
   `createDatabase(format = "parquet")` no longer stages an SQLite database;
   the MS2 output is unchanged. Results version 1.1.0 adds, without changing
@@ -35,6 +56,8 @@
   loss ledger.
 - The SQLite writer refuses MS3/MS4 feature links as it refuses MS3/MS4
   spectra.
+
+# msPurity 1.99.1
 
 - **Retention-time correction in `frag4feature()`** (#137): precursor times
   of each file are mapped to the adjusted XCMS scale by interpolation and

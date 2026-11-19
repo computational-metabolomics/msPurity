@@ -87,12 +87,16 @@
     lin <- pa@params$msnLineage$scans
     j <- if (is.data.frame(lin)) match(pids, lin$pid) else
         rep(NA_integer_, length(pids))
-    lcol <- function(v) if (is.data.frame(lin) && v %in% names(lin))
-        lin[[v]][j] else rep(NA, length(pids))
-    out$parent_pid <- as.integer(lcol("parent_pid"))
-    out$root_pid <- as.integer(lcol("root_pid"))
-    out$parent_status <- as.character(lcol("parent_status"))
-    out$path_status <- as.character(lcol("path_status"))
+    ## The first of the given names the lineage has (objects saved before
+    ## the lineage columns took their current names use the others).
+    lcol <- function(v) {
+        v <- if (is.data.frame(lin)) intersect(v, names(lin)) else character()
+        if (length(v)) lin[[v[1L]]][j] else rep(NA, length(pids))
+    }
+    out$parent_pid <- as.integer(lcol(c("parentPid", "parent_pid")))
+    out$root_pid <- as.integer(lcol(c("rootPid", "root_pid")))
+    out$parent_status <- as.character(lcol(c("parentStatus", "parent_status")))
+    out$path_status <- as.character(lcol(c("pathStatus", "path_status")))
     out$parent_reference_type <- as.character(lcol("parentReferenceType"))
     out
 }

@@ -102,7 +102,10 @@ through their validated MS2 acquisition ancestors.}
 \code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
 original file positions (\code{"scanIndex"}), or backend source keys
 (\code{"sourceSpectrumId"}). The last option is msPurity-specific and
-uses retained \code{spectrum_id_} or \code{source_spectrum_id} keys.
+uses the dataset's \code{spectrum_id_} when available. For custom
+inputs, \code{lineageScanId} identifies each ancestry row and
+\code{sourceSpectrumId} supplies its parent-reference key. The key
+defaults to the supplied \code{lineageScanId} when missing.
 \code{"spectrumId"} matches native \code{spectrumRef} metadata to native
 \code{spectrumId}; it requires these fields to have been supplied by the
 reader. No new metadata extraction is performed. None of these identifiers
@@ -124,6 +127,8 @@ Returns a purityA object (pa) with the following slots populated:
 \item pa@grped_df: A dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor details is recorded here.
 Besides the XCMS columns and the precursor details, it holds
 \itemize{
+\item linkId, an integer identifying this association occurrence through filtering,
+reordering and averaging. Multiple occurrences can refer to the same pid.
 \item precurMtchRTadj: the MS/MS time on the adjusted scale, as compared with the window
 \item rtMapStatus: the mapping status of the file (see above)
 \item precurMzSource: the precursor m/z used (iMz, aMz or precursorMZ)

@@ -1,11 +1,11 @@
 .ancestry_fixture <- function() {
-    data.frame(pid = 1:6, spectrum_id = paste0("source-", 1:6),
-        source_spectrum_id = paste0("source-", 1:6),
+    data.frame(pid = 1:6, lineageScanId = paste0("source-", 1:6),
+        sourceSpectrumId = paste0("source-", 1:6),
         run_id = rep(c("one", "two"), each = 3L),
         ms_level = rep(2:4, 2L), acquisition_num = rep(101:103, 2L),
         scan_index = rep(1:3, 2L), rtime = rep(c(10, 11, 12), 2L),
         precursor_mz = rep(c(500, 150, 75), 2L), polarity = 1L,
-        parent_reference_raw = rep(c(NA, "101", "102"), 2L),
+        rawParentReference = rep(c(NA, "101", "102"), 2L),
         stringsAsFactors = FALSE)
 }
 
@@ -15,10 +15,10 @@
 test_that("metadata ancestry resolves parents within their source run", {
     x <- .prepare_ancestry(.ancestry_fixture())
     expect_identical(x$parentReference, "acquisitionNum")
-    expect_identical(x$scans$parent_pid, c(NA_integer_, 1L, 2L,
+    expect_identical(x$scans$parentPid, c(NA_integer_, 1L, 2L,
             NA_integer_, 4L, 5L))
-    expect_identical(x$scans$root_pid, c(1L, 1L, 1L, 4L, 4L, 4L))
-    expect_identical(x$scans$path_status,
+    expect_identical(x$scans$rootPid, c(1L, 1L, 1L, 4L, 4L, 4L))
+    expect_identical(x$scans$pathStatus,
         rep(c("root", "valid", "valid"), 2L))
     expect_identical(x$scans$path[[6L]], 4:6)
 })
@@ -27,35 +27,35 @@ test_that("unknown metadata keys cannot resolve a literal NA reference", {
     metadata <- .ancestry_fixture()[1:2, ]
     metadata$acquisition_num <- NA_real_
     metadata$scan_index <- NA_real_
-    metadata$parent_reference_raw[2L] <- "NA"
+    metadata$rawParentReference[2L] <- "NA"
     out <- .prepare_ancestry(metadata, "acquisitionNum")$scans
-    expect_identical(out$parent_status[2L], "unresolved_reference")
-    expect_true(is.na(out$root_pid[2L]))
+    expect_identical(out$parentStatus[2L], "unresolved_reference")
+    expect_true(is.na(out$rootPid[2L]))
 })
 
 test_that("explicit source and position conventions resolve their own keys", {
     metadata <- .ancestry_fixture()
-    metadata$parent_reference_raw <- c(NA, "source-1", "source-2",
+    metadata$rawParentReference <- c(NA, "source-1", "source-2",
         NA, "source-4", "source-5")
     source <- .prepare_ancestry(metadata, "sourceSpectrumId")
-    metadata$parent_reference_raw <- rep(c(NA, "1", "2"), 2L)
+    metadata$rawParentReference <- rep(c(NA, "1", "2"), 2L)
     position <- .prepare_ancestry(metadata, "scanIndex")
-    expect_identical(source$scans$parent_pid, position$scans$parent_pid)
-    expect_identical(position$scans$root_pid, c(1L, 1L, 1L, 4L, 4L, 4L))
+    expect_identical(source$scans$parentPid, position$scans$parentPid)
+    expect_identical(position$scans$rootPid, c(1L, 1L, 1L, 4L, 4L, 4L))
 })
 
 test_that("ambiguous conventions and duplicate source keys are rejected", {
     metadata <- .ancestry_fixture()[1:3, ]
     metadata$ms_level <- c(2L, 2L, 3L)
     metadata$acquisition_num <- c(2L, 1L, 3L)
-    metadata$parent_reference_raw <- c(NA, NA, "1")
+    metadata$rawParentReference <- c(NA, NA, "1")
     expect_error(.prepare_ancestry(metadata), "Ambiguous parent")
     expect_identical(.prepare_ancestry(metadata,
-            "acquisitionNum")$scans$parent_pid[3L], 2L)
+            "acquisitionNum")$scans$parentPid[3L], 2L)
     metadata$acquisition_num <- c(1L, 1L, 3L)
     expect_error(.prepare_ancestry(metadata, "acquisitionNum"),
         "Duplicate acquisitionNum")
-    metadata$spectrum_id[2L] <- metadata$spectrum_id[1L]
+    metadata$lineageScanId[2L] <- metadata$lineageScanId[1L]
     expect_error(.prepare_ancestry(metadata, "sourceSpectrumId"),
         "source spectrum identities must be unique")
 })
@@ -64,49 +64,49 @@ test_that("automatic references compare only valid parent interpretations", {
     metadata <- .ancestry_fixture()[1:3, ]
     metadata$ms_level <- c(2L, 2L, 3L)
     metadata$acquisition_num <- 1:3
-    metadata$source_spectrum_id <- as.character(1:3)
+    metadata$sourceSpectrumId <- as.character(1:3)
     metadata$spectrumId <- paste0("scan=", 1:3)
     metadata$spectrumRef <- c(NA, NA, "scan=1")
-    metadata$parent_reference_raw <- c(NA, NA, "1")
+    metadata$rawParentReference <- c(NA, NA, "1")
     agreed <- .prepare_ancestry(metadata)
-    expect_identical(agreed$scans$parent_pid, c(NA_integer_, NA_integer_, 1L))
+    expect_identical(agreed$scans$parentPid, c(NA_integer_, NA_integer_, 1L))
     expect_identical(agreed$parentReference, "spectrumId")
 
     metadata$scan_index <- c(2L, 1L, 3L)
     metadata$rtime[2L] <- 14
     invalid_competitor <- .prepare_ancestry(metadata)
-    expect_identical(invalid_competitor$scans$parent_pid,
-        agreed$scans$parent_pid)
+    expect_identical(invalid_competitor$scans$parentPid,
+        agreed$scans$parentPid)
     metadata$rtime[2L] <- 11
     expect_error(.prepare_ancestry(metadata), "Ambiguous parent")
 })
 
 test_that("invalid and incomplete paths remain explicit and unlinked", {
     metadata <- .ancestry_fixture()
-    metadata$parent_reference_raw[2L] <- "999"
-    metadata$parent_reference_raw[6L] <- "101"
+    metadata$rawParentReference[2L] <- "999"
+    metadata$rawParentReference[6L] <- "101"
     out <- .prepare_ancestry(metadata, "acquisitionNum")$scans
-    expect_identical(out$path_status,
+    expect_identical(out$pathStatus,
         c("root", "unresolved_reference", "unresolved_reference",
             "root", "valid", "missing_stage"))
     metadata <- .ancestry_fixture()
     metadata$polarity[2L] <- 0L
     expect_identical(.prepare_ancestry(metadata,
-            "acquisitionNum")$scans$path_status[2:3],
+            "acquisitionNum")$scans$pathStatus[2:3],
         rep("invalid_reference", 2L))
     metadata <- .ancestry_fixture()
     metadata$rtime[2L] <- 9
     expect_identical(.prepare_ancestry(metadata,
-            "acquisitionNum")$scans$path_status[2L], "invalid_reference")
+            "acquisitionNum")$scans$pathStatus[2L], "invalid_reference")
     metadata <- .ancestry_fixture()
     metadata$scan_index[2L] <- 0L
     expect_identical(.prepare_ancestry(metadata,
-            "acquisitionNum")$scans$path_status[2L], "invalid_reference")
+            "acquisitionNum")$scans$pathStatus[2L], "invalid_reference")
     for (mass in c(NA_real_, 0, -1)) {
         metadata <- .ancestry_fixture()
         metadata$precursor_mz[2L] <- mass
         expect_identical(.prepare_ancestry(metadata,
-                "acquisitionNum")$scans$path_status[2:3],
+                "acquisitionNum")$scans$pathStatus[2:3],
             rep("missing_precursor", 2L), info = paste("precursor:", mass))
     }
 })
@@ -157,7 +157,7 @@ test_that("child acquisition fields come from the child, not its root link", {
         instrumentConfigurationId = c("IC2", NA_character_),
         isolationWindowTargetMz = c(150, 75), acquisitionNum = 102:103,
         spectrumId = c("scan=102", "scan=103"),
-        spectrum_id = c("source-2", "source-3"),
+        lineageScanId = c("source-2", "source-3"),
         precursorMZ = c(150, 75), precursorRT = c(10, 11),
         massAnalyzer = c("ion trap", NA_character_),
         activationType = c("CID", NA_character_),
@@ -176,20 +176,34 @@ test_that("Spectra preparation keeps dataset keys and reads no peak arrays", {
     metadata <- msPurity:::.pa_msn_spectra_metadata(object)
     out <- .prepare_ancestry(metadata)
     expect_identical(metadata$pid, c(7L, 40L, 41L))
-    expect_identical(metadata$spectrum_id, as.character(101:103))
+    expect_identical(metadata$lineageScanId, as.character(101:103))
     expect_identical(metadata$acquisition_num, 11:13)
-    expect_identical(metadata$source_index, 1:3)
+    expect_identical(metadata$sourceIndex, 1:3)
     expect_identical(metadata$massAnalyzer, rep("Orbitrap", 3L))
     expect_identical(out$parentReference, "sourceSpectrumId")
-    expect_identical(out$scans$parent_pid, c(NA_integer_, 7L, 40L))
+    expect_identical(out$scans$parentPid, c(NA_integer_, 7L, 40L))
     object$precScanNum <- c(NA_integer_, 11L, 12L)
     out <- .prepare_ancestry(msPurity:::.pa_msn_spectra_metadata(object))
     expect_identical(out$parentReference, "acquisitionNum")
-    expect_identical(out$scans$parent_pid, c(NA_integer_, 7L, 40L))
+    expect_identical(out$scans$parentPid, c(NA_integer_, 7L, 40L))
     empty <- Spectra::Spectra(Spectra::MsBackendMemory())
     prepared <- .prepare_ancestry(msPurity:::.pa_msn_spectra_metadata(empty))
     expect_identical(nrow(prepared$scans), 0L)
     expect_identical(prepared$scans$pid, integer())
+})
+
+test_that("source parent references resolve to distinct lineage identifiers", {
+    data <- Spectra::spectraData(.ancestry_spectra())
+    data$spectrum_id_ <- NULL
+    data$lineageScanId <- c("A", "B", "C")
+    data$sourceSpectrumId <- as.character(101:103)
+    object <- Spectra::Spectra(data, source = Spectra::MsBackendMemory())
+    out <- .prepare_ancestry(msPurity:::.pa_msn_spectra_metadata(object))
+
+    expect_identical(out$parentReference, "sourceSpectrumId")
+    expect_identical(out$scans$rawParentReference, c(NA, "101", "102"))
+    expect_identical(out$scans$parentLineageScanId, c(NA, "A", "B"))
+    expect_identical(out$scans$parentPid, c(NA_integer_, 7L, 40L))
 })
 
 test_that("native Parquet keys do not imply acquisition-number references", {
@@ -215,11 +229,11 @@ test_that("native Parquet keys do not imply acquisition-number references", {
             source = MsBackendParquet::MsBackendParquet())
         source <- msPurity:::.pa_msn_spectra_metadata(object)
         out <- .prepare_ancestry(source)
-        expect_identical(source$spectrum_id, as.character(1:3),
+        expect_identical(source$lineageScanId, as.character(1:3),
             info = convention)
         expect_equal(source$acquisition_num, 11:13, info = convention)
         expect_identical(out$parentReference, convention, info = convention)
-        expect_equal(out$scans$parent_pid, c(NA, 7, 40), info = convention)
+        expect_equal(out$scans$parentPid, c(NA, 7, 40), info = convention)
     }
 })
 
@@ -232,16 +246,16 @@ test_that("native parent references stay distinct from backend keys", {
     native <- .prepare_ancestry(metadata, "spectrumId")
     automatic <- .prepare_ancestry(metadata)
 
-    expect_identical(native$scans$parent_pid, c(NA_integer_, 7L, 40L))
+    expect_identical(native$scans$parentPid, c(NA_integer_, 7L, 40L))
     expect_identical(automatic$parentReference, "spectrumId")
-    expect_identical(automatic$scans$parent_pid, native$scans$parent_pid)
-    expect_identical(metadata$source_spectrum_id, as.character(101:103))
+    expect_identical(automatic$scans$parentPid, native$scans$parentPid)
+    expect_identical(metadata$sourceSpectrumId, as.character(101:103))
     expect_identical(metadata$spectrumId, paste0("scan=", 11:13))
     selected <- Spectra::filterPrecursorScan(object, acquisitionNum = 12L)
     expect_identical(selected$pid, native$scans$pid)
 
     reordered <- .prepare_ancestry(metadata[c(3, 1, 2), ])$scans
-    expect_identical(reordered$parent_pid, c(40L, NA_integer_, 7L))
+    expect_identical(reordered$parentPid, c(40L, NA_integer_, 7L))
     object$precScanNum[3L] <- 11L
     metadata <- msPurity:::.pa_msn_spectra_metadata(object)
     expect_error(.prepare_ancestry(metadata), "Ambiguous parent")
@@ -256,8 +270,8 @@ test_that("unresolved native references do not silently use numeric parents", {
     object$precScanNum <- c(NA_integer_, 11L, 12L)
     metadata <- msPurity:::.pa_msn_spectra_metadata(object)
     result <- .prepare_ancestry(metadata)$scans
-    expect_identical(result$parent_status[2L], "unresolved_reference")
-    expect_true(is.na(result$root_pid[3L]))
+    expect_identical(result$parentStatus[2L], "unresolved_reference")
+    expect_true(is.na(result$rootPid[3L]))
     metadata$spectrumId[2L] <- metadata$spectrumId[1L]
     expect_error(.prepare_ancestry(metadata), "Duplicate spectrumId")
 })
@@ -284,16 +298,16 @@ test_that("unresolved native references do not silently use numeric parents", {
 
 test_that("dataset keys are not read as parent scan numbers", {
     metadata <- msPurity:::.pa_msn_spectra_metadata(.two_run_dataset())
-    expect_true(all(metadata$source_key_assigned))
+    expect_true(all(metadata$sourceKeyAssigned))
     x <- .prepare_ancestry(metadata)
     expect_identical(x$parentReference, "acquisitionNum")
-    expect_identical(x$scans$parent_pid, c(NA, 1L, 2L, NA, 4L, 4L, 5L))
-    expect_identical(x$scans$root_pid[7L], 5L)
+    expect_identical(x$scans$parentPid, c(NA, 1L, 2L, NA, 4L, 4L, 5L))
+    expect_identical(x$scans$rootPid[7L], 5L)
     ## The reading by key stays available when asked for.
     by_key <- .prepare_ancestry(metadata, "sourceSpectrumId")
-    expect_identical(by_key$scans$parent_pid[7L], 4L)
+    expect_identical(by_key$scans$parentPid[7L], 4L)
     ## Keys a caller supplies may be what precScanNum names, so a
     ## coincidence with acquisitionNum remains ambiguous.
-    metadata$source_key_assigned <- FALSE
+    metadata$sourceKeyAssigned <- FALSE
     expect_error(.prepare_ancestry(metadata), "Ambiguous parent")
 })

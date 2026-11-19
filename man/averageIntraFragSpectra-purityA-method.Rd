@@ -15,7 +15,9 @@
   av = "median",
   sumi = TRUE,
   rmp = FALSE,
-  cores = 1
+  cores = 1,
+  blockSize = 5000L,
+  param = NULL
 )
 }
 \arguments{
@@ -37,7 +39,18 @@
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
 
-\item{cores}{numeric; Number of cores for multiprocessing}
+\item{cores}{Maximum number of workers; defaults to \code{pa@cores}.
+Overrides apply to the current call. With \code{param}, workers process
+independent clustering blocks; a single block runs directly.}
+
+\item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
+calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+larger groups fitting one tolerance window need no distance matrix. Used only
+for hierarchical clustering; distance-matrix memory grows quadratically
+with this limit.}
+
+\item{param}{NULL, one \code{\link{AverageFragSpectraParam}} object or a
+named list of them, averaged independently.}
 }
 \value{
 Returns a purityA object (pa) with the following slots now with data
@@ -95,6 +108,28 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 \item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> \strong{averageIntraFragSpectra} -> averageIntraFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
+
+\strong{Averaging with parameter objects}
+
+With \code{param}, each parameter set averages the feature-linked MS2, MS3
+and MS4 spectra it selects within each file, keeping incompatible
+acquisition conditions and precursor paths apart, as described for
+\code{\link{averageAllFragSpectra}} and
+\code{\link{AverageFragSpectraParam}}. Spectra of different files are
+never averaged together; \code{msPurityAverageGroup} is numbered within
+each feature and file. The result's \code{sample} identifies the acquisition
+file in \code{pa@fileList}; contributor records retain the XCMS sample
+index where available. Grouped feature associations do not need an
+individual chromatographic peak. The call replaces earlier intra- and
+inter-file averages and keeps all-spectrum averages. Without \code{param}, the
+function replaces earlier intra- and inter-file averages too, and stops
+with an error while all-spectrum averages computed with \code{param} are
+present.
+}
+\details{
+With hierarchical clustering, matching peaks stay together. The call stops
+with an error if more than \code{blockSize} nearby peaks cannot form one group or be
+separated without splitting matching peaks.
 }
 \examples{
 

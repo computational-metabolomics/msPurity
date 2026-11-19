@@ -15,7 +15,9 @@
   av = "median",
   sumi = TRUE,
   rmp = FALSE,
-  cores = 1
+  cores = 1,
+  blockSize = 5000L,
+  param = NULL
 )
 }
 \arguments{
@@ -37,7 +39,18 @@
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
 
-\item{cores}{numeric; Number of cores for multiprocessing}
+\item{cores}{Maximum number of workers; defaults to \code{pa@cores}.
+Overrides apply to the current call. With \code{param}, workers process
+independent clustering blocks; a single block runs directly.}
+
+\item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
+calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+larger groups fitting one tolerance window need no distance matrix. Used only
+for hierarchical clustering; distance-matrix memory grows quadratically
+with this limit.}
+
+\item{param}{NULL, one \code{\link{AverageFragSpectraParam}} object or a
+named list of them, averaged independently.}
 }
 \value{
 Returns a purityA object (pa) with the following slots now with data
@@ -93,6 +106,36 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 \item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageIntraFragSpectra -> \strong{averageInterFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
+
+\strong{Averaging with parameter objects}
+
+With \code{param}, inter-file averaging combines intra-file averages
+computed with \code{param}. Each parameter set must have an intra-file
+parameter set of the same name (a single object is named
+\code{"default"}) with the same \code{select} and \code{combine}; its
+thresholds and tolerances may differ. Intra-file averages of the same
+feature are combined when their conditions match as for
+\code{\link{averageAllFragSpectra}} and every MS3/MS4 precursor of the
+contributors to passing peaks agrees within the inter-file tolerance. The
+call stops if these precursors are incompatible within an intra-file input.
+Each file contributes at most one input, and each input counts once.
+
+Only intra-file averages with passing peaks are inputs. Compatibility and
+numerical averaging use those same peaks, whether failed intra-file peaks
+were flagged or removed. Contributors are traced through the intra-file
+clusters: \code{msPurityContributors} lists links contributing to retained
+final peaks. Use the result's \code{spectrumId} with
+\code{\link{averageMembers}} for its immediate intra-file inputs or with
+\code{\link{averagePeakMembers}} to trace a final fragment through
+intermediate peaks to the original scans. Without
+\code{param},
+the function stops with an error while intra-file or all-spectrum averages
+computed with \code{param} are present.
+}
+\details{
+With hierarchical clustering, matching peaks stay together. The call stops
+with an error if more than \code{blockSize} nearby peaks cannot form one group or be
+separated without splitting matching peaks.
 }
 \examples{
 

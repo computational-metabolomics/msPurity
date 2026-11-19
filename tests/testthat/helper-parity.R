@@ -14,10 +14,10 @@
 
 .parity_ref <- function(name) readRDS(file.path(.parity_dir(), paste0(name, ".rds")))
 
-# Columns frag4feature() appends to grped_df after the legacy ones.
+# Feature-link and provenance columns appended after the legacy columns.
 .f4f_added_cols <- c("precurMtchRTadj", "rtMapStatus", "precurMzSource",
                      "is_filled", "rtminWin", "rtmaxWin", "rtApexDist",
-                     "matchRank")
+                     "matchRank", "linkId")
 
 # grped_df without the appended columns, in the legacy column order.
 .parity_grped_df <- function(g) {
@@ -113,7 +113,18 @@
     ms2 <- pa@grped_ms2
     k <- match(src, which(as.character(pa@grped_df$grpid) == "187"))
     ms2[["162"]] <- c(ms2[["162"]], list(ms2[["187"]][[k]]))
-    pa@grped_df <- g
+    if ("linkId" %in% names(g)) {
+        # This hand-built association has its own occurrences and source.
+        input <- msPurity:::.pa_processing_input(pa, "frag4feature",
+            source = pa@fragSpectra)
+        pa@grped_df <- g
+        pa <- msPurity:::.pa_graph_mint_links(pa)
+        pa <- msPurity:::.pa_processing_record(pa, "frag4feature",
+            list(association_input = "test_fixture", added_pid = row$pid,
+                added_feature = "162"), Sys.time(), input)
+    } else {
+        pa@grped_df <- g
+    }
     pa@grped_ms2 <- ms2
     pa
 }
@@ -221,9 +232,20 @@ expect_legacy_equal <- function(object, expected) {
                 a[[name]] <- NULL
             }
         }
+        if (s %in% c("av_intra_params", "av_inter_params", "av_all_params") &&
+            "blockSize" %in% names(a) && !"blockSize" %in% names(b)) {
+            # Historical averages predate the block-size execution control.
+            expect_identical(a$blockSize, 5000L, label = paste(s, "blockSize"))
+            a$blockSize <- NULL
+        }
         if (s == "grped_ms2") {
             a <- unrow(a)
             b <- unrow(b)
+        }
+        if (s == "grped_df" && "linkId" %in% names(a) && !"linkId" %in% names(b)) {
+            expect_type(a$linkId, "integer")
+            expect_false(anyNA(a$linkId) || anyDuplicated(a$linkId) > 0L)
+            a$linkId <- NULL
         }
         expect_equal(a, b, label = paste("slot", s))
     }

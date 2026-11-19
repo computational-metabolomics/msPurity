@@ -87,8 +87,8 @@ test_that("the MSn workflow gives the same results on the study", {
                      info = engine)
         lineage <- function(x) {
             s <- x@params$msnLineage$scans
-            s <- s[order(s$pid), c("pid", "parent_pid", "root_pid",
-                                   "parent_status", "path_status",
+            s <- s[order(s$pid), c("pid", "parentPid", "rootPid",
+                                   "parentStatus", "pathStatus",
                                    "parentReferenceType")]
             rownames(s) <- NULL
             s

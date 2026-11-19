@@ -76,6 +76,15 @@ occurrences supporting their retained peaks. The
 occurrences' \code{contributorIndex} values within the feature. These mappings
 store occurrence references, not copies of peak arrays. Historical averaged
 inputs without cluster mappings retain unknown fine-grained contributors.
+
+Use the output's \code{spectrumId} with \code{\link[=averageMembers]{averageMembers()}} or
+\code{\link[=averagePeakMembers]{averagePeakMembers()}} for its selected inputs or exact stored peak
+connections. The averaging record identifies the output spectra and preceding
+processing steps. To inspect the originally
+eligible inputs of an inter average, trace the passing peaks of its
+immediate file averages. Historical spectrum references keep their recorded
+identifiers. An earlier integer average identifier is returned as a character
+\code{spectrumId} when no spectrum ID was recorded.
 }
 \examples{
 pa <- readRDS(system.file("extdata", "tests", "purityA",
@@ -85,4 +94,12 @@ records <- processingHistory(pa, step = "filterFragSpectra")
 records[[length(records)]]$parameters
 processingParameters(groupedSpectra(pa, legacy = FALSE),
     step = "filterFragSpectra")
+
+pa <- averageAllFragSpectra(pa, param = AverageFragSpectraParam(minfrac = 0))
+sp <- averagedSpectra(pa, legacy = FALSE)
+i <- 1L
+record <- processingHistory(sp)[[sp$msPurityProcessingId[i]]]
+averageMembers(sp, sp$spectrumId[i])
+sp$msPurityContributors[[i]]
+sp$msPurityClusterContributors[[i]]
 }

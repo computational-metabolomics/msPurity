@@ -46,14 +46,16 @@ setGeneric(name="averageSpectra",
            def=function(Object,rtscn = "all", scanRange=NA, timeRange = NA,
                         clustType="hc", ppm=1.5, snthr = 3, av="median",
                         missingV="zero", minfrac=0.6667,
-                        normTIC=FALSE, snMeth="median", mzRback="pwiz") {
+                        normTIC=FALSE, snMeth="median", mzRback="pwiz",
+                        cores=1, blockSize=5000L) {
              standardGeneric("averageSpectra")
            }
 )
 
 
 setGeneric(name="groupPeaks",
-           def=function(Object,ppm=3, sampleOnly=FALSE, clustType='hc') {
+           def=function(Object,ppm=3, sampleOnly=FALSE, clustType='hc',
+                        cores=1, blockSize=5000L) {
              standardGeneric("groupPeaks")
            }
 )
@@ -100,21 +102,24 @@ setGeneric(name = "frag4feature",
 
 setGeneric(name="averageIntraFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        av='median', sumi=TRUE, rmp=FALSE, cores=1) {
+                        av='median', sumi=TRUE, rmp=FALSE, cores=1, blockSize=5000L,
+                        param=NULL) {
              standardGeneric("averageIntraFragSpectra")
            }
 )
 
 setGeneric(name="averageInterFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        av='median', sumi=TRUE, rmp=FALSE, cores=1) {
+                        av='median', sumi=TRUE, rmp=FALSE, cores=1, blockSize=5000L,
+                        param=NULL) {
              standardGeneric("averageInterFragSpectra")
            }
 )
 
 setGeneric(name="averageAllFragSpectra",
            def=function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                        av='median', sumi=TRUE,  rmp=FALSE, cores=1) {
+                        av='median', sumi=TRUE,  rmp=FALSE, cores=1, blockSize=5000L,
+                        param=NULL) {
              standardGeneric("averageAllFragSpectra")
            }
 )

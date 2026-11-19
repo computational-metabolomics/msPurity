@@ -42,7 +42,10 @@ flags from \code{filterFragSpectra(allfrag = TRUE)}, as the
 Filtering defaults to MS2; request \code{msLevel = 2:4} for MS2-MS4.
 \item \code{averagedSpectra()}: the averaged spectra, as the nested
 \code{av_spectra} list or as \code{Spectra} with one spectrum per
-feature, averaging level and sample.
+feature, averaging level and sample. Averages computed with a
+\code{param} argument (see \code{\link{AverageFragSpectraParam}}) can
+be several per feature and are available only as \code{Spectra};
+\code{legacy = TRUE} then stops with an error.
 }
 }
 \examples{

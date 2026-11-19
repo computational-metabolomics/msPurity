@@ -103,6 +103,10 @@ for (compound in c("tryptophan", "kynurenine")) local({
             convert2RawRT = FALSE)
         actual <- rejected@grped_df
         rownames(actual) <- rownames(expected) <- NULL
+        # Occurrence IDs belong to each independent association call.
+        expect_type(actual$linkId, "integer")
+        expect_false(anyNA(actual$linkId) || anyDuplicated(actual$linkId) > 0L)
+        actual$linkId <- expected$linkId <- NULL
         expect_identical(actual, expected)
         expect_true(all(Spectra::msLevel(rejected@fragSpectra) > 2L))
         history <- processingHistory(rejected, "frag4feature")
@@ -173,8 +177,8 @@ test_that("empty associations retain diagnostics without reading peaks", {
     expect_identical(unused$input$xcms$association_input, "not_used")
     expect_null(unused$input$xcms$fingerprint)
     expect_identical(nrow(higher_only@params$msnLineage$scans), 2L)
-    expect_true(all(is.na(higher_only@params$msnLineage$scans$root_pid)))
-    expect_true(any(unmatched@params$msnLineage$scans$path_status == "valid"))
+    expect_true(all(is.na(higher_only@params$msnLineage$scans$rootPid)))
+    expect_true(any(unmatched@params$msnLineage$scans$pathStatus == "valid"))
     settings <- tail(processingParameters(unmatched, "frag4feature"), 1L)[[1L]]
     expect_identical(settings$ppm, 0)
     expect_identical(settings$param, unmatched_param)

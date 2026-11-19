@@ -148,7 +148,7 @@ test_that("higher-level assessment needs its parent but no MS2 feature root", {
     pa <- purityA(input, msLevel = 4L, parentReference = "acquisitionNum",
         offsets = c(0.5, 0.5))
     expect_equal(pa@spectra$inPurity, c(NA_real_, 0.3))
-    expect_true(all(is.na(pa@params$msnLineage$scans$root_pid)))
+    expect_true(all(is.na(pa@params$msnLineage$scans$rootPid)))
     expect_identical(pa@spectra$msPurityPurityStatus,
         c("not_assessed", "assessed"))
 
