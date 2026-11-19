@@ -21,7 +21,8 @@ purityX(
   singleFile = 0,
   rtrawColumns = FALSE,
   saveEIC = FALSE,
-  sqlitePth = NULL
+  sqlitePth = NULL,
+  param = NULL
 )
 }
 \arguments{
@@ -67,6 +68,10 @@ when \code{singleFile > 0}. SQLite writing is deprecated. Parquet output
 stores no chromatograms; extract them with \code{xcms::chromatogram()}.}
 
 \item{sqlitePth}{character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics}
+
+\item{param}{One complete \code{\link{PurityXParam}} object. Explicit
+scientific arguments supplied alongside it must agree. Sample/feature
+selection, execution and output options remain on this call.}
 }
 \value{
 a purityX object containing a dataframe of predicted purity scores

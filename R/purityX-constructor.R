@@ -59,7 +59,10 @@
 #'   when \code{singleFile > 0}. SQLite writing is deprecated. Parquet output
 #'   stores no chromatograms; extract them with \code{xcms::chromatogram()}.
 #' @param sqlitePth character; If saveEIC True, then a path to sqlite database can be used. If NULL then a database will be created in the working directory called eics
-
+#' @param param One complete \code{\link{PurityXParam}} object. Explicit
+#'   scientific arguments supplied alongside it must agree. Sample/feature
+#'   selection, execution and output options remain on this call.
+#'
 #' @details Predictions use the selected MS1 observations, including their
 #'   surrounding isolation-window signal. Modern inputs retain Spectra subsets
 #'   and pending peak processing. Removing interfering peaks before prediction
@@ -91,12 +94,12 @@ purityX <- function(xset, purityType = "purityFWHMmedian",
     iwNorm = FALSE, iwNormFun = NULL, ilim = 0.05, plotP = FALSE,
     mzRback = "pwiz", isotopes = FALSE, im = NULL,
     singleFile = 0, rtrawColumns = FALSE, saveEIC = FALSE,
-    sqlitePth = NULL) {
+    sqlitePth = NULL, param = NULL) {
     scalars <- list(purityType = purityType, offsets = offsets,
         iwNorm = iwNorm, iwNormFun = iwNormFun, ilim = ilim,
         isotopes = isotopes, im = im)
-    settings <- scalars
-    .px_validate_parameters(settings)
+    explicit <- intersect(names(match.call()), names(scalars))
+    settings <- .px_resolve_parameters(param, scalars, explicit)
     if (!is.numeric(cores) || length(cores) != 1L || !is.finite(cores) ||
             cores < 1 || cores > .Machine$integer.max ||
             cores != as.integer(cores))
