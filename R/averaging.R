@@ -218,7 +218,7 @@ averageCluster <- function(x, av="median", minnum=1,
   }else{
     i <- mean(x$i)
     snr <- mean(x$snr)
-    inorm <- mean(x$inorm)
+    inorm <- if ("inorm" %in% names(x)) mean(x$inorm) else NA_real_
     purity <- mean(x$inPurity)
     ra <- mean(x$ra)
   }
