@@ -36,65 +36,129 @@ group1d <- function(v, thr){
   return(cl)
 }
 
-performHc <- function(mzs, ppm){
-
-  if(length(mzs)==1){return(1)}
-
-  mdist = stats::dist(mzs)
-  averageMzPair = stats::as.dist(outer(mzs, mzs, "+")/2)
-  relativeErrors = averageMzPair * 0.000001
-  m_massTolerance = mdist / relativeErrors
-  clh <- fastcluster::hclust(m_massTolerance)
-  # cut a desired level
-  cl <- stats::cutree(clh, h = ppm)
-  return(cl)
+# Clustering and batch boundaries share the same distance and cutoff.
+.hc_distance <- function(difference, mean_mz, ppm, tolerance) {
+  if (tolerance > 0) {
+    # Absolute and relative tolerances add, with the numerical margin of
+    # MsCoreUtils::closest().
+    allowed <- tolerance + mean_mz * ppm * 0.000001 +
+      sqrt(.Machine$double.eps)
+    return(list(distance = difference / allowed, height = 1))
+  }
+  list(distance = difference / (mean_mz * 0.000001), height = ppm)
 }
 
+performHc <- function(mzs, ppm, tolerance = 0){
+  if (length(mzs) == 1L)
+    return(1L)
+  span <- .hc_distance(mzs[length(mzs)] - mzs[1L],
+    (mzs[1L] + mzs[length(mzs)]) / 2, ppm, tolerance)
+  if (span$distance <= span$height)
+    return(rep.int(1L, length(mzs)))
+  distance <- .hc_distance(stats::dist(mzs),
+    stats::as.dist(outer(mzs, mzs, "+") / 2), ppm, tolerance)
+  clh <- fastcluster::hclust(distance$distance, method = "complete")
+  stats::cutree(clh, h = distance$height)
+}
 
-clustering <- function(mz, ppm=1.5, clustType="hc", cores=2){
-  #print("Performing clustering/grouping")
-  # Sort out the cores to use
+# Sorted positive masses have increasing distance across a gap. Thus a gap
+# above the cutoff separates every pair on opposite sides, including ties.
+# Connected runs only locate safe boundaries; clustering remains complete-linkage.
+.hc_blocks <- function(mz, ppm, tolerance, blockSize) {
+  n <- length(mz)
+  if (n <= blockSize)
+    return(data.frame(first = 1L, last = n, one_cluster = FALSE))
 
-  # perform clustering
-  if(clustType=="hc"){
-    #print("hc clustering")
-    if (cores>1) {
-      clust<-parallel::makeCluster(cores)
-      doSNOW::registerDoSNOW(clust)
-      parallelBool = TRUE
-
+  adjacent <- .hc_distance(diff(mz),
+    (mz[-n] + mz[-1L]) / 2, ppm, tolerance)
+  ends <- c(which(adjacent$distance > adjacent$height), n)
+  # One vectorized lookup avoids repeatedly scanning all safe boundaries.
+  end_indices <- findInterval(c(0L, ends[-length(ends)]) + blockSize, ends)
+  blocks <- list()
+  first <- 1L
+  first_run <- 1L
+  while (first <= n) {
+    end_index <- end_indices[first_run]
+    one_cluster <- FALSE
+    if (end_index >= first_run) {
+      last <- ends[end_index]
     } else {
-      parallelBool = FALSE
-
+      end_index <- first_run
+      last <- ends[end_index]
+      span <- .hc_distance(mz[last] - mz[first],
+        (mz[first] + mz[last]) / 2, ppm, tolerance)
+      if (span$distance > span$height)
+        stop("A tolerance-connected group of ", last - first + 1L,
+          " peaks exceeds the ", blockSize,
+          "-peak clustering limit and cannot be split safely.",
+          call. = FALSE)
+      one_cluster <- TRUE
     }
+    blocks[[length(blocks) + 1L]] <- data.frame(first = first,
+      last = last, one_cluster = one_cluster)
+    first <- last + 1L
+    first_run <- end_index + 1L
+  }
+  do.call(rbind, blocks)
+}
 
-    mzsplit <- split(mz, ceiling(seq_along(mz)/5000))
+# Shared validation for the public execution controls and numerical worker.
+.clustering_controls <- function(cores, blockSize) {
+  values <- list(cores = cores, blockSize = blockSize)
+  for (name in names(values)) {
+    value <- values[[name]]
+    if (!is.numeric(value) || length(value) != 1L || !is.finite(value) ||
+        value < 1 || value > .Machine$integer.max || value != floor(value))
+      stop("'", name, "' must be a positive integer <= ", .Machine$integer.max,
+        ".", call. = FALSE)
+  }
+  invisible(NULL)
+}
 
-    # Perform averaging on multiple single runs (1 file) or
-    # multi-core (averaging scans in 1 file)
-    clustlist  <- plyr::llply(mzsplit,
-                              .parallel = parallelBool,
-                              performHc, # FUNCTION
-                              ppm=ppm)
+clustering <- function(mz, ppm=1.5, clustType="hc", cores=2, tolerance=0,
+    blockSize=5000L){
+  .clustering_controls(cores, blockSize)
+  if (clustType == "hc") {
+    if (!is.numeric(ppm) || length(ppm) != 1L || !is.finite(ppm) || ppm < 0)
+      stop("'ppm' must be a finite, non-negative numeric scalar.", call. = FALSE)
+    if (!is.numeric(tolerance) || length(tolerance) != 1L ||
+        !is.finite(tolerance) || tolerance < 0)
+      stop("'tolerance' must be a finite, non-negative numeric scalar.",
+        call. = FALSE)
+    if (!is.numeric(mz) || any(!is.finite(mz)) || any(mz <= 0) ||
+        is.unsorted(mz))
+      stop("Hierarchical clustering requires sorted, positive, finite m/z values.",
+        call. = FALSE)
+    if (!length(mz))
+      return(integer())
 
+    blocks <- .hc_blocks(mz, ppm, tolerance, blockSize)
+    clustlist <- vector("list", nrow(blocks))
+    for (i in which(blocks$one_cluster))
+      clustlist[[i]] <- rep.int(1L, blocks$last[i] - blocks$first[i] + 1L)
 
-    for (i in 1:length(clustlist)){
-      if(i>1){
-        clustlist[[i]] <- clustlist[[i]]+plus
+    regular <- which(!blocks$one_cluster)
+    if (length(regular)) {
+      mzsplit <- lapply(regular, function(i)
+        mz[seq.int(blocks$first[i], blocks$last[i])])
+      workers <- min(cores, length(regular))
+      if (workers > 1L) {
+        clust <- parallel::makeCluster(workers)
+        on.exit(parallel::stopCluster(clust), add = TRUE)
+        clustlist[regular] <- parallel::parLapply(clust, mzsplit, performHc,
+          ppm = ppm, tolerance = tolerance)
+      } else {
+        clustlist[regular] <- lapply(mzsplit, performHc,
+          ppm = ppm, tolerance = tolerance)
       }
-      plus <- max(clustlist[[i]])
     }
 
-    cl <- unlist(clustlist)
-
-    #     # stop any open connections
-    #     if (cores>1) {
-    #       parallel::stopCluster(clust)
-    #       closeAllConnections()
-    #     }
-
-    return(cl)
-
+    offset <- 0L
+    for (i in seq_along(clustlist)) {
+      clustlist[[i]] <- clustlist[[i]] + offset
+      offset <- max(clustlist[[i]])
+    }
+    return(unlist(clustlist, use.names = FALSE))
   }else if (clustType=="simple"){
     # order by mz
     #print("group1d")

@@ -16,7 +16,8 @@ and across MS data files (ignoring intra and inter relationships)}
   av = "median",
   sumi = TRUE,
   rmp = FALSE,
-  cores = 1
+  cores = 1,
+  blockSize = 5000L
 )
 }
 \arguments{
@@ -38,7 +39,14 @@ and across MS data files (ignoring intra and inter relationships)}
 
 \item{rmp}{boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged}
 
-\item{cores}{numeric; Number of cores for multiprocessing}
+\item{cores}{numeric; Maximum number of workers for this call. If omitted,
+uses \code{pa@cores}; an explicit value leaves that stored setting unchanged.}
+
+\item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
+calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+larger groups fitting one tolerance window need no distance matrix. Used only
+for hierarchical clustering; distance-matrix memory grows quadratically
+with this limit.}
 }
 \value{
 Returns a purityA object (pa) with the following slots now with data
@@ -93,6 +101,11 @@ The fragmentation can be filtered on the averaged spectra (with the arguments sn
 \item (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> \strong{averageAllFragSpectra} -> createDatabase -> spectralMatching -> (sqlite spectral database)
 }
 }
+}
+\details{
+With hierarchical clustering, matching peaks stay together. The call stops
+with an error if more than \code{blockSize} nearby peaks cannot form one group or be
+separated without splitting matching peaks.
 }
 \examples{
 

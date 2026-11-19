@@ -221,6 +221,12 @@ expect_legacy_equal <- function(object, expected) {
                 a[[name]] <- NULL
             }
         }
+        if (s %in% c("av_intra_params", "av_inter_params", "av_all_params") &&
+            "blockSize" %in% names(a) && !"blockSize" %in% names(b)) {
+            # Historical averages predate the block-size execution control.
+            expect_identical(a$blockSize, 5000L, label = paste(s, "blockSize"))
+            a$blockSize <- NULL
+        }
         if (s == "grped_ms2") {
             a <- unrow(a)
             b <- unrow(b)

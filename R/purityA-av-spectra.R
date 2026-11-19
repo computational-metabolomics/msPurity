@@ -42,6 +42,8 @@
 #'    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> **averageIntraFragSpectra** -> averageIntraFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
 #'
+#' @inherit groupPeaksEx details
+#'
 #' @param pa object; purityA object
 #' @param ppm numeric; ppm threshold to average within each file
 #' @param minnum numeric; minimum number of times peak is present across fragmentation spectra within each file
@@ -51,7 +53,9 @@
 #' @param av character; type of averaging to use (median or mean)
 #' @param sumi boolean; TRUE if the intensity for each peak is summed across averaged spectra
 #' @param rmp boolean; TRUE if peaks are to be removed that do not meet the threshold criteria. Otherwise they will just be flagged
-#' @param cores numeric; Number of cores for multiprocessing
+#' @param cores numeric; Maximum number of workers for this call. If omitted,
+#'   uses \code{pa@@cores}; an explicit value leaves that stored setting unchanged.
+#' @inheritParams groupPeaksEx
 #'
 #' @return Returns a purityA object (pa) with the following slots now with data
 #'
@@ -110,8 +114,11 @@
 #' @export
 setMethod(f="averageIntraFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                               av='median', sumi=TRUE, rmp=FALSE, cores=1
+                               av='median', sumi=TRUE, rmp=FALSE, cores=1,
+                               blockSize=5000L
                                 ){
+            if (missing(cores)) cores <- max(1L, pa@cores)
+            .clustering_controls(cores, blockSize)
             pa <- .pa_update(pa)
 
             pa@av_intra_params$minfrac = minfrac
@@ -125,9 +132,10 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 
 
             pa@av_intra_params$cores = cores
+            pa@av_intra_params$blockSize = blockSize
             pa@av_intra_params$rmp = rmp
 
-            return(average_xcms_grouped_msms(pa, "intra"))
+            return(average_xcms_grouped_msms(pa, "intra", cores, blockSize))
 
           }
 )
@@ -158,8 +166,12 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #'
 #'
 #'
+#' @inherit groupPeaksEx details
+#'
 #' @param pa object; purityA object
-#' @param cores numeric; Number of cores for multiprocessing
+#' @param cores numeric; Maximum number of workers for this call. If omitted,
+#'   uses \code{pa@@cores}; an explicit value leaves that stored setting unchanged.
+#' @inheritParams groupPeaksEx
 #' @param ppm numeric; ppm threshold to average across files
 #' @param minnum numeric; minimum number of times peak is present across fragmentation spectra across files
 #' @param minfrac numeric; minimum ratio of the peak fraction (peak count / total peaks) across files
@@ -229,8 +241,11 @@ setMethod(f="averageIntraFragSpectra", signature="purityA",
 #' @export
 setMethod(f="averageInterFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                                av='median', sumi=TRUE,  rmp=FALSE, cores=1
+                                av='median', sumi=TRUE,  rmp=FALSE, cores=1,
+                               blockSize=5000L
           ){
+            if (missing(cores)) cores <- max(1L, pa@cores)
+            .clustering_controls(cores, blockSize)
             pa <- .pa_update(pa)
 
             pa@av_inter_params$minfrac = minfrac
@@ -244,6 +259,7 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 
 
             pa@av_inter_params$cores = cores
+            pa@av_inter_params$blockSize = blockSize
             pa@av_inter_params$rmp = rmp
 
             first_grp <- unique(as.character(pa@grped_df$grpid))[1]
@@ -251,7 +267,7 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
               stop("Apply averageIntraFragSpectra first")
             }
 
-            return(average_xcms_grouped_msms(pa, "inter"))
+            return(average_xcms_grouped_msms(pa, "inter", cores, blockSize))
 
           }
 )
@@ -281,8 +297,12 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #'    + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> **averageAllFragSpectra** -> createDatabase -> spectralMatching -> (sqlite spectral database)
 #'
 #'
+#' @inherit groupPeaksEx details
+#'
 #' @param pa object; purityA object
-#' @param cores numeric; Number of cores for multiprocessing
+#' @param cores numeric; Maximum number of workers for this call. If omitted,
+#'   uses \code{pa@@cores}; an explicit value leaves that stored setting unchanged.
+#' @inheritParams groupPeaksEx
 #' @param ppm numeric; ppm threshold to average across all scans (ignoring intra and inter relationships)
 #' @param minnum numeric; minimum number of times peak is present across all fragmentation spectra (ignoring intra and inter relationships)
 #' @param minfrac numeric;minimum ratio of the peak fraction (peak count / total peaks) across all (ignoring intra and inter relationships)
@@ -353,8 +373,11 @@ setMethod(f="averageInterFragSpectra", signature="purityA",
 #' @export
 setMethod(f="averageAllFragSpectra", signature="purityA",
           definition = function(pa, minfrac=0.5, minnum=1, ppm=5, snr=0.0, ra=0.0,
-                                 av='median', sumi=TRUE, rmp=FALSE, cores=1
+                                 av='median', sumi=TRUE, rmp=FALSE, cores=1,
+                               blockSize=5000L
           ){
+            if (missing(cores)) cores <- max(1L, pa@cores)
+            .clustering_controls(cores, blockSize)
             pa <- .pa_update(pa)
 
             pa@av_all_params$minfrac = minfrac
@@ -366,16 +389,18 @@ setMethod(f="averageAllFragSpectra", signature="purityA",
             pa@av_all_params$av_type = av
             pa@av_all_params$sumi = sumi
             pa@av_all_params$cores = cores
+            pa@av_all_params$blockSize = blockSize
             pa@av_all_params$rmp = rmp
 
-            return(average_xcms_grouped_msms(pa, "all"))
+            return(average_xcms_grouped_msms(pa, "all", cores, blockSize))
 
           }
 )
 
 
 
-average_xcms_grouped_msms <- function(pa, av_level){
+average_xcms_grouped_msms <- function(pa, av_level, cores = pa@cores,
+    blockSize = 5000L){
 
     if (nrow(pa@grped_df)) {
         rows <- match(unique(pa@grped_df$pid), pa@spectra$pid)
@@ -392,13 +417,6 @@ average_xcms_grouped_msms <- function(pa, av_level){
     if (av_level == "intra")
         pa <- .pa_processing_invalidate(pa, "inter")
 
-  if(pa@cores>1){
-    cl <- parallel::makeCluster(pa@cores)
-    doSNOW::registerDoSNOW(cl)
-    para = TRUE
-  }else{
-    para = FALSE
-  }
 
   # Inputs come from the Spectra slots. Levels not being averaged now are
   # carried over unchanged, from the legacy slot when it is filled.
@@ -406,19 +424,28 @@ average_xcms_grouped_msms <- function(pa, av_level){
   av_in <- .pa_av_legacy(pa@avSpectra, pa@grped_df)
   av_keep <- if (.pa_legacy() && length(pa@av_spectra)) pa@av_spectra else av_in
   groups <- unique(as.character(pa@grped_df$grpid))
+  workers <- min(cores, max(1L, length(groups)))
+  para <- workers > 1L
+  if (para) {
+    cl <- parallel::makeCluster(workers)
+    on.exit({
+      parallel::stopCluster(cl)
+      foreach::registerDoSEQ()
+    }, add = TRUE)
+    doSNOW::registerDoSNOW(cl)
+  }
+
 
     results <- plyr::alply(groups, 1, average_xcms_grouped_msms_indiv,
         pa = pa, av_level = av_level, ms2 = ms2, av_in = av_in,
-        av_keep = av_keep, record_inputs = TRUE, .parallel = para)
+        av_keep = av_keep, record_inputs = TRUE, blockSize = blockSize,
+        .parallel = para)
     names(results) <- groups
     used_inputs <- lapply(results, `[[`, "used")
     av_spectra <- results
     for (i in seq_along(results))
         av_spectra[i] <- list(results[[i]]$spectra)
 
-  if(pa@cores>1){
-    parallel::stopCluster(cl)
-  }
 
   pa@avSpectra <- .pa_av_to_spectra(av_spectra, pa@grped_df)
     pa <- .pa_av_metadata(pa, av_level, previous, used_inputs)
@@ -428,7 +455,7 @@ average_xcms_grouped_msms <- function(pa, av_level){
         pa, paste0("av_", av_level, "_params"))
     names(effective_parameters)[
         names(effective_parameters) == "av_type"] <- "av"
-    effective_parameters$effective_cores <- max(1L, as.integer(pa@cores))
+    effective_parameters$effective_cores <- as.integer(workers)
     pa <- .pa_processing_record(pa, processing_step, effective_parameters,
         processing_started, processing_input)
   return(pa)
@@ -438,7 +465,7 @@ average_xcms_grouped_msms <- function(pa, av_level){
 
 
 average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in,
-    av_keep, record_inputs = FALSE) {
+    av_keep, record_inputs = FALSE, blockSize = 5000L) {
 
   grp_idx_char <- as.character(grp_idx)
     used_inputs <- list()
@@ -520,7 +547,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in,
                                             rathr_pre= pa@av_intra_params$ra_pre,
                                             snrthr_pre= pa@av_intra_params$snr_pre,
                                             av_type = pa@av_intra_params$av_type,
-                                            record_inputs = record_inputs)
+                                            record_inputs = record_inputs, blockSize = blockSize)
 
         if (record_inputs) {
             members <- lapply(av_intra, `[[`, "members")
@@ -550,7 +577,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in,
                                  snthr=pa@av_inter_params$snr,
                                  rathr=pa@av_inter_params$ra,
                                  av_type = pa@av_inter_params$av_type,
-                                 record_inputs = record_inputs
+                                 record_inputs = record_inputs, blockSize = blockSize
                                )
 
         if (record_inputs) {
@@ -579,7 +606,7 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in,
                                 rathr_pre= pa@av_all_params$ra_pre,
                                 snrthr_pre= pa@av_all_params$snr_pre,
                                 av_type = pa@av_all_params$av_type,
-                                record_inputs = record_inputs)
+                                record_inputs = record_inputs, blockSize = blockSize)
         if (record_inputs) {
             members <- av_all$members
             av_all <- av_all$peaks
@@ -611,7 +638,8 @@ average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in,
 
 average_spectra <- function(spectra, indx = "index", ppm, cores, minnum, sumi,
     minfrac, snthr, snmeth = "median", rathr, rathr_pre = NULL,
-    snrthr_pre = NULL, av_type = "median", record_inputs = FALSE) {
+    snrthr_pre = NULL, av_type = "median", record_inputs = FALSE,
+    blockSize = 5000L) {
   if (nrow(spectra)==0){
         if (record_inputs) return(list(peaks = NULL, members = list()))
     return(NULL)
@@ -657,7 +685,8 @@ average_spectra <- function(spectra, indx = "index", ppm, cores, minnum, sumi,
     }
 
   # Cluster the peaks togther
-  spectra$cl <- clustering(mz, clustType = 'hc', cores = cores, ppm = ppm)
+  spectra$cl <- clustering(mz, clustType = 'hc', cores = cores, ppm = ppm,
+    blockSize = blockSize)
 
   averages <- plyr::ddply(spectra, ~ cl,
                           averageCluster, av=av_type, minnum=1,

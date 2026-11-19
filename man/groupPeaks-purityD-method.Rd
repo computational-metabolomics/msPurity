@@ -6,7 +6,14 @@
 \title{Using purityD object, group multiple peaklists by similar mz values
 (mzML or .csv)}
 \usage{
-\S4method{groupPeaks}{purityD}(Object, ppm = 3, sampleOnly = FALSE, clustType = "hc")
+\S4method{groupPeaks}{purityD}(
+  Object,
+  ppm = 3,
+  sampleOnly = FALSE,
+  clustType = "hc",
+  cores = 1,
+  blockSize = 5000L
+)
 }
 \arguments{
 \item{Object}{object = purityD object}
@@ -16,6 +23,15 @@
 \item{sampleOnly}{= if TRUE the sample peaks will only be grouped}
 
 \item{clustType}{= if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method}
+
+\item{cores}{numeric; Maximum number of workers for this call. If omitted,
+uses \code{Object@cores} without changing that stored setting.}
+
+\item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
+calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+larger groups fitting one tolerance window need no distance matrix. Used only
+for hierarchical clustering; distance-matrix memory grows quadratically
+with this limit.}
 }
 \value{
 data.frame of peaklists grouped together by mz

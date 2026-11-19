@@ -19,7 +19,10 @@ and signal-to-noise of multiple scans from multiple MS datafiles
   missingV = "zero",
   minfrac = 0.6667,
   normTIC = FALSE,
-  snMeth = "median"
+  snMeth = "median",
+  mzRback = "pwiz",
+  cores = 1,
+  blockSize = 5000L
 )
 }
 \arguments{
@@ -46,6 +49,17 @@ and signal-to-noise of multiple scans from multiple MS datafiles
 \item{normTIC}{boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity}
 
 \item{snMeth}{character; Type of snMethod to use ['mean', 'median', 'precalc']. Precalc only applicable when using the csvFile parameter as TRUE}
+
+\item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
+
+\item{cores}{numeric; Maximum number of workers for this call. If omitted,
+uses \code{Object@cores} without changing that stored setting.}
+
+\item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
+calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+larger groups fitting one tolerance window need no distance matrix. Used only
+for hierarchical clustering; distance-matrix memory grows quadratically
+with this limit.}
 }
 \value{
 purityD object with averaged spectra

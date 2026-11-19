@@ -21,7 +21,8 @@ averageSpectraSingle(
   csvFile = FALSE,
   normTIC = FALSE,
   mzRback = "pwiz",
-  MSFileReader = FALSE
+  MSFileReader = FALSE,
+  blockSize = 5000L
 )
 }
 \arguments{
@@ -39,7 +40,8 @@ averageSpectraSingle(
 
 \item{snthr}{numeric; Signal to noise ratio threshold}
 
-\item{cores}{numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 2}
+\item{cores}{numeric; Maximum number of workers, as a positive integer.
+More workers can increase memory use.}
 
 \item{av}{character; What type of averaging to do between peaks}
 
@@ -57,6 +59,12 @@ the following columns c('mz', 'i', 'scanid', 'snr')}
 \item{mzRback}{character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader}
 
 \item{MSFileReader}{boolean; Deprecapted. Use csvFile parameter}
+
+\item{blockSize}{numeric; Maximum input peak rows per hierarchical-clustering
+calculation, as a positive integer (default 5,000). Safe blocks can be smaller;
+larger groups fitting one tolerance window need no distance matrix. Used only
+for hierarchical clustering; distance-matrix memory grows quadratically
+with this limit.}
 }
 \value{
 dataframe of the median mz, intensity, signal-to-noise ratio.
@@ -76,6 +84,11 @@ Alternatively if using a .csv file as input (and assigning the csvFile parameter
 columns. The precalculated SNR can then be chosen by using the option 'precalc' for the parameter snMethod
 
 The function will work for both LC-MS or DI-MS datasets.
+}
+\details{
+With hierarchical clustering, matching peaks stay together. The call stops
+with an error if more than \code{blockSize} nearby peaks cannot form one group or be
+separated without splitting matching peaks.
 }
 \examples{
 mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
