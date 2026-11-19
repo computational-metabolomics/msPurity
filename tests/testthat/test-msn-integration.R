@@ -173,8 +173,8 @@ test_that("empty associations retain diagnostics without reading peaks", {
     expect_identical(unused$input$xcms$association_input, "not_used")
     expect_null(unused$input$xcms$fingerprint)
     expect_identical(nrow(higher_only@params$msnLineage$scans), 2L)
-    expect_true(all(is.na(higher_only@params$msnLineage$scans$root_pid)))
-    expect_true(any(unmatched@params$msnLineage$scans$path_status == "valid"))
+    expect_true(all(is.na(higher_only@params$msnLineage$scans$rootPid)))
+    expect_true(any(unmatched@params$msnLineage$scans$pathStatus == "valid"))
     settings <- tail(processingParameters(unmatched, "frag4feature"), 1L)[[1L]]
     expect_identical(settings$ppm, 0)
     expect_identical(settings$param, unmatched_param)

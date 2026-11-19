@@ -134,7 +134,7 @@ test_that("higher corrections follow child settings and share parent reads", {
 
     # Exclude the intensity-5 peak, the isotope-10 peak, or both, respectively.
     expect_equal(observations$purity, c(100 / 130, 100 / 125, 100 / 120))
-    expect_identical(observations$parent_pid, c(7L, 7L, 40L))
+    expect_identical(observations$parentPid, c(7L, 7L, 40L))
     expect_identical(observations$parent_peak_index, c(1L, 1L, 1L))
     expect_identical(settings$configuration$assignments$parameter_set_names,
         list("low", "isotope", "both"))

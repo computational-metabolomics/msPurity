@@ -1,5 +1,5 @@
-# Pids identify spectra within the supplied
-# object; spectrum_id is a unique source key, not an acquisition number.
+# A pid identifies a spectrum in the object. A lineageScanId joins acquisition
+# records and can be supplied by the source or generated within its run.
 
 # Retain scalar source metadata and keep dataset keys separate from native
 # acquisition identifiers. All values are read through public Spectra accessors.
@@ -30,9 +30,9 @@
     if ("spectrum_id_" %in% names(metadata)) {
         source_key <- as.character(metadata$spectrum_id_)
         id <- source_key
-    } else if ("spectrum_id" %in% names(metadata)) {
-        id <- as.character(metadata$spectrum_id)
-        source_key <- as.character(column("source_spectrum_id", NA_character_))
+    } else if ("lineageScanId" %in% names(metadata)) {
+        id <- as.character(metadata$lineageScanId)
+        source_key <- as.character(column("sourceSpectrumId", NA_character_))
         source_key[is.na(source_key)] <- id[is.na(source_key)]
     } else {
         native <- as.character(column("spectrumId", NA_character_))
@@ -51,25 +51,25 @@
         stop("MSn source spectra require unique known source keys.")
     normalized <- .pa_filter_metadata(metadata)
     for (name in names(normalized)) metadata[[name]] <- normalized[[name]]
-    metadata$spectrum_id <- id
-    metadata$source_spectrum_id <- source_key
+    metadata$lineageScanId <- id
+    metadata$sourceSpectrumId <- source_key
     metadata$run_id <- run
     metadata$data_origin <- origin
-    metadata$source_index <- seq_len(n)
+    metadata$sourceIndex <- seq_len(n)
     mapping <- c(ms_level = "msLevel", acquisition_num = "acquisitionNum",
         scan_index = "scanIndex", rtime = "rtime", precursor_mz = "precursorMz",
         precursor_charge = "precursorCharge",
         precursor_intensity = "precursorIntensity")
     for (name in names(mapping)) metadata[[name]] <- column(mapping[[name]])
-    metadata$parent_reference_raw <- as.character(column("precScanNum"))
+    metadata$rawParentReference <- as.character(column("precScanNum"))
     metadata
 }
 
 .pa_msn_parent_candidates <- function(scans, convention) {
     reference <- if (convention == "spectrumId") scans$spectrumRef else
-        scans$parent_reference_raw
+        scans$rawParentReference
     column <- switch(convention, spectrumId = "spectrumId",
-        sourceSpectrumId = "source_spectrum_id",
+        sourceSpectrumId = "sourceSpectrumId",
         acquisitionNum = "acquisition_num", scanIndex = "scan_index")
     value <- as.character(scans[[column]])
     key <- paste(scans$run_id, value, sep = "\r")
@@ -95,25 +95,25 @@
     list(parent = parent, valid = valid, duplicate = duplicate)
 }
 
-# Required columns: pid, spectrum_id, run_id, ms_level. Optional numeric
+# Required columns: pid, lineageScanId, run_id, ms_level. Optional numeric
 # metadata are acquisition_num, scan_index, rtime, precursor_mz and polarity;
-# parent_reference_raw holds the declared source reference. No peaks are read.
+# rawParentReference holds the declared source reference. No peaks are read.
 .pa_msn_ancestry <- function(scans, parentReference = "auto") {
     parentReference <- match.arg(parentReference,
         c("auto", "acquisitionNum", "scanIndex", "spectrumId",
             "sourceSpectrumId"))
-    required <- c("pid", "spectrum_id", "run_id", "ms_level")
+    required <- c("pid", "lineageScanId", "run_id", "ms_level")
     if (!is.data.frame(scans) || !all(required %in% names(scans)))
-        stop("MSn metadata require pid, spectrum_id, run_id and ms_level.")
+        stop("MSn metadata require pid, lineageScanId, run_id and ms_level.")
     if (!is.numeric(scans$pid) || any(!is.finite(scans$pid)) ||
             anyDuplicated(scans$pid))
         stop("MSn spectrum pids must be unique finite numbers.")
-    for (column in c("spectrum_id", "run_id")) {
+    for (column in c("lineageScanId", "run_id")) {
         scans[[column]] <- as.character(scans[[column]])
         if (anyNA(scans[[column]]) || any(!nzchar(scans[[column]])))
             stop("MSn source identities and runs must be known.")
     }
-    if (anyDuplicated(scans$spectrum_id))
+    if (anyDuplicated(scans$lineageScanId))
         stop("MSn source spectrum identities must be unique.")
     if (!is.numeric(scans$ms_level) || anyNA(scans$ms_level) ||
             any(!scans$ms_level %in% 1:4))
@@ -126,12 +126,12 @@
                 any(!is.na(scans[[column]]) & !is.finite(scans[[column]])))
             stop("MSn metadata ", column, " must be numeric and finite or NA.")
     }
-    if (!"parent_reference_raw" %in% names(scans))
-        scans$parent_reference_raw <- rep(NA_character_, nrow(scans))
-    scans$parent_reference_raw <- as.character(scans$parent_reference_raw)
-    scans$parent_reference_raw[scans$parent_reference_raw %in%
+    if (!"rawParentReference" %in% names(scans))
+        scans$rawParentReference <- rep(NA_character_, nrow(scans))
+    scans$rawParentReference <- as.character(scans$rawParentReference)
+    scans$rawParentReference[scans$rawParentReference %in%
             c("", "0", "-1")] <- NA_character_
-    for (column in c("spectrumId", "spectrumRef", "source_spectrum_id")) {
+    for (column in c("spectrumId", "spectrumRef", "sourceSpectrumId")) {
         if (!column %in% names(scans))
             scans[[column]] <- rep(NA_character_, nrow(scans))
         scans[[column]] <- as.character(scans[[column]])
@@ -165,7 +165,7 @@
             stop("Inconsistent parent conventions; specify parentReference.")
     }
     chosen <- candidates[[convention]]
-    if (chosen$duplicate && any(!is.na(scans$parent_reference_raw) &
+    if (chosen$duplicate && any(!is.na(scans$rawParentReference) &
                 (parentReference != "auto" | !has_native)))
         stop("Duplicate ", convention, " keys within a source run.")
     if (native$duplicate && any(has_native))
@@ -181,36 +181,36 @@
         reference_type[has_native] <- "spectrumId"
     }
     use_native <- reference_type == "spectrumId"
-    scans$parent_reference_raw[use_native] <- scans$spectrumRef[use_native]
+    scans$rawParentReference[use_native] <- scans$spectrumRef[use_native]
     scans$parentReferenceType <- reference_type
-    referenced <- scans$ms_level > 1L & !is.na(scans$parent_reference_raw)
-    scans$parent_status <- ifelse(scans$ms_level == 1L, "root",
+    referenced <- scans$ms_level > 1L & !is.na(scans$rawParentReference)
+    scans$parentStatus <- ifelse(scans$ms_level == 1L, "root",
         "missing_reference")
-    scans$parent_status[referenced] <- ifelse(
+    scans$parentStatus[referenced] <- ifelse(
         is.na(chosen$parent[referenced]), "unresolved_reference",
         "invalid_reference")
-    scans$parent_status[chosen$valid] <- "valid"
-    scans$parent_id <- rep(NA_character_, nrow(scans))
-    scans$parent_id[chosen$valid] <- scans$spectrum_id[
+    scans$parentStatus[chosen$valid] <- "valid"
+    scans$parentLineageScanId <- rep(NA_character_, nrow(scans))
+    scans$parentLineageScanId[chosen$valid] <- scans$lineageScanId[
         chosen$parent[chosen$valid]]
     parent_rows <- chosen$parent
     parent_rows[!chosen$valid] <- NA_integer_
-    scans$parent_pid <- scans$pid[parent_rows]
-    root_pid <- scans$pid[rep(NA_integer_, nrow(scans))]
-    path_status <- ifelse(scans$ms_level == 2L, "root",
-        ifelse(scans$ms_level == 1L, "not_fragmentation", scans$parent_status))
+    scans$parentPid <- scans$pid[parent_rows]
+    rootPid <- scans$pid[rep(NA_integer_, nrow(scans))]
+    pathStatus <- ifelse(scans$ms_level == 2L, "root",
+        ifelse(scans$ms_level == 1L, "not_fragmentation", scans$parentStatus))
     paths <- rep(list(NULL), nrow(scans))
     for (i in which(scans$ms_level >= 2L)) {
         path <- i
         at <- i
         while (scans$ms_level[at] > 2L) {
-            if (scans$parent_status[at] != "valid") {
-                path_status[i] <- scans$parent_status[at]
+            if (scans$parentStatus[at] != "valid") {
+                pathStatus[i] <- scans$parentStatus[at]
                 break
             }
             parent <- parent_rows[at]
             if (scans$ms_level[parent] != scans$ms_level[at] - 1L) {
-                path_status[i] <- "missing_stage"
+                pathStatus[i] <- "missing_stage"
                 break
             }
             path <- c(parent, path)
@@ -221,15 +221,15 @@
         if (scans$ms_level[i] > 2L &&
                 any(!is.finite(scans$precursor_mz[path]) |
                         scans$precursor_mz[path] <= 0)) {
-            path_status[i] <- "missing_precursor"
+            pathStatus[i] <- "missing_precursor"
             next
         }
-        root_pid[i] <- scans$pid[at]
-        path_status[i] <- if (i == at) "root" else "valid"
+        rootPid[i] <- scans$pid[at]
+        pathStatus[i] <- if (i == at) "root" else "valid"
         paths[i] <- list(scans$pid[path])
     }
-    scans$root_pid <- root_pid
-    scans$path_status <- path_status
+    scans$rootPid <- rootPid
+    scans$pathStatus <- pathStatus
     scans$path <- paths
     if (parentReference == "auto") {
         resolved <- unique(reference_type[chosen$valid])
@@ -251,7 +251,7 @@
     if (!is.null(previous)) {
         old <- previous$scans
         rows <- match(prepared$scans$pid, old$pid)
-        if (!identical(prepared$scans$parent_id, old$parent_id[rows]))
+        if (!identical(prepared$scans$parentLineageScanId, old$parentLineageScanId[rows]))
             stop("parentReference conflicts with the prepared parents. ",
                 "Reassess with purityA() using the intended interpretation.")
         return(previous)
@@ -272,9 +272,9 @@
             "Reassess the current source with purityA().")
     fields <- unique(c(.PA_ACQUISITION_FIELDS, .MSP_HEADER_COLS,
             unname(.MSP_HEADER_RENAME), unlist(.PA_FILTER_AXES),
-            "spectrum_id", "spectrum_id_", "source_spectrum_id", "run_id",
+            "lineageScanId", "spectrum_id_", "sourceSpectrumId", "run_id",
             "data_origin", "ms_level", "acquisition_num", "scan_index",
-            "precursor_mz", "parent_reference_raw", "spectrumId", "spectrumRef",
+            "precursor_mz", "rawParentReference", "spectrumId", "spectrumRef",
             "isolationWindowLowerMz",
             "isolationWindowUpperMz"))
     fields <- intersect(fields, union(names(current), names(stored)))
@@ -345,16 +345,16 @@
     stage_columns <- unique(c(.PA_ACQUISITION_FIELDS, .MSP_HEADER_COLS,
             unname(.MSP_HEADER_RENAME),
             unlist(.PA_FILTER_AXES, use.names = FALSE),
-            "spectrum_id", "spectrum_id_", "source_spectrum_id", "source_index",
-            "spectrum_index", "run_id", "parent_reference_raw",
+            "lineageScanId", "spectrum_id_", "sourceSpectrumId", "sourceIndex",
+            "spectrum_index", "run_id", "rawParentReference",
             "acquisition_num", "scan_index", "precursor_mz",
             "isolationWindowLowerMz", "isolationWindowUpperMz"))
     feature_columns <- c("grpid", "sample", "cid", "featureMz", "mz", "mzmed",
         "mzmin", "mzmax", "rt", "rtmed", "rtmin", "rtmax", "into", "intb",
         "maxo", "sn", "npeaks", "peakidx", "index", "featureLinkIndex",
         "contributorIndex", "msPurityRootPid")
-    source_columns <- setdiff(names(stage), c("parent_id", "parent_pid",
-            "parent_status", "root_pid", "path_status", "path",
+    source_columns <- setdiff(names(stage), c("parentLineageScanId", "parentPid",
+            "parentStatus", "rootPid", "pathStatus", "path",
             feature_columns))
     stage_columns <- union(stage_columns, source_columns)
     stage_columns <- setdiff(stage_columns, purity_columns)
@@ -363,10 +363,10 @@
         links[[column]] <- stage[[column]][root]
     linked_roots <- unique(root)
     rows_by_root <- split(seq_len(nrow(links)), match(root, linked_roots))
-    root_rows <- match(scans$root_pid, scans$pid)
+    root_rows <- match(scans$rootPid, scans$pid)
     root_groups <- match(root_rows, linked_roots)
-    parent_rows <- match(scans$parent_id, scans$spectrum_id)
-    descendants <- which(scans$ms_level > 2L & scans$path_status == "valid" &
+    parent_rows <- match(scans$parentLineageScanId, scans$lineageScanId)
+    descendants <- which(scans$ms_level > 2L & scans$pathStatus == "valid" &
             !is.na(root_groups))
     occurrences <- rows_by_root[root_groups[descendants]]
     child_rows <- rep(descendants, lengths(occurrences))
@@ -383,7 +383,7 @@
         child$seqNum <- scans$scan_index[child_rows]
         child$retentionTime <- scans$rtime[child_rows]
         child$precurMtchID <- child$seqNum
-        reference <- scans$parent_reference_raw[child_rows]
+        reference <- scans$rawParentReference[child_rows]
         child$precurMtchScan <- if (all(grepl("^[0-9]+$", reference)))
             as.numeric(reference) else reference
         child$precurMtchRT <- scans$rtime[parent_rows[child_rows]]
@@ -392,8 +392,8 @@
         if ("precScanNum" %in% names(stage) &&
                 "precursorScanNum" %in% names(child))
             child$precursorScanNum <- stage$precScanNum[child_rows]
-        if ("parent_reference_raw" %in% names(child))
-            child$parent_reference_raw <- reference
+        if ("rawParentReference" %in% names(child))
+            child$rawParentReference <- reference
         if ("precursorRT" %in% names(child))
             child$precursorRT <- child$precurMtchRT
     }
