@@ -125,7 +125,7 @@
     pv <- Spectra::peaksVariables(fs)
     cols <- intersect(c("mz", "intensity", "snr", "ra",
                         "intensity_pass_flag", "ra_pass_flag",
-                        "snr_pass_flag"), pv)
+                        "snr_pass_flag", "pass_flag"), pv)
     pk <- as.list(Spectra::peaksData(fs, columns = cols))
     n <- vapply(pk, nrow, integer(1L))
     if (!sum(n))
@@ -142,6 +142,7 @@
                intensity_pass_flag = get("intensity_pass_flag", as.logical),
                ra_pass_flag = get("ra_pass_flag", as.logical),
                snr_pass_flag = get("snr_pass_flag", as.logical),
+               pass_flag = get("pass_flag", as.logical),
                stringsAsFactors = FALSE)
 }
 
@@ -159,8 +160,7 @@
 #' @param scans the exported scans (pid, scan_annotation_id_ order).
 #'
 #' @noRd
-.mzs_msn_feature <- function(pa, scans, scan_ids, ftabs) {
-    g <- pa@grped_df
+.mzs_msn_feature <- function(pa, scans, scan_ids, ftabs, g = pa@grped_df) {
     if (!nrow(g) || !"msLevel" %in% names(g))
         return(NULL)
     g <- g[!is.na(g$msLevel) & g$msLevel > 2L, , drop = FALSE]
@@ -286,4 +286,52 @@
     if (is.null(sc) || is.null(sc$ms_level))
         return(sc)
     sc[sc$ms_level %in% c(NA, 2L), , drop = FALSE]
+}
+
+# The stored scan flags can greatly exceed the size of the scan metadata.
+# Count SQLite-equivalent MS2 rows while streaming all retained MS levels.
+.mzs_stream_scan_peaks <- function(st, pa, scans, dir) {
+    spool <- .mzs_spool(dir, "scan_peak")
+    st$allfrag <- isTRUE(pa@filter_frag_params$allfrag)
+    fs <- pa@fragSpectra
+    if (!length(fs) || !length(pa@filter_frag_params)) return(st)
+    pass <- stored <- 0
+    .mzs_batches(nrow(scans), .mzs_batch_size(TRUE), function(i) {
+        lp <- .mzs_live_scan_peaks(pa, scans$pid[i])
+        if (!NROW(lp)) return()
+        at <- match(lp$pid, scans$pid[i])
+        lp$scan_annotation_id_ <- i[at]
+        lp$peak_rank <- as.integer(stats::ave(seq_len(nrow(lp)), lp$pid, FUN = seq_along))
+        ms2 <- scans$ms_level[i[at]] == 2L
+        if (st$allfrag) {
+            stored <<- stored + sum(ms2)
+            pass <<- pass + sum(ms2 & !is.na(lp$pass_flag))
+        }
+        names(lp)[match(c("i", "ra"), names(lp))] <- c("intensity", "relative_intensity")
+        lp$pid <- lp$pass_flag <- NULL
+        spool$add(lp)
+    })
+    st$peak <- spool$finish()
+    st$pass <- pass
+    st$stored_rows <- stored
+    st$annotated <- stored > 0
+    st$raw_peaks <- st$raw_peaks + stored
+    st
+}
+
+# Sort the feature and scan keys once. Convert the measurement and RT
+# columns only for the rows assigned to the current batch.
+.mzs_stream_msn_feature <- function(dir, pa, scans, ftabs) {
+    g <- pa@grped_df
+    at <- which(g$msLevel > 2L)
+    if (!length(at)) return(NULL)
+    scan <- match(g$pid[at], scans$pid)
+    feature <- match(as.integer(as.character(g$grpid[at])), ftabs$groups$grpid)
+    at <- at[order(feature, scan)]
+    table <- .mzs_map_table(dir, "msn_feature", length(at), function(i) {
+        df <- .mzs_msn_feature(pa, scans, seq_len(nrow(scans)), ftabs, g[at[i], , drop = FALSE])
+        df$msn_feature_id_ <- i
+        df
+    })
+    list(table = table, pid = g$pid[at])
 }

@@ -348,34 +348,43 @@ validateParquet <- function(path, sourcePaths = NULL) {
                                     paste(miss, collapse = ", "), "."))
         return(do.call(.mzs_findings, f))
     }
-    ## List lengths are computed in Arrow: peaks never become R objects.
-    tab <- arrow::as_arrow_table(ds)
-    if (tab$num_rows != as.integer(r$n_spectra))
-        add("MUST", "D-063", paste0("Run '", r$run_id, "' holds ",
-                                    tab$num_rows, " spectra; the manifest ",
-                                    "declares ", r$n_spectra, "."))
-    if (!isTRUE(all(as.vector(tab$spectrum_id_) ==
-                    as.integer(r$uid_base) + as.vector(tab$spectrum_index))))
-        add("MUST", "D-018", paste0("Run '", r$run_id, "': spectrum_id_ is ",
-                                    "not uid_base + spectrum_index."))
-    len <- function(c) as.vector(arrow::call_function("list_value_length",
-                                                      tab[[c]]))
-    lens <- len("mz")
-    li <- len("intensity")
-    lens[is.na(lens)] <- 0L
-    li[is.na(li)] <- 0L
-    if (!identical(lens, li))
-        add("MUST", "D-051", paste0("Run '", r$run_id, "': mz and intensity ",
-                                    "differ in length in some row."))
-    lists <- names(tab)[vapply(names(tab), function(c)
-        inherits(tab[[c]]$type, "ListType"), logical(1))]
-    for (c in setdiff(lists, c("mz", "intensity"))) {
-        l <- len(c)
-        if (any(!is.na(l) & l != lens))
-            add("MUST", "R-059", paste0("Run '", r$run_id, "': peak ",
-                                        "annotation '", c, "' differs in ",
-                                        "length from mz."))
+    reader <- arrow::Scanner$create(ds, batch_size = .mzs_batch_size(TRUE),
+        use_threads = FALSE)$ToRecordBatchReader()
+    on.exit(reader$Close())
+    count <- 0
+    bad_id <- bad_length <- FALSE
+    bad_annotation <- character()
+    repeat {
+        tab <- reader$read_next_batch()
+        if (is.null(tab)) break
+        count <- count + tab$num_rows
+        id <- as.vector(tab[["spectrum_id_"]])
+        index <- as.vector(tab[["spectrum_index"]])
+        bad_id <- bad_id || !isTRUE(all(id == as.integer(r$uid_base) + index))
+        len <- function(c) as.vector(arrow::call_function("list_value_length", tab[[c]]))
+        lens <- len("mz")
+        li <- len("intensity")
+        lens[is.na(lens)] <- 0L
+        li[is.na(li)] <- 0L
+        bad_length <- bad_length || !identical(lens, li)
+        for (c in setdiff(cols, c("mz", "intensity"))) {
+            if (!inherits(ds$schema$GetFieldByName(c)$type, "ListType")) next
+            n <- len(c)
+            if (any(!is.na(n) & n != lens)) bad_annotation <- union(bad_annotation, c)
+        }
     }
+    if (count != as.integer(r$n_spectra))
+        add("MUST", "D-063", paste0("Run '", r$run_id, "' holds ", count,
+            " spectra; the manifest declares ", r$n_spectra, "."))
+    if (bad_id)
+        add("MUST", "D-018", paste0("Run '", r$run_id,
+            "': spectrum_id_ is not uid_base + spectrum_index."))
+    if (bad_length)
+        add("MUST", "D-051", paste0("Run '", r$run_id,
+            "': mz and intensity differ in length in some row."))
+    for (c in bad_annotation)
+        add("MUST", "R-059", paste0("Run '", r$run_id, "': peak annotation '",
+            c, "' differs in length from mz."))
     sch <- arrow::open_dataset(dir, format = "parquet")$schema
     child <- vapply(c("mz", "intensity"), function(c) {
         t <- sch$GetFieldByName(c)$type
@@ -455,12 +464,13 @@ validateParquet <- function(path, sourcePaths = NULL) {
     tb <- m$results$tables %||% list()
     if (!length(tb))
         return(NULL)
-    tabs <- list()
-    read <- function(n) {
-        if (is.null(tabs[[n]]))
-            tabs[[n]] <<- .mzs_read_table(path, m, n)
-        tabs[[n]]
-    }
+    dir <- tempfile("mzs-validate-")
+    dir.create(dir)
+    on.exit(unlink(dir, recursive = TRUE))
+    db <- .mzs_validation_store(path, m, dir)
+    on.exit(DBI::dbDisconnect(db$con, shutdown = TRUE), add = TRUE, after = FALSE)
+    read <- function(n) .mzs_read_table(path, m, n)
+    attr(read, "store") <- db
     have <- function(n) !is.null(tb[[n]]) && !isTRUE(tb[[n]]$omitted)
     checks <- list(
         structure = .mzs_v_structure, references = .mzs_v_references,
@@ -494,7 +504,7 @@ validateParquet <- function(path, sourcePaths = NULL) {
             next
         if (startsWith(e$path %||% "", "index/"))
             add("B-038", "A results table is stored under index/.", n)
-        rows <- tryCatch(nrow(read(n)), error = function(e) NA)
+        rows <- tryCatch(attr(read, "store")$rows(n), error = function(e) NA)
         if (is.na(rows)) {
             add("R-037", "The table could not be read.", n)
         } else if (!identical(as.integer(rows), as.integer(e$rows))) {
@@ -539,255 +549,33 @@ validateParquet <- function(path, sourcePaths = NULL) {
     for (n in names(m$results$tables)) {
         if (!have(n) || !n %in% names(.MZS_TABLES))
             next
-        df <- read(n)
-        for (p in .mzs_ref_prefixes(n)) {
-            src <- df[[paste0(p, "_source")]]
-            run <- df[[paste0(p, "_run_id")]]
-            id <- df[[paste0(p, "_spectrum_id_")]]
-            bad <- unique(src[!is.na(src) & !src %in% keys])
-            if (length(bad))
-                add("R-018", paste0(p, "_source names undeclared source(s): ",
-                                    paste(bad, collapse = ", ")), n)
-            miss <- !is.na(id) & (is.na(src) | is.na(run))
-            if (any(miss))
-                add("R-021", paste0(sum(miss), " ", p, "_spectrum_id_ ",
-                                    "value(s) lack their source or run."), n)
-            self <- which(src %in% "self" & !is.na(id))
-            if (length(self)) {
-                k <- match(run[self], rf$run_id)
-                out <- is.na(k) | id[self] < rf$uid_base[k] |
-                    id[self] >= rf$uid_base[k] + rf$n_spectra[k]
-                if (any(out))
-                    add("R-022", paste0(sum(out), " self reference(s) of ",
-                                        p, " fall outside their run's ",
-                                        "spectrum ids, e.g. ",
-                                        id[self][out][1L], "."), n)
+        if (!length(.mzs_ref_prefixes(n))) next
+        attr(read, "store")$batches(n, function(df) {
+            for (p in .mzs_ref_prefixes(n)) {
+                src <- df[[paste0(p, "_source")]]
+                run <- df[[paste0(p, "_run_id")]]
+                id <- df[[paste0(p, "_spectrum_id_")]]
+                bad <- unique(src[!is.na(src) & !src %in% keys])
+                if (length(bad))
+                    add("R-018", paste0(p, "_source names undeclared source(s): ",
+                                        paste(bad, collapse = ", ")), n)
+                miss <- !is.na(id) & (is.na(src) | is.na(run))
+                if (any(miss))
+                    add("R-021", paste0(sum(miss), " ", p, "_spectrum_id_ ",
+                                        "value(s) lack their source or run."), n)
+                self <- which(src %in% "self" & !is.na(id))
+                if (length(self)) {
+                    k <- match(run[self], rf$run_id)
+                    out <- is.na(k) | id[self] < rf$uid_base[k] |
+                        id[self] >= rf$uid_base[k] + rf$n_spectra[k]
+                    if (any(out))
+                        add("R-022", paste0(sum(out), " self reference(s) of ",
+                                            p, " fall outside their run's ",
+                                            "spectrum ids, e.g. ",
+                                            id[self][out][1L], "."), n)
+                }
             }
-        }
-    }
-    do.call(.mzs_findings, f)
-}
-
-#' The acquisition lineage of x_mspurity_scan and x_mspurity_msn_feature:
-#' levels, parents one level down, MS2 roots, and references that agree
-#' with the rows they name.
-#'
-#' @return a list of findings.
-#'
-#' @noRd
-.mzs_v_lineage <- function(read, have) {
-    f <- list()
-    add <- function(level, msg, table = "x_mspurity_scan")
-        f[[length(f) + 1L]] <<- .mzs_finding(level, "R-099", table, msg)
-    if (!have("x_mspurity_scan"))
-        return(f)
-    sc <- read("x_mspurity_scan")
-    if (is.null(sc$ms_level))
-        return(f)
-    lvl <- sc$ms_level
-    if (any(!is.na(lvl) & !lvl %in% 2:4))
-        add("MUST", "ms_level must be 2, 3 or 4.")
-    row <- function(id) match(id, sc$scan_annotation_id_)
-    p <- row(sc$parent_scan_annotation_id_)
-    r <- row(sc$root_scan_annotation_id_)
-    has_p <- !is.na(p)
-    if (any(has_p & lvl[p] != lvl - 1L, na.rm = TRUE))
-        add("MUST", "A scan's parent must be one MS level below it.")
-    if (any(!is.na(r) & lvl[r] != 2L, na.rm = TRUE))
-        add("MUST", "A scan's root must be an MS2 scan.")
-    for (k in list(list(pre = "parent", at = p), list(pre = "root", at = r))) {
-        at <- k$at
-        i <- which(!is.na(at))
-        if (!length(i))
-            next
-        same <- function(a, b) (is.na(a) & is.na(b)) | (!is.na(a) & !is.na(b) &
-                                                        a == b)
-        agree <- same(sc[[paste0(k$pre, "_source")]][i], sc$ms2_source[at[i]]) &
-            same(sc[[paste0(k$pre, "_run_id")]][i], sc$ms2_run_id[at[i]]) &
-            same(sc[[paste0(k$pre, "_spectrum_id_")]][i],
-                 sc$ms2_spectrum_id_[at[i]]) &
-            same(sc[[paste0(k$pre, "_native_id")]][i],
-                 sc$ms2_native_id[at[i]])
-        if (any(!agree))
-            add("MUST", paste0(sum(!agree), " ", k$pre, " reference(s) ",
-                               "disagree with the scan row they name."))
-    }
-    known <- c("valid", "root", "missing_reference", "unresolved_reference",
-               "invalid_reference", "missing_stage", "missing_precursor")
-    for (c in c("parent_status", "path_status")) {
-        v <- unique(sc[[c]][!is.na(sc[[c]])])
-        if (length(setdiff(v, known)))
-            add("SHOULD", paste0("Unknown ", c, " value(s): ",
-                                 paste(setdiff(v, known), collapse = ", ")))
-    }
-    if (have("x_mspurity_msn_feature")) {
-        mf <- read("x_mspurity_msn_feature")
-        s <- row(mf$scan_annotation_id_)
-        if (any(!is.na(s) & mf$ms_level != lvl[s]))
-            add("MUST", "An MSn feature link's level differs from its scan's.",
-                "x_mspurity_msn_feature")
-        if (any(!is.na(s) & !is.na(mf$root_scan_annotation_id_) &
-                !is.na(sc$root_scan_annotation_id_[s]) &
-                mf$root_scan_annotation_id_ != sc$root_scan_annotation_id_[s]))
-            add("MUST", "An MSn feature link's root differs from its scan's.",
-                "x_mspurity_msn_feature")
-    }
-    f
-}
-
-#' Recorded averaging provenance: merge_member rows that name the dataset's
-#' own averages, and the peak edges of x_mspurity_merge_peak.
-#'
-#' @return a list of findings.
-#'
-#' @noRd
-.mzs_v_averages <- function(path, m, read, have) {
-    f <- list()
-    add <- function(msg, table)
-        f[[length(f) + 1L]] <<- .mzs_finding("MUST", "R-099", table, msg)
-    if (!have("merge_member"))
-        return(f)
-    mm <- read("merge_member")
-    own <- mm$member_source %in% "self"
-    if (any(own & mm$member_spectrum_id_ %in% mm$merged_spectrum_id_ &
-            mm$member_spectrum_id_ == mm$merged_spectrum_id_))
-        add("An averaged spectrum is listed as its own member.",
-            "merge_member")
-    ids <- unique(c(mm$merged_spectrum_id_, mm$member_spectrum_id_[own]))
-    meta <- if (length(ids) && length(m$runs))
-        .mzs_read_spectra_meta(path, m, "ms_level") else NULL
-    level <- function(id) meta$ms_level[match(id, meta$spectrum_id_)]
-    if (!is.null(meta) && any(own & level(mm$member_spectrum_id_) !=
-                              level(mm$merged_spectrum_id_), na.rm = TRUE))
-        add("An averaged spectrum has a member average of another MS level.",
-            "merge_member")
-    if (!have("x_mspurity_merge_peak"))
-        return(f)
-    mp <- read("x_mspurity_merge_peak")
-    key <- paste(mm$merged_spectrum_id_, mm$member_rank)
-    at <- match(paste(mp$merged_spectrum_id_, mp$member_rank), key)
-    if (anyNA(at))
-        add("Peak edges name members absent from merge_member.",
-            "x_mspurity_merge_peak")
-    bases <- c("source_reference", "filter_input", "derived", "unknown")
-    if (any(!mp$basis %in% bases))
-        add("Unknown peak edge basis.", "x_mspurity_merge_peak")
-    if (any(is.na(mp$member_peak_rank) != (mp$basis == "unknown")))
-        add("A member peak is unknown exactly where the basis is unknown.",
-            "x_mspurity_merge_peak")
-    self <- mm$member_source[at] %in% "self"
-    if (any(!is.na(at) & self != (mp$basis == "derived")))
-        add("Edges from averaged members, and only these, are derived.",
-            "x_mspurity_merge_peak")
-    if (any(mp$merged_peak_rank < 1L | mp$member_rank < 1L |
-            mp$member_peak_rank < 1L, na.rm = TRUE))
-        add("Peak edge ranks start at 1.", "x_mspurity_merge_peak")
-    if ("x_mspurity_contributes" %in% names(mm)) {
-        known <- !is.na(mm$x_mspurity_contributes)
-        edged <- key %in% paste(mp$merged_spectrum_id_, mp$member_rank)
-        if (any(known & mm$x_mspurity_contributes != edged))
-            add("A member contributes exactly when it has a peak edge.",
-                "merge_member")
-    }
-    f
-}
-
-#' Foreign keys, reported as orphan rows.
-#'
-#' @noRd
-.mzs_v_integrity <- function(path, m, read, have) {
-    f <- list()
-    orphan <- function(table, col, keys, target) {
-        if (!have(table))
-            return()
-        v <- read(table)[[col]]
-        bad <- unique(v[!is.na(v) & !v %in% keys])
-        if (length(bad))
-            f[[length(f) + 1L]] <<- .mzs_finding(
-                "MUST", "R-099", table,
-                paste0(col, " names ", length(bad), " row(s) absent from ",
-                       target, ", e.g. ", bad[1L], "."))
-    }
-    key <- function(t, k) if (have(t)) read(t)[[k]] else numeric()
-    fid <- key("feature", "feature_id_")
-    pid <- key("chromatographic_peak", "chromatographic_peak_id_")
-    orphan("chromatographic_peak_feature", "feature_id_", fid, "feature")
-    orphan("chromatographic_peak_feature", "chromatographic_peak_id_", pid,
-           "chromatographic_peak")
-    orphan("abundance", "feature_id_", fid, "feature")
-    orphan("abundance", "assay_id_", key("assay", "assay_id_"), "assay")
-    orphan("assay", "sample_id_", key("sample", "sample_id_"), "sample")
-    orphan("spectrum_feature", "feature_id_", fid, "feature")
-    orphan("spectrum_feature", "chromatographic_peak_id_", pid,
-           "chromatographic_peak")
-    if (have("spectrum_feature")) {
-        sf <- read("spectrum_feature")
-        cp <- sf$link_mode == "chromatographic_peak"
-        if (any(cp != !is.na(sf$chromatographic_peak_id_)))
-            f[[length(f) + 1L]] <- .mzs_finding(
-                "MUST", "R-099", "spectrum_feature",
-                paste("chromatographic_peak_id_ must be set exactly where",
-                      "link_mode is chromatographic_peak."))
-        bad <- setdiff(unique(sf$link_mode), .MZS_LINK_MODES)
-        if (length(bad))
-            f[[length(f) + 1L]] <- .mzs_finding(
-                "MUST", "R-044", "spectrum_feature",
-                paste("Unknown link mode(s):", paste(bad, collapse = ", ")))
-        fw <- sf$link_mode == "feature_width" & sf$run_scoped
-        if (any(fw))
-            f[[length(f) + 1L]] <- .mzs_finding(
-                "MUST", "R-045", "spectrum_feature",
-                "feature_width associations must not be run-scoped.")
-    }
-    orphan("evidence", "feature_id_", fid, "feature")
-    orphan("evidence", "compound_id_", key("compound", "compound_id_"),
-           "compound")
-    orphan("evidence", "software_id_", key("software", "software_id_"),
-           "software")
-    orphan("evidence_score", "evidence_id_", key("evidence", "evidence_id_"),
-           "evidence")
-    orphan("compound_xref", "compound_id_", key("compound", "compound_id_"),
-           "compound")
-    orphan("compound_synonym", "compound_id_", key("compound", "compound_id_"),
-           "compound")
-    orphan("x_mspurity_feature_annotation", "feature_id_", fid, "feature")
-    orphan("x_mspurity_combined_annotation", "feature_id_", fid, "feature")
-    orphan("x_mspurity_combined_annotation", "compound_id_",
-           key("compound", "compound_id_"), "compound")
-    sid <- key("x_mspurity_scan", "scan_annotation_id_")
-    orphan("x_mspurity_scan_peak", "scan_annotation_id_", sid,
-           "x_mspurity_scan")
-    orphan("x_mspurity_scan", "parent_scan_annotation_id_", sid,
-           "x_mspurity_scan")
-    orphan("x_mspurity_scan", "root_scan_annotation_id_", sid,
-           "x_mspurity_scan")
-    orphan("x_mspurity_msn_feature", "scan_annotation_id_", sid,
-           "x_mspurity_scan")
-    orphan("x_mspurity_msn_feature", "root_scan_annotation_id_", sid,
-           "x_mspurity_scan")
-    orphan("x_mspurity_msn_feature", "feature_id_", fid, "feature")
-    orphan("x_mspurity_msn_feature", "chromatographic_peak_id_", pid,
-           "chromatographic_peak")
-    f <- c(f, .mzs_v_lineage(read, have), .mzs_v_averages(path, m, read,
-                                                         have))
-    acts <- vapply(m$provenance %||% list(), function(a) as.character(a$id),
-                   "")
-    for (n in names(m$results$tables))
-        orphan(n, "activity", acts, "provenance")
-    if (have("source_identifier")) {
-        si <- read("source_identifier")
-        for (t in unique(si$target_table)) {
-            k <- si$target_key[si$target_table == t]
-            ok <- if (t == "spectra")
-                k >= 1 & k <= sum(.mzs_runs_frame(m)$n_spectra)
-            else if (have(t) && !is.na(.mzs_table_schema(t)$key))
-                k %in% read(t)[[.mzs_table_schema(t)$key]]
-            else rep(FALSE, length(k))
-            if (any(!ok))
-                f[[length(f) + 1L]] <- .mzs_finding(
-                    "MUST", "R-099", "source_identifier",
-                    paste0(sum(!ok), " target_key(s) absent from ", t, "."))
-        }
+        })
     }
     do.call(.mzs_findings, f)
 }
@@ -818,14 +606,15 @@ validateParquet <- function(path, sourcePaths = NULL) {
                 "Derived spectra are present but merge_member is not.")
         return(do.call(.mzs_findings, f))
     }
-    mm <- read("merge_member")
-    missing <- setdiff(seq_len(n), mm$merged_spectrum_id_)
-    if (length(missing))
+    db <- attr(read, "store")
+    tbl <- db$view("merge_member")
+    count <- db$query(paste("SELECT count(DISTINCT CASE WHEN merged_spectrum_id_ BETWEEN 1 AND", n,
+        "THEN merged_spectrum_id_ END) AS n,
+        count(*) - count(members_complete) AS nulls FROM", tbl))
+    if (count$n != n)
         f[[length(f) + 1L]] <- .mzs_finding(
-            "MUST", "R-047", "merge_member",
-            paste0(length(missing), " derived spectra have no members, e.g. ",
-                   missing[1L], "."))
-    if (anyNA(mm$members_complete))
+            "MUST", "R-047", "merge_member", "Derived spectra have no members.")
+    if (count$nulls)
         f[[length(f) + 1L]] <- .mzs_finding(
             "MUST", "R-099", "merge_member", "members_complete is null.")
     do.call(.mzs_findings, f)
@@ -845,29 +634,36 @@ validateParquet <- function(path, sourcePaths = NULL) {
         parts <- list.files(file.path(path, e$path), pattern = "\\.parquet$",
                             recursive = TRUE, full.names = TRUE)
         for (p in parts) {
-            df <- as.data.frame(arrow::read_parquet(p))
-            cols <- intersect(by, names(df))
-            if (!length(cols) || nrow(df) < 2L)
-                next
-            for (c in cols)
-                if (is.factor(df[[c]])) df[[c]] <- as.character(df[[c]])
-            if (any(vapply(df[cols], function(v) is.double(v) &&
-                           any(is.nan(v)), logical(1))))
+            ds <- arrow::open_dataset(p, format = "parquet", partitioning = NULL)
+            cols <- intersect(by, names(ds))
+            if (!length(cols)) next
+            scanner <- arrow::Scanner$create(ds, projection = cols,
+                batch_size = .mzs_batch_size(), use_threads = FALSE)
+            reader <- scanner$ToRecordBatchReader()
+            previous <- NULL
+            bad_order <- nan <- FALSE
+            tryCatch(repeat {
+                batch <- reader$read_next_batch()
+                if (is.null(batch)) break
+                df <- as.data.frame(batch)
+                for (c in cols)
+                    if (is.factor(df[[c]])) df[[c]] <- as.character(df[[c]])
+                nan <- nan || any(vapply(df, function(v) is.double(v) &&
+                                         any(is.nan(v)), logical(1)))
+                df <- rbind(previous, df)
+                o <- do.call(order, c(unname(as.list(df)),
+                                      list(method = "radix", na.last = TRUE)))
+                bad_order <- bad_order || !identical(o, seq_len(nrow(df))) ||
+                    anyDuplicated(df) > 0L
+                previous <- utils::tail(df, 1L)
+            }, finally = reader$Close())
+            if (nan)
                 f[[length(f) + 1L]] <- .mzs_finding(
-                    "MUST", "R-099", n,
-                    paste0("A sort column holds NaN in ", basename(p), "."))
-            o <- do.call(order, c(unname(as.list(df[cols])),
-                                  list(method = "radix", na.last = TRUE)))
-            if (!identical(o, seq_len(nrow(df))))
+                    "MUST", "R-099", n, paste("NaN in a sort column of", basename(p)))
+            if (bad_order)
                 f[[length(f) + 1L]] <- .mzs_finding(
-                    "MUST", "R-038", n,
-                    paste0("Part ", basename(p), " is not in its declared ",
-                           "order (", paste(by, collapse = ", "), ")."))
-            else if (anyDuplicated(df[cols]) && identical(cols, by))
-                f[[length(f) + 1L]] <- .mzs_finding(
-                    "MUST", "R-038", n,
-                    paste0("The declared order admits ties in ",
-                           basename(p), "."))
+                    "MUST", "R-038", n, paste("Invalid sort order in", basename(p)))
+
         }
     }
     do.call(.mzs_findings, f)
@@ -938,7 +734,9 @@ validateParquet <- function(path, sourcePaths = NULL) {
         return(do.call(.mzs_findings, c(f, list(.mzs_finding(
             "MUST", "R-082", NA_character_,
             "A converted dataset carries no loss_ledger.")))))
-    ll <- read("loss_ledger")
+    db <- attr(read, "store")
+    ll <- db$query(paste("SELECT DISTINCT disposition, target_ref FROM",
+                         db$view("loss_ledger")))
     bad <- setdiff(ll$disposition, .MZS_DISPOSITIONS)
     if (length(bad))
         add("R-083", paste("Unknown disposition(s):",
@@ -953,7 +751,7 @@ validateParquet <- function(path, sourcePaths = NULL) {
              else NA
         if (!have(t))
             return(FALSE)
-        is.na(c) || c %in% names(read(t))
+        is.na(c) || c %in% names(attr(read, "store")$schema(t))
     }
     refs <- unique(ll$target_ref[!is.na(ll$target_ref)])
     bad <- refs[!vapply(refs, resolves, logical(1))]
@@ -963,13 +761,9 @@ validateParquet <- function(path, sourcePaths = NULL) {
     for (n in names(m$results$tables)) {
         if (!have(n) || n == "loss_ledger" || !n %in% names(.MZS_TABLES))
             next
-        df <- read(n)
-        if (!nrow(df))
-            next
-        for (c in setdiff(names(df), "activity")) {
-            v <- df[[c]]
-            if (is.list(v) || !all(is.na(v) & !is.nan(v)))
-                next
+        db <- attr(read, "store")
+        if (!db$rows(n)) next
+        for (c in setdiff(db$empty(n), "activity")) {
             if (!paste0(n, ".", c) %in% ll$target_ref)
                 add("R-084", paste0("Column ", c, " is wholly null and has ",
                                     "no ledger row."), n)
@@ -989,7 +783,7 @@ validateParquet <- function(path, sourcePaths = NULL) {
     for (n in names(m$results$tables)) {
         if (!have(n))
             next
-        df <- read(n)
+        df <- attr(read, "store")$schema(n)
         reg <- if (n %in% names(.MZS_TABLES)) .mzs_table_schema(n)$columns
         types <- vapply(names(df), function(c) {
             i <- match(c, reg$name)

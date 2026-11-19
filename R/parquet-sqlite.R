@@ -137,38 +137,6 @@
     .mzs_type_src(src)
 }
 
-#' The tables createDatabase() prepares (`.db_prepare()`), as
-#' `.mzs_read_sqlite()` reads them back once written: columns ordered and
-#' named as written, each stored with the type SQLite gives it (the primary
-#' and foreign keys INTEGER unless declared otherwise, other columns REAL or
-#' TEXT by their first value), and rows in rowid order.
-#'
-#' @noRd
-.mzs_src_from_tables <- function(prep, where = "createDatabase()") {
-    have <- names(prep$tables)
-    .mzs_check_src_tables(have, where)
-    tabs <- intersect(c(.MZS_SQLITE_REQUIRED, .MZS_SQLITE_OPTIONAL), have)
-    src <- lapply(stats::setNames(tabs, tabs), function(t)
-        .mzs_sqlite_stored(prep$tables[[t]]))
-    .mzs_check_src_columns(src, where)
-    ## RSQLite reads an empty result column as logical.
-    lex <- function(t, c) if (t %in% have && c %in% names(src[[t]])) {
-        v <- src[[t]][[c]]
-        if (length(v)) .mzs_sqlite_text(v) else logical()
-    }
-    src$lexical <- list(
-        fileid = lex("fileinfo", "fileid"),
-        grpid = lex("c_peak_groups", "grpid"),
-        cid = lex("c_peaks", "cid"),
-        pid = lex("s_peak_meta", "pid"),
-        mid = lex("sm_matches", "mid"),
-        inchikey_id = lex("metab_compound", "inchikey_id"))
-    src$tables <- sort(have, method = "radix")
-    src <- .mzs_type_src(src)
-    attr(src$s_peaks, "raw_scan_peaks") <- prep$raw_scan_peaks
-    src
-}
-
 #' One prepared table as SQLite stores it and RSQLite reads it back.
 #'
 #' @noRd

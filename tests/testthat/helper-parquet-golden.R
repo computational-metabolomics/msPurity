@@ -128,6 +128,9 @@
     dir.create(td)
     utils::capture.output(res <- suppressWarnings(suppressMessages(
         writers[[name]](td))))
+    findings <- validateParquet(res)
+    must <- findings$message[findings$level == "MUST"]
+    if (length(must)) stop(name, ": ", paste(must, collapse = "; "))
     .parquet_canon(res)
 }
 
@@ -162,6 +165,11 @@
             fail("manifest ", k, " differ")
     if (!identical(got$manifest$results$runs, ref$manifest$results$runs))
         fail("manifest results runs differ")
+    sorted <- function(df, by) {
+        by <- intersect(by, names(df))
+        o <- do.call(order, c(unname(as.list(df[by])), list(method = "radix", na.last = TRUE)))
+        df[o, , drop = FALSE]
+    }
     row_key <- function(d, drop) do.call(paste, c(lapply(
         d[setdiff(names(d), drop)], function(v) ifelse(is.na(v), "<NA>",
                                                       as.character(v))),
@@ -183,6 +191,9 @@
             next
         }
         if (nrow(g) != nrow(r)) { fail(t, ": rows ", nrow(r), " -> ", nrow(g)); next }
+        by <- unlist(ref$manifest$results$tables[[t]]$sorted_by)
+        r <- sorted(r, by)
+        g <- sorted(g, by)
         cols <- intersect(names(r), names(g))
         ## The versions of msPurity and the results layout that wrote them.
         if (t == "conversion")

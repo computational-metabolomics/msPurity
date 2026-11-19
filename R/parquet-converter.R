@@ -264,12 +264,16 @@ parquetCapabilities <- function() {
     out <- list()
     for (name in names(tables)) {
         df <- tables[[name]]
-        if (is.null(df) || !nrow(df))
-            next
+        streamed <- inherits(df, "mzs_table_batches")
+        n <- if (streamed) df$rows else NROW(df)
+        if (!n) next
         cols <- .mzs_table_schema(name)$columns
         for (c in setdiff(cols$name, "activity")) {
-            v <- df[[c]]
-            if (!is.null(v) && !all(is.na(v) & !is.nan(v)))
+            populated <- if (streamed) c %in% df$present else {
+                v <- df[[c]]
+                !is.null(v) && any(!is.na(v) | is.nan(v))
+            }
+            if (populated)
                 next
             ref <- paste0(name, ".", c)
             r <- reasons[[ref]] %||% reasons[[paste0("*.", c)]] %||%
@@ -277,7 +281,7 @@ parquetCapabilities <- function() {
                      reason = "msPurity does not compute this quantity.")
             out[[length(out) + 1L]] <- list(
                 construct = ref, disposition = r$disposition,
-                affected_rows = nrow(df), target_ref = ref,
+                affected_rows = n, target_ref = ref,
                 reason = r$reason)
         }
     }

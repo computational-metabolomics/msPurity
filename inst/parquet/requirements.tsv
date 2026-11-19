@@ -69,7 +69,7 @@ R-040	MUST		The writer treats NaN as a value: NOT NULL checks exclude it. No msP
 R-041	MUST		msPurity always writes chromatographic_peak; it omits no table.
 R-044	MUST	test.9_parquet_p4_features.R	
 R-045	MUST	test.9_parquet_p4_features.R	
-R-047	MUST	test.9_parquet_p2_derived.R; test.9_parquet_p7_validate.R; test-parquet-average.R	Averages with recorded provenance list every selected input.
+R-047	MUST	test.9_parquet_p2_derived.R; test.9_parquet_p7_validate.R; test-parquet-average.R	Computed empty averages retain their selected inputs, including noncontributing members.
 R-049	MUST	test.9_parquet_p5_matching.R; test.9_parquet_p7_validate.R	
 R-051	MUST	test.9_parquet_p5_matching.R; test.9_parquet_p7_validate.R	
 R-055	MUST	test.9_parquet_p5_matching.R	The rescaled SIRIUS score carries its rescaling scope.

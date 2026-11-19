@@ -101,7 +101,9 @@ MS3 and MS4 scans linked through their MS2 scan are in \code{x_mspurity_msn_feat
 averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
 (\code{av_inter}, \code{av_all}), with their per-peak statistics. Averages computed with
 \code{AverageFragSpectraParam}, at MS2 to MS4, keep their MS level, parameter set, acquisition
-conditions and precursor path;
+conditions and precursor path. A computed average with zero retained peaks has empty m/z and
+intensity arrays and keeps its selected members. An attempted scalar average that produced no
+spectrum has a loss ledger entry identifying its feature and, when available, sample;
 \item the scans and averages each averaged spectrum was made from are recorded in \code{merge_member}.
 Where the averaging provenance is recorded, these are the inputs it selected, with whether each
 contributed a peak (\code{x_mspurity_contributes}), and \code{x_mspurity_merge_peak} gives the input

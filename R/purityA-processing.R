@@ -290,6 +290,8 @@
             !pa@avSpectra$av_level %in% paste0("av_", levels)
         ]
     for (level in levels) {
+        if (!is.null(pa@params$absentAverages))
+            pa@params$absentAverages[[level]] <- NULL
         methods::slot(pa, paste0("av_", level, "_params")) <- list()
         pa@params$processing$active[[steps[[level]]]] <- NULL
         for (group in names(pa@av_spectra))

@@ -79,7 +79,9 @@
 #'    averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
 #'    (\code{av_inter}, \code{av_all}), with their per-peak statistics. Averages computed with
 #'    \code{AverageFragSpectraParam}, at MS2 to MS4, keep their MS level, parameter set, acquisition
-#'    conditions and precursor path;
+#'    conditions and precursor path. A computed average with zero retained peaks has empty m/z and
+#'    intensity arrays and keeps its selected members. An attempted scalar average that produced no
+#'    spectrum has a loss ledger entry identifying its feature and, when available, sample;
 #'  * the scans and averages each averaged spectrum was made from are recorded in \code{merge_member}.
 #'    Where the averaging provenance is recorded, these are the inputs it selected, with whether each
 #'    contributed a peak (\code{x_mspurity_contributes}), and \code{x_mspurity_merge_peak} gives the input
@@ -237,18 +239,11 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
 # The tables createDatabase() writes, in write order, each with its primary
 # key, foreign keys and data. NULL, with a message, when the files of `pa`
 # and `xcmsObj` do not match.
-#
-# scanPeaks = "count" leaves out the raw scan peaks that are not annotated
-# (allfrag = FALSE), which the SQLite writer re-reads from the mzML files,
-# and records only how many there are, in `raw_scan_peaks`.
-.db_prepare <- function(pa, grpPeaklist, xcmsObj, xsa, metadata,
-                        scanPeaks = c("read", "count")){
-  scanPeaks <- match.arg(scanPeaks)
+.db_prepare <- function(pa, grpPeaklist, xcmsObj, xsa, metadata){
   tables <- list()
   add <- function(name, pk, fks, df, pk_type = 'INTEGER')
     tables[[name]] <<- list(name = name, pk = pk, fks = fks, df = df,
                             pk_type = pk_type)
-  raw_scan_peaks <- NULL
 
   if(!is.null(xsa)){
     # if user has supplied camera object we use the xset that the camera object
@@ -424,20 +419,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   ###############################################
   # Add s_peak_meta (i.e. scan information)
   ###############################################
-  dropc <- c('filename', 'id')
-  scaninfo <- scaninfo[,!colnames(scaninfo) %in% dropc]
-  xx = c("name", "collision_energy", "ms_level", "accession", "resolution", "polarity",
-         "fragmentation_type", "precursor_type", "instrument_type", "instrument",
-         "copyright", "column", "mass_accuracy", "mass_error", "origin", "splash",
-         "retention_index", "retention_time", "inchikey_id")
-  scaninfo[xx] <- NA
-
-  scaninfo$sourceid <- 1
-
-  scaninfo$retention_time <- scaninfo$retentionTime
-  scaninfo$precursor_mz <- scaninfo$precursorMZ
-  scaninfo$spectrum_type <- 'scan'
-  scaninfo <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scaninfo)
+  scaninfo <- .db_scan_metadata(scaninfo)
 
 
 
@@ -462,9 +444,6 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
                     "intensity_pass_flag", "ra_pass_flag", "snr_pass_flag",
                     "pass_flag")]
         }
-    } else if (scanPeaks == "count") {
-        raw_scan_peaks <- .pa_scan_peak_count(pa, scaninfo$pid)
-        speaks <- .pa_empty_scan_peaks(scaninfo$pid)
     } else {
         speaks <- getScanPeaks(pa)
     }
@@ -479,8 +458,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
 
     colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
     # The scan peak-row ids come first, whether or not they are kept.
-    last_sid <- if (is.null(raw_scan_peaks)) max(c(0, speaks$sid))
-                else attr(raw_scan_peaks, "last_sid")
+    last_sid <- max(c(0, speaks$sid))
     av_spectra$sid <- last_sid + seq_len(nrow(av_spectra))
 
     prePid  <- paste(av_spectra$grpid, av_spectra$fileid, av_spectra$type)
@@ -623,36 +601,59 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     add('isotope_annotations', 'iso_id', fk_isotope, isoID)
   }
 
-  list(tables = tables, raw_scan_peaks = raw_scan_peaks)
+  list(tables = tables)
 }
 
 
-# How many raw peaks the scans `pids` have, and the last of their peak-row
-# ids (`last_sid` attribute), numbered as getScanPeaks() numbers them: a
-# running count over every MS>1 peak of the files, in file order. Taken from
-# the source peak positions recorded at purityA(); objects without them are
-# read from their files.
+# Count the raw peaks represented by scan references in live Parquet exports.
+# Older objects without stored counts use the mzML header where available.
 .pa_scan_peak_count <- function(pa, pids) {
+    if (!length(pids)) return(0)
     sp <- pa@spectra
-    vars <- Spectra::spectraVariables(sp)
     k <- match(pids, sp$pid)
-    if (length(pids) && !anyNA(k) &&
-            all(c("msPurityRawPeakOffset", "msPurityRawPeakCount",
-                  "msPurityRawPeakIdBasis") %in% vars) &&
-            all(sp$msPurityRawPeakIdBasis[k] %in% "source_reference")) {
-        offset <- sp$msPurityRawPeakOffset[k]
+    if (!anyNA(k) && all(c("msPurityRawPeakCount", "msPurityRawPeakIdBasis") %in%
+                         Spectra::spectraVariables(sp)) &&
+        all(sp$msPurityRawPeakIdBasis[k] %in% "source_reference")) {
         count <- sp$msPurityRawPeakCount[k]
-        if (!anyNA(offset) && !anyNA(count)) {
-            n <- sum(count)
-            attr(n, "last_sid") <- if (n) max((offset + count)[count > 0])
-                                   else 0
-            return(n)
-        }
+        if (!anyNA(count)) return(sum(count))
     }
-    peaks <- getScanPeaks(pa)
-    n <- nrow(peaks)
-    attr(n, "last_sid") <- max(c(0, peaks$sid))
+    if (.pa_is_parquet(sp))
+        stop("Source peak counts are unavailable for these spectra.")
+    scans <- purityTable(pa)
+    scans <- scans[scans$pid %in% pids, , drop = FALSE]
+    n <- 0
+    for (file in seq_along(pa@fileList)) {
+        scans_in_file <- scans$seqNum[scans$fileid == file]
+        if (!length(scans_in_file)) next
+        raw <- .msp_read(pa@fileList[[file]])
+        h <- .msp_header(raw)
+        at <- which(h$msLevel > 1L & h$seqNum %in% scans_in_file)
+        count <- h$peaksCount[at]
+        if (is.null(count) || anyNA(count)) {
+            count <- integer(length(at))
+            .mzs_batches(length(at), .mzs_batch_size(TRUE), function(i)
+                count[i] <<- .msp_lengths(raw[at[i]]))
+        }
+        n <- n + sum(count)
+    }
     n
+}
+
+.db_scan_metadata <- function(scaninfo) {
+  dropc <- c('filename', 'id')
+  scaninfo <- scaninfo[,!colnames(scaninfo) %in% dropc]
+  xx = c("name", "collision_energy", "ms_level", "accession", "resolution", "polarity",
+         "fragmentation_type", "precursor_type", "instrument_type", "instrument",
+         "copyright", "column", "mass_accuracy", "mass_error", "origin", "splash",
+         "retention_index", "retention_time", "inchikey_id")
+  scaninfo[xx] <- NA
+
+  scaninfo$sourceid <- 1
+
+  scaninfo$retention_time <- scaninfo$retentionTime
+  scaninfo$precursor_mz <- scaninfo$precursorMZ
+  scaninfo$spectrum_type <- 'scan'
+  update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scaninfo)
 }
 
 getAvSpectraForGrp <- function(x){
@@ -884,9 +885,12 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
         if (anyNA(node) || !all(g$nodes$complete[node]))
             stop("Averages computed with AverageFragSpectraParam need their ",
                 "recorded provenance for Parquet export. Repeat the averaging.")
-        if (.mzs_av_peaks_changed(sp[configured], g$nodes$nPeaks[node]))
-            stop("Peak processing of averaged spectra is not tracked. ",
-                "Export the unmodified averaging result.")
+        indices <- which(configured)
+        .mzs_batches(length(indices), .mzs_batch_size(TRUE), function(i) {
+            if (.mzs_av_peaks_changed(sp[indices[i]], g$nodes$nPeaks[node[i]]))
+                stop("Peak processing of averaged spectra is not tracked. ",
+                    "Export the unmodified averaging result.")
+        })
     }
     invisible(TRUE)
 }

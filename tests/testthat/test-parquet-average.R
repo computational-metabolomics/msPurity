@@ -108,3 +108,80 @@ test_that("averages of every level are exported with their provenance", {
     expect_error(suppressWarnings(createDatabase(pa_pq, xe, outDir = out,
         dbName = "x.sqlite")), "AverageFragSpectraParam is not supported")
 })
+
+test_that("scalar empty averages retain members and absent attempts have no spectrum", {
+    skip_if_no_arrow()
+    skip_if_no_mspuritydata()
+    skip_if_not_installed("xcms")
+    x <- .golden_xcms("msms_only_xcmsnexp.rds")
+    pa <- .golden_pa("3_filterFragSpectra_pa.rds")
+    pa <- averageIntraFragSpectra(pa, minnum = 1000000L, rmp = TRUE, cores = 1L)
+    pa <- averageInterFragSpectra(pa, cores = 1L)
+    td <- tempfile()
+    dir.create(td)
+    old <- options(msPurity.parquet.batch_spectra = 5L, msPurity.parquet.batch_rows = 2048L)
+    on.exit(options(old))
+    path <- createDatabase(pa, x, outDir = td, dbName = "empty", format = "parquet")
+    expect_false(any(validateParquet(path)$level == "MUST"))
+    av <- .av_rows(path)
+    expect_true(nrow(av) > 0)
+    view <- pa@avSpectra
+    expect_equal(nrow(av), sum(view$av_level == "av_intra" & !view$is_null))
+    manifest <- .manifest(path)
+    part_sizes <- function(relative) {
+        files <- list.files(file.path(path, relative), pattern = "\\.parquet$",
+                            recursive = TRUE, full.names = TRUE)
+        vapply(files, function(f) arrow::ParquetFileReader$create(f)$num_rows, numeric(1))
+    }
+    expect_gt(manifest$results$tables$source_identifier$rows, 2048L)
+    for (entry in manifest$results$tables)
+        expect_true(all(part_sizes(entry$path) <= 2048L))
+    for (run in manifest$runs) {
+        expect_true(all(part_sizes(run$path) <= 5L))
+        rows <- .read_run(path, run$run_id)
+        expect_true(all(vapply(rows$mz, identical, logical(1), numeric())))
+        expect_true(all(vapply(rows$intensity, identical, logical(1), numeric())))
+    }
+    mm <- .read_table(path, "merge_member")
+    expect_setequal(mm$merged_spectrum_id_, av$spectrum_id_)
+    expect_true("x_mspurity_contributes" %in% names(mm))
+    expect_true(all(!mm$x_mspurity_contributes))
+    expect_null(.read_table(path, "x_mspurity_merge_peak"))
+    ledger <- .read_table(path, "loss_ledger")$source_construct
+    expect_setequal(grep("^av_inter: feature ", ledger, value = TRUE),
+        paste0("av_inter: feature ", unique(as.character(pa@grped_df$grpid))))
+    expect_false(any(startsWith(ledger, "av_all: feature ")))
+    historic <- pa
+    historic@params$averageGraph <- NULL
+    historic@params$absentAverages <- NULL
+    historic_path <- createDatabase(historic, x, outDir = td, dbName = "historical",
+                                    format = "parquet")
+    recovered <- .read_table(historic_path, "merge_member")
+    expect_equal(table(recovered$merged_spectrum_id_), table(mm$merged_spectrum_id_))
+    expect_true(all(!recovered$members_complete & !recovered$x_mspurity_contributes))
+    expect_null(.read_table(historic_path, "x_mspurity_merge_peak"))
+    again <- averageIntraFragSpectra(pa, cores = 1L)
+    expect_null(again@params$absentAverages$inter)
+})
+
+test_that("historical scalar attempts with no produced runs can be exported", {
+    skip_if_no_arrow()
+    skip_if_no_mspuritydata()
+    skip_if_not_installed("xcms")
+    pa <- .golden_pa("2_frag4feature_pa.rds")
+    pa <- filterFragSpectra(pa, ilim = 1e30)
+    pa <- averageAllFragSpectra(pa, cores = 1L)
+    expect_length(pa@avSpectra, 0L)
+    # Historical objects retain the scalar settings and visited feature names.
+    pa@params$absentAverages <- NULL
+    x <- .golden_xcms("msms_only_xcmsnexp.rds")
+    td <- tempfile()
+    dir.create(td)
+    path <- createDatabase(pa, x, outDir = td, dbName = "absent", format = "parquet")
+    expect_length(.manifest(path)$runs, 0L)
+    expect_null(.read_table(path, "merge_member"))
+    ledger <- .read_table(path, "loss_ledger")$source_construct
+    expect_setequal(grep("^av_", ledger, value = TRUE),
+        paste0("av_all: feature ", unique(as.character(pa@grped_df$grpid))))
+    expect_false(any(validateParquet(path)$level == "MUST"))
+})

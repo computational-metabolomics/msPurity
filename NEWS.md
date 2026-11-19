@@ -1,5 +1,9 @@
 # msPurity 1.99.2
 
+- Parquet export writes spectra and results tables in batches. Scalar averages
+  with zero retained peaks keep their spectrum and membership. Attempted
+  averages that produced no spectrum are recorded in the loss ledger (#128).
+
 - **Fragment clustering** (#141): matching peaks stay together across
   processing blocks, preventing incorrect support counts and lost averaged
   fragments. Blocks whose peaks all fit within one m/z tolerance window are

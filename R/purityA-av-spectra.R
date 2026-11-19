@@ -585,6 +585,7 @@ average_xcms_grouped_msms <- function(pa, av_level, cores = pa@cores,
         av_spectra[i] <- list(results[[i]]$spectra)
 
 
+  pa@params$absentAverages[[av_level]] <- .pa_absent_averages(av_spectra, av_level)
   pa@avSpectra <- .pa_av_to_spectra(av_spectra, pa@grped_df)
     pa <- .pa_av_metadata(pa, av_level, previous, used_inputs, intra)
     sp <- pa@avSpectra
@@ -611,6 +612,26 @@ average_xcms_grouped_msms <- function(pa, av_level, cores = pa@cores,
 }
 
 
+
+# NULL results disappear when the legacy list is converted to Spectra.
+# Retain the attempted group and, for intra-file averaging, its sample.
+.pa_absent_averages <- function(groups, level) {
+    rows <- lapply(names(groups), function(group) {
+        result <- groups[[group]][[paste0("av_", level)]]
+        if (level == "intra" && length(result)) {
+            samples <- names(result)[vapply(result, is.null, logical(1))]
+        } else if (is.null(result) || (level == "intra" && !length(result))) {
+            samples <- NA_character_
+        } else {
+            return(NULL)
+        }
+        if (length(samples))
+            data.frame(group = group, sample = samples, stringsAsFactors = FALSE)
+    })
+    out <- do.call(rbind, rows)
+    if (is.null(out)) data.frame(group = character(), sample = character())
+    else out
+}
 
 average_xcms_grouped_msms_indiv <- function(grp_idx, pa, av_level, ms2, av_in,
     av_keep, record_inputs = FALSE, blockSize = 5000L) {

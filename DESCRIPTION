@@ -41,6 +41,7 @@ Imports:
     plyr,
     dplyr (>= 1.1.0),
     dbplyr,
+    duckdb,
     magrittr,
     foreach,
     parallel,
@@ -96,10 +97,12 @@ Collate:
     'msPurity.R'
     'parquet-annotations.R'
     'parquet-average.R'
+    'parquet-batches.R'
     'parquet-conditions.R'
     'parquet-converter.R'
     'parquet-index.R'
     'parquet-library.R'
+    'parquet-live-source.R'
     'parquet-manifest.R'
     'parquet-matching.R'
     'parquet-msn.R'
@@ -107,6 +110,7 @@ Collate:
     'parquet-schemas.R'
     'parquet-sqlite.R'
     'parquet-validate.R'
+    'parquet-validation-store.R'
     'parquet-write.R'
     'parquet-xcms.R'
     'pcalc.R'
