@@ -102,7 +102,10 @@ through their validated MS2 acquisition ancestors.}
 \code{precScanNum} values can refer to \code{"acquisitionNum"}, retained
 original file positions (\code{"scanIndex"}), or backend source keys
 (\code{"sourceSpectrumId"}). The last option is msPurity-specific and
-uses retained \code{spectrum_id_} or \code{source_spectrum_id} keys.
+uses the dataset's \code{spectrum_id_} when available. For custom
+inputs, \code{lineageScanId} identifies each ancestry row and
+\code{sourceSpectrumId} supplies its parent-reference key. The key
+defaults to the supplied \code{lineageScanId} when missing.
 \code{"spectrumId"} matches native \code{spectrumRef} metadata to native
 \code{spectrumId}; it requires these fields to have been supplied by the
 reader. No new metadata extraction is performed. None of these identifiers
