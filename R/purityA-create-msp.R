@@ -125,6 +125,10 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
   }
 
   grped_df <- pa@grped_df
+  grouped <- identical(pa@f4f_link_type, "group")
+  rt_col <- if (grouped) "rtmed" else "rt"
+  mz_col <- if (grouped) "mzmed" else "mz"
+  scan_mz_col <- if (grouped) "mzmed" else "precurMtchMZ"
   msms <- groupedSpectra(pa)
   puritydf <- purityTable(pa)
   # Scan-based methods do not read averages.
@@ -132,6 +136,7 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
     averagedSpectra(pa) else list()
 
   of <- file(description = msp_file_pth, open = "w+")
+  on.exit(close(of), add = TRUE)
   if (is.null(xcms_groupids)){
     xcms_groupids <- as.numeric(names(msms))
   }
@@ -167,8 +172,9 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
           if (nrow(spectrum)>0){
             spectrum <- add_mzi_cols(spectrum)
-            write.msp(grpdj$precurMtchMZ, grpdj$rt, grpid, fileid, spectrum, metadata,
-                      metadata_cols, of, method, adduct_split, msp_schema, intensity_ra, include_adducts)
+            write.msp(grpdj[[scan_mz_col]], grpdj[[rt_col]], grpid, fileid,
+                      spectrum, metadata, metadata_cols, of, method,
+                      adduct_split, msp_schema, intensity_ra, include_adducts)
           }
 
 
@@ -196,8 +202,9 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
         if (nrow(specmax)>0){
           specmax<- add_mzi_cols(specmax)
 
-          write.msp(grpdi$precurMtchMZ,grpdi$rt, grpid, fileid, specmax, metadata, metadata_cols, of,
-                    method, adduct_split, msp_schema, intensity_ra, include_adducts)
+          write.msp(grpdi[[scan_mz_col]], grpdi[[rt_col]], grpid, fileid,
+                    specmax, metadata, metadata_cols, of, method,
+                    adduct_split, msp_schema, intensity_ra, include_adducts)
         }
 
       }else if (method=="av_inter"){
@@ -214,7 +221,8 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
         if (!is.null(av_inter) && nrow(av_inter)>0){
-          write.msp(median(grpd$mz), median(grpd$rt), grpid, NA, av_inter, metadata, metadata_cols, of, method,
+          write.msp(median(grpd[[mz_col]]), median(grpd[[rt_col]]), grpid, NA,
+                    av_inter, metadata, metadata_cols, of, method,
                     adduct_split, msp_schema, intensity_ra, include_adducts)
         }
 
@@ -238,8 +246,9 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
 
           if (!is.null(av_intra_j) && nrow(av_intra_j)>0){
-            write.msp(median(grpd$mz), median(grpd$rt), grpid, fileid, av_intra_j, metadata, metadata_cols,
-                      of, method, adduct_split, msp_schema, intensity_ra, include_adducts)
+            write.msp(median(grpd[[mz_col]]), median(grpd[[rt_col]]), grpid,
+                      fileid, av_intra_j, metadata, metadata_cols, of, method,
+                      adduct_split, msp_schema, intensity_ra, include_adducts)
           }
 
         }
@@ -256,7 +265,8 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
 
         if (!is.null(av_all) && nrow(av_all)>0){
 
-          write.msp(median(grpd$mz), median(grpd$rt), grpid, NA, av_all, metadata, metadata_cols, of,
+          write.msp(median(grpd[[mz_col]]), median(grpd[[rt_col]]), grpid, NA,
+                    av_all, metadata, metadata_cols, of,
                     method, adduct_split, msp_schema, intensity_ra, include_adducts)
         }
 
@@ -264,7 +274,6 @@ mspurity_to_msp <- function (pa, msp_file_pth=NULL, metadata=NULL, metadata_cols
       }
     }
   }
-  close.connection(of)
 }
 
 
