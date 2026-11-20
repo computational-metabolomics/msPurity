@@ -20,25 +20,22 @@ NULL
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
 
-#' @title Using purityD object, calculates to average mz, intensity
-#' and signal-to-noise of multiple scans from multiple MS datafiles
-#' (mzML or .csv)
+#' @rdname msPurity-deprecated
+#' @section averageSpectra:
+#' If \code{cores} is omitted, the call uses \code{Object@@cores}
+#' without changing that stored setting.
 #'
-#' @description
 #' Uses a purityD object with references to multiple MS files. For each file:
 #' Averages multiple scans together,
 #' see averageSpectraSingle for more information
 #'
+#' \strong{Value:} purityD object with averaged spectra
+#'
 #' @param Object object; purityD object
-#' @inheritParams averageSpectraSingle
 #' @param cores numeric; Maximum number of workers for this call. If omitted,
 #'   uses \code{Object@@cores} without changing that stored setting.
-#
+#'
 #' @aliases averageSpectra
-#' @return  purityD object with averaged spectra
-#' @seealso \code{\link{averageSpectraSingle}}
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="averageSpectra", signature="purityD", definition =
                   function(Object, rtscn = "all", scanRange=NA, timeRange = NA,
@@ -126,10 +123,8 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 
 })
 
-#' @title Calculates to average mz, intensity and signal-to-noise of multiple
-#'  scans from 1 MS datafile (mzML or .csv)
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section averageSpectraSingle:
 #' Averages multiple scans of mass spectrometry data together.
 #' Each scan consisting of a minimum of intensity and mz values.
 #'
@@ -145,7 +140,8 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #'
 #' The function will work for both LC-MS or DI-MS datasets.
 #'
-#' @inherit groupPeaksEx details
+#' \strong{Value:} dataframe of the median mz, intensity, signal-to-noise ratio.
+#'
 #'
 #' @param filePth character; Path of the file to be processed
 #' @param rtscn character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. \['rt', 'scns', 'all'\]
@@ -157,16 +153,12 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #' @param av character; What type of averaging to do between peaks
 #' @param missingV character; What to do with missing values (zero or ignore)
 #' @param minfrac numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak
-#' @inheritParams groupPeaksEx
 #' @param csvFile boolean; A csv file can be used as input. Useful for thermo files where the MSFileReader API can extract peaklist. This can consist of an .csv file with
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
 #' @param snMeth character; Type of snMethod to use \['mean', 'median', 'precalc'\]. Precalc only applicable when using the csvFile parameter as TRUE
 #' @param normTIC boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
 #' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param MSFileReader boolean; Deprecapted. Use csvFile parameter
-#' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 averageSpectraSingle <- function(filePth,
                                  rtscn = "all",
@@ -356,24 +348,22 @@ msfrProcess <- function(filePth, scanRange, snthr, snMeth){
   return(peaklist)
 }
 
-#' @title Using purityD object, group multiple peaklists by similar mz values
-#' (mzML or .csv)
+#' @rdname msPurity-deprecated
+#' @section groupPeaks:
+#' If \code{cores} is omitted, the call uses \code{Object@@cores}
+#' without changing that stored setting.
 #'
-#' @description
 #' Uses a purityD object to group all the peaklists in the 'avPeaks$processing' slot
+#'
+#' \strong{Value:} data.frame of peaklists grouped together by mz
 #'
 #' @param Object object = purityD object
 #' @param ppm numeric = The ppm tolerance to group peaklists
 #' @param clustType = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
-#' @param sampleOnly = if TRUE the sample peaks will only be grouped
-#' @inheritParams groupPeaksEx
 #' @param cores numeric; Maximum number of workers for this call. If omitted,
 #'   uses \code{Object@@cores} without changing that stored setting.
 #'
 #' @aliases groupPeaks
-#' @return data.frame of peaklists grouped together by mz
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="groupPeaks", signature="purityD", definition =
             function(Object, ppm=3, sampleOnly=FALSE, clustType='hc',
@@ -400,10 +390,11 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 
 })
 
-#' @title Group peaklists from a list of dataframes
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section groupPeaksEx:
 #' Group a list of dataframes by their m/z values
+#'
+#' \strong{Value:} data.frame of peaklists grouped together by mz
 #'
 #' @details
 #' With hierarchical clustering, matching peaks stay together. The call stops
@@ -422,9 +413,6 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #'   with this limit.
 #'
 #' @aliases groupPeaksEx
-#' @return data.frame of peaklists grouped together by mz
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2,
     blockSize = 5000L){

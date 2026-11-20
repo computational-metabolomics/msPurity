@@ -17,11 +17,12 @@
 
 
 
-#' @title Get files for DI-MS processing
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section Getfiles:
 #' Takes in a folder path and outputs the a data frame structure for purityD.
 #' Function modified from mzmatch.
+#'
+#' \strong{Value:} dataframe of files
 #'
 #' @param projectFolder character; Directory path
 #' @param recursive boolean; Recursively check for files
@@ -31,9 +32,6 @@
 #' @param raw (REDUNDANT)
 #' @param peakout (REDUNDANT)
 #' @param mzml_out (REDUNDANT)
-#' @return dataframe of files
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 Getfiles = function(projectFolder=NULL, recursive = FALSE, pattern = ".csv",
                     check = TRUE, raw = FALSE, peakout = NA, cStrt = TRUE,

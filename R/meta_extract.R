@@ -17,15 +17,14 @@
 
 
 
-#' @title Get additional mzML meta
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section get_additional_mzml_meta:
 #' Extract the filter strings 'accession MS:1000512' from an mzML file. Called header in thermo software.
 #' Enables quick access to various information regarding each scan
+#'
+#' \strong{Value:} dataframe of meta info
+#'
 #' @param mzml_pth character; mzML path
-#' @return dataframe of meta info
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 get_additional_mzml_meta <- function(mzml_pth){
   .msp_deprecate_dims("get_additional_mzml_meta")

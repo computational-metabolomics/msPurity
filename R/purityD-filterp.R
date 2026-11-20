@@ -17,22 +17,19 @@
 
 
 
-#' @title Filter out peaks based on intensity and RSD criteria
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section filterp:
 #' Uses a purityD object remove peaks from either (or both) samples and
 #' blanks that are either below an intensity threshold
 #' or greater than a Relative Standard Deviation (RSD) threshold
+#'
+#' \strong{Value:} purityD object
 #'
 #' @aliases filterp
 #'
 #' @param Object object; purityD object
 #' @param thr numeric; intensity threshold
 #' @param rsd numeric; rsd threshold
-#' @param sampleOnly boolean; if only the sample (not blanks) should be filtered
-#' @return  purityD object
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="filterp", signature="purityD", definition= function(Object, thr = 5000, rsd=20, sampleOnly = TRUE) {
   .msp_deprecate_dims("filterp")

@@ -20,28 +20,28 @@
 
 #' Deprecated interfaces in msPurity
 #'
-#' These interfaces are retained for compatibility during deprecation.
-#'
 #' @section DIMS retirement:
 #' The DIMS workflow is deprecated and will receive no further bug fixes or
 #' feature development. There is no direct replacement in msPurity. Calls
 #' remain functional during deprecation; the interfaces will become defunct
 #' and be removed in subsequent release cycles.
 #'
-#' @details
-#' The deprecated interfaces are \code{\link{purityD}},
-#' \code{\link{Getfiles}}, \code{\link{averageSpectraSingle}},
-#' \code{\link{groupPeaksEx}}, \code{\link{subtractMZ}},
-#' \code{\link{dimsPredictPuritySingle}} and
-#' \code{\link{get_additional_mzml_meta}}, and the \code{purityD} methods
-#' for \code{averageSpectra}, \code{filterp}, \code{subtract},
-#' \code{dimsPredictPurity}, \code{groupPeaks}, \code{writeOut},
-#' \code{averagedPeaks}, \code{getP}, \code{updatePeaks},
-#' \code{updateObject} and \code{show}.
+#' @description
+#' This page documents the DIMS functions and the \code{purityD} class and
+#' methods retained for compatibility. Shared functions used by the LC-MS
+#' workflows remain supported. The \code{purityD} method for
+#' \code{updatePeaks()} is also deprecated.
 #'
-#' Shared functions used by the LC-MS workflows remain supported.
+#' @param fileList A data frame from \code{Getfiles()} with file paths and
+#'   sample class information, or an \code{MsExperiment} whose sample data
+#'   contains \code{filepth}, \code{name}, \code{sampleType} and \code{class}.
+#'   Missing columns are filled from the spectra file names, with
+#'   \code{sampleType = "sample"}.
+#' @param sampleOnly Logical; apply filtering, grouping or purity prediction
+#'   only to sample peak lists, excluding blanks.
+#' @param mzML Logical; use mzML input when TRUE and CSV input when FALSE.
+#' @return Return values depend on the function; see the individual sections.
 #' @name msPurity-deprecated
-#' @keywords internal
 NULL
 
 .msp_deprecate_dims <- function(old) {

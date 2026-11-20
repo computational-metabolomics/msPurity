@@ -22,22 +22,17 @@ NULL
 ######################################################################
 # Constructor
 ######################################################################
-#' @title Constructor for S4 class to represent a DI-MS purityD
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section initialize (purityD method):
 #' The class used to predict purity from an DI-MS dataset.
-#' @param .Object object; purityD object
-#' @param fileList data.frame created using Getfiles(), with file paths and sample class information; or an
-#'        \code{MsExperiment} whose sample data holds that information (columns filepth, name, sampleType
-#'        and class; missing ones are filled from the spectra file names, with sampleType "sample")
-#' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
-#' @param mzML boolean; TRUE if mzML to be used FALSE if .csv file to be used
-#' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
-#' @return purityD object. The files and their sample information are also kept as an \code{MsExperiment} in
+#'
+#' \strong{Value:} purityD object. The files and their sample information are also kept as an \code{MsExperiment} in
 #' the experiment slot, and the averaged peak lists of later steps as \code{Spectra} in the avSpectra slot
 #' (see \code{\link{averagedPeaks}})
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
+#'
+#' @param .Object object; purityD object
+#' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
+#' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @export purityD
 setMethod("initialize", "purityD", function(.Object, fileList, cores=1, mzML=TRUE, mzRback='pwiz'){
   .msp_deprecate_dims("purityD")

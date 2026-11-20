@@ -17,22 +17,18 @@
 
 
 
-#' @title Using Subtract MZ values based on ppm tolerance and noise ratio
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section subtract:
 #' Uses a purityD object with references to multiple MS files. Subtract blank peaks from the sample peaks
 #' see subtractMZ for more information
+#'
+#' \strong{Value:} purityD object with averaged spectra
 #'
 #' @aliases subtract
 #'
 #' @param Object object; purityD object
 #' @param mapping parameter not functional (TODO)
 #' @param byClass boolean; subtract within each class
-#' @inheritParams subtractMZ
-#' @return  purityD object with averaged spectra
-#' @seealso \code{\link{subtractMZ}}
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="subtract", signature = "purityD",
           definition = function(Object, byClass = TRUE, mapping=c("sample", "blank"), ppm = 5, s2bthres=10){
@@ -108,9 +104,8 @@ subtractSingle <- function(Object, i, ppm, s2bthres){
 
 
 
-#' @title Subtract MZ values based on ppm tolerance and noise ratio
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section subtractMZ:
 #' This function is intended for blank subtraction of mz values from two peaklists. It takes in 2 vectors of mz values and 2
 #' coresponding vectors of Intensity values.
 #'
@@ -118,16 +113,14 @@ subtractSingle <- function(Object, i, ppm, s2bthres){
 #'
 #' However, if the mz match but the intensity is above a defined threshold then they are not subtracted
 #'
+#' \strong{Value:} a vector of the remaining mz values
+#'
 #' @param mz1 vector = mz values to start with
 #' @param mz2 vector = mz values to subtract
 #' @param i1 vector = i values for mz1
 #' @param i2 vector = i values for mz2
 #' @param s2bthres numeric = threshold for the samp2blank (i1/i2)
 #' @param ppm numeric = ppm tolerance
-#' @return a vector of the remaining mz values
-#'
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 subtractMZ <- function(mz1, mz2, i1, i2, ppm = 5, s2bthres = 10){
   .msp_deprecate_dims("subtractMZ")

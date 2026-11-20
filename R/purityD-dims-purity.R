@@ -19,25 +19,16 @@ NULL
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
 
-#' @title Using purityD object, assess anticipated purity from a DI-MS run
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section dimsPredictPurity:
 #' Assess the precursor purity of anticpated MS/MS spectra.
 #' i.e. it 'predicts' the precursor purity of the DI-MS peaks for a future MS/MS run.
+#'
+#' \strong{Value:} purityD object with predicted purity of peaks
 #'
 #' @aliases dimsPredictPurity
 #'
 #' @param Object object = purityD object
-#' @param sampleOnly boolean = if TRUE will only calculate purity for sample peaklists
-#' @inheritParams dimsPredictPuritySingle
-#
-#' @return  purityD object with predicted purity of peaks
-#' @return purityD object
-#' @seealso \code{\link{dimsPredictPuritySingle}}
-#'
-#'
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="dimsPredictPurity", signature="purityD",
           definition= function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
@@ -118,9 +109,8 @@ predictPurityExp <- function(Object, fidx){
 
 
 
-#' @title Predict the precursor purity from a DI-MS dataset
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section dimsPredictPuritySingle:
 #' Given a an DI-MS dataset (either mzML or .csv file) calculate the predicted
 #' purity for a vector of mz values.
 #'
@@ -129,12 +119,13 @@ predictPurityExp <- function(Object, fidx){
 #'
 #' A ppm tolerance is used to find the target mz value in each scan.
 #'
+#' \strong{Value:} a dataframe of the target mz values and the predicted purity score
+#'
 #' @param mztargets vector = mz targets to get predicted purity for
 #' @param filepth character = mzML file path or .csv file path
 #' @param minOffset numeric = isolation window minimum offset
 #' @param maxOffset numeric = isolation window maximum offset
 #' @param ppm numeric = tolerance for target mz value in each scan
-#' @param mzML boolean = Whether an mzML file is to be used or .csv file (TRUE == mzML)
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
@@ -142,9 +133,6 @@ predictPurityExp <- function(Object, fidx){
 #' @param isotopes boolean = TRUE if isotopes are to be removed
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param sim boolean = TRUE if file is from sim stitch experiment. Default FALSE
-#' @return a dataframe of the target mz values and the predicted purity score
-#' @inheritSection msPurity-deprecated DIMS retirement
-#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 dimsPredictPuritySingle <- function(mztargets,
                                     filepth,
