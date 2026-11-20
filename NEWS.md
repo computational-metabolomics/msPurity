@@ -1,5 +1,10 @@
 # msPurity 1.99.4
 
+- `scoreSpectrumPair()` checks MS2–MS4 precursor masses, acquisition
+  conditions and available ancestry before reading peaks. It reports the
+  decision alongside the six existing scores. `SpectralMatchingParam()`
+  sets separate ppm and Da windows for each side of the comparison (#158).
+
 - Parquet spectral matching accepts a `Spectra` library directly, including
   disk-backed libraries. Searches read candidate peaks in batches and can
   record the library release and checksum with the evidence (#154).

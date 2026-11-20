@@ -1097,11 +1097,7 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
     l_speakmetai <- data.frame(l_speakmeta %>% dplyr::filter(id==l_pid) %>% dplyr::collect())
   }
 
-  # ensure we have the relative abundance
-  l_speaksi$ra <- (l_speaksi$i/max(l_speaksi$i))*100
-  q_speaksi$ra <- (q_speaksi$i/max(q_speaksi$i))*100
-
-  am <- alignAndMatch(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW)
+  am <- .sm_score_peaks(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW)
 
   if ('pid' %in% colnames(l_speakmetai)){
     lpids <- l_speakmetai$pid
@@ -1135,7 +1131,16 @@ queryVlibrarySingle <- function(l_pid, q_speaksi, l_speakmeta, l_speaks, q_ppmPr
 }
 
 
-alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW){
+# Both entry points use the same normalization, alignment and score formulas.
+.sm_score_peaks <- function(q, l, q_ppmProd, l_ppmProd, raW, mzW,
+    q_daProd = 0, l_daProd = 0) {
+    q$ra <- (q$i / max(q$i)) * 100
+    l$ra <- (l$i / max(l$i)) * 100
+    alignAndMatch(q, l, q_ppmProd, l_ppmProd, raW, mzW, q_daProd, l_daProd)
+}
+
+alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW,
+                          q_daProd=0, l_daProd=0){
   ###################
   # Align
   ###################
@@ -1147,7 +1152,8 @@ alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW){
 
 
 
-  aligned <-align(q_speaksi, l_speaksi, l_ppmProd, q_ppmProd, raDiffThres=10)
+  aligned <-align(q_speaksi, l_speaksi, l_ppmProd, q_ppmProd, raDiffThres=10,
+                  q_daProd=q_daProd, l_daProd=l_daProd)
 
   ##################
   # Match
@@ -1170,19 +1176,17 @@ alignAndMatch <- function(q_speaksi, l_speaksi, q_ppmProd, l_ppmProd, raW, mzW){
 
 
 
-mzComparePPMrange <- function(mz1, mz2, ppm1, ppm2){
-  mz1Lo = round(mz1 - ((mz1*0.000001)*ppm1), 10)
-  mz1Up = round(mz1 + ((mz1*0.000001)*ppm1), 10)
-
-  # get ranges of the "blank" to remove
-  mz2Lo = round(mz2 - ((mz2*0.000001)*ppm2), 10)
-  mz2Up = round(mz2 + ((mz2*0.000001)*ppm2), 10)
-
-  return(overlap(mz1Lo, mz1Up, mz2Lo, mz2Up))
+.sm_mass_overlap <- function(q, l, qppm, lppm, qda, lda, product = FALSE) {
+    qw <- qda + (q * 0.000001) * qppm
+    lw <- lda + (l * 0.000001) * lppm
+    if (product)
+        return(overlap(round(q - qw, 10), round(q + qw, 10),
+            round(l - lw, 10), round(l + lw, 10)))
+    overlap(q - qw, q + qw, l - lw, l + lw)
 }
 
-
-align <-function(q_speaksi,l_speaksi, l_ppmProd=10, q_ppmProd=100, raDiffThres=10){
+align <-function(q_speaksi,l_speaksi, l_ppmProd=10, q_ppmProd=100, raDiffThres=10,
+                 q_daProd=0, l_daProd=0){
 
   # Following the pMatch-hammer method for peak matching but with slight variation that we also check the percentage difference for
   # the relative intensity as well
@@ -1198,13 +1202,12 @@ align <-function(q_speaksi,l_speaksi, l_ppmProd=10, q_ppmProd=100, raDiffThres=1
   # Get matrix of ppm bool, ppm differences and relative abundance differences
   idiff <- ppmdiff <- ppmbool <- matrix(0L, nrow = nrow(q_speaksi), ncol = nrow(l_speaksi))
 
-  for(x in 1:nrow(q_speaksi)){
-    for(y in 1:nrow(l_speaksi)){
-      # Get ranges of the "sample"
-      idiff[x, y] = abs(q_speaksi$ra[x] - l_speaksi$ra[y])   ## need to update to RA!!!
-      ppmbool[x, y] = mzComparePPMrange(q_speaksi$mz[x], l_speaksi$mz[y], q_ppmProd, l_ppmProd)
-      ppmdiff[x, y] = abs(1e6*(q_speaksi$mz[x]-abs(l_speaksi$mz[y]))/l_speaksi$mz[y])
-    }
+  for (x in seq_len(nrow(q_speaksi))) {
+    mz <- q_speaksi$mz[x]
+    idiff[x, ] <- abs(q_speaksi$ra[x] - l_speaksi$ra)
+    ppmbool[x, ] <- .sm_mass_overlap(mz, l_speaksi$mz, q_ppmProd, l_ppmProd,
+                                     q_daProd, l_daProd, product = TRUE)
+    ppmdiff[x, ] <- abs(1e6 * (mz - abs(l_speaksi$mz)) / l_speaksi$mz)
   }
 
   # Loop through the differences for the target to library
