@@ -39,8 +39,14 @@ dataframe of files
 Takes in a folder path and outputs the a data frame structure for purityD.
 Function modified from mzmatch.
 }
-\examples{
+\section{DIMS retirement}{
 
-datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
 }

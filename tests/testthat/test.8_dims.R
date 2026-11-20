@@ -1,6 +1,6 @@
 context ("Checking file list function")
 
-test_that("Checking file list function", {
+test_that("Checking file list function", .with_dims_deprecation({
   print ("\n")
   print("########################################################")
   print("## Checking file list function                        ##")
@@ -19,8 +19,8 @@ test_that("Checking file list function", {
   fl <- length(dir(file.path(datapth,"mzML"), full.names=TRUE, pattern=pattern, ignore.case = TRUE, recursive=FALSE, include.dirs = FALSE))
   expect_equal(fl, nrow(inDF))
 
-})
-test_that("Check average spectra function only", {
+}))
+test_that("Check average spectra function only", .with_dims_deprecation({
   print("########################################################")
   print("## Check average spectra (function only)              ##")
   print("########################################################")
@@ -71,10 +71,10 @@ test_that("Check average spectra function only", {
   expect_equal(round(median(avP$snr), 3), 51.868)
   expect_equal(round(unname(unlist(avP[1,])), 3), c( 1.000, 155.070, 1491491.750, 113.299, 1.756, 0.110, 2, 2))
 
-})
+}))
 
 
-test_that("Check subtract spectra (function only)", {
+test_that("Check subtract spectra (function only)", .with_dims_deprecation({
   print("########################################################")
   print("## Check mz subtraction (function only)               ##")
   print("########################################################")
@@ -85,11 +85,11 @@ test_that("Check subtract spectra (function only)", {
   subout <- subtractMZ(mz1, mz2, i1, i2, ppm=5, s2bthres =10)
   expect_equal(subout, c(100.001, 300.302))
 
-})
+}))
 
 
 
-test_that("Check predict purity (function only)", {
+test_that("Check predict purity (function only)", .with_dims_deprecation({
   print("########################################################")
   print("## Check predict purity (function only)               ##")
   print("########################################################")
@@ -122,11 +122,11 @@ test_that("Check predict purity (function only)", {
   expect_equal(round(unname(unlist(predicted2[5,])), 3), c(0.816, 0.816, 0.021, 2.634, 0.010, 2.000))
   expect_equal(round(median(predicted2[,1]),3), 1)
 
-})
+}))
 
 
 
-test_that("Check groupPeaks (function only)", {
+test_that("Check groupPeaks (function only)", .with_dims_deprecation({
   print("########################################################")
   print("## Check groupPeaks (function only)               ##")
   print("########################################################")
@@ -142,11 +142,11 @@ test_that("Check groupPeaks (function only)", {
 
   expect_equal(nrow(gpeaks), 111)
   expect_equal(ncol(gpeaks), 17)
-})
+}))
 
 
 
-test_that("Check mzML workflow", {
+test_that("Check mzML workflow", .with_dims_deprecation({
   print("########################################################")
   print("## Check mzML Workflow                                ##")
   print("########################################################")
@@ -256,7 +256,7 @@ test_that("Check mzML workflow", {
   expect_equal(round(median(exG@groupedPeaks$inorm_B02_Blank_TEST_pos, na.rm = TRUE),5), 0.01144)
 
 
-})
+}))
 
 
 

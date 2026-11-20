@@ -31,16 +31,16 @@ purityD object with averaged spectra
 Uses a purityD object with references to multiple MS files. Subtract blank peaks from the sample peaks
 see subtractMZ for more information
 }
-\examples{
-datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+\section{DIMS retirement}{
 
-ppDIMS <- purityD(inDF, cores=1)
-## A high signal-to-noise threshold keeps the example short
-ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-ppDIMS <- filterp(ppDIMS, thr = 5000)
-ppDIMS <- subtract(ppDIMS)
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
 }
+
 \seealso{
 \code{\link{subtractMZ}}
+
+\code{\link{msPurity-deprecated}}
 }

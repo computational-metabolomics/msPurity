@@ -29,11 +29,9 @@
 #' @param fileList data.frame; Created using GetFiles, data.frame with filepaths and sample class information
 #' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
 #' @param mzML boolean; TRUE if mzML to be used FALSE if .csv file to be used
-#' @examples
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
 #' @return purityD object
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export purityD
 purityD <- setClass(
   # Set the name for the class
@@ -75,15 +73,16 @@ purityD <- setClass(
 #'
 #' @param x object; purityD object
 #' @return peaks
-#' @examples
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' peaks <- getP(ppDIMS)
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
-setMethod("getP", "purityD", function(x) averagedPeaks(x))
+setMethod("getP", "purityD", function(x) {
+  .msp_deprecate_dims("getP")
+  averagedPeaks(x)
+})
 
 setMethod("updatePeaks", "purityD", function(x, newlist) {
+  .msp_deprecate_dims("updatePeaks")
   x <- .pd_update(x)
   x@avPeaks <- newlist;
   x <- .pd_end(x)
@@ -102,7 +101,10 @@ setMethod("updatePeaks", "purityD", function(x, newlist) {
 #'
 #' @param object = purityD object
 #' @return a print statement of regarding object
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod("show", "purityD", function(object) {
+  .msp_deprecate_dims("show")
   print("purityD object for processing MS data")
 })

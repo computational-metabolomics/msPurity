@@ -20,8 +20,14 @@ purityD object
 \description{
 The class used to assess anticipated purity from a DI-MS run
 }
-\examples{
-datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+\section{DIMS retirement}{
+
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
 }

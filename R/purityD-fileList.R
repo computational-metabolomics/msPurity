@@ -32,14 +32,13 @@
 #' @param peakout (REDUNDANT)
 #' @param mzml_out (REDUNDANT)
 #' @return dataframe of files
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 Getfiles = function(projectFolder=NULL, recursive = FALSE, pattern = ".csv",
                     check = TRUE, raw = FALSE, peakout = NA, cStrt = TRUE,
                     mzml_out=FALSE){
+  .msp_deprecate_dims("Getfiles")
 
 
   #If no list provided, search Path for files.

@@ -180,8 +180,11 @@
 #' @return An updated purityD object.
 #' @aliases updateObject,purityD-method
 #' @seealso \code{\link{averagedPeaks}}
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod("updateObject", "purityD", function(object, ..., verbose = FALSE) {
+    .msp_deprecate_dims("updateObject")
     if (.pd_is_current(object))
         return(object)
     pd <- methods::new("purityD")
@@ -209,8 +212,11 @@ setMethod("updateObject", "purityD", function(object, ..., verbose = FALSE) {
 #'
 #' @return A list or a \code{Spectra} object.
 #' @aliases averagedPeaks averagedPeaks,purityD-method
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export averagedPeaks
 setMethod("averagedPeaks", "purityD", function(pd, legacy = TRUE) {
+    .msp_deprecate_dims("averagedPeaks")
     pd <- .pd_update(pd)
     if (legacy) .pd_spectra_to_peaks(pd@avSpectra) else pd@avSpectra
 })

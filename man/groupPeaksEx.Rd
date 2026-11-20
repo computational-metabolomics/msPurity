@@ -39,10 +39,14 @@ With hierarchical clustering, matching peaks stay together. The call stops
 with an error if more than \code{blockSize} nearby peaks cannot form one group or be
 separated without splitting matching peaks.
 }
-\examples{
+\section{DIMS retirement}{
 
-peak_list <- list(
-    blank = data.frame(peakID = 1:3, mz = c(100.0010, 150.0583, 200.1000)),
-    sample = data.frame(peakID = 1:4, mz = c(100.0012, 150.0585, 175.0500, 200.1003)))
-grpedP <- groupPeaksEx(peak_list, ppm = 3)
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
 }

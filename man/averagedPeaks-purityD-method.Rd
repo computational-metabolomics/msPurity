@@ -24,3 +24,14 @@ peak variables (\code{legacy = FALSE}). The legacy \code{avPeaks} slot is
 only filled while \code{options(msPurity.legacySlots = TRUE)}, the
 default for this release.
 }
+\section{DIMS retirement}{
+
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
+}

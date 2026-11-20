@@ -30,11 +30,14 @@ The second mz values are subtracted from the first set within an MZ tolerance.
 
 However, if the mz match but the intensity is above a defined threshold then they are not subtracted
 }
-\examples{
-mz1 <- c(100.001, 200.002, 300.302)
-mz2 <- c(100.004, 200.003, 500.101)
-i1 <- c(100, 100, 100)
-i2 <- c(100, 10000, 100)
+\section{DIMS retirement}{
 
-subtractMZ(mz1, mz2, i1, i2, ppm=5, s2bthres =10)
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
 }

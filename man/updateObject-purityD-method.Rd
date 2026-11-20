@@ -22,6 +22,16 @@ Objects saved before msPurity stored the averaged DIMS peak lists in a
 slots. \code{updateObject()} builds them from \code{avPeaks} and
 \code{fileList}. Every purityD method updates its input this way.
 }
+\section{DIMS retirement}{
+
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
 \seealso{
 \code{\link{averagedPeaks}}
+
+\code{\link{msPurity-deprecated}}
 }

@@ -32,25 +32,18 @@ NULL
 #' @inheritParams dimsPredictPuritySingle
 #
 #' @return  purityD object with predicted purity of peaks
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ## A high signal-to-noise threshold keeps the example short
-#' ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-#' ppDIMS <- filterp(ppDIMS)
-#' ppDIMS <- subtract(ppDIMS)
-#' ppDIMS <- dimsPredictPurity(ppDIMS)
 #' @return purityD object
 #' @seealso \code{\link{dimsPredictPuritySingle}}
 #'
 #'
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="dimsPredictPurity", signature="purityD",
           definition= function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
                                iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=FALSE,
                                isotopes=TRUE, im=NULL) {
+            .msp_deprecate_dims("dimsPredictPurity")
             requireNamespace('foreach')
             Object <- .pd_begin(Object)
 
@@ -149,12 +142,9 @@ predictPurityExp <- function(Object, fidx){
 #' @param isotopes boolean = TRUE if isotopes are to be removed
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param sim boolean = TRUE if file is from sim stitch experiment. Default FALSE
-#' @examples
-#' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML",
-#'                        package="msPurityData")
-#' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth,
-#'                              minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
 #' @return a dataframe of the target mz values and the predicted purity score
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 dimsPredictPuritySingle <- function(mztargets,
                                     filepth,
@@ -169,6 +159,7 @@ dimsPredictPuritySingle <- function(mztargets,
                                     isotopes=TRUE,
                                     im=NULL,
                                     sim=FALSE){
+  .msp_deprecate_dims("dimsPredictPuritySingle")
 
   # open the file and get the scans
   if(mzML==TRUE){

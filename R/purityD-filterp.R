@@ -30,18 +30,12 @@
 #' @param thr numeric; intensity threshold
 #' @param rsd numeric; rsd threshold
 #' @param sampleOnly boolean; if only the sample (not blanks) should be filtered
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#'
-#' ppDIMS <- purityD(inDF, cores=1)
-#' ## A high signal-to-noise threshold keeps the example short
-#' ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-#' ppDIMS <- filterp(ppDIMS, thr = 5000)
 #' @return  purityD object
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="filterp", signature="purityD", definition= function(Object, thr = 5000, rsd=20, sampleOnly = TRUE) {
+  .msp_deprecate_dims("filterp")
   Object <- .pd_begin(Object)
   if(sampleOnly){
     Object@avPeaks$processed[Object@sampleIdx] <- lapply(Object@avPeaks$processed[Object@sampleIdx],

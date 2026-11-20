@@ -36,12 +36,11 @@ NULL
 #' @return purityD object. The files and their sample information are also kept as an \code{MsExperiment} in
 #' the experiment slot, and the averaged peak lists of later steps as \code{Spectra} in the avSpectra slot
 #' (see \code{\link{averagedPeaks}})
-#' @examples
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export purityD
 setMethod("initialize", "purityD", function(.Object, fileList, cores=1, mzML=TRUE, mzRback='pwiz'){
+  .msp_deprecate_dims("purityD")
   if (missing(fileList)){
     return(.Object)
   }

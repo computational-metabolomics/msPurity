@@ -29,9 +29,12 @@
 #' @param outDir character; Directory to save text files
 #' @param original boolean; If the original (unprocessed) files are to be saved to text files
 #' @return  purityD object
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="writeOut", signature="purityD",
           definition= function(Object, outDir, original) {
+  .msp_deprecate_dims("writeOut")
   Object <- .pd_begin(Object)
 
   dir.create(outDir)

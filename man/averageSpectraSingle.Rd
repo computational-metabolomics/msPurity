@@ -90,7 +90,14 @@ With hierarchical clustering, matching peaks stay together. The call stops
 with an error if more than \code{blockSize} nearby peaks cannot form one group or be
 separated without splitting matching peaks.
 }
-\examples{
-mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
-avP <- averageSpectraSingle(mzmlPth)
+\section{DIMS retirement}{
+
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
 }

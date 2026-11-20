@@ -59,9 +59,14 @@ and the maxOffset of 0.5.
 
 A ppm tolerance is used to find the target mz value in each scan.
 }
-\examples{
-mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML",
-                       package="msPurityData")
-predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth,
-                             minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
+\section{DIMS retirement}{
+
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
 }

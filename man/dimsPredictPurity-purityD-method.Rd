@@ -48,17 +48,16 @@ purityD object
 Assess the precursor purity of anticpated MS/MS spectra.
 i.e. it 'predicts' the precursor purity of the DI-MS peaks for a future MS/MS run.
 }
-\examples{
+\section{DIMS retirement}{
 
-datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-## A high signal-to-noise threshold keeps the example short
-ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-ppDIMS <- filterp(ppDIMS)
-ppDIMS <- subtract(ppDIMS)
-ppDIMS <- dimsPredictPurity(ppDIMS)
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
 }
+
 \seealso{
 \code{\link{dimsPredictPuritySingle}}
+
+\code{\link{msPurity-deprecated}}
 }

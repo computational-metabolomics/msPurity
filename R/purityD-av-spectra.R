@@ -36,19 +36,16 @@ NULL
 #
 #' @aliases averageSpectra
 #' @return  purityD object with averaged spectra
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ppDIMS <- averageSpectra(ppDIMS)
 #' @seealso \code{\link{averageSpectraSingle}}
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="averageSpectra", signature="purityD", definition =
                   function(Object, rtscn = "all", scanRange=NA, timeRange = NA,
                            clustType="hc", ppm=1.5, snthr = 3, av="median",
                            missingV="zero", minfrac=0.6667, normTIC=FALSE,
                            snMeth="median", mzRback="pwiz", cores=1, blockSize=5000L) {
+  .msp_deprecate_dims("averageSpectra")
   if (missing(cores)) cores <- max(1L, Object@cores)
   .clustering_controls(cores, blockSize)
   Object <- .pd_begin(Object)
@@ -168,9 +165,8 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param MSFileReader boolean; Deprecapted. Use csvFile parameter
 #' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
-#' @examples
-#' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
-#' avP <- averageSpectraSingle(mzmlPth)
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 averageSpectraSingle <- function(filePth,
                                  rtscn = "all",
@@ -189,6 +185,7 @@ averageSpectraSingle <- function(filePth,
                                  mzRback='pwiz',
                                  MSFileReader=FALSE,
                                  blockSize=5000L){
+  .msp_deprecate_dims("averageSpectraSingle")
   .clustering_controls(cores, blockSize)
 
   if (MSFileReader){
@@ -375,18 +372,13 @@ msfrProcess <- function(filePth, scanRange, snthr, snMeth){
 #'
 #' @aliases groupPeaks
 #' @return data.frame of peaklists grouped together by mz
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ## A high signal-to-noise threshold keeps the example short
-#' ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-#' grpedP <- groupPeaks(ppDIMS)
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 setMethod(f="groupPeaks", signature="purityD", definition =
             function(Object, ppm=3, sampleOnly=FALSE, clustType='hc',
                      cores=1, blockSize=5000L) {
+              .msp_deprecate_dims("groupPeaks")
               if (missing(cores)) cores <- max(1L, Object@cores)
               .clustering_controls(cores, blockSize)
               Object <- .pd_begin(Object)
@@ -431,15 +423,12 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #'
 #' @aliases groupPeaksEx
 #' @return data.frame of peaklists grouped together by mz
-#' @examples
-#'
-#' peak_list <- list(
-#'     blank = data.frame(peakID = 1:3, mz = c(100.0010, 150.0583, 200.1000)),
-#'     sample = data.frame(peakID = 1:4, mz = c(100.0012, 150.0585, 175.0500, 200.1003)))
-#' grpedP <- groupPeaksEx(peak_list, ppm = 3)
+#' @inheritSection msPurity-deprecated DIMS retirement
+#' @seealso \code{\link{msPurity-deprecated}}
 #' @export
 groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2,
     blockSize = 5000L){
+  .msp_deprecate_dims("groupPeaksEx")
   .clustering_controls(cores, blockSize)
   comb <- plyr::ldply(peak_list)
 

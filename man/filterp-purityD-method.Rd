@@ -24,13 +24,14 @@ Uses a purityD object remove peaks from either (or both) samples and
 blanks that are either below an intensity threshold
 or greater than a Relative Standard Deviation (RSD) threshold
 }
-\examples{
+\section{DIMS retirement}{
 
-datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
 
-ppDIMS <- purityD(inDF, cores=1)
-## A high signal-to-noise threshold keeps the example short
-ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-ppDIMS <- filterp(ppDIMS, thr = 5000)
+\seealso{
+\code{\link{msPurity-deprecated}}
 }

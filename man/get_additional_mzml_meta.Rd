@@ -16,7 +16,14 @@ dataframe of meta info
 Extract the filter strings 'accession MS:1000512' from an mzML file. Called header in thermo software.
 Enables quick access to various information regarding each scan
 }
-\examples{
-mzml_pth <- system.file("extdata", "dims", "mzML", 'B02_Daph_TEST_pos.mzML', package="msPurityData")
-meta_df <- get_additional_mzml_meta(mzml_pth)
+\section{DIMS retirement}{
+
+The DIMS workflow is deprecated and will receive no further bug fixes or
+feature development. There is no direct replacement in msPurity. Calls
+remain functional during deprecation; the interfaces will become defunct
+and be removed in subsequent release cycles.
+}
+
+\seealso{
+\code{\link{msPurity-deprecated}}
 }
