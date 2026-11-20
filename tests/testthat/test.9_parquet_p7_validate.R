@@ -88,6 +88,23 @@ test_that("structural defects are found (R-037, R-038, R-061, D-005)", {
     }), "R-061"))
 })
 
+test_that("duplicate sort keys across individually sorted parts are detected", {
+    findings <- .mutate(function(p) {
+        m <- MsBackendParquet::readManifest(p)
+        entry <- m$results$tables$feature
+        root <- file.path(p, entry$path)
+        part <- list.files(root, pattern = "\\.parquet$", recursive = TRUE,
+                           full.names = TRUE)[1L]
+        row <- arrow::read_parquet(part, as_data_frame = FALSE)$Slice(0L, 1L)
+        arrow::write_parquet(row, file.path(dirname(part), "duplicate.parquet"))
+        entry$parts <- entry$parts + 1L
+        entry$rows <- entry$rows + 1L
+        m$results$tables$feature <- entry
+        .write_raw_manifest(p, m)
+    })
+    expect_true(.has(findings, "R-038"))
+})
+
 test_that("reference and integrity defects are found (R-018, R-020, R-024, R-099)", {
     expect_true(.has(.mutate(function(p) .manifest_edit(p, function(m) {
         m$sources[[2]] <- m$sources[[1]]

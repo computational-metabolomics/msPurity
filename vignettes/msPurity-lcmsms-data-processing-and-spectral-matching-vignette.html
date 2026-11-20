@@ -1875,16 +1875,27 @@ function toggle_visibility(id1) {
 <li>(xcmsObj, pa) -&gt; frag4feature -&gt; filterFragSpectra -&gt; averageAllFragSpectra -&gt; createDatabase -&gt; spectralMatching -&gt; (sqlite spectral database)</li>
 </ul></li>
 </ul>
+<p>Both XCMS workflows use the same four example files.</p>
+<pre class="r"><code>library(msPurity)
+library(xcms)
+mzMLdir &lt;- system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package = &quot;msPurityData&quot;)
+mzMLpths &lt;- list.files(mzMLdir, pattern = &quot;[.]mzML$&quot;, full.names = TRUE)</code></pre>
 </div>
 <div id="xcms-versions-3-processing-workflow" class="section level2" number="1.2">
 <h2><span class="header-section-number">1.2</span> XCMS (versions &lt; 3) processing workflow</h2>
-<p>We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.</p>
-<p>(Please use the appropriate settings for your data)</p>
-<pre class="r"><code>library(msPurity)
-library(xcms)
-mzMLpths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE)
-
-#read in the data
+<p>For the legacy workflow, load the grouped peaks supplied with msPurity and
+point the saved file names to your installed copy of the example data.</p>
+<pre class="r"><code>xcmsObj &lt;- readRDS(system.file(&quot;extdata&quot;, &quot;lcms-grouped-xcmsSet.rds&quot;,
+                               package = &quot;msPurity&quot;, mustWork = TRUE))
+xcms::filepaths(xcmsObj) &lt;- file.path(mzMLdir, xcms::filepaths(xcmsObj))
+head(xcms::groups(xcmsObj), 3)</code></pre>
+<pre><code>##         mzmed    mzmin    mzmax    rtmed    rtmin    rtmax npeaks mzML
+## [1,] 100.0759 100.0759 100.0760 44.83980 44.63914 45.04046      2    2
+## [2,] 100.1117 100.1117 100.1118 50.07501 49.75677 50.48347      3    2
+## [3,] 100.9173 100.9172 100.9173 34.71006 34.50915 34.91096      2    2</code></pre>
+<p>The following code shows how to reproduce the saved result from the raw files.
+Adjust the peak-detection and grouping settings when using your own data.</p>
+<pre class="r"><code>#read in the data
 xset = xcms::xcmsSet(mzMLpths, method = &#39;centWave&#39;, mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
 
 #for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
@@ -1897,13 +1908,10 @@ xcmsObj = xset</code></pre>
 </div>
 <div id="xcms-versions-3-processing-workflow-1" class="section level2" number="1.3">
 <h2><span class="header-section-number">1.3</span> XCMS (versions 3+) processing workflow</h2>
-<p>We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.</p>
+<p>The rest of this vignette uses the features detected and grouped by the following workflow.</p>
 <p>(Please use the appropriate settings for your data)</p>
-<pre class="r"><code>library(msPurity)
-library(magrittr)
-library(xcms)
+<pre class="r"><code>library(magrittr)
 library(MSnbase)
-mzMLpths &lt;- list.files(system.file(&quot;extdata&quot;, &quot;lcms&quot;, &quot;mzML&quot;, package=&quot;msPurityData&quot;), full.names = TRUE)
 
 #read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
 msdata = readMSData(mzMLpths, mode = &#39;onDisk&#39;, msLevel. = 1)

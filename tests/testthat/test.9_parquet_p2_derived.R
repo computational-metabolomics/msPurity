@@ -127,13 +127,20 @@ test_that("an interrupted write leaves no dataset behind (B-064)", {
     suppressPackageStartupMessages(library(xcms))
     out <- tempfile("fail-")
     dir.create(out)
+    write <- function(overwrite = FALSE) suppressMessages(createDatabase(
+        .golden_pa(), .golden_xcms("msms_only_xcmsnexp.rds"), outDir = out,
+        dbName = "x.parquet", format = "parquet", overwrite = overwrite))
     old <- options(msPurity.parquet.fail_before_commit = TRUE)
     on.exit(options(old))
-    expect_error(suppressMessages(createDatabase(
-        .golden_pa(), .golden_xcms("msms_only_xcmsnexp.rds"), outDir = out,
-        dbName = "x.parquet", format = "parquet")), "fail_before_commit")
-    expect_identical(list.files(out, all.files = TRUE, no.. = TRUE),
-                     character())
+    expect_error(write(), "fail_before_commit")
+    expect_identical(list.files(out, all.files = TRUE, no.. = TRUE), character())
+    options(msPurity.parquet.fail_before_commit = FALSE)
+    path <- write()
+    before <- tools::md5sum(list.files(path, full.names = TRUE, recursive = TRUE))
+    options(msPurity.parquet.fail_before_commit = TRUE)
+    expect_error(write(overwrite = TRUE), "fail_before_commit")
+    expect_identical(tools::md5sum(names(before)), before)
+    expect_false(any(validateParquet(path)$level == "MUST"))
 })
 
 test_that("createDatabase() warns for SQLite, not for Parquet", {

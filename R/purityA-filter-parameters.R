@@ -272,13 +272,31 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
     })
     names(values) <- names(.PA_FILTER_AXES)
     values <- as.data.frame(values, stringsAsFactors = FALSE)
-    structured_activation <- rep(FALSE, n)
-    if ("activationTypeAccession" %in% available) {
-        accession <- as.character(source$activationTypeAccession)
-        structured_activation <- !is.na(accession) & nzchar(trimws(accession))
+    recorded <- lapply(values[c("activationType", "scanFilterAnalyzer")],
+                       function(v) !is.na(v))
+    # An activationType given as a recognised PSI-MS accession, as a Parquet
+    # dataset records it, is an accession: its method name is the label.
+    accession <- if ("activationTypeAccession" %in% available)
+        as.character(source$activationTypeAccession) else rep(NA_character_, n)
+    accession[!is.na(accession) & !nzchar(trimws(accession))] <- NA_character_
+    methods <- unique(unname(.PA_ACTIVATION_TYPES))
+    label <- values$activationType
+    curie <- !is.na(label) & grepl("^[A-Za-z]+:[0-9]+$", label) &
+        .pa_activation_type(label) %in% methods
+    if (any(curie)) {
+        both <- curie & !is.na(accession)
+        if (any(both & .pa_activation_type(accession) !=
+                    .pa_activation_type(label)))
+            stop("Conflicting activation label and activationTypeAccession ",
+                "at spectrum ", which(both & .pa_activation_type(accession) !=
+                    .pa_activation_type(label))[1L], ".")
+        accession[curie] <- label[curie]
+        values$activationType[curie] <- NA_character_
+    }
+    structured_activation <- !is.na(accession)
+    if (any(structured_activation)) {
         mapped <- .pa_activation_type(accession)
         label <- .pa_activation_type(values$activationType)
-        methods <- unique(unname(.PA_ACTIVATION_TYPES))
         conflict <- label %in% methods & mapped %in% methods & label != mapped
         if (any(conflict))
             stop("Conflicting activation label and activationTypeAccession ",
@@ -296,6 +314,17 @@ methods::setMethod("as.list", "FilterFragSpectraParam", function(x, ...) {
             values[[field]][take] <- derived[[field]][take]
         }
     }
+    # Where each label came from: recorded by the source, derived from its
+    # filter string, or unavailable (NA).
+    basis <- lapply(names(recorded), function(field) {
+        known <- recorded[[field]] | (field == "activationType" &
+                                      structured_activation)
+        ifelse(known, "recorded", ifelse(is.na(values[[field]]), NA_character_,
+                                         "filter_string"))
+    })
+    names(basis) <- names(recorded)
+    attr(values, "activationTypeAccession") <- accession
+    attr(values, "basis") <- basis
     values
 }
 

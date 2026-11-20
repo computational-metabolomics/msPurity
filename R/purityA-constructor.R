@@ -80,7 +80,14 @@ NULL
 #' @param fileList vector of mzML file paths, or a \code{Spectra},
 #'        \code{MsExperiment} or \code{XcmsExperiment} object holding the
 #'        spectra of one or more files. Objects are used as they are, so any
-#'        filtering applied to them also applies to the purity calculation
+#'        filtering applied to them also applies to the purity calculation.
+#'        A \code{Spectra} on a Parquet dataset written by
+#'        \code{MsBackendParquet::mzMLToParquet()} is read from that dataset
+#'        throughout the workflow, never from the mzML files, and is the study
+#'        \code{createDatabase(format = "parquet")} links scans to. Raw peak
+#'        rows are numbered over the input as given. An activation method the
+#'        dataset records as a PSI-MS accession is read as its method name,
+#'        as one named by an mzML filter string is.
 #' @param mostIntense boolean; True if the most intense peak is used for calculation. Set to FALSE if the peak closest to mz value detailed in mzML meta data.
 #' @param nearest logical; TRUE uses the nearest usable MS1 measurement on either
 #' side. FALSE requires the reported preceding MS1 reference. When references are
@@ -222,6 +229,10 @@ purityA <- function(fileList,
   }
   if (is(fileList, "Spectra")){
     raw <- fileList
+    if (!length(raw))
+      stop("The input holds no spectra.")
+    if (.pa_is_parquet(raw))
+      .pa_check_parquet_runs(raw)
     fileList <- unique(Spectra::dataOrigin(raw))
   }else{
     if((is.null(fileList)) || (all(fileList == "" ))){
@@ -233,6 +244,10 @@ purityA <- function(fileList,
   acquisition <- .pa_filter_metadata(raw)
   for (field in c("activationType", "scanFilterAnalyzer"))
     raw[[field]] <- acquisition[[field]]
+  accession <- attr(acquisition, "activationTypeAccession")
+  if (any(!is.na(accession)))
+    raw$activationTypeAccession <- accession
+  raw$activationTypeBasis <- attr(acquisition, "basis")$activationType
   names(fileList) <- basename(fileList)
   .msp_deprecate_mzRback(mzRback)
   sps <- .msp_split_files(raw)
@@ -250,6 +265,7 @@ purityA <- function(fileList,
                             ilim = ilim, mzRback = mzRback, isotopes = isotopes, im = im,
                             ppmInterp = ppmInterp, msLevel = msLevel,
                             parentReference = parentReference)
+  pa@params$purityA$study <- .pa_study_identity(raw)
   configuration <- NULL
   if (!is.null(param)) {
     selected <- which(Spectra::msLevel(raw) %in% msLevel)
@@ -280,7 +296,7 @@ purityA <- function(fileList,
   purityL <- operator(
     foreach::foreach(
       i = 1:length(pa@fileList),
-      .packages = "Spectra",
+      .packages = c("Spectra", if (.pa_is_parquet(raw)) "MsBackendParquet"),
       .export = ".pa_assess_purity_configured"
     ),
     .pa_assess_purity_configured(

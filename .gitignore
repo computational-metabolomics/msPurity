@@ -5,3 +5,4 @@ check/
 .Ruserdata
 tests/testthat/purityXplots/
 .docs/
+.DS_Store

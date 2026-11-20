@@ -175,6 +175,17 @@ test_that("unknown or unmapped tables are refused, not dropped (R-081)", {
                                                 tempfile("y-")), "format")
 })
 
+test_that("external run ids use the recorded paths when source files are missing", {
+    paths <- c("/historical-study/one.mzML", "Z:\\historical-study\\two.mzML")
+    fi <- data.frame(fileid = 1:2, filepth = paths, filename = c("one", "two"),
+                     class = "sample")
+    files <- .mzs(".mzs_files")(fi, NULL, "study", NULL, tempfile())
+    mint <- .mzs(".mzs_mint_run_id")
+    expect_identical(files$run_id,
+                     c(mint(paths[1], 1), mint("Z:/historical-study/two.mzML", 2)))
+    expect_identical(files$data_origin, paths)
+})
+
 test_that("a basename collision needs a fileMap (R-096, R-097)", {
     skip_if_no_arrow()
     db <- tempfile(fileext = ".sqlite")

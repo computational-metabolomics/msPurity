@@ -1,5 +1,13 @@
 context("Parquet: manifest, sources, references and conditions")
 
+test_that("a new results directory references a sibling study by relative path", {
+    parent <- tempfile()
+    study <- file.path(parent, "study")
+    dir.create(study, recursive = TRUE)
+    expect_identical(.mzs(".mzs_relative_path")(study, file.path(parent, "results")),
+                     "../study")
+})
+
 test_that("the nine error classes are distinct conditions (B-011)", {
     skip_if_no_arrow()
     abort <- .mzs(".mzs_abort")

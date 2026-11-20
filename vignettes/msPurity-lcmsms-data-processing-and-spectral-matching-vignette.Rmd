@@ -29,16 +29,31 @@ The msPurity package can be used with XCMS as part of a data processing and anno
 * Fragmentation processing
   + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> spectralMatching -> (sqlite spectral database)
 
-## XCMS (versions < 3)  processing workflow
-We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
-
-(Please use the appropriate settings for your data)
+Both XCMS workflows use the same four example files.
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
 library(msPurity)
 library(xcms)
-mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+mzMLdir <- system.file("extdata", "lcms", "mzML", package = "msPurityData")
+mzMLpths <- list.files(mzMLdir, pattern = "[.]mzML$", full.names = TRUE)
+```
 
+## XCMS (versions < 3) processing workflow
+
+For the legacy workflow, load the grouped peaks supplied with msPurity and
+point the saved file names to your installed copy of the example data.
+
+```{r legacy-grouped-peaks}
+xcmsObj <- readRDS(system.file("extdata", "lcms-grouped-xcmsSet.rds",
+                               package = "msPurity", mustWork = TRUE))
+xcms::filepaths(xcmsObj) <- file.path(mzMLdir, xcms::filepaths(xcmsObj))
+head(xcms::groups(xcmsObj), 3)
+```
+
+The following code shows how to reproduce the saved result from the raw files.
+Adjust the peak-detection and grouping settings when using your own data.
+
+```{r reproduce-legacy-peaks, eval=FALSE}
 #read in the data
 xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
 
@@ -53,16 +68,13 @@ xcmsObj = xset
 
 
 ## XCMS (versions 3+) processing workflow
-We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
+The rest of this vignette uses the features detected and grouped by the following workflow.
 
 (Please use the appropriate settings for your data)
 
 ```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-library(msPurity)
 library(magrittr)
-library(xcms)
 library(MSnbase)
-mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
 
 #read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
 msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)
