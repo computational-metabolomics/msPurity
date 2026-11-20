@@ -38,8 +38,14 @@ context("Spectrum peak identities and average membership")
 
 test_that("raw identities survive empty and higher-level spectra", {
     fixture <- .identity_pa()
+    fixture$raw$survey <- fixture$raw$first[1L]
+    fixture$pa@fileList <- c(fixture$pa@fileList, survey = "survey")
+    read_peaks <- msPurity:::.msp_peaks
     local_mocked_bindings(.msp_read = function(files, ...) {
         fixture$raw[[as.character(files)]]
+    }, .msp_peaks = function(sp) {
+        expect_true(length(sp) > 0L && all(Spectra::msLevel(sp) > 1L))
+        read_peaks(sp)
     }, .package = "msPurity")
     out <- msPurity:::getScanPeaks(fixture$pa)
     expect_equal(out$pid, c(102, 103, 202, 203))

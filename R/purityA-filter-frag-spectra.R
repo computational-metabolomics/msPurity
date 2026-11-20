@@ -382,10 +382,11 @@ getScanPeaks <- function(pa) {
     parts <- lapply(seq_along(pa@fileList), function(fileid) {
         sp <- .msp_read(as.character(pa@fileList[[fileid]]))
         header <- .msp_header(sp)
-        peaks <- .msp_peaks(sp)
         index <- which(header$msLevel > 1L)
-        n <- vapply(peaks[index], nrow, integer(1L))
-        values <- do.call(rbind, peaks[index])
+        if (!length(index)) return(NULL)
+        peaks <- .msp_peaks(sp[index])
+        n <- vapply(peaks, nrow, integer(1L))
+        values <- do.call(rbind, peaks)
         if (is.null(values) || !nrow(values)) return(NULL)
         data.frame(fileid = fileid,
             scan = as.character(rep(header$seqNum[index], n)),
