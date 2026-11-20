@@ -93,6 +93,51 @@ test_that("not attempted, nothing matched and cut lists are distinguishable (R-0
     expect_true(all(cv$query_spectrum_id_ %in% sp$spectrum_id_))
 })
 
+test_that("a search without candidates returns and records no matches", {
+    p <- .query_dataset()
+    lib <- tempfile("lib-")
+    suppressMessages(convertLibraryToParquet(
+        .example("library", "mini_mona.msp"), lib, format = "msp",
+        dialect = "mona"))
+    ## No query has a candidate among the negative-mode library spectra.
+    none <- .sm(p, lib, l_spectraTypes = NA, l_pol = "negative",
+                updateDb = TRUE)
+    expect_null(none$matchedResults)
+    expect_true(all(.read_table(p, "coverage")$candidates_considered == 0))
+    ## Matches written later leave a valid dataset.
+    .sm(p, lib, l_spectraTypes = NA, l_pol = "positive", updateDb = TRUE)
+    v <- validateParquet(p)
+    expect_identical(v$message[v$level == "MUST"], character())
+})
+
+test_that("unknown query polarity is matched unless a polarity is required", {
+    p <- .query_dataset()
+    expected <- .sm(p, p)$matchedResults
+    read_meta <- .mzs(".mzs_read_spectra_meta")
+    local_mocked_bindings(.mzs_read_spectra_meta = function(...) {
+        meta <- read_meta(...)
+        if (!is.null(meta$scan_polarity))
+            meta$scan_polarity <- rep(NA_integer_, nrow(meta))
+        meta
+    }, .package = "msPurity")
+    expect_identical(.sm(p, p)$matchedResults, expected)
+    expect_null(.sm(p, p, q_pol = "positive")$matchedResults)
+})
+
+test_that("an empty selection from a results library returns no matches", {
+    p <- .query_dataset()
+    expect_null(.sm(p, p, l_xcmsGroups = -1)$matchedResults)
+})
+
+test_that("a dataset without a library role is refused clearly", {
+    p <- .query_dataset()
+    l <- .copy_dataset(p)
+    m <- MsBackendParquet::readManifest(l)
+    m$role <- NULL
+    .write_raw_manifest(l, m)
+    expect_parquet_error(.sm(p, l), "unsupported")
+})
+
 test_that("ranks follow mzTab-M: ties share a rank (R-051)", {
     rk <- .mzs(".mzs_rank_matches")
     m <- data.frame(qkey = c("a", "a", "a", "a", "b"),

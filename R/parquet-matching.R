@@ -199,9 +199,9 @@
         evidence$x_mspurity_mid <- ev$x_mspurity_mid
     score <- do.call(rbind, lapply(names(.MZS_SCORE_KINDS_SM), function(t)
         data.frame(evidence_id_ = evidence$evidence_id_,
-                   score_term = .MZS_SCORE_TERMS[[t]],
+                   score_term = rep(.MZS_SCORE_TERMS[[t]], n),
                    score_value = as.numeric(ev[[t]]),
-                   score_kind = .MZS_SCORE_KINDS_SM[[t]],
+                   score_kind = rep(.MZS_SCORE_KINDS_SM[[t]], n),
                    stringsAsFactors = FALSE)))
     cov <- data.frame(
         query_source = coverage$query_source,
@@ -304,8 +304,8 @@
             retention_time = ft$retention_time_in_seconds[match(
                 fid, ft$feature_id_)],
             inPurity = sm$x_mspurity_precursor_purity,
-            polarity = c("-1" = "negative", "1" = "positive")[
-                as.character(sm$scan_polarity)],
+            polarity = unname(c("-1" = "negative", "1" = "positive")[
+                as.character(sm$scan_polarity)]),
             stringsAsFactors = FALSE)
         flags <- c("x_mspurity_snr_pass_flag", "x_mspurity_minnum_pass_flag",
                    "x_mspurity_minfrac_pass_flag", "x_mspurity_ra_pass_flag")
@@ -410,18 +410,20 @@
             q_pol = a$l_pol, q_rtrange = a$l_rtrange,
             q_xcmsGroups = a$l_xcmsGroups), NULL)
         mt <- q$meta
+        unknown <- rep(NA_character_, nrow(mt))
         meta <- data.frame(
-            reference_source = key, reference_run_id = mt$query_run_id,
+            reference_source = rep(key, nrow(mt)),
+            reference_run_id = mt$query_run_id,
             reference_spectrum_id_ = mt$query_spectrum_id_,
             reference_native_id = mt$query_native_id,
             precursor_mz = mt$precursor_mz,
             retention_time = mt$retention_time,
             inPurity = mt$inPurity, accession = mt$query_native_id,
-            name = NA_character_, precursor_type = NA_character_,
-            inchikey = NA_character_, compound_name = NA_character_,
-            formula = NA_character_, smiles = NA_character_,
-            inchi = NA_character_, exact_mass = NA_real_,
-            source_name = NA_character_, stringsAsFactors = FALSE)
+            name = unknown, precursor_type = unknown,
+            inchikey = unknown, compound_name = unknown,
+            formula = unknown, smiles = unknown,
+            inchi = unknown, exact_mass = as.numeric(unknown),
+            source_name = unknown, stringsAsFactors = FALSE)
         peaks <- q$peaks
         names(peaks) <- as.character(mt$query_spectrum_id_)
         return(list(meta = meta, peaks = function(ids)
@@ -566,7 +568,7 @@
     if (is.null(att))
         att <- qm[0, , drop = FALSE]
     list(matches = do.call(rbind, out) %||% data.frame(
-             qkey = character(), dpc = numeric()),
+             qkey = character(), order = integer(), dpc = numeric()),
          attempted = att)
 }
 
@@ -659,7 +661,8 @@
         .mzs_abort("unsupported", "'", q, "' is not a results dataset.")
     lpath <- normalizePath(a$l_dbPth, mustWork = TRUE)
     lm <- MsBackendParquet::readManifest(lpath)
-    if (!m$role %in% "results" || !lm$role %in% c("library", "results"))
+    if (!m$role %in% "results" ||
+        !isTRUE(lm$role %in% c("library", "results")))
         .mzs_abort("unsupported", "'", lpath, "' is neither a library nor ",
                    "a results dataset.")
     if (!identical(lm$role, "results") &&
@@ -715,6 +718,9 @@
             append$compound <- cmp$compound
         if (!is.null(cmp$xref))
             append$compound_xref <- cmp$xref
+        ## A table takes its columns from its first rows: write only tables
+        ## with rows. Without matches, coverage records the queries tried.
+        append <- append[vapply(append, NROW, integer(1L)) > 0L]
         lsrc <- .mzs_dataset_source(key, lpath, target,
                                     role = lm$role,
                                     run_ids = unique(matches$reference_run_id))
