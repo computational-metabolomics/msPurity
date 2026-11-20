@@ -1,5 +1,9 @@
 # msPurity 1.99.4
 
+- Parquet spectral matching accepts a `Spectra` library directly, including
+  disk-backed libraries. Searches read candidate peaks in batches and can
+  record the library release and checksum with the evidence (#154).
+
 - **DIMS retirement**: `purityD`, its associated processing functions and
   standalone DIMS functions, including `dimsPredictPuritySingle()`, are
   deprecated. Calls remain functional during deprecation, but DIMS

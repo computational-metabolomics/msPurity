@@ -109,6 +109,7 @@ Collate:
     'parquet-purityA.R'
     'parquet-read.R'
     'parquet-schemas.R'
+    'parquet-spectra-library.R'
     'parquet-sqlite.R'
     'parquet-validate.R'
     'parquet-validation-store.R'
