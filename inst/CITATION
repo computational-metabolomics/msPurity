@@ -1,15 +1,74 @@
-citHeader("To cite the msPurity and msPurityData package in publications use:")
-
-citEntry(entry="article",
-   author="Lawson, Thomas Nigel and Weber, Ralf J. M. and Jones, Martin R. and Chetwynd, Andrew J. and Rodriguez Blanco, Giovanny Alejandro and Di Guida, Riccardo and Viant, Mark R. and Dunn, Warwick B",
-   title="msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry-Based Fragmentation in Metabolomics.",
-   journal="Analytical Chemistry",
-   year="2017",
-   volume="89",
-   pages="2432--2439",
-   doi = "10.1021/acs.analchem.6b04358",
-   textVersion = paste("Lawson, Thomas Nigel and Weber, Ralf J. M. and Jones, Martin R. and Chetwynd, Andrew J. and Rodriguez Blanco, Giovanny Alejandro and Di Guida, Riccardo and Viant, Mark R. and Dunn, Warwick B:",
-		       "msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry-Based Fragmentation in Metabolomics.",
-            "Analytical Chemistry, 89:2432--2439 (2017)")
+citEntry(
+    entry = "article",
+    header = "If you use msPurity, please cite the original package paper:",
+    author = c(
+        person(given = "Thomas N.", family = "Lawson"),
+        person(given = "Ralf J. M.", family = "Weber"),
+        person(given = "Martin R.", family = "Jones"),
+        person(given = "Andrew J.", family = "Chetwynd"),
+        person(given = "Giovanny", family = "Rodríguez-Blanco"),
+        person(given = "Riccardo", family = "Di Guida"),
+        person(given = "Mark R.", family = "Viant"),
+        person(given = "Warwick B.", family = "Dunn")
+    ),
+    title = paste(
+        "msPurity: Automated Evaluation of Precursor Ion Purity for",
+        "Mass Spectrometry-Based Fragmentation in Metabolomics"
+    ),
+    journal = "Analytical Chemistry",
+    year = "2017",
+    volume = "89",
+    number = "4",
+    pages = "2432--2439",
+    doi = "10.1021/acs.analchem.6b04358",
+    textVersion = paste(
+        "Lawson, Thomas N., Weber, Ralf J. M., Jones, Martin R.,",
+        "Chetwynd, Andrew J., Rodríguez-Blanco, Giovanny,",
+        "Di Guida, Riccardo, Viant, Mark R. and Dunn, Warwick B. (2017).",
+        "msPurity: Automated Evaluation of Precursor Ion Purity for",
+        "Mass Spectrometry-Based Fragmentation in Metabolomics.",
+        "Analytical Chemistry, 89(4), 2432–2439.",
+        "doi:10.1021/acs.analchem.6b04358"
+    )
 )
 
+citEntry(
+    entry = "article",
+    header = paste(
+        "Subsequent development of msPurity, including fragmentation spectrum",
+        "processing, spectral database creation, spectral matching and annotation",
+        "handling, is described alongside its application in Galaxy workflows",
+        "in the following paper on a deep metabolome annotation (DMA) workflow:"
+    ),
+    author = c(
+        person(given = "Thomas N.", family = "Lawson"),
+        person(given = "Martin R.", family = "Jones"),
+        person(given = "Andrew J.", family = "Chetwynd"),
+        person(given = "Elena", family = "Sostare"),
+        person(given = "Stefan", family = "Weidt"),
+        person(given = "Robert", family = "Mistrik"),
+        person(given = "Warwick B.", family = "Dunn"),
+        person(given = "Ralf J. M.", family = "Weber"),
+        person(given = "Mark R.", family = "Viant")
+    ),
+    title = paste(
+        "Experimental and computational approaches for deep metabolome",
+        "annotation with application to the ecotoxicological model",
+        "organism Daphnia magna"
+    ),
+    journal = "GigaScience",
+    year = "2026",
+    volume = "15",
+    pages = "giag055",
+    doi = "10.1093/gigascience/giag055",
+    textVersion = paste(
+        "Lawson, Thomas N., Jones, Martin R., Chetwynd, Andrew J.,",
+        "Sostare, Elena, Weidt, Stefan, Mistrik, Robert, Dunn, Warwick B.,",
+        "Weber, Ralf J. M. and Viant, Mark R. (2026).",
+        "Experimental and computational approaches for deep metabolome",
+        "annotation with application to the ecotoxicological model",
+        "organism Daphnia magna.",
+        "GigaScience, 15, giag055.",
+        "doi:10.1093/gigascience/giag055"
+    )
+)
