@@ -26,7 +26,9 @@
 #'
 #' Perform spectral matching to spectral libraries for an LC-MS/MS dataset.
 #'
-#' The spectral matching is performed from a **Query** SQLite spectral-database against a **Library** SQLite spectral-database.
+#' With \code{format = "parquet"}, search a Parquet results dataset against a
+#' \code{Spectra} library or a converted dataset. The default SQLite route
+#' searches a query SQLite database against a library SQLite database.
 #'
 #' The SQLite schema of the spectral database can be detailed Schema details can be found
 #' [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
@@ -80,7 +82,10 @@
 #'
 #'
 #' @param q_dbPth character; Path of the database of queries that will be searched against the library spectra. Generated from createDatabase
-#' @param l_dbPth character; path to library spectral SQLite database. Defaults to msPurityData package data.
+#' @param l_dbPth For SQLite, the library database path (defaults to the msPurityData library).
+#'     For Parquet, supply a \code{Spectra} object from any backend, a converted Parquet library
+#'     path, or a Parquet results dataset path. To search a generic MsBackendParquet dataset,
+#'     open it as a \code{Spectra} object. The search uses its current subset and peak processing.
 #'
 #' @param q_purity character; Precursor ion purity threshold for the query spectra
 #' @param q_ppmProd numeric; ppm tolerance for query product
@@ -127,7 +132,7 @@
 #'               results with \code{updateDb = TRUE} raises a deprecation warning: SQLite output is frozen.
 #'               \code{"parquet"} (experimental) matches the averaged spectra (and, with \code{q_spectraTypes = "scan"},
 #'               the referenced MS2 scans) of a Parquet results dataset in \code{q_dbPth}, written by
-#'               \code{createDatabase(format = "parquet")}, against a Parquet library dataset in \code{l_dbPth}
+#'               \code{createDatabase(format = "parquet")}, against a \code{Spectra} library, a converted Parquet library dataset
 #'               (see \code{convertLibraryToParquet()}) or another results dataset. Scores are computed exactly as for
 #'               SQLite. With \code{updateDb = TRUE} the matches are added to the results dataset as identification
 #'               evidence, with long-form scores, compounds and per-query coverage; with \code{copyDb = TRUE} they are
@@ -139,6 +144,36 @@
 #'             boundary score are recorded in the dataset. \code{NA} keeps every match.
 #' @param sourcePaths named character (parquet only); source key -> location, for a study dataset that has moved since
 #'                    the results dataset was written.
+#'
+#' @param libraryVersion Optional release name for a \code{Spectra} library. Saved evidence
+#'     references an external library and its native identifiers. An unnamed release is
+#'     labelled \code{"Spectra"}. The returned \code{lpid} is the position in the supplied object.
+#' @param libraryChecksum Optional SHA-256 digest of the release, supplied as 64 hexadecimal
+#'     digits with an optional \code{sha256:} prefix. The digest is recorded as supplied by the
+#'     caller. Without a digest each search records a separate source.
+#'
+#' @section Spectra library variables:
+#' Direct library searches use \code{precursorMz}, \code{polarity} (0 negative, 1 positive)
+#' and \code{rtime} (seconds). The entry and compound names come from \code{name}, the
+#' precursor type from \code{adduct}, and structure and mass from \code{inchikey},
+#' \code{formula}, \code{smiles}, \code{inchi} and \code{exactmass}. Library filters use
+#' \code{instrument}, \code{instrument_type}, \code{dataOrigin} and \code{precursorPurity}.
+#' Corresponding stored \code{x_mspurity_*} variables take precedence when available.
+#' Identifiers are chosen per spectrum from \code{accession}, \code{spectrumId} and
+#' \code{splash}, in that order. Entries missing all three receive a SHA-256 identifier
+#' derived from precursor mass, polarity and ordered peak values.
+#'
+#' Only the precursor index spans the full library. Candidate metadata and peaks are read
+#' in batches, including when precursor filtering is disabled. The input can use any row
+#' order. Memory for scoring results depends on the number of matches before the top-n cut.
+#'
+#' For example, given a Parquet results path \code{query_path}, search an MSP library directly:
+#' \preformatted{
+#' msp <- MsBackendMsp::MsBackendMsp()
+#' lib <- Spectra::Spectra("library.msp", source = msp,
+#'     mapping = Spectra::spectraVariableMapping(msp, "mona"))
+#' spectralMatching(query_path, lib, format = "parquet", libraryVersion = "MoNA release")
+#' }
 #'
 #' @param q_dbType character; Query database type for compound database can be either (sqlite, postgres or mysql)
 #' @param q_dbName character; Query database name (only applicable for postgres and mysql)
@@ -299,11 +334,16 @@ spectralMatching <- function(
                               outPth='sm_result.sqlite',
                               format=c('sqlite', 'parquet'),
                               topn=NA,
-                              sourcePaths=NULL){
+                              sourcePaths=NULL,
+                              libraryVersion=NULL,
+                              libraryChecksum=NULL){
   format <- match.arg(format)
   a <- as.list(environment())
   if (format == 'parquet'){
     return(.spectralMatching_parquet(a))
+  }
+  if (is(l_dbPth, "Spectra") || !is.null(libraryVersion) || !is.null(libraryChecksum)){
+    stop("Spectra libraries and their release information require format = 'parquet'.", call. = FALSE)
   }
   if (!is.na(topn)){
     stop("'topn' is only available with format = \"parquet\".", call. = FALSE)
