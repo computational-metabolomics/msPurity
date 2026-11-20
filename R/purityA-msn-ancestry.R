@@ -3,7 +3,7 @@
 
 # Retain scalar source metadata and keep dataset keys separate from native
 # acquisition identifiers. All values are read through public Spectra accessors.
-.pa_msn_spectra_metadata <- function(object) {
+.pa_msn_spectra_metadata <- function(object, requirePid = TRUE) {
     if (!methods::is(object, "Spectra"))
         stop("MSn acquisition preparation requires a Spectra object.")
     columns <- setdiff(Spectra::spectraVariables(object),
@@ -15,8 +15,8 @@
         if (name %in% names(metadata)) metadata[[name]] else rep(default, n)
     }
     if (!"pid" %in% names(metadata)) {
-        if (n) stop("MSn source spectra require retained pid identifiers.")
-        metadata$pid <- integer()
+        if (requirePid && n) stop("MSn source spectra require retained pid identifiers.")
+        metadata$pid <- seq_len(n)
     }
     run <- as.character(column("run_id", NA_character_))
     origin <- as.character(column("dataOrigin", NA_character_))
