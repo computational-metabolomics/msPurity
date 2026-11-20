@@ -24,19 +24,15 @@ test_that("MSP comparisons preserve content across platform line endings", {
     }
 })
 
-test_that("purityA workflows reproduce the reference results", {
-    res <- .parity_purityA()
-    expect_identical(names(res), names(purityA_ref))
-    for (stage in names(purityA_ref))
-        expect_equal(res[[stage]], purityA_ref[[stage]],
-                     tolerance = 1e-12, label = stage)
-})
-
-test_that("the accessors rebuild the reference results from the Spectra slots", {
-    res <- .parity_purityA(via = "accessors")
-    for (stage in names(purityA_ref))
-        expect_equal(res[[stage]], purityA_ref[[stage]],
-                     tolerance = 1e-12, label = stage)
+test_that("purityA slots and accessors reproduce the reference results", {
+    stages <- .parity_stages()
+    expect_identical(names(stages), names(purityA_ref))
+    for (via in c("slots", "accessors")) {
+        res <- .parity_purityA(via, stages)
+        for (stage in names(purityA_ref))
+            expect_equal(res[[stage]], purityA_ref[[stage]],
+                         tolerance = 1e-12, label = paste(stage, via))
+    }
 })
 
 test_that("parity reference stores file-position spectrum identities", {

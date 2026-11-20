@@ -12,8 +12,8 @@
 .golden_mask <- function(x, roots) {
     if (!is.character(x))
         return(x)
-    for (nm in names(roots))
-        x <- gsub(roots[[nm]], nm, x, fixed = TRUE)
+    for (i in seq_along(roots))
+        x <- gsub(roots[[i]], names(roots)[i], x, fixed = TRUE)
     x
 }
 

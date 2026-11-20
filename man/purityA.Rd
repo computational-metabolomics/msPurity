@@ -29,7 +29,14 @@ purityA(
 \item{fileList}{vector of mzML file paths, or a \code{Spectra},
 \code{MsExperiment} or \code{XcmsExperiment} object holding the
 spectra of one or more files. Objects are used as they are, so any
-filtering applied to them also applies to the purity calculation}
+filtering applied to them also applies to the purity calculation.
+A \code{Spectra} on a Parquet dataset written by
+\code{MsBackendParquet::mzMLToParquet()} is read from that dataset
+throughout the workflow, never from the mzML files, and is the study
+\code{createDatabase(format = "parquet")} links scans to. Raw peak
+rows are numbered over the input as given. An activation method the
+dataset records as a PSI-MS accession is read as its method name,
+as one named by an mzML filter string is.}
 
 \item{cores}{numeric; Number of cores to use}
 

@@ -14,9 +14,12 @@
 
 #' The columns of a spectrum reference under one role prefix.
 #'
+#' @param required whether every row holds a reference (`_source` NOT NULL).
+#'
 #' @noRd
-.mzs_ref_columns <- function(prefix, usi = FALSE) {
-    cols <- c("dict!", "dict", "i64", "str", if (usi) "str")
+.mzs_ref_columns <- function(prefix, usi = FALSE, required = TRUE) {
+    cols <- c(if (required) "dict!" else "dict", "dict", "i64", "str",
+              if (usi) "str")
     names(cols) <- paste0(prefix, c("_source", "_run_id", "_spectrum_id_",
                                     "_native_id", if (usi) "_usi"))
     cols
@@ -252,8 +255,12 @@
 
     ## msPurity extensions.
 
-    ## Every assessed MS2 scan and its precursor purity, linked to a feature
-    ## or not. Raw scans are referenced, not copied.
+    ## Every assessed fragmentation scan (MS2 to MS4), linked to a feature
+    ## or not, with its MS2 precursor purity or MSn stage purity and its
+    ## place in the acquisition: the scan it fragments (parent) and the MS2
+    ## scan its path starts from (root). The `ms2_` reference names the scan
+    ## the row annotates, whatever its level. Raw scans are referenced, not
+    ## copied.
     x_mspurity_scan = .mzs_table(c(
         scan_annotation_id_ = "i64!",
         .mzs_ref_columns("ms2", usi = TRUE),
@@ -272,10 +279,61 @@
         i_peak_count = "f64",
         in_purity = "f64",
         in_peak_count = "f64",
-        purity_pass_flag = "bool"),
+        purity_pass_flag = "bool",
+        ms_level = "i32",
+        link_basis = "dict",
+        .mzs_ref_columns("parent", required = FALSE),
+        .mzs_ref_columns("root", required = FALSE),
+        parent_scan_annotation_id_ = "i64",
+        root_scan_annotation_id_ = "i64",
+        parent_status = "dict",
+        path_status = "dict",
+        parent_reference_type = "dict",
+        stage_purity = "f64",
+        purity_status = "dict",
+        activation_type = "dict",
+        activation_type_basis = "dict",
+        scan_filter_analyzer = "dict"),
         sorted_by = c("ms2_run_id", "ms2_spectrum_id_", "ms2_native_id",
                       "scan_annotation_id_"),
         partitioning = "ms2_run_id", extension = TRUE),
+
+    ## MS3 and MS4 scans linked to a feature through the MS2 scan their
+    ## path starts from (spectrum_feature holds the MS2 links).
+    x_mspurity_msn_feature = .mzs_table(c(
+        msn_feature_id_ = "i64!",
+        scan_annotation_id_ = "i64!",
+        root_scan_annotation_id_ = "i64",
+        feature_id_ = "i64!",
+        chromatographic_peak_id_ = "i64",
+        link_mode = "dict!",
+        ms_level = "i32!",
+        precursor_mz_used = "f64",
+        precursor_retention_time = "f64",
+        precursor_retention_time_adjusted = "f64",
+        retention_time = "f64",
+        rt_map_status = "dict",
+        rt_apex_distance = "f64",
+        match_rank = "i32",
+        precursor_mz_source = "dict"),
+        sorted_by = c("feature_id_", "scan_annotation_id_",
+                      "msn_feature_id_"),
+        extension = TRUE),
+
+    ## The stored peak of each immediate input every averaged peak was made
+    ## from, as the averaging provenance records it. It joins merge_member
+    ## on (merged_spectrum_id_, member_rank). An input's peak is its rank in
+    ## an averaged spectrum of the dataset (basis "derived") or its position
+    ## in a measured scan, among its source or filtered peaks.
+    x_mspurity_merge_peak = .mzs_table(c(
+        merged_spectrum_id_ = "i64!",
+        merged_peak_rank = "i32!",
+        member_rank = "i32!",
+        member_peak_rank = "i32",
+        basis = "dict!",
+        edge_rank = "i32!"),
+        sorted_by = c("merged_spectrum_id_", "edge_rank"),
+        key = NA_character_, extension = TRUE),
 
     ## filterFragSpectra() peak flags; a peak is identified by its m/z and
     ## intensity within the scan.

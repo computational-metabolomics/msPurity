@@ -27,7 +27,8 @@
     run[missing] <- ifelse(is.na(file[missing]), "input",
         paste0("fileid:", file[missing]))
     source_key <- NULL
-    if ("spectrum_id_" %in% names(metadata)) {
+    dataset_key <- "spectrum_id_" %in% names(metadata)
+    if (dataset_key) {
         source_key <- as.character(metadata$spectrum_id_)
         id <- source_key
     } else if ("lineageScanId" %in% names(metadata)) {
@@ -53,6 +54,7 @@
     for (name in names(normalized)) metadata[[name]] <- normalized[[name]]
     metadata$lineageScanId <- id
     metadata$sourceSpectrumId <- source_key
+    metadata$sourceKeyAssigned <- rep(dataset_key, n)
     metadata$run_id <- run
     metadata$data_origin <- origin
     metadata$sourceIndex <- seq_len(n)
@@ -145,6 +147,17 @@
     }), conventions)
     native <- candidates$spectrumId
     has_native <- !is.na(scans$spectrumRef) & scans$ms_level > 1L
+    # A Parquet dataset assigns spectrum_id_ itself, numbering every run of
+    # the dataset in one sequence. Where precScanNum reads as acquisitionNum,
+    # as mzR and Spectra define it, a spectrum_id_ that happens to equal it
+    # is a coincidence of the two numberings, not a second reading.
+    assigned <- "sourceKeyAssigned" %in% names(scans) &&
+        isTRUE(all(scans$sourceKeyAssigned))
+    if (parentReference == "auto" && assigned &&
+            any(candidates$acquisitionNum$valid & !has_native)) {
+        candidates$sourceSpectrumId$parent[] <- NA_integer_
+        candidates$sourceSpectrumId$valid[] <- FALSE
+    }
     convention <- parentReference
     if (convention == "auto") {
         resolved <- rep(NA_integer_, nrow(scans))
@@ -355,7 +368,7 @@
         "contributorIndex", "msPurityRootPid")
     source_columns <- setdiff(names(stage), c("parentLineageScanId", "parentPid",
             "parentStatus", "rootPid", "pathStatus", "path",
-            feature_columns))
+            "sourceKeyAssigned", feature_columns))
     stage_columns <- union(stage_columns, source_columns)
     stage_columns <- setdiff(stage_columns, purity_columns)
     stage_columns <- intersect(stage_columns, union(names(links), names(stage)))

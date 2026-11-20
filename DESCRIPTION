@@ -41,6 +41,7 @@ Imports:
     plyr,
     dplyr (>= 1.1.0),
     dbplyr,
+    duckdb,
     magrittr,
     foreach,
     parallel,
@@ -62,7 +63,7 @@ Imports:
     BiocParallel,
     arrow (>= 14.0.0),
     jsonlite,
-    MsBackendParquet (>= 0.99.10),
+    MsBackendParquet (>= 0.99.12),
     methods,
     stats,
     tools,
@@ -95,16 +96,21 @@ Collate:
     'meta_extract.R'
     'msPurity.R'
     'parquet-annotations.R'
+    'parquet-average.R'
+    'parquet-batches.R'
     'parquet-conditions.R'
     'parquet-converter.R'
     'parquet-index.R'
     'parquet-library.R'
+    'parquet-live-source.R'
     'parquet-manifest.R'
     'parquet-matching.R'
+    'parquet-msn.R'
     'parquet-purityA.R'
     'parquet-schemas.R'
     'parquet-sqlite.R'
     'parquet-validate.R'
+    'parquet-validation-store.R'
     'parquet-write.R'
     'parquet-xcms.R'
     'pcalc.R'
@@ -129,6 +135,7 @@ Collate:
     'purityA-purity-parameters.R'
     'purityA-purity-processing.R'
     'purityA-spectra.R'
+    'purityA-study.R'
     'purityA-validate.R'
     'purityD-class.R'
     'purityD-constructor.R'

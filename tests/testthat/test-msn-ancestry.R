@@ -275,3 +275,39 @@ test_that("unresolved native references do not silently use numeric parents", {
     metadata$spectrumId[2L] <- metadata$spectrumId[1L]
     expect_error(.prepare_ancestry(metadata), "Duplicate spectrumId")
 })
+
+# Two runs of one Parquet dataset: spectrum_id_ numbers both runs in one
+# sequence, precScanNum names the precursor's acquisitionNum. In run b the
+# MS3 scan's precScanNum (4) is the acquisitionNum of its MS2 parent and,
+# by coincidence, also the spectrum_id_ of the run's MS1 scan.
+.two_run_dataset <- function() {
+    metadata <- S4Vectors::DataFrame(
+        pid = 1:7, spectrum_id_ = 1:7,
+        run_id = rep(c("a", "b"), c(3L, 4L)),
+        msLevel = c(1L, 2L, 3L, 1L, 2L, 2L, 3L),
+        scanIndex = c(1:3, 1:4),
+        acquisitionNum = c(1L, 2L, 3L, 1L, 4L, 5L, 6L),
+        rtime = c(1, 2, 3, 1, 2, 3, 4),
+        precursorMz = c(NA, 200, 100, NA, 200, 210, 100),
+        precScanNum = c(NA, 1L, 2L, NA, 1L, 1L, 4L), polarity = 1L,
+        dataOrigin = rep(c("a.mzML", "b.mzML"), c(3L, 4L)))
+    metadata$mz <- rep(list(100), 7L)
+    metadata$intensity <- rep(list(10), 7L)
+    Spectra::Spectra(metadata, source = Spectra::MsBackendMemory())
+}
+
+test_that("dataset keys are not read as parent scan numbers", {
+    metadata <- msPurity:::.pa_msn_spectra_metadata(.two_run_dataset())
+    expect_true(all(metadata$sourceKeyAssigned))
+    x <- .prepare_ancestry(metadata)
+    expect_identical(x$parentReference, "acquisitionNum")
+    expect_identical(x$scans$parentPid, c(NA, 1L, 2L, NA, 4L, 4L, 5L))
+    expect_identical(x$scans$rootPid[7L], 5L)
+    ## The reading by key stays available when asked for.
+    by_key <- .prepare_ancestry(metadata, "sourceSpectrumId")
+    expect_identical(by_key$scans$parentPid[7L], 4L)
+    ## Keys a caller supplies may be what precScanNum names, so a
+    ## coincidence with acquisitionNum remains ambiguous.
+    metadata$sourceKeyAssigned <- FALSE
+    expect_error(.prepare_ancestry(metadata), "Ambiguous parent")
+})

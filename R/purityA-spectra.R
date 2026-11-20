@@ -87,13 +87,13 @@
     .pa_msn_retained_spectra(raw, fileid, puritydf)
 }
 
-# Include every fragmentation level when numbering source peak rows.
+# Source peak rows are numbered over every fragmentation level, before any
+# queued processing. MS1 peaks are not numbered, so they are not read.
 .pa_raw_peak_offsets <- function(raw) {
-    count <- .msp_lengths(Spectra::reset(raw))
-    numbered <- integer(length(count))
+    count <- integer(length(raw))
     fragmentation <- which(Spectra::msLevel(raw) > 1L)
-    numbered[fragmentation] <- count[fragmentation]
-    list(offset = c(0, cumsum(numbered))[seq_along(count)], count = count)
+    count[fragmentation] <- .msp_lengths(.msp_unprocessed(raw[fragmentation]))
+    list(offset = c(0, cumsum(count))[seq_along(count)], count = count)
 }
 
 # Add or replace puritydf columns as spectra variables, remembering the
@@ -157,14 +157,19 @@
 .pa_has_peaks <- function(sp) {
     if (isTRUE(.pa_spectra_metadata(sp)$msPurityRawPeaksAvailable))
         return(TRUE)
-    if (!length(sp) || !is(sp@backend, "MsBackendMzR"))
+    if (!length(sp))
+        return(FALSE)
+    if (.pa_is_parquet(sp))
+        return(all(dir.exists(unique(Spectra::dataStorage(sp)))))
+    if (!is(sp@backend, "MsBackendMzR"))
         return(FALSE)
     all(file.exists(unique(Spectra::dataStorage(sp))))
 }
 
 # The raw scans of the given pids, in memory. Peaks come from the spectra
 # slot when its files are readable, otherwise from fileList, matched by file
-# position and scan index.
+# position and scan index. A slot read from a Parquet dataset reads only from
+# that dataset.
 .pa_raw_scans <- function(pa, pids) {
     sp <- pa@spectra
     rows <- match(pids, sp$pid)
@@ -174,6 +179,8 @@
     sp <- sp[rows]
     if (!length(sp))
         return(sp)
+    if (.pa_is_parquet(sp))
+        .pa_study_check(pa)
     if (!.pa_has_peaks(sp)) {
         files <- unname(as.character(pa@fileList))
         raw <- .msp_read(files)
@@ -301,7 +308,7 @@
         positions <- lapply(values, function(m) {
             as.numeric(m[, "original_peak_index"])
         })
-        original <- as.list(Spectra::peaksData(Spectra::reset(source),
+        original <- as.list(Spectra::peaksData(.msp_unprocessed(source),
                 columns = "original_peak_index", BPPARAM = .msp_bpparam()))
         raw_positions <- lapply(original, function(m) {
             as.numeric(m[, "original_peak_index"])
@@ -312,7 +319,7 @@
             match(index, raw[, "original_peak_index"])
         }, positions, original)
     } else {
-        original <- as.list(Spectra::peaksData(Spectra::reset(source),
+        original <- as.list(Spectra::peaksData(.msp_unprocessed(source),
                 columns = c("mz", "intensity"), BPPARAM = .msp_bpparam()))
         positions <- Map(function(kept, raw) {
             .pa_peak_positions(kept, raw, ordered_duplicates = FALSE)

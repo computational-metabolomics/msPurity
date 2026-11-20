@@ -49,3 +49,37 @@
         cache[[key]]
     }
 })
+
+# A study dataset of D02 files converted by MsBackendParquet's
+# mzMLToParquet(), once per session per engine and file list.
+.msn_study <- local({
+    cache <- list()
+    function(files, engine = "spectra") {
+        key <- paste(engine, paste(normalizePath(files), collapse = "|"))
+        if (is.null(cache[[key]]) || !dir.exists(cache[[key]])) {
+            p <- tempfile("study-")
+            suppressMessages(MsBackendParquet::mzMLToParquet(
+                files, path = p, engine = engine, verbose = FALSE))
+            cache[[key]] <<- p
+        }
+        cache[[key]]
+    }
+})
+
+.msn_study_spectra <- function(path) {
+    Spectra::Spectra(Spectra::backendInitialize(
+        MsBackendParquet::MsBackendParquet(), path = path))
+}
+
+# The D02 MSn workflow: purity of MS2-MS4, MS2-MS4 feature links and
+# condition-specific filtering of every assessed scan.
+.msn_workflow <- function(input, xe) {
+    pa <- purityA(input, cores = 1L, plotP = FALSE, msLevel = 2:4)
+    pa <- frag4feature(pa, xe, ppm = 10, convert2RawRT = FALSE,
+                       msLevel = 2:4)
+    filterFragSpectra(pa, allfrag = TRUE, msLevel = 2:4, param = list(
+        hcd = FilterFragSpectraParam(select = list(activationType = "HCD"),
+                                     snr = 2),
+        cid = FilterFragSpectraParam(select = list(activationType = "CID"),
+                                     snr = 3)))
+}

@@ -10,7 +10,8 @@
                            "software", "coverage", "conversion",
                            "tool_provenance",
                            "source_identifier", "loss_ledger",
-                           "x_mspurity_scan", "x_mspurity_scan_peak")
+                           "x_mspurity_scan", "x_mspurity_scan_peak",
+                           "x_mspurity_msn_feature", "x_mspurity_merge_peak")
 
 # Nothing is dropped as unmappable, so lossy_conversion is not declared.
 .MZS_LOSSY <- FALSE
@@ -91,8 +92,8 @@ parquetCapabilities <- function() {
                 tuple = .mzs_array(c("source_checksum", "ordinal")),
                 `function` = paste(
                     "run_id = 'run-' + first 12 hex digits of",
-                    "SHA-256(<source_checksum, or the normalised path when",
-                    "the file is unreadable> + newline + <1-based",
+                    "SHA-256(<source_checksum, or the recorded path with",
+                    "portable separators when unreadable> + newline + <1-based",
                     "ordinal>)")),
             lossy_conversion = .MZS_LOSSY)
     list(
@@ -263,12 +264,16 @@ parquetCapabilities <- function() {
     out <- list()
     for (name in names(tables)) {
         df <- tables[[name]]
-        if (is.null(df) || !nrow(df))
-            next
+        streamed <- inherits(df, "mzs_table_batches")
+        n <- if (streamed) df$rows else NROW(df)
+        if (!n) next
         cols <- .mzs_table_schema(name)$columns
         for (c in setdiff(cols$name, "activity")) {
-            v <- df[[c]]
-            if (!is.null(v) && !all(is.na(v) & !is.nan(v)))
+            populated <- if (streamed) c %in% df$present else {
+                v <- df[[c]]
+                !is.null(v) && any(!is.na(v) | is.nan(v))
+            }
+            if (populated)
                 next
             ref <- paste0(name, ".", c)
             r <- reasons[[ref]] %||% reasons[[paste0("*.", c)]] %||%
@@ -276,7 +281,7 @@ parquetCapabilities <- function() {
                      reason = "msPurity does not compute this quantity.")
             out[[length(out) + 1L]] <- list(
                 construct = ref, disposition = r$disposition,
-                affected_rows = nrow(df), target_ref = ref,
+                affected_rows = n, target_ref = ref,
                 reason = r$reason)
         }
     }

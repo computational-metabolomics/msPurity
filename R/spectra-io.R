@@ -96,6 +96,19 @@
                                BPPARAM = .msp_bpparam()))
 }
 
+# The same spectra without their queued processing. Spectra::reset() also
+# resets the backend, and MsBackendParquet's reset reopens the whole dataset,
+# so a subset is taken again by spectrum name (no data are read for that).
+.msp_unprocessed <- function(sp) {
+    if (!length(sp) || !.pa_spectra_has_queue(sp))
+        return(sp)
+    if (!methods::is(sp@backend, "MsBackendParquet"))
+        return(Spectra::reset(sp))
+    ids <- Spectra::spectraNames(sp)
+    full <- suppressMessages(Spectra::reset(sp))
+    full[match(ids, Spectra::spectraNames(full))]
+}
+
 # Number of peaks per spectrum. Spectra's lengths() has no BPPARAM argument.
 .msp_lengths <- function(sp) {
     if (!length(sp))

@@ -1,25 +1,33 @@
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
 library(msPurity)
 library(xcms)
-mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+mzMLdir <- system.file("extdata", "lcms", "mzML", package = "msPurityData")
+mzMLpths <- list.files(mzMLdir, pattern = "[.]mzML$", full.names = TRUE)
 
-#read in the data
-xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
 
-#for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
-xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
-xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+## ----legacy-grouped-peaks-----------------------------------------------------
+xcmsObj <- readRDS(system.file("extdata", "lcms-grouped-xcmsSet.rds",
+                               package = "msPurity", mustWork = TRUE))
+xcms::filepaths(xcmsObj) <- file.path(mzMLdir, xcms::filepaths(xcmsObj))
+head(xcms::groups(xcmsObj), 3)
 
-#group features across samples
-xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
-xcmsObj = xset
+
+## ----reproduce-legacy-peaks, eval=FALSE---------------------------------------
+# #read in the data
+# xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
+#
+# #for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
+# xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
+# xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
+#
+# #group features across samples
+# xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
+# xcmsObj = xset
+
 
 ## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-library(msPurity)
 library(magrittr)
-library(xcms)
 library(MSnbase)
-mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
 
 #read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
 msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)

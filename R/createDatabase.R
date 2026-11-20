@@ -51,9 +51,10 @@
 #' @param format character; \code{"sqlite"} (the default) writes the SQLite database described above, and raises a
 #'               deprecation warning: SQLite output is frozen and receives bug fixes only. \code{"parquet"} writes a
 #'               Parquet dataset instead (experimental). See Details.
-#' @param study character (optional, parquet only); path of the Parquet dataset the mzML files were converted into, for
-#'              example with MsBackendParquet::mzMLToParquet(). MS2 scans are then referenced by their spectrum ids in that
-#'              dataset. Without it, every source file is recorded as an external source.
+#' @param study character (optional, parquet only); path of the Parquet dataset the mzML files were converted into with
+#'              MsBackendParquet::mzMLToParquet(). Scans and their parent scans are then referenced by their spectrum ids
+#'              in that dataset. By default, when \code{purityA()} was given a Spectra on that dataset, it is the study;
+#'              otherwise, and with \code{study = NA}, every source file is recorded as an external source.
 #' @param studyKey character (parquet only); the key the study is declared under in the results dataset.
 #' @param fileMap named character (optional, parquet only); source file path (as in \code{pa@fileList}) -> run_id.
 #'                Required when two source files share a file name, and to match files whose recorded paths
@@ -72,15 +73,36 @@
 #'    \code{chromatographic_peak}, \code{chromatographic_peak_feature} and \code{abundance} tables, with
 #'    \code{assay} and \code{sample} for the source files;
 #'  * the links between MS2 scans and features become \code{spectrum_feature}, with the precursor m/z,
-#'    error, retention time and purity each scan was matched at;
+#'    error, retention time and purity each scan was matched at and how its retention time was mapped;
+#'    MS3 and MS4 scans linked through their MS2 scan are in \code{x_mspurity_msn_feature};
 #'  * averaged fragmentation spectra become spectra of the dataset, one run per source file for spectra
 #'    averaged within a file (\code{av_intra_<run>}) and one run each for spectra averaged across files
-#'    (\code{av_inter}, \code{av_all}), with their per-peak statistics;
-#'  * the scans each averaged spectrum was made from are recorded in \code{merge_member};
-#'  * every assessed MS2 scan keeps its precursor purity measures (\code{x_mspurity_scan}); MS2 scans are
-#'    referenced, not copied;
-#'  * the processing parameters, what was converted and anything that could not be mapped are recorded
-#'    in \code{tool_provenance}, \code{conversion}, \code{source_identifier} and \code{loss_ledger}.
+#'    (\code{av_inter}, \code{av_all}), with their per-peak statistics. Averages computed with
+#'    \code{AverageFragSpectraParam}, at MS2 to MS4, keep their MS level, parameter set, acquisition
+#'    conditions and precursor path. A computed average with zero retained peaks has empty m/z and
+#'    intensity arrays and keeps its selected members. An attempted scalar average that produced no
+#'    spectrum has a loss ledger entry identifying its feature and, when available, sample;
+#'  * the scans and averages each averaged spectrum was made from are recorded in \code{merge_member}.
+#'    Where the averaging provenance is recorded, these are the inputs it selected, with whether each
+#'    contributed a peak (\code{x_mspurity_contributes}), and \code{x_mspurity_merge_peak} gives the input
+#'    peak each averaged peak came from; otherwise the members are reconstructed from the feature links;
+#'  * every assessed MS2 to MS4 scan is listed in \code{x_mspurity_scan} with its MS2 precursor purity or
+#'    MSn stage purity, the scan it fragments and the MS2 scan its path starts from, and the activation
+#'    method msPurity used with where that came from; peaks flagged by \code{filterFragSpectra()} are in
+#'    \code{x_mspurity_scan_peak}. Raw scans are referenced, not copied;
+#'  * the processing parameters and history, what was converted and anything that could not be mapped are
+#'    recorded in \code{tool_provenance}, \code{conversion}, \code{source_identifier} and \code{loss_ledger}.
+#'
+#' **Raw data in a Parquet study**
+#'
+#' Raw MS1-MS4 files converted with \code{MsBackendParquet::mzMLToParquet()} are read by passing
+#' \code{purityA()} a \code{Spectra} on the dataset; msPurity then reads their peaks from the dataset, never
+#' from the mzML files. A scan is linked to the study by the dataset's own key when \code{purityA()} read it
+#' there, otherwise by native id, then by scan number at the same position, all from the study's own metadata.
+#' An MS2 scan's parent is the study's MS1 scan its precursor scan number names. Acquisition conditions the
+#' study does not record, such as the activation method of mzXML input, are reported in the loss ledger as
+#' unavailable rather than inferred; where msPurity used a method named by a scan's filter string,
+#' \code{activation_type_basis} says so.
 #'
 #' The dataset is written to \code{file.path(outDir, dbName)}; the default name ends in \code{.parquet}. It is built
 #' beside its destination and moved into place only once complete, so an interrupted write leaves nothing behind.
@@ -125,24 +147,27 @@
 #'     metadata = list(polarity = "positive", instrument = "Q-Exactive"))
 #'
 #' @md
-#' @details Processed-result export currently supports MS2 outputs. Processed
-#'   MS3/MS4 fragment or averaged spectra must remain in the Spectra workflow;
-#'   these writers reject them explicitly. Higher-level measurements already
-#'   present in source files retain their existing raw-data conversion support.
+#' @details The SQLite database holds MS2 results only and refuses MS3/MS4
+#'   feature links and processed spectra, and averages computed with
+#'   \code{AverageFragSpectraParam}; the Parquet dataset holds MS2-MS4 scans,
+#'   links, filtered spectra and averages. Averages computed with
+#'   \code{AverageFragSpectraParam} are exported with the provenance their
+#'   averaging recorded, and not after their peaks were processed further.
 #' @export
 createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, dbName=NA, metadata=NA, xset = NA,
                             format = c("sqlite", "parquet"), study = NULL, studyKey = "study",
                             fileMap = NULL, overwrite = FALSE){
   pa <- .pa_update(pa)
-  .pa_require_ms2_export(pa)
   format <- match.arg(format)
   if (format == "parquet"){
+    .pa_require_msn_export(pa)
     return(.createDatabase_parquet(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
                                    grpPeaklist = grpPeaklist, dbName = dbName,
                                    metadata = metadata, xset = xset, study = study,
                                    studyKey = studyKey, fileMap = fileMap,
                                    overwrite = overwrite))
   }
+  .pa_require_ms2_export(pa)
   db <- .createDatabase_sqlite(pa = pa, xcmsObj = xcmsObj, xsa = xsa, outDir = outDir,
                                grpPeaklist = grpPeaklist, dbName = dbName,
                                metadata = metadata, xset = xset)
@@ -168,19 +193,7 @@ createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, d
 
   #if a peaklist was not supplied to function, extract from xsa or obj.
   if (!is.data.frame(grpPeaklist)){
-    if (is.null(xsa)){
-      if(.xcms_is_modern(xcmsObj)){
-        grpPeaklist <- cbind(xcms::featureDefinitions(xcmsObj), xcms::featureValues(xcmsObj))
-      }else if(is(xcmsObj, 'xcmsSet')){
-        grpPeaklist <- xcms::peakTable(xcmsObj)
-      }else{
-        stop('createDatabase stopped as the "xcmsObj" (or "xset" if specified) argument is not of class "XcmsExperiment", "XCMSnExp" or "xcmsSet"')
-      }
-    }else{
-      grpPeaklist <- CAMERA::getPeaklist(xsa)
-    }
-
-    grpPeaklist <- data.frame(cbind('grpid'=1:nrow(grpPeaklist), grpPeaklist))
+    grpPeaklist <- .db_peaklist(xcmsObj, xsa)
   }
 
   message("Creating a database of fragmentation spectra and LC features")
@@ -192,7 +205,45 @@ createDatabase <-  function(pa, xcmsObj, xsa=NULL, outDir='.', grpPeaklist=NA, d
 }
 
 
+# The feature table of `xcmsObj` (or of the CAMERA object `xsa`), with a
+# leading grpid column.
+.db_peaklist <- function(xcmsObj, xsa = NULL) {
+  if (is.null(xsa)){
+    if(.xcms_is_modern(xcmsObj)){
+      grpPeaklist <- cbind(xcms::featureDefinitions(xcmsObj), xcms::featureValues(xcmsObj))
+    }else if(is(xcmsObj, 'xcmsSet')){
+      grpPeaklist <- xcms::peakTable(xcmsObj)
+    }else{
+      stop('createDatabase stopped as the "xcmsObj" (or "xset" if specified) argument is not of class "XcmsExperiment", "XCMSnExp" or "xcmsSet"')
+    }
+  }else{
+    grpPeaklist <- CAMERA::getPeaklist(xsa)
+  }
+  data.frame(cbind('grpid'=1:nrow(grpPeaklist), grpPeaklist))
+}
+
 export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadata){
+  prep <- .db_prepare(pa = pa, grpPeaklist = grpPeaklist, xcmsObj = xcmsObj,
+                      xsa = xsa, metadata = metadata)
+  if (is.null(prep))
+    return(NULL)
+  dbPth <- file.path(outDir, dbName)
+  con <- DBI::dbConnect(RSQLite::SQLite(),dbPth)
+  for (t in prep$tables)
+    custom_dbWriteTable(name_pk = t$pk, fks = t$fks, table_name = t$name,
+                        df = t$df, con = con, pk_type = t$pk_type)
+  DBI::dbDisconnect(con)
+  return(dbPth)
+}
+
+# The tables createDatabase() writes, in write order, each with its primary
+# key, foreign keys and data. NULL, with a message, when the files of `pa`
+# and `xcmsObj` do not match.
+.db_prepare <- function(pa, grpPeaklist, xcmsObj, xsa, metadata){
+  tables <- list()
+  add <- function(name, pk, fks, df, pk_type = 'INTEGER')
+    tables[[name]] <<- list(name = name, pk = pk, fks = fks, df = df,
+                            pk_type = pk_type)
 
   if(!is.null(xsa)){
     # if user has supplied camera object we use the xset that the camera object
@@ -241,10 +292,6 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     }
   }
 
-  dbPth <- file.path(outDir, dbName)
-
-  con <- DBI::dbConnect(RSQLite::SQLite(),dbPth)
-
   ###############################################
   # Add source
   ###############################################
@@ -252,8 +299,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
                        name=paste('msPurity-database',  format(Sys.time(), "%Y-%m-%d-%I%M%S"), sep='-'),
                        parsing_software=paste('msPurity::createDatabase', packageVersion("msPurity")))
 
-  custom_dbWriteTable(name_pk = 'id',
-                      table_name ='source', fks=NA, df=source, con=con)
+  add('source', 'id', NA, source)
 
 
   ###############################################
@@ -271,8 +317,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
                                smiles=character(),
                                created_at=character(),
                                updated_at=character())
-  custom_dbWriteTable(name_pk = 'inchikey_id', fks=NA,pk_type='TEXT',
-                      table_name ='metab_compound', df=metab_compound, con=con)
+  add('metab_compound', 'inchikey_id', NA, metab_compound, pk_type = 'TEXT')
 
 
   ###############################################
@@ -298,7 +343,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
                        class=classInfo
   )
 
-  custom_dbWriteTable(name_pk = 'fileid', fks=NA, table_name = 'fileinfo', df=filedf, con=con)
+  add('fileinfo', 'fileid', NA, filedf)
 
 
 
@@ -332,7 +377,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     cPeaks <- cPeaks[,-which(ccn=='i')]
   }
   fks_fileid <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
-  custom_dbWriteTable(name_pk = 'cid', fks=fks_fileid, table_name = 'c_peaks', df=cPeaks, con=con)
+  add('c_peaks', 'cid', fks_fileid, cPeaks)
 
 
   ###############################################
@@ -358,7 +403,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   colnames(grpPeaklist)[colnames(grpPeaklist)=='rtmed'] = 'rt'
   colnames(grpPeaklist)[colnames(grpPeaklist)=='mzmed'] = 'mz'
 
-  custom_dbWriteTable(name_pk = 'grpid', fks=NA, table_name = 'c_peak_groups', df=grpPeaklist, con=con)
+  add('c_peak_groups', 'grpid', NA, grpPeaklist)
 
   ###############################################
   # Add MANY-to-MANY links for c_peak to c_peak_group
@@ -369,26 +414,12 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
                       'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks')
   )
 
-  custom_dbWriteTable(name_pk = 'cXg_id', fks=fks_for_cxg,
-                      table_name ='c_peak_X_c_peak_group', df=c_peak_X_c_peak_group, con=con)
+  add('c_peak_X_c_peak_group', 'cXg_id', fks_for_cxg, c_peak_X_c_peak_group)
 
   ###############################################
   # Add s_peak_meta (i.e. scan information)
   ###############################################
-  dropc <- c('filename', 'id')
-  scaninfo <- scaninfo[,!colnames(scaninfo) %in% dropc]
-  xx = c("name", "collision_energy", "ms_level", "accession", "resolution", "polarity",
-         "fragmentation_type", "precursor_type", "instrument_type", "instrument",
-         "copyright", "column", "mass_accuracy", "mass_error", "origin", "splash",
-         "retention_index", "retention_time", "inchikey_id")
-  scaninfo[xx] <- NA
-
-  scaninfo$sourceid <- 1
-
-  scaninfo$retention_time <- scaninfo$retentionTime
-  scaninfo$precursor_mz <- scaninfo$precursorMZ
-  scaninfo$spectrum_type <- 'scan'
-  scaninfo <- update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scaninfo)
+  scaninfo <- .db_scan_metadata(scaninfo)
 
 
 
@@ -426,7 +457,9 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     colnames(av_spectra)[colnames(av_spectra)=='sample'] <- 'fileid'
 
     colnames(av_spectra)[colnames(av_spectra)=='method'] = 'type'
-    av_spectra$sid <- max(c(0, speaks$sid)) + seq_len(nrow(av_spectra))
+    # The scan peak-row ids come first, whether or not they are kept.
+    last_sid <- max(c(0, speaks$sid))
+    av_spectra$sid <- last_sid + seq_len(nrow(av_spectra))
 
     prePid  <- paste(av_spectra$grpid, av_spectra$fileid, av_spectra$type)
     newPids <- max(c(0, scaninfo$pid)) +
@@ -454,11 +487,6 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
 
     speaks <- merge(speaks, av_spectra, all = TRUE)
 
-    #colOrder = c("sid", "pid", "grpid", "mz",  "i",  "snr",  "ra", "rsd", "inPurity", "count", "frac", "type",
-    #             "purity_pass_flag", "ra_pass_flag", "snr_pass_flag", "intensity_pass_flag", "minnum_pass_flag",
-    #             "minfrac_pass_flag", "pass_flag")
-    #print(colnames(speaks))
-    #speaks <- speaks[,colOrder, drop=FALSE]
     speaks[is.na(speaks)] <- NA
 
   }
@@ -482,14 +510,9 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
   fks4speaks <- list('grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'),
                      'pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'))
 
-
-  fks4smeta <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'),
-                    'id'=list('new_name'='sourceid', 'ref_name'='id', 'ref_table'='source'),
-                    'inchikey_id'=list('new_name'='inchikey_id', 'ref_name'='inchikey_id', 'ref_table'='metab_compound'))
-
   fks4smeta <- list('fileid'=list('new_name'='fileid', 'ref_name'='fileid', 'ref_table'='fileinfo'))
-  custom_dbWriteTable(name_pk = 'pid', fks=fks4smeta, table_name = 's_peak_meta', df=scaninfo, con=con)
-  custom_dbWriteTable(name_pk = 'sid', fks=fks4speaks, table_name ='s_peaks', df=speaks , con=con)
+  add('s_peak_meta', 'pid', fks4smeta, scaninfo)
+  add('s_peaks', 'sid', fks4speaks, speaks)
 
 
 
@@ -504,8 +527,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
                         'cid'=list('new_name'='cid', 'ref_name'='cid', 'ref_table'='c_peaks'))
 
-    custom_dbWriteTable(name_pk = 'cXp_id', fks=fks_for_cXs,
-                        table_name ='c_peak_X_s_peak_meta', df=c_peak_X_s_peak_meta, con=con)
+    add('c_peak_X_s_peak_meta', 'cXp_id', fks_for_cXs, c_peak_X_s_peak_meta)
   }else{
     ###############################################
     # Add MANY-to-MANY links for c_peak_group to s_peak_meta
@@ -517,8 +539,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
     fks_for_cXs <- list('pid'=list('new_name'='pid', 'ref_name'='pid', 'ref_table'='s_peak_meta'),
                         'grpid'=list('new_name'='grpid', 'ref_name'='grpid', 'ref_table'='c_peak_groups'))
 
-    custom_dbWriteTable(name_pk = 'gXp_id', fks=fks_for_cXs,
-                        table_name ='c_peak_group_X_s_peak_meta', df=c_peak_group_X_s_peak_meta, con=con)
+    add('c_peak_group_X_s_peak_meta', 'gXp_id', fks_for_cXs, c_peak_group_X_s_peak_meta)
 
 
   }
@@ -538,16 +559,14 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
       rules <- xsa@ruleset
     }
     rules$rule_id <- 1:nrow(rules)
-    custom_dbWriteTable(name_pk = 'rule_id', fks=NA,
-                        table_name ='adduct_rules', df=rules, con=con)
+    add('adduct_rules', 'rule_id', NA, rules)
 
     ###############################################
     # Add neutral mass groups
     ###############################################
     annoGrp <- data.frame(xsa@annoGrp)
     colnames(annoGrp)[1] <- 'nm_id'
-    custom_dbWriteTable(name_pk = 'nm_id', fks=NA,
-                        table_name ='neutral_masses', df=annoGrp, con=con)
+    add('neutral_masses', 'nm_id', NA, annoGrp)
 
     ###############################################
     # Add adduct annotations
@@ -561,8 +580,7 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
                        'rule_id'=list('new_name'='rule_id', 'ref_name'='rule_id', 'ref_table'='adduct_rules')
     )
 
-    custom_dbWriteTable(name_pk = 'add_id', fks=fks_adduct,
-                        table_name ='adduct_annotations', df=annoID, con=con)
+    add('adduct_annotations', 'add_id', fks_adduct, annoID)
 
     ###############################################
     # Add isotope annotations
@@ -580,16 +598,63 @@ export2sqlite <- function(pa, grpPeaklist, xcmsObj, xsa, outDir, dbName, metadat
                                                'ref_table'='c_peak_group')
     )
 
-    custom_dbWriteTable(name_pk = 'iso_id', fks=fk_isotope,
-                        table_name ='isotope_annotations', df=isoID, con=con)
+    add('isotope_annotations', 'iso_id', fk_isotope, isoID)
   }
 
-
-  DBI::dbDisconnect(con)
-  return(dbPth)
-
+  list(tables = tables)
 }
 
+
+# Count the raw peaks represented by scan references in live Parquet exports.
+# Older objects without stored counts use the mzML header where available.
+.pa_scan_peak_count <- function(pa, pids) {
+    if (!length(pids)) return(0)
+    sp <- pa@spectra
+    k <- match(pids, sp$pid)
+    if (!anyNA(k) && all(c("msPurityRawPeakCount", "msPurityRawPeakIdBasis") %in%
+                         Spectra::spectraVariables(sp)) &&
+        all(sp$msPurityRawPeakIdBasis[k] %in% "source_reference")) {
+        count <- sp$msPurityRawPeakCount[k]
+        if (!anyNA(count)) return(sum(count))
+    }
+    if (.pa_is_parquet(sp))
+        stop("Source peak counts are unavailable for these spectra.")
+    scans <- purityTable(pa)
+    scans <- scans[scans$pid %in% pids, , drop = FALSE]
+    n <- 0
+    for (file in seq_along(pa@fileList)) {
+        scans_in_file <- scans$seqNum[scans$fileid == file]
+        if (!length(scans_in_file)) next
+        raw <- .msp_read(pa@fileList[[file]])
+        h <- .msp_header(raw)
+        at <- which(h$msLevel > 1L & h$seqNum %in% scans_in_file)
+        count <- h$peaksCount[at]
+        if (is.null(count) || anyNA(count)) {
+            count <- integer(length(at))
+            .mzs_batches(length(at), .mzs_batch_size(TRUE), function(i)
+                count[i] <<- .msp_lengths(raw[at[i]]))
+        }
+        n <- n + sum(count)
+    }
+    n
+}
+
+.db_scan_metadata <- function(scaninfo) {
+  dropc <- c('filename', 'id')
+  scaninfo <- scaninfo[,!colnames(scaninfo) %in% dropc]
+  xx = c("name", "collision_energy", "ms_level", "accession", "resolution", "polarity",
+         "fragmentation_type", "precursor_type", "instrument_type", "instrument",
+         "copyright", "column", "mass_accuracy", "mass_error", "origin", "splash",
+         "retention_index", "retention_time", "inchikey_id")
+  scaninfo[xx] <- NA
+
+  scaninfo$sourceid <- 1
+
+  scaninfo$retention_time <- scaninfo$retentionTime
+  scaninfo$precursor_mz <- scaninfo$precursorMZ
+  scaninfo$spectrum_type <- 'scan'
+  update_cn_order(name_pk = 'pid',names_fk= 'fileid', df = scaninfo)
+}
 
 getAvSpectraForGrp <- function(x){
 
@@ -711,16 +776,18 @@ update_cn_order <- function(name_pk, names_fk, df){
 
 
 
-custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTEGER'){
-  if (anyNA(fks)){
-    names_fk =  NA
-  }else{
-    names_fk =names(fks)
-  }
+# A table as written: primary key first, foreign keys last, and column names
+# without "." or "-".
+.db_frame <- function(df, name_pk, fks) {
+  names_fk <- if (anyNA(fks)) NA else names(fks)
   df <- update_cn_order(name_pk=name_pk, names_fk=names_fk, df = df)
-
   names(df) <- gsub( ".",  "_", names(df), fixed = TRUE)
   names(df) <- gsub( "-",  "_", names(df), fixed = TRUE)
+  df
+}
+
+custom_dbWriteTable <- function(name_pk, fks, df, table_name, con, pk_type='INTEGER'){
+  df <- .db_frame(df, name_pk, fks)
 
   query <- get_create_query(pk=name_pk, fks=fks, table_name=table_name, df=df, pk_type=pk_type)
 
@@ -779,7 +846,7 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
 
 }
 
-# Both public writers share the current processed-MS2 storage contract.
+# The SQLite schema holds MS2 scans, feature links and spectra only.
 .pa_require_ms2_export <- function(pa) {
     if (any(.pa_av_configured(pa@avSpectra)))
         stop("Database export of averages computed with ",
@@ -789,8 +856,41 @@ getGroupPeakLink <- function(xcmsObj, method='medret', XCMSnExp_bool){
         sp <- methods::slot(pa, field)
         if (length(sp) && any(Spectra::msLevel(sp) > 2L, na.rm = TRUE))
             stop("Processed MS3/MS4 database export is not supported by ",
-                "this writer. Retain the processed Spectra object or ",
-                "export MS2-only results.")
+                "the SQLite writer. Use createDatabase(format = \"parquet\") ",
+                "or export MS2-only results.")
+    }
+    g <- pa@grped_df
+    if (nrow(g) && "msLevel" %in% names(g) && any(g$msLevel > 2L, na.rm = TRUE))
+        stop("MS3/MS4 feature links are not supported by the SQLite writer. ",
+            "Use createDatabase(format = \"parquet\") or link MS2 only.")
+    invisible(TRUE)
+}
+
+# The Parquet writer holds MS2-MS4 scans, links and filtered spectra, and the
+# averages: those computed without param as the SQLite writer stores them,
+# those computed with AverageFragSpectraParam (MS2-MS4) with the members and
+# peaks their recorded provenance gives.
+.pa_require_msn_export <- function(pa) {
+    sp <- pa@avSpectra
+    if (!length(sp))
+        return(invisible(TRUE))
+    configured <- .pa_av_configured(sp)
+    if (any(!configured & Spectra::msLevel(sp) > 2L, na.rm = TRUE))
+        stop("Averaged MS3/MS4 spectra can be exported only when computed ",
+            "with AverageFragSpectraParam.")
+    if (any(configured)) {
+        g <- .pa_graph_data(pa)
+        node <- if (is.null(g)) NA_integer_ else
+            match(.pa_graph_sp_keys(sp[configured], g), g$nodes$key)
+        if (anyNA(node) || !all(g$nodes$complete[node]))
+            stop("Averages computed with AverageFragSpectraParam need their ",
+                "recorded provenance for Parquet export. Repeat the averaging.")
+        indices <- which(configured)
+        .mzs_batches(length(indices), .mzs_batch_size(TRUE), function(i) {
+            if (.mzs_av_peaks_changed(sp[indices[i]], g$nodes$nPeaks[node[i]]))
+                stop("Peak processing of averaged spectra is not tracked. ",
+                    "Export the unmodified averaging result.")
+        })
     }
     invisible(TRUE)
 }

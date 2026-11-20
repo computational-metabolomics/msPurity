@@ -134,8 +134,8 @@
     res
 }
 
-# Run every purityA workflow and return the legacy views by stage name.
-.parity_purityA <- function(via = "slots") {
+# Keep the stage objects so both views can be checked against the same run.
+.parity_stages <- function() {
     q <- .parity_quiet
     p <- unname(.lcmsms_paths())
     out <- list()
@@ -143,38 +143,42 @@
     # These references used a fixed window around precursorMz.
     # Recorded event centres are covered by the window tests.
     pa1 <- q(purityA(p, offsets = c(0.5, 0.5)))
-    out$purityA <- .parity_view(pa1, via)
+    out$purityA <- pa1
 
     pa2 <- q(frag4feature(pa1, .golden_xcms("msms_only_xcmsnexp.rds")))
-    out$frag4feature_xcmsnexp <- .parity_view(pa2, via)
-    out$frag4feature_xset <- .parity_view(
-        q(frag4feature(pa1, .golden_xcms("msms_only_xset.rds"))), via)
-    out$frag4feature_group <- .parity_view(
-        q(frag4feature(pa1, .golden_xcms("msms_only_xcmsnexp.rds"),
-                       useGroup = TRUE)), via)
+    out$frag4feature_xcmsnexp <- pa2
+    out$frag4feature_xset <- q(frag4feature(pa1, .golden_xcms("msms_only_xset.rds")))
+    out$frag4feature_group <- q(frag4feature(
+        pa1, .golden_xcms("msms_only_xcmsnexp.rds"), useGroup = TRUE))
 
     pa3 <- q(filterFragSpectra(pa2, plim = 0.7, snr = 3, allfrag = TRUE))
-    out$filter_allfrag <- .parity_view(pa3, via)
+    out$filter_allfrag <- pa3
     pa3r <- q(filterFragSpectra(pa2, plim = 0.7, snr = 3, rmp = TRUE))
-    out$filter_rmp <- .parity_view(pa3r, via)
+    out$filter_rmp <- pa3r
 
     pa4 <- q(averageIntraFragSpectra(pa3))
     pa5 <- q(averageInterFragSpectra(pa4))
     pa6 <- q(averageAllFragSpectra(pa5))
-    out$average_filtered <- .parity_view(pa6, via)
+    out$average_filtered <- pa6
     # Averaging after filterFragSpectra(rmp = TRUE) failed in the reference
     # code when every spectrum of a feature lost all its peaks, so it has no
     # reference; test.2_purityA_fixes.R covers it.
-    out$average_unfiltered <- .parity_view(q(averageAllFragSpectra(pa2)), via)
+    out$average_unfiltered <- q(averageAllFragSpectra(pa2))
     out$msp <- q(.parity_msp(pa6))
 
     pa2d <- .parity_two_features(pa2)
     pa6d <- q(averageAllFragSpectra(q(averageInterFragSpectra(
         q(averageIntraFragSpectra(
             q(filterFragSpectra(pa2d, plim = 0.7, snr = 3))))))))
-    out$two_features <- .parity_view(pa6d, via)
+    out$two_features <- pa6d
     out$two_features_msp <- q(.parity_msp(pa6d))
     out
+}
+
+.parity_purityA <- function(via = "slots", stages = .parity_stages()) {
+    lapply(stages, function(stage) {
+        if (methods::is(stage, "purityA")) .parity_view(stage, via) else stage
+    })
 }
 
 .dims_paths <- function() {

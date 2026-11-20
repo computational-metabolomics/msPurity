@@ -1,5 +1,9 @@
 # msPurity 1.99.2
 
+- Parquet export writes spectra and results tables in batches. Scalar averages
+  with zero retained peaks keep their spectrum and membership. Attempted
+  averages that produced no spectrum are recorded in the loss ledger (#128).
+
 - **Fragment clustering** (#141): matching peaks stay together across
   processing blocks, preventing incorrect support counts and lost averaged
   fragments. Blocks whose peaks all fit within one m/z tolerance window are
@@ -20,6 +24,51 @@
   and `averageProvenance()` to trace selected inputs and retained peaks through
   intra-file and inter-file averaging. Repeated feature links remain distinct.
 - Mean averaging no longer warns when optional normalized intensities are absent.
+- **Raw MS1-MS4 data in Parquet studies** (#127): a `Spectra` on a dataset
+  written by MsBackendParquet's `mzMLToParquet()` (0.99.12 or later) runs
+  through `purityA()`, `frag4feature()`, `filterFragSpectra()` and averaging
+  with the same results as the mzML files, for MS2 to MS4. Peaks are read
+  from the dataset, never from the mzML files, so these need not exist; a
+  dataset that has moved or changed since `purityA()` read it is reported as
+  such. A selected or processed input numbers its raw peak rows as the
+  matching mzML input does. An activation method the dataset records as a
+  PSI-MS accession is read as its method name, so selectors match it as they
+  match a filter string, and `activationTypeBasis` records which applied.
+- With automatic `parentReference`, a Parquet dataset's own spectrum ids are
+  no longer offered as `sourceSpectrumId` readings of parent scan numbers
+  once acquisition numbers resolve, which made parent references ambiguous
+  in studies of several runs.
+- **Parquet results written directly, for MS2 to MS4** (#127, #128):
+  `createDatabase(format = "parquet")` no longer stages an SQLite database;
+  the MS2 output is unchanged. Results version 1.1.0 adds, without changing
+  what 1.0.0 datasets hold:
+  - MS3 and MS4 scans in `x_mspurity_scan`, with `ms_level`, MSn stage
+    purity and status, the activation method used and its basis, and each
+    scan's parent and MS2 root, as references and as rows of the table;
+  - MS3/MS4 feature links in the new `x_mspurity_msn_feature`, and the
+    retention-time mapping of MS2 links in `spectrum_feature`;
+  - filter flags of every filtered spectrum in `x_mspurity_scan_peak`,
+    including those of feature-linked scans when `allfrag = FALSE`, which
+    were lost before;
+  - each step's processing history in `tool_provenance`.
+- **Study links without the mzML files** (#127): with `study`, scans and the
+  MS1 scans their MS2 precursors name are matched from the study's own
+  metadata by native id, then scan number at the same position and level;
+  files are no longer read or checksummed for this. When `purityA()` read
+  a Parquet dataset it is the default `study`; `study = NA` opts out.
+  Conditions the study does not record are reported as unavailable in the
+  loss ledger.
+- **Averages in Parquet results** (#127, #128, #31): averages computed with
+  `AverageFragSpectraParam`, at MS2 to MS4, are exported with their MS level,
+  parameter set and group, acquisition conditions and precursor path. Where
+  averaging recorded its provenance, `merge_member` lists the inputs each
+  average selected, with whether each contributed a peak, and the new
+  `x_mspurity_merge_peak` gives the input peak each averaged peak came from;
+  averages without a record keep reconstructed members. Empty averages are
+  exported as spectra without peaks. Spectral matching stays on MS2
+  averages.
+- The SQLite writer refuses MS3/MS4 feature links as it refuses MS3/MS4
+  spectra and averages computed with `AverageFragSpectraParam`.
 
 # msPurity 1.99.1
 

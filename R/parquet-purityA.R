@@ -1,15 +1,16 @@
 # msPurity results -> a Parquet results dataset.
 #
-# createDatabase(format = "parquet") stages a temporary SQLite database and
-# enriches it from the live purityA object; convertSqliteToParquet() reads an
-# existing one. Both map the `.mzs_read_sqlite()` table set:
+# createDatabase(format = "parquet") builds msPurity's table set in memory,
+# as the SQLite writer would store it, and adds what only the live purityA
+# object holds (parquet-msn.R); convertSqliteToParquet() reads the table set
+# from an existing database. Both map it the same way:
 #
 #   fileinfo                      -> runs of the study (or external sources)
 #   averaged spectra              -> native runs: av_intra_<run> per source
 #                                    run, av_inter, av_all
 #   their contributing scans      -> merge_member
 #
-# MS2 scans are referenced, never copied.
+# Scans are referenced, never copied.
 
 # Averaged-spectrum peak columns: s_peaks column -> (peak column, type).
 # `frac` (count / total) and the composite `pass_flag` are not stored; `ra`
@@ -33,6 +34,13 @@
                  "snr_pass_flag"),
     averaged = paste("minfrac_pass_flag & snr_pass_flag & ra_pass_flag &",
                      "minnum_pass_flag"))
+
+.MZS_PRECURSOR_DEFINITION_PARAM <- paste(
+    "An average computed with AverageFragSpectraParam has the median",
+    "precursor m/z and retention time of the scans that contributed to it,",
+    "of their last stage for MS3/MS4 averages, whose earlier stages are in",
+    "x_mspurity_precursor_path; its spectrum_feature link gives the MS2",
+    "precursor of that path.")
 
 .MZS_PRECURSOR_DEFINITION <- paste(
     "An averaged spectrum's precursor m/z and retention time are those of",
@@ -64,7 +72,11 @@
 #' @noRd
 .mzs_files <- function(fi, study, studyKey, fileMap, dest) {
     fi <- fi[order(fi$fileid), , drop = FALSE]
-    base <- basename(fi$filepth)
+    # A database may contain paths recorded on a different operating system.
+    path <- fi$filepth
+    windows <- which(grepl("^[A-Za-z]:[/\\\\]", path) | startsWith(path, "\\\\"))
+    path[windows] <- chartr("\\", "/", path[windows])
+    base <- basename(path)
     dup <- unique(base[duplicated(base)])
     covered <- length(fileMap) && all(fi$filepth %in% names(fileMap))
     if (length(dup) && !covered)
@@ -74,9 +86,11 @@
                    ". Pass 'fileMap' naming the run of every file (R-096).",
                    data = list(paths = fi$filepth[base %in% dup]))
     readable <- !is.na(fi$filepth) & file.exists(fi$filepth)
+    ## Checksums identify files that are not in a study.
     checksum <- rep(NA_character_, nrow(fi))
-    checksum[readable] <- vapply(fi$filepth[readable], .mzs_sha256,
-                                 character(1))
+    if (is.null(study))
+        checksum[readable] <- vapply(fi$filepth[readable], .mzs_sha256,
+                                     character(1))
     mapped <- function(i) {
         p <- fi$filepth[i]
         if (!is.null(fileMap) && p %in% names(fileMap))
@@ -122,9 +136,7 @@
             r <- mapped(i)
             if (!is.na(r))
                 return(r)
-            .mzs_mint_run_id(if (readable[i]) checksum[i]
-                             else normalizePath(fi$filepth[i],
-                                                mustWork = FALSE), i)
+            .mzs_mint_run_id(if (readable[i]) checksum[i] else path[i], i)
         }, character(1))
         if (anyDuplicated(run))
             .mzs_abort("semantic", "Two source files map to one run id: ",
@@ -149,53 +161,158 @@
                           1L, 12L))
 }
 
-#' MS2 scan references: source, run, study spectrum_id_ and mzML native id.
+#' Scan references: source, run, study spectrum_id_, native id, and how the
+#' scan was matched to the study (`link_basis`).
 #'
-#' Study scans are matched by native id, then scan number. Without a study,
-#' spectrum_id_ is NA.
+#' Without a study, scans are external references by native id, which the
+#' live object records or the mzML files give. With one, a scan is its study
+#' spectrum: the input's own key when the input is that study (`dataset`),
+#' else matched by native id, then by scan number at the same position and
+#' MS level, all read from the study's metadata.
 #'
-#' @param scans data.frame with fileid, seqNum, acquisitionNum.
+#' @param scans data.frame with pid, fileid, seqNum, acquisitionNum and,
+#'     optionally, ms_level.
+#'
+#' @param ann live route only: `.mzs_scan_annotations()` of the scans.
+#'
+#' @param fast whether the live object's spectra are the study's own.
 #'
 #' @noRd
-.mzs_scan_refs <- function(files, scans) {
+.mzs_scan_refs <- function(files, scans, ann = NULL, fast = FALSE) {
     k <- match(scans$fileid, files$fileid)
     out <- data.frame(source = files$source[k], run_id = files$run_id[k],
                       spectrum_id_ = NA_real_, native_id = NA_character_,
+                      link_basis = NA_character_, stringsAsFactors = FALSE)
+    if (!is.null(ann))
+        out$native_id <- ann$native_id
+    study <- attr(files, "study")
+    if (is.null(study)) {
+        need <- is.na(out$native_id)
+        for (j in which(files$readable)) {
+            i <- which(scans$fileid == files$fileid[j] & need)
+            if (!length(i))
+                next
+            h <- tryCatch(.msp_header(.msp_read(files$filepth[j])),
+                          error = function(e) NULL)
+            if (is.null(h) || is.null(h$spectrumId))
+                next
+            out$native_id[i] <- as.character(
+                h$spectrumId[match(scans$seqNum[i], h$seqNum)])
+        }
+        return(out)
+    }
+    level <- if (is.null(scans$ms_level)) rep(2L, nrow(scans)) else
+        scans$ms_level
+    if (fast && !is.null(ann) && !anyNA(ann$dataset_spectrum_id_)) {
+        if (any(ann$dataset_run_id != out$run_id, na.rm = TRUE))
+            .mzs_abort("semantic", "The spectra of 'pa' come from runs of the ",
+                       "study other than those its files map to.")
+        out$spectrum_id_ <- ann$dataset_spectrum_id_
+        out$link_basis <- "dataset"
+        return(out)
+    }
+    sm <- attr(files, "study_manifest")
+    meta <- .mzs_read_spectra_vars(study, sm, c("spectrumId",
+        "acquisitionNum", "scanIndex", "msLevel"), unique(out$run_id))
+    key <- function(r, v) ifelse(is.na(v), NA_character_,
+                                 paste(r, v, sep = "\r"))
+    unique_key <- function(x) {
+        x[duplicated(x) | duplicated(x, fromLast = TRUE)] <- NA_character_
+        x
+    }
+    by_id <- match(key(out$run_id, out$native_id),
+                   key(meta$run_id, meta$spectrumId), incomparables = NA)
+    by_scan <- match(key(out$run_id, scans$acquisitionNum),
+                     unique_key(key(meta$run_id, meta$acquisitionNum)),
+                     incomparables = NA)
+    ## A scan number names the spectrum only at the same file position.
+    moved <- !is.na(by_scan) & !is.na(scans$seqNum) &
+        !is.na(meta$scanIndex[by_scan]) &
+        meta$scanIndex[by_scan] != scans$seqNum
+    by_scan[moved] <- NA_integer_
+    hit <- ifelse(is.na(by_id), by_scan, by_id)
+    out$link_basis <- ifelse(!is.na(by_id), "native_id",
+                             ifelse(!is.na(by_scan), "scan_number",
+                                    NA_character_))
+    miss <- !is.na(out$run_id) & is.na(hit)
+    if (any(miss))
+        .mzs_abort("semantic", sum(miss), " scan(s) are not in the ",
+                   "study run they were recorded against, e.g. run ",
+                   out$run_id[miss][1L], " scan ",
+                   scans$acquisitionNum[miss][1L], ".",
+                   data = list(run_id = out$run_id[miss][1L]))
+    wrong <- !is.na(hit) & !is.na(meta$msLevel[hit]) &
+        meta$msLevel[hit] != level
+    if (any(wrong))
+        .mzs_abort("semantic", sum(wrong), " scan(s) match a study ",
+                   "spectrum of another MS level, e.g. run ",
+                   out$run_id[wrong][1L], " scan ",
+                   scans$acquisitionNum[wrong][1L], ".",
+                   data = list(run_id = out$run_id[wrong][1L]))
+    out$spectrum_id_ <- as.numeric(meta$spectrum_id_[hit])
+    nat <- is.na(out$native_id)
+    out$native_id[nat] <- as.character(meta$spectrumId[hit[nat]])
+    out
+}
+
+#' Parent and root references of each scan.
+#'
+#' The parent of an MS3 or MS4 scan, and the MS2 root of its path, are the
+#' scans the live object's lineage resolved, so they carry those scans'
+#' references. The parent of an MS2 scan is its MS1 survey scan, which
+#' msPurity does not retain: it is the study's MS1 spectrum whose
+#' acquisitionNum is the scan's precursor scan number, and unknown without
+#' a study.
+#'
+#' @return data.frame of the `parent_` and `root_` reference columns, with
+#'     `parent_row` and `root_row`, the positions of the parent and root
+#'     among `scans`.
+#'
+#' @noRd
+.mzs_parent_refs <- function(files, scans, refs, ann = NULL) {
+    n <- nrow(scans)
+    na_chr <- rep(NA_character_, n)
+    out <- data.frame(parent_source = na_chr, parent_run_id = na_chr,
+                      parent_spectrum_id_ = rep(NA_real_, n),
+                      parent_native_id = na_chr, root_source = na_chr,
+                      root_run_id = na_chr,
+                      root_spectrum_id_ = rep(NA_real_, n),
+                      root_native_id = na_chr,
+                      parent_row = rep(NA_integer_, n),
+                      root_row = rep(NA_integer_, n),
                       stringsAsFactors = FALSE)
-    for (j in which(files$readable)) {
-        i <- which(scans$fileid == files$fileid[j])
-        if (!length(i))
-            next
-        h <- tryCatch(.msp_header(.msp_read(files$filepth[j])),
-                      error = function(e) NULL)
-        if (is.null(h) || is.null(h$spectrumId))
-            next
-        out$native_id[i] <- as.character(
-            h$spectrumId[match(scans$seqNum[i], h$seqNum)])
+    level <- if (is.null(scans$ms_level)) rep(2L, n) else scans$ms_level
+    ref_cols <- c("source", "run_id", "spectrum_id_", "native_id")
+    if (!is.null(ann)) {
+        pr <- match(ann$parent_pid, scans$pid)
+        rr <- match(ann$root_pid, scans$pid)
+        msn <- which(level > 2L & !is.na(pr))
+        for (c in ref_cols)
+            out[[paste0("parent_", c)]][msn] <- refs[[c]][pr[msn]]
+        out$parent_row[msn] <- pr[msn]
+        rooted <- which(level > 2L & !is.na(rr))
+        for (c in ref_cols)
+            out[[paste0("root_", c)]][rooted] <- refs[[c]][rr[rooted]]
+        out$root_row[rooted] <- rr[rooted]
     }
     study <- attr(files, "study")
-    if (!is.null(study)) {
-        sm <- attr(files, "study_manifest")
-        cols <- c("id", "scan_number", "acquisition_num_")
-        meta <- .mzs_read_spectra_meta(study, sm, cols,
-                                       unique(out$run_id))
-        sn <- meta$scan_number
-        sn[is.na(sn)] <- meta$acquisition_num_[is.na(sn)]
-        by_id <- match(paste(out$run_id, out$native_id),
-                       paste(meta$run_id, meta$id))
-        by_id[is.na(out$native_id)] <- NA_integer_
-        by_scan <- match(paste(out$run_id, scans$acquisitionNum),
-                         paste(meta$run_id, sn))
-        hit <- ifelse(is.na(by_id), by_scan, by_id)
-        miss <- !is.na(out$run_id) & is.na(hit)
-        if (any(miss))
-            .mzs_abort("semantic", sum(miss), " MS2 scan(s) are not in the ",
-                       "study run they were recorded against, e.g. run ",
-                       out$run_id[miss][1L], " scan ",
-                       scans$acquisitionNum[miss][1L], ".")
-        out$spectrum_id_ <- as.numeric(meta$spectrum_id_[hit])
-        nat <- is.na(out$native_id)
-        out$native_id[nat] <- as.character(meta$id[hit[nat]])
+    ms2 <- which(level == 2L & !is.na(scans$precursorScanNum))
+    if (!is.null(study) && length(ms2)) {
+        meta <- .mzs_read_spectra_vars(study, attr(files, "study_manifest"),
+            c("spectrumId", "acquisitionNum", "msLevel"),
+            unique(refs$run_id[ms2]))
+        meta <- meta[meta$msLevel %in% 1L & !is.na(meta$acquisitionNum), ,
+                     drop = FALSE]
+        mk <- paste(meta$run_id, meta$acquisitionNum, sep = "\r")
+        mk[duplicated(mk) | duplicated(mk, fromLast = TRUE)] <- NA_character_
+        hit <- match(paste(refs$run_id[ms2], scans$precursorScanNum[ms2],
+                           sep = "\r"), mk, incomparables = NA)
+        found <- !is.na(hit)
+        i <- ms2[found]
+        out$parent_source[i] <- refs$source[i]
+        out$parent_run_id[i] <- refs$run_id[i]
+        out$parent_spectrum_id_[i] <- meta$spectrum_id_[hit[found]]
+        out$parent_native_id[i] <- as.character(meta$spectrumId[hit[found]])
     }
     out
 }
@@ -276,15 +393,23 @@
     pk
 }
 
+#' SQLite average peaks in native run order.
+#' @noRd
+.mzs_av_peaks <- function(src, av) {
+    pk <- .mzs_average_peaks(src, av)
+    if (nrow(pk)) pk <- pk[order(pk$pid, pk$mz, pk$cl), , drop = FALSE]
+    pk
+}
+
 #' The native runs holding the averaged spectra, for `.mzs_commit_new()`.
 #'
+#' @param pk `.mzs_av_peaks()`.
+#'
 #' @noRd
-.mzs_derived_runs <- function(src, av) {
+.mzs_derived_runs <- function(av, pk) {
     if (!nrow(av))
         return(list(runs = list(), results_runs = list(),
                     peak_columns = list()))
-    pk <- .mzs_average_peaks(src, av)
-    pk <- pk[order(pk$pid, pk$mz, pk$cl), , drop = FALSE]
     unknown <- setdiff(names(pk), c("sid", "fileid", "mz", "i", "type",
                                     "scan", "grpid", "pid", "frac",
                                     "pass_flag", "purity_pass_flag",
@@ -302,25 +427,29 @@
     peak_columns <- list()
     for (r in unique(av$run_id)) {
         a <- av[av$run_id == r, , drop = FALSE]
-        rows <- split(seq_len(nrow(pk)), factor(pk$pid, levels = a$pid))
-        col <- function(c, f) lapply(rows, function(i) {
-            v <- f(pk[[c]][i])
-            if (all(is.na(v))) NULL else v
-        })
-        peaks <- list(
-            mz = .mzs_peak_list(unname(lapply(rows, function(i)
-                as.numeric(pk$mz[i])))),
-            intensity = .mzs_peak_list(unname(lapply(rows, function(i)
-                as.numeric(pk$i[i])))))
-        for (c in present) {
-            spec <- .MZS_AV_PEAKS[[c]]
-            f <- switch(spec[[2L]], i32 = as.integer, bool = as.logical,
-                        as.numeric)
-            peaks[[spec[[1L]]]] <- .mzs_peak_list(unname(col(c, f)),
-                                                  spec[[2L]])
+        peaks <- NULL
+        if (!is.null(pk)) {
+            rows <- split(seq_len(nrow(pk)), factor(pk$pid, levels = a$pid))
+            col <- function(c, f) lapply(rows, function(i) {
+                v <- f(pk[[c]][i])
+                if (all(is.na(v))) NULL else v
+            })
+            peaks <- list(
+                mz = .mzs_peak_list(unname(lapply(rows, function(i)
+                    as.numeric(pk$mz[i])))),
+                intensity = .mzs_peak_list(unname(lapply(rows, function(i)
+                    as.numeric(pk$i[i])))))
+            for (c in present) {
+                spec <- .MZS_AV_PEAKS[[c]]
+                f <- switch(spec[[2L]], i32 = as.integer, bool = as.logical,
+                            as.numeric)
+                peaks[[spec[[1L]]]] <- .mzs_peak_list(unname(col(c, f)),
+                                                      spec[[2L]])
+            }
         }
         meta <- data.frame(
-            ms_level = rep(2L, nrow(a)),
+            ms_level = if (is.null(a$ms_level)) rep(2L, nrow(a))
+                       else as.integer(a$ms_level),
             rtime = a$retention_time,
             scan_polarity = .mzs_scan_polarity(a$polarity),
             spectrum_representation = rep("MS:1000127", nrow(a)),
@@ -333,6 +462,10 @@
         for (c in c("instrument", "instrument_type"))
             if (c %in% names(av) && any(!is.na(av[[c]])))
                 meta[[paste0("x_mspurity_", c)]] <- a[[c]]
+        ## How averages computed with AverageFragSpectraParam were made.
+        if (any(av$configured %in% TRUE))
+            for (c in names(.MZS_AV_CONFIGURED_TYPES))
+                meta[[c]] <- a[[sub("^x_mspurity_", "", c)]]
         runs[[length(runs) + 1L]] <- list(run_id = r, meta = meta,
                                           peaks = peaks)
         m1 <- a$method[1L]
@@ -350,26 +483,46 @@
 
 #' The merge_member table: the scans each averaged spectrum drew on.
 #'
-#' All-file averages draw on the feature's passing scans, intra-file averages
-#' on those of their file, inter-file averages on the feature's intra-file
-#' averages. A scan linked twice is listed twice. Membership is complete when
-#' it matches the recorded contributor count.
+#' Where the averaging provenance is recorded (`gk`), the members are the
+#' inputs it records, selected and contributing. Otherwise they are
+#' reconstructed: all-file averages draw on the feature's passing scans,
+#' intra-file averages on those of their file, inter-file averages on the
+#' feature's intra-file averages; a scan linked twice is listed twice, and
+#' membership is complete when it matches the recorded contributor count.
 #'
 #' @param members data.frame of contributions: grpid, pid, fileid, one row
 #'     per scan-to-feature link.
 #'
+#' @param gk `.mzs_av_graph()`, or `NULL`.
+#'
 #' @noRd
-.mzs_merge_member <- function(src, av, members, scans, scan_refs) {
+.mzs_merge_member <- function(src, av, members, scans, scan_refs,
+                              gk = NULL, rows = seq_len(nrow(av))) {
     if (!nrow(av))
         return(list(table = NULL, incomplete = 0L))
-    avp <- .mzs_average_peaks(src, av)
-    avp <- avp[!is.na(avp$total), c("pid", "total"), drop = FALSE]
-    total <- tapply(avp$total, avp$pid, max)
+    recorded <- if (is.null(gk)) NULL
+                else .mzs_graph_merge_member(av, gk, scans, scan_refs, rows[gk$use[rows]])
+    keep <- !(av$configured %in% TRUE) &
+        !(if (is.null(gk)) FALSE else gk$use)
+    av_all <- av
+    av <- av[rows[keep[rows]], , drop = FALSE]
+    if (!nrow(av)) {
+        if (is.null(recorded))
+            return(list(table = NULL, incomplete = 0L))
+        return(list(table = recorded, incomplete = 0L))
+    }
+    if (!is.null(src$scalar)) {
+        total <- stats::setNames(src$scalar$total, src$scalar$meta$pid)
+    } else {
+        avp <- .mzs_average_peaks(src, av)
+        keep <- !is.na(avp$total)
+        total <- tapply(avp$total[keep], avp$pid[keep], max)
+    }
     out <- lapply(seq_len(nrow(av)), function(i) {
         a <- av[i, ]
         if (a$method == "inter") {
-            mem <- av[av$method == "intra" & av$grpid == a$grpid, ,
-                      drop = FALSE]
+            mem <- av_all[av_all$method == "intra" & av_all$grpid == a$grpid &
+                          !(av_all$configured %in% TRUE), , drop = FALSE]
             if (!nrow(mem))
                 return(NULL)
             return(data.frame(
@@ -383,10 +536,12 @@
         sel <- which(members$grpid == a$grpid &
                      (a$method == "all" | members$fileid %in% a$fileid))
         ## Passing scans if they match the contributor count, else all.
+        if (isTRUE(attr(members, "live")) && !isTRUE(a$empty))
+            sel <- sel[members$passes[sel] %in% TRUE]
         want <- total[as.character(a$pid)]
         pass <- sel[members$passes[sel] %in% TRUE]
-        if (length(pass) && (is.na(want) || length(pass) == want ||
-                             length(sel) != want))
+        if (!isTRUE(a$empty) && length(pass) &&
+            (is.na(want) || length(pass) == want || length(sel) != want))
             sel <- pass
         if (!length(sel))
             return(NULL)
@@ -406,7 +561,12 @@
     })
     mm <- do.call(.mzs_rbind_fill, out)
     if (is.null(mm) || !nrow(mm))
-        return(list(table = NULL, incomplete = 0L))
+        return(list(table = recorded, incomplete = 0L))
+    empty <- av$empty[match(mm$merged_spectrum_id_, av$spectrum_id_)]
+    if (any(empty %in% TRUE)) {
+        mm$x_mspurity_contributes <- NA
+        mm$x_mspurity_contributes[empty] <- FALSE
+    }
     mm$merged_source <- "self"
     mm$member_rank <- as.integer(stats::ave(mm$merged_spectrum_id_,
                                             mm$merged_spectrum_id_,
@@ -416,7 +576,7 @@
     got <- as.integer(stats::ave(mm$member_rank, mm$merged_spectrum_id_,
                                  FUN = length))
     mm$members_complete <- !is.na(want) & got == want
-    list(table = mm,
+    list(table = .mzs_rbind_fill(mm, recorded),
          incomplete = sum(!tapply(mm$members_complete,
                                   mm$merged_spectrum_id_, all)))
 }
@@ -500,28 +660,27 @@
 #'
 #' @noRd
 .mzs_members_from_pa <- function(pa) {
+    pa <- .pa_ms2_view(pa)
     g <- pa@grped_df
     if (!nrow(g))
         return(data.frame(grpid = integer(), pid = integer(),
                           fileid = integer()))
     filtered <- length(pa@filter_frag_params) > 0L
-    keep <- logical(nrow(g))
-    ms2 <- groupedSpectra(pa)
-    for (grp in unique(as.character(g$grpid))) {
-        rows <- which(as.character(g$grpid) == grp)
-        spectra <- ms2[[grp]]
-        for (j in seq_along(rows)) {
-            s <- spectra[[j]]
-            keep[rows[j]] <- !is.null(s) && NROW(s) > 0L &&
-                (!filtered || any(s[, ncol(s)] == 1))
-        }
-    }
-    g <- g[keep, , drop = FALSE]
+    fs <- pa@fragSpectra
+    keep <- logical(length(fs))
+    pv <- Spectra::peaksVariables(fs)
+    flag <- filtered && "pass_flag" %in% pv
+    .mzs_batches(length(fs), .mzs_batch_size(TRUE), function(i) {
+        pk <- as.list(Spectra::peaksData(fs[i], columns = if (flag) "pass_flag" else "intensity",
+                                         BPPARAM = .msp_bpparam()))
+        keep[i] <<- vapply(pk, function(m)
+            nrow(m) > 0L && (!filtered || any(m[, 1L] == 1, na.rm = TRUE)), logical(1))
+    })
+    passed <- g$pid %in% fs$pid[keep]
     fileid <- if ("fileid" %in% names(g)) g$fileid else g$sample
-    data.frame(grpid = as.integer(as.character(g$grpid)),
-               pid = as.integer(g$pid),
-               fileid = as.integer(as.character(fileid)),
-               passes = TRUE)
+    structure(data.frame(grpid = as.integer(as.character(g$grpid)),
+               pid = as.integer(g$pid), fileid = as.integer(as.character(fileid)),
+               passes = passed), live = TRUE)
 }
 
 # ---------------------------------------------------------------------------
@@ -547,11 +706,20 @@
                        "origin", "splash", "retention_index", "inchikey_id",
                        "sourceid")
 
-#' x_mspurity_scan (assessed MS2 scans with precursor purity) and, if
+#' x_mspurity_scan (assessed scans with their purity and lineage) and, if
 #' filterFragSpectra() flagged peaks, x_mspurity_scan_peak.
 #'
+#' Peaks flagged in s_peaks come first. On the live route the flags of the
+#' other fragmentation spectra, those above MS2 and the feature-linked MS2
+#' scans of an `allfrag = FALSE` filter, come from fragSpectra.
+#'
+#' @param parents `.mzs_parent_refs()` of the scans.
+#'
+#' @param ann,pa live route only.
+#'
 #' @noRd
-.mzs_scan_tables <- function(src, scans, scan_refs) {
+.mzs_scan_tables <- function(src, scans, scan_refs, parents = NULL,
+                             ann = NULL, pa = NULL) {
     n <- nrow(scans)
     scan <- data.frame(
         scan_annotation_id_ = seq_len(n),
@@ -562,13 +730,30 @@
         stringsAsFactors = FALSE)
     for (c in intersect(names(.MZS_SCAN_COLUMNS), names(scans)))
         scan[[.MZS_SCAN_COLUMNS[[c]]]] <- scans[[c]]
+    scan$ms_level <- if (is.null(scans$ms_level)) rep(2L, n) else
+        as.integer(scans$ms_level)
+    scan$link_basis <- scan_refs$link_basis
+    if (!is.null(parents)) {
+        for (c in grep("^(parent|root)_", names(parents), value = TRUE))
+            if (!c %in% c("parent_row", "root_row"))
+                scan[[c]] <- parents[[c]]
+        scan$parent_scan_annotation_id_ <- parents$parent_row
+        scan$root_scan_annotation_id_ <- parents$root_row
+    }
+    if (!is.null(ann)) {
+        for (c in c("parent_status", "path_status", "parent_reference_type",
+                    "stage_purity", "purity_status", "activation_type",
+                    "activation_type_basis", "scan_filter_analyzer"))
+            scan[[c]] <- ann[[c]]
+    }
     sp <- src$s_peaks[src$s_peaks$type %in% "scan", , drop = FALSE]
-    ann <- intersect(c("snr", "ra", "purity_pass_flag",
-                       "intensity_pass_flag", "ra_pass_flag",
-                       "snr_pass_flag"), names(sp))
-    ann <- ann[vapply(ann, function(c) any(!is.na(sp[[c]])), logical(1))]
+    ann_cols <- intersect(c("snr", "ra", "purity_pass_flag",
+                            "intensity_pass_flag", "ra_pass_flag",
+                            "snr_pass_flag"), names(sp))
+    ann_cols <- ann_cols[vapply(ann_cols, function(c) any(!is.na(sp[[c]])),
+                                logical(1))]
     peak <- NULL
-    if (length(ann) && nrow(sp)) {
+    if (length(ann_cols) && nrow(sp)) {
         pid <- .mzs_scan_peak_pid(src, sp)
         if (anyNA(pid))
             .mzs_abort("semantic", sum(is.na(pid)), " scan peak(s) in ",
@@ -579,15 +764,38 @@
             peak_rank = as.integer(stats::ave(seq_len(nrow(sp)), pid,
                                               FUN = seq_along)),
             mz = sp$mz, intensity = sp$i,
-            snr = if ("snr" %in% ann) sp$snr else NA_real_,
-            relative_intensity = if ("ra" %in% ann) sp$ra else NA_real_,
+            snr = if ("snr" %in% ann_cols) sp$snr else NA_real_,
+            relative_intensity = if ("ra" %in% ann_cols) sp$ra else NA_real_,
             stringsAsFactors = FALSE)
         for (f in c("purity_pass_flag", "intensity_pass_flag",
                     "ra_pass_flag", "snr_pass_flag"))
-            peak[[f]] <- if (f %in% ann) sp[[f]] else NA
+            peak[[f]] <- if (f %in% ann_cols) sp[[f]] else NA
     }
-    list(scan = scan, peak = peak, raw_peaks = nrow(sp),
-         annotated = !is.null(peak))
+    annotated <- !is.null(peak)
+    if (!is.null(pa)) {
+        done <- if (annotated) scans$pid[unique(peak$scan_annotation_id_)]
+                else integer()
+        lp <- .mzs_live_scan_peaks(pa, setdiff(scans$pid, done))
+        if (!is.null(lp) && nrow(lp)) {
+            extra <- data.frame(
+                scan_annotation_id_ = match(lp$pid, scans$pid),
+                peak_rank = as.integer(stats::ave(seq_len(nrow(lp)), lp$pid,
+                                                  FUN = seq_along)),
+                mz = lp$mz, intensity = lp$i, snr = lp$snr,
+                relative_intensity = lp$ra,
+                purity_pass_flag = lp$purity_pass_flag,
+                intensity_pass_flag = lp$intensity_pass_flag,
+                ra_pass_flag = lp$ra_pass_flag,
+                snr_pass_flag = lp$snr_pass_flag,
+                stringsAsFactors = FALSE)
+            extra <- extra[!is.na(extra$scan_annotation_id_), , drop = FALSE]
+            peak <- if (is.null(peak)) extra else rbind(peak, extra)
+        }
+    }
+    ## Raw scan peaks the direct route counted rather than read.
+    uncopied <- as.integer(attr(src$s_peaks, "raw_scan_peaks") %||% 0L)
+    list(scan = scan, peak = peak, raw_peaks = nrow(sp) + uncopied,
+         annotated = annotated)
 }
 
 # ---------------------------------------------------------------------------
@@ -672,15 +880,16 @@
     pk <- src$s_peaks
     av <- pk[!pk$type %in% "scan", , drop = FALSE]
     out <- list(
-        if ("frac" %in% names(av) && nrow(av))
+        if (("frac" %in% names(av) && nrow(av)) ||
+            ("frac" %in% src$scalar$columns && sum(src$scalar$size) > 0))
             list(construct = "s_peaks.frac", disposition =
-                     "dropped_by_configuration", affected_rows = nrow(av),
+                     "dropped_by_configuration", affected_rows = nrow(av) + sum(src$scalar$size),
                  reason = paste("contributor_count / contributor_total,",
                                 "recomputable exactly (R-060).")),
-        if ("pass_flag" %in% names(pk))
+        if ("pass_flag" %in% c(names(pk), src$scalar$columns) || isTRUE(scan_tabs$allfrag))
             list(construct = "s_peaks.pass_flag",
                  disposition = "dropped_by_configuration",
-                 affected_rows = sum(!is.na(pk$pass_flag)),
+                 affected_rows = sum(!is.na(pk$pass_flag), src$scalar$pass, scan_tabs$pass),
                  reason = paste("A composite whose rule differs between",
                                 "scans and averaged spectra; its component",
                                 "flags are stored and both rules recorded",
@@ -695,7 +904,8 @@
         if ("sid" %in% names(pk))
             list(construct = "s_peaks.sid",
                  disposition = "dropped_by_configuration",
-                 affected_rows = nrow(pk),
+                 affected_rows = nrow(pk) + sum(src$scalar$size, scan_tabs$stored_rows) +
+                     as.integer(attr(pk, "raw_scan_peaks") %||% 0L),
                  reason = "A positional row number with no identity."),
         if (is.null(live))
             list(construct = "processing parameters",
@@ -736,10 +946,10 @@
 #' Loss ledger rows for the feature tables.
 #'
 #' @noRd
-.mzs_feature_losses <- function(src, ftabs, live) {
+.mzs_feature_losses <- function(src, ftabs, live, n_links = nrow(.mzs_scan_links(src))) {
     grp <- src$c_peak_groups
     out <- list(
-        if ("peakidx" %in% names(grp))
+        if (isTRUE(src$has_peakidx) || "peakidx" %in% names(grp))
             list(construct = "c_peak_groups.peakidx",
                  disposition = "dropped_by_configuration",
                  affected_rows = nrow(grp),
@@ -759,7 +969,7 @@
              disposition = "dropped_by_configuration",
              affected_rows = nrow(src$c_peak_X_c_peak_group),
              reason = "A positional row number of the link table."),
-        if ("sn" %in% names(src$c_peaks))
+        if (isTRUE(src$peak_sn) || "sn" %in% names(src$c_peaks))
             list(construct = "c_peaks.sn", disposition = "preserved_opaque",
                  affected_rows = nrow(src$c_peaks),
                  target_ref = "chromatographic_peak.x_mspurity_sn",
@@ -768,7 +978,7 @@
                                 "x_mspurity_sn.")),
         list(construct = "s_peak_meta.inPurity (linked scans)",
              disposition = "preserved_opaque",
-             affected_rows = nrow(.mzs_scan_links(src)),
+             affected_rows = n_links,
              target_ref = "x_mspurity_scan.in_purity",
              reason = paste("spectrum_feature.precursor_purity is float32 in",
                             "mzStack-4; the exact value is in",
@@ -830,11 +1040,89 @@
     "*.ms2_spectrum_id_" = list(
         disposition = "not_present_in_source",
         reason = paste("The scans are in external sources (no study",
-                       "dataset), so no spectrum id is assigned (R-026).")))
+                       "dataset), so no spectrum id is assigned (R-026).")),
+    "x_mspurity_scan.link_basis" = list(
+        disposition = "not_present_in_source",
+        reason = paste("No study dataset: the scans are external references",
+                       "by native id.")),
+    "x_mspurity_scan.parent_source" = list(
+        disposition = "not_present_in_source",
+        reason = paste("An MS2 scan's MS1 survey scan is referenced only in a",
+                       "study dataset, and no MS3/MS4 scan was assessed.")),
+    "x_mspurity_scan.parent_run_id" = list(
+        disposition = "not_present_in_source",
+        reason = paste("An MS2 scan's MS1 survey scan is referenced only in a",
+                       "study dataset, and no MS3/MS4 scan was assessed.")),
+    "x_mspurity_scan.parent_spectrum_id_" = list(
+        disposition = "not_present_in_source",
+        reason = paste("Parent scans are given study spectrum ids only in a",
+                       "study dataset (R-026).")),
+    "x_mspurity_scan.parent_native_id" = list(
+        disposition = "not_present_in_source",
+        reason = paste("An MS2 scan's MS1 survey scan is referenced only in a",
+                       "study dataset, and no MS3/MS4 scan was assessed.")),
+    "x_mspurity_scan.root_source" = list(
+        disposition = "not_present_in_source",
+        reason = "No MS3/MS4 scan was assessed; an MS2 scan is its own root."),
+    "x_mspurity_scan.root_run_id" = list(
+        disposition = "not_present_in_source",
+        reason = "No MS3/MS4 scan was assessed; an MS2 scan is its own root."),
+    "x_mspurity_scan.root_spectrum_id_" = list(
+        disposition = "not_present_in_source",
+        reason = paste("No MS3/MS4 scan was assessed in a study dataset; an",
+                       "MS2 scan is its own root.")),
+    "x_mspurity_scan.root_native_id" = list(
+        disposition = "not_present_in_source",
+        reason = "No MS3/MS4 scan was assessed; an MS2 scan is its own root."),
+    "x_mspurity_scan.parent_scan_annotation_id_" = list(
+        disposition = "not_present_in_source",
+        reason = "Only MS3/MS4 scans have a parent among the assessed scans."),
+    "x_mspurity_scan.root_scan_annotation_id_" = list(
+        disposition = "not_present_in_source",
+        reason = "Only MS3/MS4 scans have a root among the assessed scans."),
+    "x_mspurity_scan.parent_status" = list(
+        disposition = "not_present_in_source",
+        reason = paste("The source holds no acquisition lineage: the SQLite",
+                       "schema has none, and older purityA objects did not",
+                       "record it.")),
+    "x_mspurity_scan.path_status" = list(
+        disposition = "not_present_in_source",
+        reason = paste("The source holds no acquisition lineage: the SQLite",
+                       "schema has none, and older purityA objects did not",
+                       "record it.")),
+    "x_mspurity_scan.parent_reference_type" = list(
+        disposition = "not_present_in_source",
+        reason = paste("The source holds no acquisition lineage: the SQLite",
+                       "schema has none, and older purityA objects did not",
+                       "record it.")),
+    "x_mspurity_scan.stage_purity" = list(
+        disposition = "not_present_in_source",
+        reason = paste("No MS3/MS4 stage purity was assessed; MS2 precursor",
+                       "purity is in in_purity.")),
+    "x_mspurity_scan.purity_status" = list(
+        disposition = "not_present_in_source",
+        reason = paste("The source records no purity assessment status: the",
+                       "SQLite schema has none, and older purityA objects",
+                       "did not record it.")),
+    "x_mspurity_scan.activation_type" = list(
+        disposition = "not_present_in_source",
+        reason = paste("Neither the source spectra nor their filter strings",
+                       "name an activation method.")),
+    "x_mspurity_scan.activation_type_basis" = list(
+        disposition = "not_present_in_source",
+        reason = paste("Neither the source spectra nor their filter strings",
+                       "name an activation method.")),
+    "x_mspurity_merge_peak.member_peak_rank" = list(
+        disposition = "not_present_in_source",
+        reason = paste("The averaging provenance does not record which",
+                       "peak of these inputs a peak came from.")),
+    "x_mspurity_scan.scan_filter_analyzer" = list(
+        disposition = "not_present_in_source",
+        reason = "The filter strings name no analyzer."))
 
 #' Convert a typed msPurity table set into a Parquet results dataset.
 #'
-#' @param live `NULL` for the SQLite route, or `list(pa, xcmsObj, metadata)`.
+#' @param live `NULL` for the SQLite route, or `list(pa, metadata, spool)`.
 #'
 #' @noRd
 .mzs_mspurity_convert <- function(src, path, study, studyKey, fileMap,
@@ -859,20 +1147,95 @@
                 "cannot be repaired automatically."),
             class = "msPurity_parquet_identity_warning"))
     }
-    scan_refs <- .mzs_scan_refs(files, scans)
+    ## The MS2 scans of the table set, then, from the live object, those
+    ## above MS2, which SQLite has no place for.
+    pa <- live$pa
+    scans$ms_level <- rep(2L, nrow(scans))
+    msn <- if (!is.null(pa)) .mzs_msn_scans(pa)
+    if (!is.null(msn)) {
+        msn$ms_level <- as.integer(Spectra::msLevel(pa@spectra)[
+            match(msn$pid, pa@spectra$pid)])
+        scans <- .mzs_rbind_fill(scans, msn)
+    }
+    ann <- if (!is.null(pa)) .mzs_scan_annotations(pa, scans$pid)
+    ## The input's own dataset keys are the study's when purityA() read the
+    ## study itself: the same dataset (by uid, or by path for one without),
+    ## with runs unchanged since (checked when the study was resolved).
+    read <- if (!is.null(pa)) .pa_study(pa)
+    same <- function(a, b) !is.null(a) && !is.null(b) && !is.na(a) &&
+        !is.na(b) && identical(a, b)
+    fast <- !is.null(read) && !is.null(study) && is.null(fileMap) &&
+        (same(read$uid, attr(files, "study_manifest")$uid) ||
+         (is.null(attr(files, "study_manifest")$uid) &&
+          identical(read$path, normalizePath(study, mustWork = FALSE))))
+    scan_refs <- .mzs_scan_refs(files, scans, ann, fast)
+    parents <- .mzs_parent_refs(files, scans, scan_refs, ann)
     av <- .mzs_derived_index(src, files, uid)
-    derived <- .mzs_derived_runs(src, av)
+    streamed <- !is.null(live)
+    if (streamed) {
+        x <- .mzs_live_derived(pa, src, av, files, uid, live$metadata, live$spool)
+        av <- x$av
+        derived <- x$derived
+        gk <- x$graph
+    } else {
+        av <- .mzs_av_combine(av, NULL, files)
+        derived <- .mzs_derived_runs(av, .mzs_av_peaks(src, av))
+        gk <- NULL
+    }
     members <- if (!is.null(live)) .mzs_members_from_pa(live$pa)
                else .mzs_members_from_db(src, scans)
-    mm <- .mzs_merge_member(src, av, members, scans, scan_refs)
-    st <- .mzs_scan_tables(src, scans, scan_refs)
-    ftabs <- .mzs_feature_tables(src, files)
-    sf <- .mzs_spectrum_feature(
-        src, scans, scan_refs, av, ftabs,
-        match_details = if (!is.null(live)) .mzs_match_details(live$pa))
+    if (streamed) {
+        member_parts <- .mzs_spool(live$spool, "merge_member")
+        incomplete <- 0L
+        .mzs_batches(nrow(av), .mzs_batch_size(TRUE), function(i) {
+            part <- .mzs_merge_member(src, av, members, scans, scan_refs, gk, i)
+            missing <- setdiff(av$spectrum_id_[i], part$table$merged_spectrum_id_)
+            if (length(missing))
+                .mzs_abort("semantic", "No source member for averaged spectrum ",
+                           av$native_id[match(missing[1L], av$spectrum_id_)], " (R-047).")
+            member_parts$add(part$table)
+            incomplete <<- incomplete + part$incomplete
+        })
+        mm <- list(table = member_parts$finish(), incomplete = incomplete)
+        spool <- .mzs_spool(live$spool, "merge_peak")
+        used <- which(gk$use)
+        unknown <- 0
+        .mzs_batches(length(used), .mzs_batch_size(TRUE), function(i) {
+            edges <- .mzs_merge_peak(av, gk, used[i])
+            unknown <<- unknown + sum(edges$basis == "unknown")
+            spool$add(edges)
+        })
+        merge_peak <- spool$finish()
+        if (!is.null(merge_peak)) merge_peak$unknown <- unknown
+        scan <- .mzs_map_table(live$spool, "scan", nrow(scans), function(i) {
+            batch <- .mzs_scan_tables(src, scans[i, , drop = FALSE], scan_refs[i, , drop = FALSE],
+                                      parents[i, , drop = FALSE], ann[i, , drop = FALSE])$scan
+            batch$scan_annotation_id_ <- i
+            batch
+        })
+        st <- list(scan = scan, peak = NULL, annotated = FALSE,
+                   raw_peaks = attr(src$s_peaks, "raw_scan_peaks") %||% 0L)
+        st <- .mzs_stream_scan_peaks(st, pa, scans, live$spool)
+    } else {
+        mm <- .mzs_merge_member(src, av, members, scans, scan_refs, gk)
+        merge_peak <- NULL
+        st <- .mzs_scan_tables(src, scans, scan_refs, parents, ann, pa)
+    }
+    ftabs <- .mzs_feature_tables(src, files, live$spool)
+    details <- if (!is.null(live)) .mzs_match_details(pa)
+    if (streamed) {
+        links <- .mzs_stream_feature_links(live$spool, src, scans, scan_refs, av, ftabs, details)
+        sf <- links$table
+    } else sf <- .mzs_spectrum_feature(src, scans, scan_refs, av, ftabs, details)
+    if (streamed) {
+        msn_links <- .mzs_stream_msn_feature(live$spool, pa, scans, ftabs)
+        msn_feature <- msn_links$table
+    } else msn_feature <- NULL
 
     tables <- c(ftabs$tables, list(spectrum_feature = sf,
                                    x_mspurity_scan = st$scan))
+    if (!is.null(msn_feature))
+        tables$x_mspurity_msn_feature <- msn_feature
     evd <- if (is.null(live)) .mzs_sqlite_evidence(src, files, av, scans,
                                                      scan_refs, ftabs)
     tables <- c(tables, evd$tables)
@@ -880,6 +1243,8 @@
         tables$x_mspurity_scan_peak <- st$peak
     if (!is.null(mm$table))
         tables$merge_member <- mm$table
+    if (!is.null(merge_peak))
+        tables$x_mspurity_merge_peak <- merge_peak
 
     tables$conversion <- .mzs_conversion_row(
         route = paste0("mspurity:", route),
@@ -890,47 +1255,82 @@
         source_uri = source_uri, checksum = checksum)
     tables$tool_provenance <- .mzs_tool_provenance(
         .mzs_mspurity_steps(src, live, version))
+    ## The processing records behind each step, when the object has them.
+    history <- if (!is.null(pa)) .mzs_history_json(pa) else list()
+    if (length(history) && !is.null(tables$tool_provenance))
+        tables$tool_provenance$x_mspurity_history <- vapply(
+            tables$tool_provenance$step_name, function(s)
+                history[[s]] %||% NA_character_, "", USE.NAMES = FALSE)
     tables$loss_ledger <- .mzs_loss_ledger(c(
         .mzs_mspurity_losses(src, live, st, mm$incomplete),
-        .mzs_feature_losses(src, ftabs, live),
+        .mzs_msn_losses(files, scans, pa),
+        .mzs_av_losses(av, gk, merge_peak, pa),
+        if (streamed) .mzs_feature_losses(src, ftabs, live, links$n)
+        else .mzs_feature_losses(src, ftabs, live),
         evd$losses,
         .mzs_null_column_losses(tables, .MZS_NULL_REASONS)))
-    tables$source_identifier <- .mzs_bind_source_ids(
-        .mzs_source_ids("spectra", av$spectrum_id_, "s_peak_meta", "pid",
-                        src$lexical$pid[match(av$pid, src$s_peak_meta$pid)],
-                        "positional"),
-        .mzs_source_ids("x_mspurity_scan", st$scan$scan_annotation_id_,
+    if (streamed)
+        tables$loss_ledger <- .mzs_absent_ledger(pa, tables$loss_ledger, live$spool)
+    named_av <- which(av$configured %in% TRUE | av$pid < 0)
+    ids <- if (streamed) .mzs_source_id_stream(live$spool)
+    add_ids <- if (streamed) ids$add else .mzs_source_ids
+    bind_ids <- if (streamed) ids$finish else .mzs_bind_source_ids
+    tables$source_identifier <- bind_ids(
+        add_ids("spectra", av$spectrum_id_[av$pid > 0],
                         "s_peak_meta", "pid",
-                        src$lexical$pid[match(scans$pid,
+                        src$lexical$pid[match(av$pid[av$pid > 0],
                                               src$s_peak_meta$pid)],
                         "positional"),
-        .mzs_source_ids("feature", ftabs$tables$feature$feature_id_,
+        if (length(named_av))
+            add_ids("spectra",
+                            av$spectrum_id_[named_av],
+                            "avSpectra", "spectrumId",
+                            av$spectrum_key[named_av],
+                            "name"),
+        add_ids("x_mspurity_scan",
+                        seq_len(nrow(scans))[scans$ms_level == 2L],
+                        "s_peak_meta", "pid",
+                        src$lexical$pid[match(scans$pid[scans$ms_level == 2L],
+                                              src$s_peak_meta$pid)],
+                        "positional"),
+        add_ids("x_mspurity_scan",
+                        seq_len(nrow(scans))[scans$ms_level > 2L],
+                        "spectra", "pid",
+                        scans$pid[scans$ms_level > 2L], "positional"),
+        if (streamed && !is.null(msn_feature))
+            add_ids("x_mspurity_msn_feature", seq_along(msn_links$pid),
+                    "grped_df", "pid", msn_links$pid, "positional"),
+        add_ids("feature", seq_len(nrow(ftabs$groups)),
                         "c_peak_groups", "grpid",
                         src$lexical$grpid[match(ftabs$groups$grpid,
                                                 src$c_peak_groups$grpid)],
                         "positional"),
-        .mzs_source_ids("feature", ftabs$tables$feature$feature_id_,
+        add_ids("feature", seq_len(nrow(ftabs$groups)),
                         "c_peak_groups", "grp_name", ftabs$groups$grp_name,
                         "name"),
-        .mzs_source_ids("chromatographic_peak",
-                        ftabs$tables$chromatographic_peak$chromatographic_peak_id_,
+        add_ids("chromatographic_peak",
+                        seq_len(nrow(ftabs$peaks)),
                         "c_peaks", "cid",
                         src$lexical$cid[match(ftabs$peaks$cid,
                                               src$c_peaks$cid)],
                         "positional"),
-        .mzs_source_ids("assay", seq_len(nrow(files)), "fileinfo", "fileid",
+        add_ids("assay", seq_len(nrow(files)), "fileinfo", "fileid",
                         src$lexical$fileid[match(files$fileid,
                                                  src$fileinfo$fileid)],
                         "positional"),
-        .mzs_source_ids("assay", seq_len(nrow(files)), "fileinfo", "filepth",
+        add_ids("assay", seq_len(nrow(files)), "fileinfo", "filepth",
                         files$filepth, "path"),
-        .mzs_source_ids("assay", seq_len(nrow(files)), "fileinfo", "nm_save",
+        add_ids("assay", seq_len(nrow(files)), "fileinfo", "nm_save",
                         src$fileinfo$nm_save[match(files$fileid,
                                                    src$fileinfo$fileid)],
                         "name"),
-        .mzs_source_ids("sample", seq_len(nrow(files)), "fileinfo",
+        add_ids("sample", seq_len(nrow(files)), "fileinfo",
                         "filename", files$filename, "name"),
-        .mzs_source_ids("spectrum_feature",
+        if (streamed) {
+            if (!is.null(links$ids)) links$ids$visit(function(batch)
+                add_ids("spectrum_feature", batch$id, links$source, links$column,
+                        batch$source, "positional"))
+        } else add_ids("spectrum_feature",
                         sf$association_id_[seq_along(attr(sf, "link_id"))],
                         attr(sf, "link_table"), attr(sf, "link_column"),
                         attr(sf, "link_id"), "positional"),
@@ -940,7 +1340,8 @@
         uid = uid, role = "results",
         runs = derived$runs,
         run_types = c(.MZS_AV_META_TYPES, x_mspurity_instrument = "str",
-                      x_mspurity_instrument_type = "str"),
+                      x_mspurity_instrument_type = "str",
+                      .MZS_AV_CONFIGURED_TYPES),
         results_runs = derived$results_runs,
         peak_columns = derived$peak_columns,
         tables = tables,
@@ -955,7 +1356,9 @@
                 route = paste0("mspurity:", route),
                 fileMap = if (length(fileMap)) as.list(fileMap),
                 pass_criteria = .MZS_PASS_CRITERIA,
-                precursor_definition = .MZS_PRECURSOR_DEFINITION))))
+                precursor_definition = .MZS_PRECURSOR_DEFINITION,
+                precursor_definition_param = if (any(av$configured %in% TRUE))
+                    .MZS_PRECURSOR_DEFINITION_PARAM))))
     .mzs_commit_new(path, plan, overwrite)
     invisible(path)
 }
@@ -981,25 +1384,18 @@
                                                 "%Y-%m-%d-%H%M%S"),
                          ".parquet")
     path <- file.path(outDir, dbName)
-    if (!is.null(study))
-        study <- normalizePath(study, mustWork = TRUE)
+    study <- .pa_study_resolve(pa, study)
     .mzs_check_destination(path, overwrite, study)
 
-    tmp <- tempfile("mzs-createDatabase-")
-    dir.create(tmp)
-    on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
-    db <- .createDatabase_sqlite(pa = pa, xcmsObj = xcmsObj, xsa = NULL,
-                                 outDir = tmp, grpPeaklist = NA,
-                                 dbName = "staging.sqlite",
-                                 metadata = metadata, xset = xset)
-    if (is.null(db))
-        .mzs_abort("semantic", "createDatabase() could not match the files ",
-                   "of 'pa' and 'xcmsObj'.")
-    src <- .mzs_read_sqlite(db)
+    spool <- tempfile("mzs-export-")
+    dir.create(spool)
+    on.exit(unlink(spool, recursive = TRUE), add = TRUE)
+    if (!is.na(xset)) xcmsObj <- xset
+    src <- .mzs_live_source(pa, xcmsObj, metadata)
     message("Writing the Parquet dataset '", path, "'")
     .mzs_mspurity_convert(
         src, path, study, studyKey, fileMap, overwrite, route = "live-object",
-        live = list(pa = pa, xcmsObj = xcmsObj, metadata = metadata),
+        live = list(pa = pa, metadata = metadata, spool = spool),
         fn = "createDatabase", started = started, inputs = list(),
         parameters = list(), source_uri = NA_character_)
     invisible(normalizePath(path))
@@ -1009,17 +1405,20 @@
 #'
 #' @noRd
 .mzs_match_details <- function(pa) {
-    g <- pa@grped_df
+    g <- .pa_ms2_view(pa)@grped_df
     need <- c("pid", "grpid", "precurMtchMZ", "precurMtchPPM", "precurMtchRT")
     if (!nrow(g) || !all(need %in% names(g)))
         return(NULL)
-    data.frame(pid = as.integer(g$pid),
+    out <- data.frame(pid = as.integer(g$pid),
                cid = if ("cid" %in% names(g)) as.integer(g$cid)
                      else NA_integer_,
                grpid = as.integer(as.character(g$grpid)),
                precurMtchMZ = as.numeric(g$precurMtchMZ),
                precurMtchPPM = as.numeric(g$precurMtchPPM),
                precurMtchRT = as.numeric(g$precurMtchRT))
+    for (c in intersect(names(.MZS_LINK_DETAILS), names(g)))
+        out[[c]] <- g[[c]]
+    out
 }
 
 #' Spectral-matching results in a database: evidence, scores, compounds and

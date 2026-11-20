@@ -59,6 +59,51 @@
         "library_entry_name", "inchikey", "library_source_name",
         "library_compound_name"))
 
+#' Refuse a table set the converter cannot map.
+#'
+#' @param have names of the tables present.
+#'
+#' @param where how to name the source in messages.
+#'
+#' @noRd
+.mzs_check_src_tables <- function(have, where) {
+    miss <- setdiff(.MZS_SQLITE_REQUIRED, have)
+    if (length(miss))
+        .mzs_abort("format", where, " is not a database written by ",
+                   "msPurity's createDatabase(): it has no table(s) ",
+                   paste(miss, collapse = ", "), ".")
+    if (!any(c("c_peak_X_s_peak_meta", "c_peak_group_X_s_peak_meta") %in%
+             have))
+        .mzs_abort("format", where, " links no MS2 spectrum to a ",
+                   "feature: it has neither c_peak_X_s_peak_meta nor ",
+                   "c_peak_group_X_s_peak_meta.")
+    refused <- intersect(have, .MZS_SQLITE_REFUSED)
+    unknown <- setdiff(have, c(.MZS_SQLITE_REQUIRED, .MZS_SQLITE_OPTIONAL,
+                               .MZS_SQLITE_REFUSED))
+    if (length(refused) || length(unknown))
+        .mzs_abort("unsupported", where, " holds table(s) this converter ",
+                   "does not map: ", paste(c(refused, unknown),
+                                          collapse = ", "),
+                   ". Refusing to convert the rest silently (R-081).",
+                   data = list(constructs = c(refused, unknown)))
+    invisible(TRUE)
+}
+
+#' Refuse columns of fixed-schema tables the converter does not map.
+#'
+#' @noRd
+.mzs_check_src_columns <- function(src, where) {
+    for (t in intersect(names(.MZS_SQLITE_COLUMNS), names(src))) {
+        bad <- setdiff(names(src[[t]]), .MZS_SQLITE_COLUMNS[[t]])
+        if (length(bad))
+            .mzs_abort("unsupported", "Table ", t, " of ", where, " has ",
+                       "column(s) this converter does not map: ",
+                       paste(bad, collapse = ", "), " (R-081).",
+                       data = list(constructs = paste0(t, ".", bad)))
+    }
+    invisible(TRUE)
+}
+
 #' Read the tables of an msPurity database, typed.
 #'
 #' @return list of data.frames by table name, plus `lexical` (source text
@@ -68,38 +113,14 @@
 .mzs_read_sqlite <- function(db) {
     con <- DBI::dbConnect(RSQLite::SQLite(), db, flags = RSQLite::SQLITE_RO)
     on.exit(DBI::dbDisconnect(con))
+    where <- paste0("'", db, "'")
     have <- DBI::dbListTables(con)
-    miss <- setdiff(.MZS_SQLITE_REQUIRED, have)
-    if (length(miss))
-        .mzs_abort("format", "'", db, "' is not a database written by ",
-                   "msPurity's createDatabase(): it has no table(s) ",
-                   paste(miss, collapse = ", "), ".")
-    if (!any(c("c_peak_X_s_peak_meta", "c_peak_group_X_s_peak_meta") %in%
-             have))
-        .mzs_abort("format", "'", db, "' links no MS2 spectrum to a ",
-                   "feature: it has neither c_peak_X_s_peak_meta nor ",
-                   "c_peak_group_X_s_peak_meta.")
-    refused <- intersect(have, .MZS_SQLITE_REFUSED)
-    unknown <- setdiff(have, c(.MZS_SQLITE_REQUIRED, .MZS_SQLITE_OPTIONAL,
-                               .MZS_SQLITE_REFUSED))
-    if (length(refused) || length(unknown))
-        .mzs_abort("unsupported", "'", db, "' holds table(s) this converter ",
-                   "does not map: ", paste(c(refused, unknown),
-                                          collapse = ", "),
-                   ". Refusing to convert the rest silently (R-081).",
-                   data = list(constructs = c(refused, unknown)))
+    .mzs_check_src_tables(have, where)
     rd <- function(t) if (t %in% have) suppressWarnings(DBI::dbGetQuery(
         con, sprintf('SELECT * FROM "%s" ORDER BY rowid', t)))
     tabs <- intersect(c(.MZS_SQLITE_REQUIRED, .MZS_SQLITE_OPTIONAL), have)
     src <- lapply(stats::setNames(tabs, tabs), rd)
-    for (t in intersect(names(.MZS_SQLITE_COLUMNS), tabs)) {
-        bad <- setdiff(names(src[[t]]), .MZS_SQLITE_COLUMNS[[t]])
-        if (length(bad))
-            .mzs_abort("unsupported", "Table ", t, " of '", db, "' has ",
-                       "column(s) this converter does not map: ",
-                       paste(bad, collapse = ", "), " (R-081).",
-                       data = list(constructs = paste0(t, ".", bad)))
-    }
+    .mzs_check_src_columns(src, where)
 
     lex <- function(t, c) if (t %in% have && c %in% names(src[[t]]))
         DBI::dbGetQuery(con, sprintf(
@@ -113,7 +134,78 @@
         mid = lex("sm_matches", "mid"),
         inchikey_id = lex("metab_compound", "inchikey_id"))
     src$tables <- have
+    .mzs_type_src(src)
+}
 
+#' One prepared table as SQLite stores it and RSQLite reads it back.
+#'
+#' @noRd
+.mzs_sqlite_stored <- function(t) {
+    df <- .db_frame(t$df, t$pk, t$fks)
+    keys <- c(t$pk, if (!anyNA(t$fks)) names(t$fks))
+    for (c in names(df)) {
+        v <- df[[c]]
+        if (is.factor(v)) v <- as.character(v)
+        type <- if (c == t$pk) t$pk_type
+                else if (c %in% keys) "INTEGER"
+                else real_or_rest(df[1L, c])
+        df[[c]] <- switch(type,
+            INTEGER = .mzs_sqlite_integer(v),
+            REAL = .mzs_sqlite_real(v),
+            .mzs_sqlite_text(v))
+    }
+    if (identical(t$pk_type, "INTEGER") && nrow(df))
+        df <- df[order(df[[t$pk]]), , drop = FALSE]
+    rownames(df) <- NULL
+    df
+}
+
+#' Values in a column of INTEGER affinity, as RSQLite reads them: whole
+#' numbers as integers, anything else unchanged in a double column.
+#'
+#' @noRd
+.mzs_sqlite_integer <- function(v) {
+    if (is.logical(v)) return(as.integer(v))
+    if (is.character(v)) v <- suppressWarnings(as.numeric(v))
+    w <- !is.na(v)
+    if (all(v[w] == round(v[w])) && all(abs(v[w]) <= .Machine$integer.max))
+        as.integer(v) else as.numeric(v)
+}
+
+#' Values in a column of REAL affinity, as RSQLite reads them.
+#'
+#' @noRd
+.mzs_sqlite_real <- function(v) {
+    if (is.character(v)) return(suppressWarnings(as.numeric(v)))
+    as.numeric(v)
+}
+
+#' Values in a column of TEXT affinity: numbers become their SQLite text,
+#' a real with 15 significant digits and always a decimal point.
+#'
+#' @noRd
+.mzs_sqlite_text <- function(v) {
+    if (is.character(v)) return(v)
+    if (is.logical(v)) v <- as.integer(v)
+    out <- rep(NA_character_, length(v))
+    w <- !is.na(v)
+    if (is.integer(v)) {
+        out[w] <- as.character(v[w])
+        return(out)
+    }
+    x <- sprintf("%.15g", v[w])
+    plain <- !grepl("[.eEn]", x)
+    x[plain] <- paste0(x[plain], ".0")
+    sci <- grepl("e", x) & !grepl("\\.", x)
+    x[sci] <- sub("e", ".0e", x[sci])
+    out[w] <- x
+    out
+}
+
+#' Cast the columns of a table set read from msPurity's SQLite schema.
+#'
+#' @noRd
+.mzs_type_src <- function(src) {
     int <- function(x) as.integer(round(suppressWarnings(as.numeric(x))))
     num <- function(x) suppressWarnings(as.numeric(x))
     flag <- function(x) {
@@ -207,8 +299,11 @@
 #' database is not modified.
 #'
 #' MS2 scans are referenced, not copied. With `study`, each scan resolves to
-#' its spectrum in that dataset; otherwise each source file is an external
-#' source and scans are identified by mzML native id.
+#' its spectrum in that dataset, matched by scan number from the study's own
+#' metadata, and its parent to the study's MS1 scan; otherwise each source
+#' file is an external source and scans are identified by mzML native id. The
+#' database holds no MS3/MS4 results or acquisition lineage, which only
+#' [createDatabase()] writes from a purityA object.
 #'
 #' Historical raw peak identities are resolved from file and spectrum position.
 #' A warning reports stored identities that disagree with that mapping.
@@ -457,7 +552,7 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
         c("grpid", "cid", "idi", "bestpeak"), c("grpid", "cid", "idi",
                                                "bestpeak"))
 
-    sc <- tab("x_mspurity_scan")
+    sc <- .mzs_ms2_scans(tab("x_mspurity_scan"))
     scan_pid <- num(src_id("x_mspurity_scan", "pid", sc$scan_annotation_id_))
     sm <- data.frame(pid = scan_pid, fileid = fileid_of_run(sc$ms2_run_id),
                      seqNum = sc$x_mspurity_seq_num)
@@ -491,6 +586,11 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
             next
         method <- rr[[r$run_id]]$method
         pid <- num(src_id("spectra", "pid", sp$spectrum_id_))
+        ## Averages computed with AverageFragSpectraParam have no SQLite row.
+        sp <- sp[!is.na(pid), , drop = FALSE]
+        pid <- pid[!is.na(pid)]
+        if (!nrow(sp))
+            next
         grpid <- grpid_of(self$feature_id_[match(sp$spectrum_id_,
                                                  self$ms2_spectrum_id_)])
         fid <- if (method == "intra")
@@ -542,6 +642,8 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
     scp <- NULL
     if (!is.null(m$results$tables$x_mspurity_scan_peak)) {
         s <- tab("x_mspurity_scan_peak")
+        s <- s[s$scan_annotation_id_ %in% sc$scan_annotation_id_, ,
+               drop = FALSE]
         scp <- data.frame(
             pid = scan_pid[match(s$scan_annotation_id_,
                                  sc$scan_annotation_id_)],

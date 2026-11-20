@@ -40,65 +40,87 @@
 #' samples.
 #'
 #' @noRd
-.mzs_feature_tables <- function(src, files) {
+.mzs_feature_tables <- function(src, files, dir = NULL) {
     cp <- src$c_peaks[order(src$c_peaks$cid), , drop = FALSE]
     run_of <- files$run_id[match(cp$fileid, files$fileid)]
     if (anyNA(run_of))
         .mzs_abort("semantic", "c_peaks names file(s) absent from fileinfo.")
     within <- stats::ave(seq_len(nrow(cp)), cp$fileid, FUN = seq_along)
-    peak <- data.frame(
-        chromatographic_peak_id_ = seq_len(nrow(cp)),
-        run_id = run_of,
-        peak_index_in_run = as.integer(within),
-        exp_mass_to_charge = cp$mz,
-        mass_to_charge_min = cp$mzmin,
-        mass_to_charge_max = cp$mzmax,
-        retention_time_in_seconds = cp$rt,
-        retention_time_in_seconds_start = cp$rtmin,
-        retention_time_in_seconds_end = cp$rtmax,
-        signal_to_noise = if ("sn" %in% names(cp)) cp$sn else NA_real_,
-        stringsAsFactors = FALSE)
-    ## Remaining peak picker columns (into, intb, maxo, ...) pass through.
-    for (c in setdiff(names(cp), c("cid", "mz", "mzmin", "mzmax", "rt",
-                                   "rtmin", "rtmax", "fileid", "sn")))
-        peak[[.mzs_passthrough(c)]] <- cp[[c]]
-    if ("sn" %in% names(cp))
-        peak$x_mspurity_sn <- cp$sn
+    peak <- .mzs_map_table(dir, "chromatographic_peak", nrow(cp), function(i) {
+        cp <- if (is.null(src$peak_slice)) cp[i, , drop = FALSE] else src$peak_slice(i)
+        peak <- data.frame(
+            chromatographic_peak_id_ = i,
+            run_id = run_of[i],
+            peak_index_in_run = as.integer(within[i]),
+            exp_mass_to_charge = cp$mz,
+            mass_to_charge_min = cp$mzmin,
+            mass_to_charge_max = cp$mzmax,
+            retention_time_in_seconds = cp$rt,
+            retention_time_in_seconds_start = cp$rtmin,
+            retention_time_in_seconds_end = cp$rtmax,
+            signal_to_noise = if ("sn" %in% names(cp)) cp$sn else NA_real_,
+            stringsAsFactors = FALSE)
+        ## Remaining peak picker columns (into, intb, maxo, ...) pass through.
+        for (c in setdiff(names(cp), c("cid", "mz", "mzmin", "mzmax", "rt",
+                                       "rtmin", "rtmax", "fileid", "sn")))
+            peak[[.mzs_passthrough(c)]] <- cp[[c]]
+        if ("sn" %in% names(cp))
+            peak$x_mspurity_sn <- cp$sn
+        peak
+    })
 
     grp <- src$c_peak_groups[order(src$c_peak_groups$grpid), , drop = FALSE]
-    feature <- data.frame(
-        feature_id_ = seq_len(nrow(grp)),
-        exp_mass_to_charge = grp$mz,
-        mass_to_charge_min = grp$mzmin,
-        mass_to_charge_max = grp$mzmax,
-        retention_time_in_seconds = grp$rt,
-        retention_time_in_seconds_start = grp$rtmin,
-        retention_time_in_seconds_end = grp$rtmax,
-        n_chromatographic_peaks = as.integer(round(grp$npeaks)),
-        feature_name = grp$grp_name,
-        stringsAsFactors = FALSE)
-    if ("ms_level" %in% names(grp))
-        feature$x_mspurity_ms_level <- suppressWarnings(
-            as.integer(grp$ms_level))
+    feature <- .mzs_map_table(dir, "feature", nrow(grp), function(i) {
+        grp <- grp[i, , drop = FALSE]
+        feature <- data.frame(
+            feature_id_ = i,
+            exp_mass_to_charge = grp$mz,
+            mass_to_charge_min = grp$mzmin,
+            mass_to_charge_max = grp$mzmax,
+            retention_time_in_seconds = grp$rt,
+            retention_time_in_seconds_start = grp$rtmin,
+            retention_time_in_seconds_end = grp$rtmax,
+            n_chromatographic_peaks = as.integer(round(grp$npeaks)),
+            feature_name = grp$grp_name,
+            stringsAsFactors = FALSE)
+        if ("ms_level" %in% names(grp))
+            feature$x_mspurity_ms_level <- suppressWarnings(
+                as.integer(grp$ms_level))
+        feature
+    })
 
     x <- src$c_peak_X_c_peak_group
-    cpf <- data.frame(
-        chromatographic_peak_id_ = match(x$cid, cp$cid),
-        feature_id_ = match(x$grpid, grp$grpid),
-        is_representative = x$bestpeak %in% 1L,
-        x_mspurity_idi = x$idi)
-    if (anyNA(cpf$chromatographic_peak_id_) || anyNA(cpf$feature_id_))
-        .mzs_abort("semantic", "c_peak_X_c_peak_group names peaks or ",
-                   "features absent from c_peaks or c_peak_groups.")
-    cpf$peak_index_in_run <- peak$peak_index_in_run[
-        cpf$chromatographic_peak_id_]
+    cpf <- .mzs_map_table(dir, "chromatographic_peak_feature", nrow(x), function(i) {
+        x <- x[i, , drop = FALSE]
+        cpf <- data.frame(
+            chromatographic_peak_id_ = match(x$cid, cp$cid),
+            feature_id_ = match(x$grpid, grp$grpid),
+            is_representative = x$bestpeak %in% 1L,
+            x_mspurity_idi = x$idi)
+        if (anyNA(cpf$chromatographic_peak_id_) || anyNA(cpf$feature_id_))
+            .mzs_abort("semantic", "c_peak_X_c_peak_group names peaks or ",
+                       "features absent from c_peaks or c_peak_groups.")
+        cpf$peak_index_in_run <- within[
+            cpf$chromatographic_peak_id_]
+        cpf
+    })
 
-    sc <- .mzs_sample_columns(grp, nrow(files))
-    abundance <- do.call(rbind, lapply(seq_along(sc$samples), function(j)
-        data.frame(feature_id_ = feature$feature_id_, assay_id_ = j,
-                   quantity_kind = "integrated_area",
-                   value = suppressWarnings(as.numeric(grp[[sc$samples[j]]])),
-                   value_source = "medret", stringsAsFactors = FALSE)))
+    sc <- src$sample_columns %||% .mzs_sample_columns(grp, nrow(files))
+    n_samples <- length(sc$samples)
+    abundance <- .mzs_map_table(dir, "abundance", nrow(grp) * as.double(n_samples),
+        function(i) {
+            feature <- as.integer((i - 1) %/% n_samples + 1)
+            assay <- as.integer((i - 1) %% n_samples + 1)
+            value <- numeric(length(i))
+            if (!is.null(src$abundance)) value <- src$abundance(feature, assay)
+            else for (j in unique(assay)) {
+                at <- which(assay == j)
+                value[at] <- suppressWarnings(as.numeric(grp[[sc$samples[j]]][feature[at]]))
+            }
+            data.frame(feature_id_ = feature, assay_id_ = assay,
+                quantity_kind = rep("integrated_area", length(i)), value = value,
+                value_source = rep("medret", length(i)), stringsAsFactors = FALSE)
+        })
 
     assay <- data.frame(assay_id_ = seq_len(nrow(files)),
                         assay_name = files$filename,
@@ -137,8 +159,7 @@
 #'
 #' @noRd
 .mzs_spectrum_feature <- function(src, scans, scan_refs, av, ftabs,
-                                  match_details = NULL) {
-    link <- .mzs_scan_links(src)
+                                  match_details = NULL, link = .mzs_scan_links(src)) {
     s <- match(link$pid, scans$pid)
     grp_ids <- ftabs$groups$grpid
     by_peak <- !all(is.na(link$cid))
@@ -158,7 +179,7 @@
         x_mspurity_scan_number = scans$acquisitionNum[s],
         stringsAsFactors = FALSE)
     ## The link's row id in the source database.
-    link_id <- if (by_peak)
+    link_id <- if (!is.null(link$link_id)) link$link_id else if (by_peak)
         src$c_peak_X_s_peak_meta$cXp_id[match(
             paste(link$pid, link$cid),
             paste(src$c_peak_X_s_peak_meta$pid,
@@ -182,22 +203,20 @@
         sf$x_mspurity_precursor_mz_error_exact <- NA_real_
         sf$x_mspurity_precursor_mz_error_exact[have] <-
             match_details$precurMtchPPM[k[have]]
+        ## How frag4feature() mapped each link's retention time.
+        for (c in intersect(names(.MZS_LINK_DETAILS), names(match_details))) {
+            v <- match_details[[c]]
+            out <- if (is.numeric(v)) rep(NA_real_, nrow(sf))
+                   else rep(NA_character_, nrow(sf))
+            out[have] <- v[k[have]]
+            sf[[paste0("x_mspurity_", .MZS_LINK_DETAILS[[c]])]] <- out
+        }
     }
     if (any(is.na(sf$feature_id_)))
         .mzs_abort("semantic", "An MS2 link names a feature absent from ",
                    "c_peak_groups.")
     if (nrow(av)) {
-        self <- data.frame(
-            ms2_source = "self", ms2_run_id = av$run_id,
-            ms2_spectrum_id_ = av$spectrum_id_, ms2_native_id = av$native_id,
-            feature_id_ = match(av$grpid, grp_ids),
-            chromatographic_peak_id_ = NA_integer_,
-            link_mode = "manual", run_scoped = av$method == "intra",
-            precursor_mz_used = av$precursor_mz,
-            precursor_mz_error = NA_real_,
-            precursor_retention_time = av$retention_time,
-            precursor_purity = av$inPurity,
-            stringsAsFactors = FALSE)
+        self <- .mzs_average_links(av, grp_ids)
         sf <- .mzs_rbind_fill(sf, self)
     }
     sf$association_id_ <- seq_len(nrow(sf))
@@ -206,4 +225,70 @@
     attr(sf, "link_table") <- if (by_peak) "c_peak_X_s_peak_meta"
                               else "c_peak_group_X_s_peak_meta"
     sf
+}
+
+.mzs_average_links <- function(av, grp_ids) {
+    data.frame(
+            ms2_source = "self", ms2_run_id = av$run_id,
+            ms2_spectrum_id_ = av$spectrum_id_, ms2_native_id = av$native_id,
+            feature_id_ = match(av$grpid, grp_ids),
+            chromatographic_peak_id_ = NA_integer_,
+            link_mode = "manual", run_scoped = av$method == "intra",
+            precursor_mz_used = if (is.null(av$link_precursor_mz))
+                av$precursor_mz else av$link_precursor_mz,
+            precursor_mz_error = NA_real_,
+            precursor_retention_time = av$retention_time,
+            precursor_purity = av$inPurity,
+            stringsAsFactors = FALSE)
+}
+
+# A peak may belong to several features. Allocate association IDs in the
+# order of the complete join, even when its rows span multiple batches.
+.mzs_stream_feature_links <- function(dir, src, scans, refs, av, ftabs, details) {
+    spool <- .mzs_spool(dir, "spectrum_feature")
+    identifiers <- .mzs_spool(dir, "link_ids")
+    by_peak <- !is.null(src$c_peak_X_s_peak_meta)
+    table <- if (by_peak) "c_peak_X_s_peak_meta" else "c_peak_group_X_s_peak_meta"
+    column <- if (by_peak) "cXp_id" else "gXp_id"
+    n <- 0
+    visit <- function(link) {
+        batch <- .mzs_spectrum_feature(src, scans, refs, av[FALSE, , drop = FALSE],
+                                       ftabs, details, link)
+        batch$association_id_ <- n + seq_len(nrow(batch))
+        identifiers$add(data.frame(id = batch$association_id_, source = link$link_id))
+        spool$add(batch)
+        n <<- n + nrow(batch)
+    }
+    if (by_peak) {
+        # Register only the source key columns. DuckDB can spill the join
+        # and sort when one measured scan yields many associations.
+        db <- DBI::dbConnect(duckdb::duckdb(), dbdir = file.path(dir, "links.duckdb"),
+                             config = list(threads = "1", memory_limit = "128MB"))
+        on.exit(DBI::dbDisconnect(db, shutdown = TRUE))
+        duckdb::duckdb_register(db, "scan_link", src[[table]])
+        duckdb::duckdb_register(db, "peak_group", src$c_peak_X_c_peak_group[c("cid", "grpid")])
+        rs <- DBI::dbSendQuery(db, "SELECT pid, cid, grpid, cXp_id AS link_id
+            FROM scan_link JOIN peak_group USING (cid) ORDER BY pid, cid, grpid")
+        tryCatch(repeat {
+            link <- DBI::dbFetch(rs, n = .mzs_batch_size())
+            if (!nrow(link)) break
+            visit(link)
+        }, finally = DBI::dbClearResult(rs))
+    } else {
+        x <- src[[table]]
+        .mzs_batches(nrow(x), .mzs_batch_size(), function(i) {
+            link <- x[i, , drop = FALSE]
+            link$cid <- NA_integer_
+            link$link_id <- link[[column]]
+            visit(link)
+        })
+    }
+    measured <- n
+    .mzs_batches(nrow(av), .mzs_batch_size(), function(i) {
+        batch <- .mzs_average_links(av[i, , drop = FALSE], ftabs$groups$grpid)
+        batch$association_id_ <- measured + i
+        spool$add(batch)
+    })
+    list(table = spool$finish(), ids = identifiers$finish(), source = table,
+         column = column, n = measured)
 }

@@ -1,8 +1,8 @@
 # Writing Parquet datasets: native runs, results tables, the results index
 # and the manifest.
 #
-# Native runs and the manifest are written with MsBackendParquet; results
-# tables and the results index by msPurity. A new dataset is built and
+# Native runs and result tables are written with Arrow. MsBackendParquet
+# provides the manifest. A new dataset is built and
 # validated in a staging directory beside its destination, then moved into
 # place. The manifest is written last, so an interrupted write never looks
 # like a dataset. Updates add new Parquet parts or a new table revision,
@@ -24,7 +24,7 @@
 #'     passthrough columns, rows in the declared sort order.
 #'
 #' @noRd
-.mzs_prepare_table <- function(name, df, activity) {
+.mzs_prepare_table <- function(name, df, activity, preserve = character()) {
     s <- .mzs_table_schema(name)
     cols <- s$columns
     df <- as.data.frame(df, stringsAsFactors = FALSE, optional = TRUE)
@@ -37,6 +37,7 @@
         v <- df[[c]]
         !is.list(v) && all(is.na(v) & !is.nan(v))
     }, logical(1))]
+    empty <- setdiff(empty, preserve)
     if (n && length(empty)) {
         df <- df[, setdiff(names(df), empty), drop = FALSE]
         extra <- setdiff(extra, empty)
@@ -118,10 +119,10 @@
 #' @return the paths of the parts written, relative to `dir`.
 #'
 #' @noRd
-.mzs_write_parts <- function(dir, root, name, df, generation) {
+.mzs_write_parts <- function(dir, root, name, df, generation, ordinal = NULL) {
     s <- .mzs_table_schema(name)
     part <- sprintf("part-g%06d-%s.parquet", as.integer(generation),
-                    .mzs_rand())
+                    if (is.null(ordinal)) .mzs_rand() else sprintf("%010d", ordinal))
     groups <- if (length(s$partitioning) && nrow(df)) {
         key <- s$partitioning
         v <- as.character(df[[key]])
@@ -176,8 +177,8 @@
 
 #' Write native runs of derived or library spectra.
 #'
-#' The runs are written by `MsBackendParquet::createMsBackendParquetDataset()`
-#' into `dir`, which then holds a dataset of those runs at generation 1.
+#' Each batch is a Parquet part under the run directory. The manifest
+#' registers the completed runs at generation 1.
 #' Spectrum ids run from 1 in run order. A run with no spectra is not
 #' written.
 #'
@@ -206,27 +207,71 @@
         .mzs_abort("format", "Run ids must not begin with '.' or '_', and ",
                    "must differ other than by case: ",
                    paste(ids, collapse = ", "), ".")
-    n <- vapply(runs, function(r) nrow(r$meta), integer(1))
-    meta <- do.call(.mzs_rbind_fill, lapply(runs, function(r) r$meta))
-    for (c in names(meta))
-        if (!is.na(types[c]))
-            meta[[c]] <- .mzs_as_r_type(meta[[c]], types[[c]])
-    df <- S4Vectors::DataFrame(.mzs_spectra_vars(meta), check.names = FALSE)
-    df$run_id <- rep(ids, n)
-    for (p in unique(unlist(lapply(runs, function(r) names(r$peaks))))) {
-        el <- NULL
-        v <- unlist(lapply(runs, function(r) {
-            x <- r$peaks[[p]]
-            if (is.null(x))
-                return(vector("list", nrow(r$meta)))
-            el <<- el %||% attr(x, "type")
-            unclass(x)
-        }), recursive = FALSE)
-        el <- el %||% "f64"
-        df[[p]] <- lapply(v, function(e)
-            if (is.null(e)) NULL else .mzs_as_r_type(e, el))
+    # Keep the storage vocabulary and column order of the backend DataFrame
+    # writer. Decide which nullable core columns to emit across all runs.
+    fields <- unique(unlist(lapply(runs, function(r) names(r$meta))))
+    core <- c("ms_level", "rtime", "scan_polarity", "spectrum_representation",
+              "id", "acquisition_num_", "selected_ion_mz", "collision_energy",
+              "data_origin")
+    core <- intersect(core, fields)
+    core <- core[vapply(core, function(nm)
+        any(vapply(runs, function(r) any(!is.na(r$meta[[nm]])), logical(1))),
+        logical(1))]
+    extra <- setdiff(fields, c(names(.MZS_SPECTRA_VARS), "rtime"))
+    m <- MsBackendParquet::newManifest()
+    base <- 1L
+    for (run in runs) {
+        n <- nrow(run$meta)
+        rel <- file.path("spectra", paste0("run_id=", run$run_id))
+        dest <- file.path(dir, rel)
+        dir.create(dest, recursive = TRUE, showWarnings = FALSE)
+        .mzs_batches(n, .mzs_batch_size(TRUE), function(i) {
+            meta <- run$meta[i, , drop = FALSE]
+            arr <- list()
+            for (nm in c(extra, "spectrum_id_", core)) {
+                if (nm == "spectrum_id_") {
+                    arr[[nm]] <- arrow::Array$create(base + i - 1L)
+                } else {
+                    v <- meta[[nm]] %||% rep(NA, length(i))
+                    if (nm == "rtime") v <- v / 60
+                    col <- if (nm == "rtime") "time" else nm
+                    code <- types[[nm]]
+                    arr[[col]] <- arrow::Array$create(.mzs_as_r_type(v, code),
+                                                     type = .mzs_arrow_type(code))
+                }
+            }
+            arr$spectrum_index <- arrow::Array$create(i - 1L, type = arrow::int64())
+            pk <- if (is.function(run$read_peaks)) run$read_peaks(i)
+                  else lapply(run$peaks, function(p)
+                      .mzs_peak_list(unclass(p)[i], attr(p, "type")))
+            for (nm in c(setdiff(names(pk), c("mz", "intensity")), "mz", "intensity")) {
+                p <- pk[[nm]]
+                type <- .mzs_arrow_type(attr(p, "type") %||% "f64")
+                arr[[nm]] <- arrow::Array$create(unclass(p), type = arrow::list_of(type))
+            }
+            tab <- do.call(arrow::arrow_table, arr)
+            annotations <- setdiff(names(pk), c("mz", "intensity"))
+            if (length(annotations)) {
+                # The backend exposes per-peak annotations as AsIs list
+                # columns in R. Carry that metadata on typed empty batches too.
+                prototype <- as.data.frame(stats::setNames(
+                    rep(list(integer()), length(arr)), names(arr)))
+                for (nm in annotations) prototype[[nm]] <- I(list())
+                tab <- tab$ReplaceSchemaMetadata(arrow::arrow_table(prototype)$schema$metadata)
+            }
+            arrow::write_parquet(tab,
+                file.path(dest, sprintf("part-%010d.parquet", i[1L])),
+                chunk_size = 250L, compression = "snappy")
+        })
+        origin <- unique(run$meta$data_origin)
+        signal <- list(layout = "list", profile = NA_character_, centroid = NA_character_)
+        if (length(origin) == 1L && !is.na(origin)) signal$source <- origin
+        m$runs[[length(m$runs) + 1L]] <- list(run_id = run$run_id,
+            kind = "native", path = rel, n_spectra = n, uid_base = base,
+            ingested_at = 1L, signal = signal, projections = .mzs_object())
+        base <- base + n
     }
-    MsBackendParquet::createMsBackendParquetDataset(path = dir, data = df)
+    MsBackendParquet::writeManifest(dir, m, bump = FALSE)
     ids
 }
 
@@ -349,15 +394,47 @@
     index <- list()
     for (name in names(plan$tables)) {
         df <- plan$tables[[name]]
-        .mzs_check_keys(name, df)
-        df <- .mzs_prepare_table(name, df, act)
         root <- file.path("results", name, "rev-1")
-        parts <- .mzs_write_parts(stage, root, name, df, generation)
+        part_count <- 0L
+        columns <- character()
+        spec <- .mzs_table_schema(name)
+        if (inherits(df, "mzs_table_batches")) {
+            proto <- df$prototype[intersect(names(df$prototype), df$present)]
+        } else {
+            extras <- setdiff(names(df), spec$columns$name)
+            populated <- vapply(df[extras], function(v) any(!is.na(v) | is.nan(v)), logical(1))
+            proto <- df[FALSE, extras[populated], drop = FALSE]
+        }
+        write_batch <- function(batch) {
+            for (col in names(proto)) {
+                v <- batch[[col]]
+                if (is.null(v) || (is.logical(v) && all(is.na(v))))
+                    batch[[col]] <- proto[[col]][rep(NA_integer_, nrow(batch))]
+            }
+            batch <- .mzs_prepare_table(name, batch, act, names(proto))
+            columns <<- union(columns, names(batch))
+            paths <- .mzs_write_parts(stage, root, name, batch, generation, part_count + 1L)
+            part_count <<- part_count + length(paths)
+        }
+        if (inherits(df, "mzs_table_batches")) {
+            df$visit(write_batch)
+            rows <- df$rows
+        } else {
+            .mzs_check_keys(name, df)
+            rows <- nrow(df)
+            by <- .mzs_table_schema(name)$sorted_by
+            # Sort row indices before slicing. Each part retains table order.
+            ord <- do.call(order, c(unname(as.list(df[intersect(by, names(df))])),
+                                    list(method = "radix", na.last = TRUE)))
+            if (rows) .mzs_batches(rows, .mzs_batch_size(), function(i)
+                write_batch(df[ord[i], , drop = FALSE]))
+            else write_batch(df)
+        }
         entries[[name]] <- .mzs_table_entry(
-            name, root, nrow(df), length(parts), generation,
+            name, root, rows, part_count, generation,
             fill_policy = if (name == "abundance") plan$fill_policy,
             selection = plan$selection[[name]])
-        index[[length(index) + 1L]] <- .mzs_index_table(name, names(df))
+        index[[length(index) + 1L]] <- .mzs_index_table(name, columns)
     }
     for (name in plan$omitted %||% character())
         entries[[name]] <- list(entity = name, omitted = TRUE)
