@@ -1,5 +1,9 @@
 # msPurity 1.99.4
 
+- `spectralMatching()` accepts experimental `Spectra` queries for in-memory
+  MS2–MS4 searches against experimental spectra or a reference library. Hits
+  carry the input positions, compatibility reason, scores and rank (#159).
+
 - `scoreSpectrumPair()` checks MS2–MS4 precursor masses, acquisition
   conditions and available ancestry before reading peaks. It reports the
   decision alongside the six existing scores. `SpectralMatchingParam()`
