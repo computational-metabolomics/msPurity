@@ -357,7 +357,7 @@
 #' @noRd
 .mzs_full_path <- function(p) {
     if (file.exists(p))
-        return(normalizePath(p))
+        return(normalizePath(p, winslash = "/"))
     parent <- dirname(p)
     if (identical(parent, p))
         return(p)

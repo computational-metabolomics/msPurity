@@ -9,8 +9,8 @@ test_that("createDatabase(format = 'parquet') keeps all it wrote via SQLite", {
     for (nm in names(writers)) {
         ref <- readRDS(file.path(.parquet_golden_dir(), paste0(nm, ".rds")))
         got <- .parquet_golden_run(nm, writers)
-        expect_true(isTRUE(.parquet_golden_contains(got, ref)),
-                    info = paste(nm, paste(.parquet_golden_contains(got, ref),
-                                           collapse = "; ")))
+        differences <- .parquet_golden_contains(got, ref, computed = nm == "d02_ms2")
+        expect_true(isTRUE(differences),
+                    info = paste(nm, paste(differences, collapse = "; ")))
     }
 })

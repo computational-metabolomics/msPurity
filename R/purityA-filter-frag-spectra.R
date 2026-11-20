@@ -371,6 +371,7 @@ setMethod(f = "filterFragSpectra", signature = "purityA",
 }
 
 getScanPeaks <- function(pa) {
+    .pa_study_check(pa)
     scans <- purityTable(pa)
     key <- paste(as.character(scans$fileid), scans$seqNum)
     if (anyNA(scans$fileid) || anyNA(scans$seqNum) ||
@@ -409,7 +410,6 @@ getScanPeaks <- function(pa) {
 # which number every MS>1 peak of the files in file order as the mzML route
 # does.
 .pa_scan_peaks_from_spectra <- function(pa, scans) {
-    .pa_study_check(pa)
     sp <- pa@spectra[match(scans$pid, pa@spectra$pid)]
     if (!length(sp))
         return(.pa_empty_scan_peaks(scans$pid))

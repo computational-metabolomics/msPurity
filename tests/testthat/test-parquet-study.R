@@ -159,6 +159,7 @@ test_that("a moved or changed study is reported, not read from mzML", {
     m$runs[[1L]]$ingested_at <- m$runs[[1L]]$ingested_at + 1L
     .write_raw_manifest(study, m)
     expect_parquet_error(msPurity:::.pa_raw_scans(pa, pids), "stale")
+    expect_parquet_error(getScanPeaks(pa), "stale")
 })
 
 test_that("Parquet results reference every MS2-MS4 scan and its parents", {

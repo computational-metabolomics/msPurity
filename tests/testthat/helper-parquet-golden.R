@@ -13,7 +13,15 @@
     if (length(uid) && !is.na(uid))
         x <- gsub(uid, "<uid>", x, fixed = TRUE)
     x <- gsub("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z", "<time>", x)
-    x <- .golden_mask(x, .golden_roots())
+    roots <- .golden_roots()
+    if (.Platform$OS.type == "windows") {
+        # dataOrigin may come from normalizePath(), while system.file() uses "/".
+        paths <- which(grepl("^[A-Za-z]:[/\\\\]", x) | startsWith(x, "\\\\"))
+        x[paths] <- chartr("\\", "/", x[paths])
+        roots <- c(roots, chartr("\\", "/", roots),
+                   setNames(normalizePath(roots, winslash = "/"), names(roots)))
+    }
+    x <- .golden_mask(x, roots)
     x <- gsub("(study|results|copy|golden|mzs)-[0-9a-f]+", "\\1-<id>", x)
     x <- gsub("msPurity::createDatabase [0-9.]+", "msPurity::createDatabase <version>", x)
     x
@@ -150,16 +158,44 @@
            jsonlite::fromJSON(ref, simplifyVector = FALSE))
 }
 
+# Compare computed measurements per peak, preserving types and missing values.
+.parquet_measurements_equal <- function(x, y) {
+    if (identical(x, y)) return(TRUE)
+    if (!identical(typeof(x), typeof(y)) || length(x) != length(y) ||
+        !identical(attributes(x), attributes(y))) return(FALSE)
+    if (is.list(x)) return(all(mapply(.parquet_measurements_equal, x, y)))
+    if (!is.double(x)) return(FALSE)
+    finite <- is.finite(y)
+    identical(x[!finite], y[!finite]) && all(is.finite(x[finite])) &&
+        all(abs(x[finite] - y[finite]) <= 1e-12 * pmax(1, abs(y[finite])))
+}
+
 # Whether dump `got` holds everything frozen in `ref` unchanged: every native
 # run, the manifest's runs and sources, every table, column and row, with
 # rows of the loss ledger and source identifiers kept as a subset (their ids
 # renumbered). Added tables, columns, ledger rows and step parameters are
 # allowed; the versions of msPurity and of the results layout, and the
 # manifest's table bookkeeping, may change.
-.parquet_golden_contains <- function(got, ref) {
+.parquet_golden_contains <- function(got, ref, computed = FALSE) {
     msg <- character()
     fail <- function(...) msg <<- c(msg, paste0(...))
-    if (!identical(got$runs, ref$runs)) fail("native runs differ")
+    # The D02 case calculates these measurements from mzML on each platform.
+    # Keep keys, peak counts, assignments and flags exact in every case.
+    measured <- c("time", "selected_ion_mz", "x_mspurity_precursor_purity",
+                  "mz", "intensity", "sn", "intensity_rsd", "x_mspurity_ra",
+                  "x_mspurity_in_purity")
+    if (!identical(names(got$runs), names(ref$runs))) fail("native run ids differ")
+    for (run in intersect(names(got$runs), names(ref$runs))) {
+        g <- got$runs[[run]]
+        r <- ref$runs[[run]]
+        if (!identical(attributes(g), attributes(r))) fail(run, " structure changed")
+        for (col in intersect(names(g), names(r))) {
+            same <- if (computed && col %in% measured)
+                .parquet_measurements_equal(g[[col]], r[[col]])
+            else identical(g[[col]], r[[col]])
+            if (!same) fail(run, ".", col, " changed")
+        }
+    }
     for (k in c("runs", "sources"))
         if (!identical(got$manifest[[k]], ref$manifest[[k]]))
             fail("manifest ", k, " differ")
@@ -203,6 +239,8 @@
         for (c in cols) {
             same <- if (t == "tool_provenance" && c == "parameters")
                 all(mapply(.json_contains, g[[c]], r[[c]]))
+            else if (computed && t == "chromatographic_peak" && c == "x_mspurity_intb")
+                .parquet_measurements_equal(g[[c]], r[[c]])
             else identical(g[[c]], r[[c]])
             if (!same) fail(t, ".", c, " changed")
         }

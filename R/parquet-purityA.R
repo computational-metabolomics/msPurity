@@ -72,7 +72,11 @@
 #' @noRd
 .mzs_files <- function(fi, study, studyKey, fileMap, dest) {
     fi <- fi[order(fi$fileid), , drop = FALSE]
-    base <- basename(fi$filepth)
+    # A database may contain paths recorded on a different operating system.
+    path <- fi$filepth
+    windows <- which(grepl("^[A-Za-z]:[/\\\\]", path) | startsWith(path, "\\\\"))
+    path[windows] <- chartr("\\", "/", path[windows])
+    base <- basename(path)
     dup <- unique(base[duplicated(base)])
     covered <- length(fileMap) && all(fi$filepth %in% names(fileMap))
     if (length(dup) && !covered)
@@ -132,9 +136,7 @@
             r <- mapped(i)
             if (!is.na(r))
                 return(r)
-            .mzs_mint_run_id(if (readable[i]) checksum[i]
-                             else normalizePath(fi$filepth[i],
-                                                mustWork = FALSE), i)
+            .mzs_mint_run_id(if (readable[i]) checksum[i] else path[i], i)
         }, character(1))
         if (anyDuplicated(run))
             .mzs_abort("semantic", "Two source files map to one run id: ",

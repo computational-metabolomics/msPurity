@@ -92,8 +92,8 @@ parquetCapabilities <- function() {
                 tuple = .mzs_array(c("source_checksum", "ordinal")),
                 `function` = paste(
                     "run_id = 'run-' + first 12 hex digits of",
-                    "SHA-256(<source_checksum, or the normalised path when",
-                    "the file is unreadable> + newline + <1-based",
+                    "SHA-256(<source_checksum, or the recorded path with",
+                    "portable separators when unreadable> + newline + <1-based",
                     "ordinal>)")),
             lossy_conversion = .MZS_LOSSY)
     list(
