@@ -9,6 +9,11 @@
 
 # msPurity 1.99.3
 
+- `processedSpectrumInfo()`, `readProcessedSpectra()` and
+  `readProcessedProvenance()` reopen Parquet results by feature, MS level,
+  averaging method or run. They expose stored peak statistics, raw study
+  references and the measurements behind an average (#129).
+
 - `purityX()` now accepts `XcmsExperiment` and `XCMSnExp` alongside
   `xcmsSet`. It predicts feature purity from the selected MS1 spectra within
   each sample's chromatographic peak boundaries. Spectrum subsetting and peak

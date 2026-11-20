@@ -252,15 +252,20 @@
     if (!length(keep))
         return(list())
     be <- be[keep]
-    cols <- intersect(c("mz", "intensity", extra), Spectra::peaksVariables(be))
-    pk <- Spectra::peaksData(be, columns = cols)
+    .mzs_matching_peaks(be, extra)
+}
+
+.mzs_matching_peaks <- function(sp, extra = character()) {
+    if (!length(sp)) return(list())
+    cols <- intersect(c("mz", "intensity", extra), Spectra::peaksVariables(sp))
+    pk <- Spectra::peaksData(sp, columns = cols)
     out <- lapply(pk, function(x) {
         p <- data.frame(mz = unname(x[, "mz"]), i = unname(x[, "intensity"]))
         for (c in setdiff(cols, c("mz", "intensity")))
             p[[c]] <- as.logical(x[, c])
         p
     })
-    names(out) <- keep
+    names(out) <- Spectra::spectraNames(sp)
     out
 }
 
@@ -273,43 +278,28 @@
 #'
 #' @noRd
 .mzs_query_spectra <- function(path, m, a, sourcePaths) {
-    tab <- function(n) .mzs_read_table(path, m, n)
+    reader <- .mzs_reader(path, sourcePaths, m)
+    tab <- reader$table
     sf <- tab("spectrum_feature")
-    ft <- tab("feature")
-    si <- tab("source_identifier")
-    grp_of <- function(fid) as.numeric(si$source_value[match(
-        paste("feature", "grpid", fid),
-        paste(si$target_table, si$source_column, si$target_key))])
     types <- a$q_spectraTypes
     methods <- unique(sub("^av_", "", types[types != "scan"]))
     meta <- list()
     peaks <- list()
-    rr <- m$results$runs
-    runs <- names(rr)[vapply(rr, function(r) r$method %in% methods,
-                             logical(1))]
-    if (length(runs)) {
-        sm <- .mzs_read_spectra_meta(path, m, c(
-            "id", "selected_ion_mz", "scan_polarity",
-            "x_mspurity_precursor_purity", "ms_level"), runs)
-        ## MS3/MS4 averages are not matched (D10).
-        sm <- sm[sm$ms_level %in% c(NA, 2L), , drop = FALSE]
-        self <- sf[sf$ms2_source == "self", ]
-        fid <- self$feature_id_[match(sm$spectrum_id_,
-                                      self$ms2_spectrum_id_)]
-        meta[[1]] <- data.frame(
+    selected <- if (length(methods))
+        .mzs_processed_selection(reader, NULL, c(2L, NA_integer_), methods, NULL)
+    if (length(selected$spectra)) {
+        sm <- selected$info
+        meta[[1L]] <- data.frame(
             query_source = "self", query_run_id = sm$run_id,
-            query_spectrum_id_ = as.numeric(sm$spectrum_id_),
-            query_native_id = sm$id, feature_id_ = fid, grpid = grp_of(fid),
-            precursor_mz = sm$selected_ion_mz,
-            retention_time = ft$retention_time_in_seconds[match(
-                fid, ft$feature_id_)],
+            query_spectrum_id_ = sm$spectrum_id_, query_native_id = sm$native_id,
+            feature_id_ = sm$feature_id_, grpid = sm$grpid,
+            precursor_mz = sm$precursor_mz, retention_time = sm$retention_time,
             inPurity = sm$x_mspurity_precursor_purity,
             polarity = c("-1" = "negative", "1" = "positive")[
-                as.character(sm$scan_polarity)],
-            stringsAsFactors = FALSE)
+                as.character(sm$scan_polarity)], stringsAsFactors = FALSE)
         flags <- c("x_mspurity_snr_pass_flag", "x_mspurity_minnum_pass_flag",
                    "x_mspurity_minfrac_pass_flag", "x_mspurity_ra_pass_flag")
-        pk <- .mzs_read_peaks(path, sm$spectrum_id_, flags)
+        pk <- .mzs_matching_peaks(selected$spectra, flags)
         if (isTRUE(a$q_spectraFilter))
             pk <- lapply(pk, function(p) {
                 have <- intersect(flags, names(p))
@@ -324,19 +314,11 @@
         peaks <- c(peaks, pk)
     }
     if ("scan" %in% types) {
+        groups <- .mzs_original_ids(reader, "feature", "grpid")
         sc <- .mzs_ms2_scans(tab("x_mspurity_scan"))
-        keys <- unique(sc$ms2_source)
-        for (k in keys) {
+        raw <- .mzs_raw_spectra(reader, .mzs_read_scan_refs(sc), nativeOnly = TRUE)
+        for (k in names(raw)) {
             s <- sc[sc$ms2_source == k, ]
-            src <- .mzs_open_source(path, m, k, sourcePaths,
-                                    unique(s$ms2_run_id))
-            kind <- unique(vapply(src$manifest$runs, function(r) r$kind, ""))
-            if (!identical(kind, "native"))
-                .mzs_abort("unsupported", "Query scans are in source '", k,
-                           "', whose runs are of kind ", paste(kind,
-                                                               collapse = ", "),
-                           "; spectralMatching(format = \"parquet\") reads ",
-                           "scan peaks from native runs only.")
             lk <- sf[sf$ms2_source == k, ]
             fid <- lk$feature_id_[match(paste(s$ms2_run_id, s$scan_number),
                                         paste(lk$ms2_run_id,
@@ -345,10 +327,10 @@
                 query_source = k, query_run_id = s$ms2_run_id,
                 query_spectrum_id_ = s$ms2_spectrum_id_,
                 query_native_id = s$ms2_native_id, feature_id_ = fid,
-                grpid = grp_of(fid), precursor_mz = s$precursor_mz,
+                grpid = as.numeric(groups[as.character(fid)]), precursor_mz = s$precursor_mz,
                 retention_time = s$retention_time, inPurity = s$in_purity,
                 polarity = NA_character_, stringsAsFactors = FALSE)
-            pk <- .mzs_read_peaks(src$path, s$ms2_spectrum_id_)
+            pk <- .mzs_matching_peaks(raw[[k]])
             if (isTRUE(a$q_spectraFilter)) {
                 ## Without filterFragSpectra() scan flags no peaks pass,
                 ## as in the SQLite route.
