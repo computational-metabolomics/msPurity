@@ -125,7 +125,17 @@ scoreSpectrumPair <- function(query, reference, param = SpectralMatchingParam(),
     q <- query[queryIndex]
     l <- reference[referenceIndex]
     level <- Spectra::msLevel(q)
-    levels <- c(level, Spectra::msLevel(l))
+    .sm_compare_pair(level, Spectra::msLevel(l), Spectra::precursorMz(q),
+        Spectra::precursorMz(l), .sm_stages(query, queryIndex, level),
+        .sm_stages(reference, referenceIndex, level), .sm_pair_peaks(q),
+        .sm_pair_peaks(l), param)
+}
+
+# Stage summaries and peak data are promises. Force them only after the
+# cheaper checks pass, for both single pairs and collection searches.
+.sm_compare_pair <- function(level, referenceLevel, queryMz, referenceMz,
+    qs, ls, qp, lp, param) {
+    levels <- c(level, referenceLevel)
     reason <- if (anyNA(levels)) "ms_level_missing" else if (
         any(!levels %in% 2:4)) "ms_level_unsupported" else if (
         levels[1L] != levels[2L]) "ms_level_mismatch" else "compatible"
@@ -143,7 +153,7 @@ scoreSpectrumPair <- function(query, reference, param = SpectralMatchingParam(),
         if (.sm_mass_overlap(a, b, param@q_ppmPrec, param@l_ppmPrec,
                 param@q_daPrec, param@l_daPrec)) "match" else "mismatch"
     }
-    mass <- mass_check(Spectra::precursorMz(q), Spectra::precursorMz(l))
+    mass <- mass_check(queryMz, referenceMz)
     checks <- rbind(checks, data.frame(stage = level, field = "precursorMz",
         outcome = mass))
     if (mass != "match") {
@@ -151,8 +161,6 @@ scoreSpectrumPair <- function(query, reference, param = SpectralMatchingParam(),
         return(result(FALSE))
     }
 
-    qs <- .sm_stages(query, queryIndex, level)
-    ls <- .sm_stages(reference, referenceIndex, level)
     for (stage in seq.int(level, 2L)) {
         a <- qs[[stage]]
         b <- ls[[stage]]
@@ -172,8 +180,6 @@ scoreSpectrumPair <- function(query, reference, param = SpectralMatchingParam(),
     }
     if (any(checks$outcome != "match"))
         reason <- "compatible_partial"
-    qp <- .sm_pair_peaks(q)
-    lp <- .sm_pair_peaks(l)
     if (!any(qp$i > 0) || !any(lp$i > 0)) {
         reason <- "no_usable_peaks"
         return(result(TRUE))

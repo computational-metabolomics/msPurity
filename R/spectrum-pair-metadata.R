@@ -78,7 +78,7 @@
     "precScanNum", "precursorScanNum", "acquisitionNum", "scanIndex",
     "sourceSpectrumId", "spectrum_id_", "rtime")
 
-.sm_parent_rows <- function(x, index, level) {
+.sm_parent_data <- function(x) {
     cols <- intersect(.sm_parent_columns, Spectra::spectraVariables(x))
     d <- as.data.frame(Spectra::spectraData(x, columns = cols))
     run <- rep(NA_character_, nrow(d))
@@ -90,6 +90,13 @@
     # A collection with no run metadata can still resolve a unique local
     # reference. Never fill a missing run with some other entry's run.
     if (all(is.na(run))) run[] <- "input"
+    d$matchingRun <- run
+    d
+}
+
+.sm_parent_rows <- function(d, index, level) {
+    cols <- names(d)
+    run <- d$matchingRun
     rows <- rep(NA_integer_, level)
     rows[level] <- index
     for (stage in seq.int(level, 3L)) {
@@ -123,7 +130,7 @@
     rows
 }
 
-.sm_stages <- function(x, index, level) {
+.sm_stages <- function(x, index, level, parentData = .sm_parent_data(x)) {
     stages <- vector("list", level)
     row <- .sm_metadata_row(x, index)
     values <- .sm_summary(row, "msPurityAcquisitionValues")
@@ -132,7 +139,7 @@
     path <- .sm_summary(row, "msPurityPrecursorPath")
     ancestors <- .sm_summary(row, "msPurityAncestorConditions")
     if (is.null(path) && is.null(ancestors) && is.null(values)) {
-        parents <- .sm_parent_rows(x, index, level)
+        parents <- .sm_parent_rows(parentData, index, level)
         for (i in which(!is.na(parents) & seq_along(parents) < level))
             stages[[i]] <- .sm_stage(.sm_metadata_row(x, parents[i]))
         return(stages)
