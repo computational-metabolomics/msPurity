@@ -201,6 +201,14 @@ test_that("Parquet results reference every MS2-MS4 scan and its parents", {
                      rep("filter_string", nrow(sc_mz)))
     expect_identical(unique(sc_pq$activation_type_basis), "recorded")
 
+    # Datasets written before averaging still expose their measured inputs.
+    scans <- readProcessedSpectra(p_pq, msLevel = 3L, includeRaw = TRUE)
+    expect_length(scans$processed, 0L)
+    expect_setequal(scans$raw$study$spectrum_id_, sc_pq$ms2_spectrum_id_[sc_pq$ms_level == 3L])
+    pr <- readProcessedProvenance(p_pq, msLevel = 3L)
+    expect_true(all(pr$msnFeatureLinks$ms_level == 3L))
+    expect_setequal(pr$measured$ms2_spectrum_id_, scans$raw$study$spectrum_id_)
+
     ## Every scan and every parent is a study spectrum one level down.
     sp <- .msn_study_spectra(study)
     lvl <- Spectra::msLevel(sp)[match(sc_pq$ms2_spectrum_id_,
@@ -244,6 +252,22 @@ test_that("Parquet results reference every MS2-MS4 scan and its parents", {
     expect_identical(sort(q$meta$query_spectrum_id_),
                      sort(sc_mz$ms2_spectrum_id_[sc_mz$ms_level == 2L]))
 
+    raw2 <- readProcessedSpectra(p_mz, msLevel = 2L, includeRaw = TRUE)$raw$study
+    first <- q$meta$query_spectrum_id_[1L]
+    pk <- Spectra::peaksData(raw2[match(first, raw2$spectrum_id_)])[[1L]]
+    expect_equal(q$peaks[[1L]]$mz, unname(pk[, "mz"]))
+    expect_equal(q$peaks[[1L]]$i, unname(pk[, "intensity"]))
+    filtered <- msPurity:::.mzs_query_spectra(p_mz, .manifest(p_mz),
+        list(q_spectraTypes = "scan", q_spectraFilter = TRUE, q_purity = NA,
+             q_pol = NA, q_rtrange = NA, q_xcmsGroups = NA), NULL)
+    scan_id <- sc_mz$scan_annotation_id_[match(first, sc_mz$ms2_spectrum_id_)]
+    ann <- .read_table(p_mz, "x_mspurity_scan_peak")
+    ann <- ann[ann$scan_annotation_id_ == scan_id, ]
+    ann <- ann[order(ann$peak_rank), ]
+    pass <- with(ann, purity_pass_flag & intensity_pass_flag & ra_pass_flag & snr_pass_flag)
+    expect_equal(filtered$peaks[[1L]]$mz, ann$mz[which(pass)])
+    expect_equal(filtered$peaks[[1L]]$i, ann$intensity[which(pass)])
+
     ## The SQLite writer holds MS2 only and says so.
     expect_error(suppressWarnings(createDatabase(pa_pq, xe, outDir = out,
         dbName = "x.sqlite")), "not supported by the SQLite writer")
@@ -258,6 +282,20 @@ test_that("datasets written before MSn export stay valid and readable", {
     expect_identical(.manifest(p)$results$version, "1.0.0")
     expect_false(any(validateParquet(p)$level == "MUST"))
     sc <- .read_table(p, "x_mspurity_scan")
+    info <- processedSpectrumInfo(p)
+    sp <- readProcessedSpectra(p)
+    expect_s4_class(sp@backend, "MsBackendParquet")
+    expect_equal(info$peak_count, unname(lengths(Spectra::mz(sp))))
+    expect_true(all(is.na(info$used_measurements)))
+    empty <- processedSpectrumInfo(p, featureId = -1L)
+    expect_identical(names(empty), names(info))
+    expect_identical(nrow(empty), 0L)
+    expect_length(readProcessedSpectra(p, featureId = -1L), 0L)
+    expect_equal(nrow(readProcessedProvenance(p, featureId = -1L)$mergeMembers), 0L)
+    local_mocked_bindings(peaksData = function(...) stop("peak arrays were requested"),
+                          .package = "Spectra")
+    expect_equal(processedSpectrumInfo(p)$spectrum_id_, info$spectrum_id_)
+    expect_equal(readProcessedProvenance(p)$outputs$spectrum_id_, info$spectrum_id_)
     expect_null(sc$ms_level)
     expect_identical(msPurity:::.mzs_ms2_scans(sc), sc)
 })

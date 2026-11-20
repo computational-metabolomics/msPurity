@@ -710,7 +710,7 @@
 #' A table declared omitted, or not declared, is `Capability`.
 #'
 #' @noRd
-.mzs_read_table <- function(path, m, name) {
+.mzs_read_table <- function(path, m, name, column = NULL, values = NULL) {
     maj <- .mzs_semver_major(m$results$version)
     if (!identical(maj, .MZS_RESULTS_MAJOR))
         .mzs_abort("unsupported", "'", path, "' holds results version ",
@@ -733,6 +733,8 @@
             do.call(arrow::hive_partition, stats::setNames(
                 rep(list(arrow::utf8()), length(part)), part))
         else NULL)
+    if (!is.null(column))
+        ds <- dplyr::filter(ds, !!as.name(column) %in% !!values)
     df <- as.data.frame(dplyr::collect(ds))
     for (c in names(df))
         if (is.factor(df[[c]]))

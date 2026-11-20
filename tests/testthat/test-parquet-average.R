@@ -55,6 +55,25 @@ test_that("averages of every level are exported with their provenance", {
                      as.vector(table(Spectra::msLevel(view))))
     expect_setequal(av$x_mspurity_spectrum_key, view$spectrumId)
 
+    info <- processedSpectrumInfo(p_pq)
+    bundle <- readProcessedSpectra(p_pq, includeRaw = TRUE)
+    history <- readProcessedProvenance(p_pq)
+    expect_s4_class(bundle$processed@backend, "MsBackendParquet")
+    expect_identical(as.numeric(bundle$processed$spectrum_id_), info$spectrum_id_)
+    expect_identical(Spectra::msLevel(bundle$processed), info$ms_level)
+    expect_setequal(bundle$raw$study$spectrum_id_, history$measured$ms2_spectrum_id_)
+    expect_true(all(history$sources$status == "resolved"))
+    expect_true(any(lengths(history$tools$history) > 0L))
+    chosen <- info[1L, ]
+    ss <- readProcessedSpectra(p_pq, featureId = chosen$feature_id_,
+        msLevel = chosen$ms_level, method = chosen$method, runId = chosen$run_id)
+    want <- with(info, feature_id_ == chosen$feature_id_ & ms_level == chosen$ms_level &
+        method == chosen$method & run_id == chosen$run_id)
+    expect_equal(as.numeric(ss$spectrum_id_), info$spectrum_id_[want])
+    stored <- Spectra::peaksData(bundle$processed,
+        columns = c("mz", "intensity", "contributor_count", "x_mspurity_ra_pass_flag"))
+    live <- Spectra::peaksData(view, columns = c("mz", "intensity", "count", "ra_pass_flag"))
+
     ## merge_member and the peak edges are the recorded provenance.
     mm <- .read_table(p_pq, "merge_member")
     mp <- .read_table(p_pq, "x_mspurity_merge_peak")
@@ -66,6 +85,15 @@ test_that("averages of every level are exported with their provenance", {
         expect_identical(got$member_rank, ref$rank, info = key)
         expect_identical(got$x_mspurity_contributes, ref$contributes,
                          info = key)
+        j <- match(av$spectrum_id_[i], info$spectrum_id_)
+        mat <- as.matrix(live[[match(key, view$spectrumId)]])
+        # In-memory zero-row matrices are logical, Parquet peak matrices numeric.
+        storage.mode(mat) <- "double"
+        expect_equal(unname(as.matrix(stored[[j]])),
+                     unname(mat[order(mat[, "mz"]), , drop = FALSE]), info = key)
+        expect_equal(info$contributing_inputs[j], sum(ref$contributes), info = key)
+        used <- averagePeakMembers(pa_pq, key, depth = "original")$linkId
+        expect_equal(info$used_measurements[j], length(unique(used)), info = key)
         measured <- !is.na(ref$linkId)
         expect_identical(got$member_source[measured] == "study",
                          rep(TRUE, sum(measured)), info = key)
@@ -94,6 +122,36 @@ test_that("averages of every level are exported with their provenance", {
     expect_true(all(is.na(ext$member_spectrum_id_[ext$member_source !=
                                                   "self"])))
     expect_identical(ext$member_native_id, same(p_pq)$member_native_id)
+
+    expect_equal(history$mergePeaks, mp[order(mp$merged_spectrum_id_, mp$edge_rank), ],
+                 ignore_attr = TRUE)
+    ext_info <- processedSpectrumInfo(p_ext)
+    expect_equal(ext_info$spectrum_id_, info$spectrum_id_)
+    states <- do.call(rbind, ext_info$source_runs)
+    expect_true(all(states$status == "external"))
+    expect_s3_class(states$condition[[1]], "mzstack_capability")
+    expect_error(readProcessedSpectra(p_ext, includeRaw = TRUE), class = "mzstack_capability")
+
+    raw_ids <- bundle$raw$study$spectrum_id_
+    moved <- paste0(study, "-moved")
+    expect_true(file.rename(study, moved))
+    expect_s3_class(processedSpectrumInfo(p_pq)$source_runs[[1]]$condition[[1]],
+                    "mzstack_reference")
+    expect_error(readProcessedSpectra(p_pq, includeRaw = TRUE), class = "mzstack_reference")
+    expect_equal(length(readProcessedSpectra(p_pq)), nrow(info))
+    override <- c(study = moved)
+    expect_equal(readProcessedSpectra(p_pq, sourcePaths = override,
+        includeRaw = TRUE)$raw$study$spectrum_id_, raw_ids)
+    expect_true(file.rename(moved, study))
+    moved <- .copy_dataset(study)
+    override <- c(study = moved)
+    sm <- MsBackendParquet::readManifest(moved)
+    sm$runs[[1]]$ingested_at <- sm$generation + 1L
+    MsBackendParquet::writeManifest(moved, sm)
+    expect_s3_class(readProcessedProvenance(p_pq, sourcePaths = override
+        )$sources$condition[[1]], "mzstack_stale")
+    expect_error(readProcessedSpectra(p_pq, sourcePaths = override, includeRaw = TRUE),
+                 class = "mzstack_stale")
 
     ## Spectral matching takes the MS2 averages only.
     q <- msPurity:::.mzs_query_spectra(p_pq,
@@ -147,6 +205,11 @@ test_that("scalar empty averages retain members and absent attempts have no spec
     expect_true("x_mspurity_contributes" %in% names(mm))
     expect_true(all(!mm$x_mspurity_contributes))
     expect_null(.read_table(path, "x_mspurity_merge_peak"))
+    info <- processedSpectrumInfo(path)
+    expect_true(all(info$used_measurements[info$availability == "empty"] == 0L))
+    expect_setequal(info$spectrum_id_[info$availability == "empty"], av$spectrum_id_)
+    expect_true(all(is.na(info$spectrum_id_[info$availability == "unavailable"])))
+    expect_length(readProcessedSpectra(path, method = "inter"), 0L)
     ledger <- .read_table(path, "loss_ledger")$source_construct
     expect_setequal(grep("^av_inter: feature ", ledger, value = TRUE),
         paste0("av_inter: feature ", unique(as.character(pa@grped_df$grpid))))
@@ -184,4 +247,25 @@ test_that("historical scalar attempts with no produced runs can be exported", {
     expect_setequal(grep("^av_", ledger, value = TRUE),
         paste0("av_all: feature ", unique(as.character(pa@grped_df$grpid))))
     expect_false(any(validateParquet(path)$level == "MUST"))
+})
+
+test_that("original measurement counts respect peak paths and repeated feature links", {
+    # Two links to the same scan supply parent peak 1. A third measured
+    # input supplies peak 2, which never reaches the inter-file average.
+    members <- data.frame(merged_spectrum_id_ = c(5, 5, 5, 6),
+        member_source = c("study", "study", "study", "self"),
+        member_spectrum_id_ = c(10, 10, 11, 5), member_rank = c(1, 2, 3, 1),
+        members_complete = TRUE, x_mspurity_contributes = TRUE,
+        x_mspurity_feature_link_index = c(21L, 22L, 23L, NA_integer_))
+    edges <- data.frame(merged_spectrum_id_ = c(5, 5, 5, 6, 6),
+        merged_peak_rank = c(1, 1, 2, 1, 2), member_rank = c(1, 2, 3, 1, 1),
+        member_peak_rank = c(1, 1, 1, 1, 1))
+    reader <- list(table = function(name, ...) {
+        if (name == "merge_member") members else edges
+    })
+    graph <- msPurity:::.mzs_graph_reader(reader, 6)
+    expect_equal(length(graph$used(5)), 3L)
+    expect_equal(length(graph$used(6)), 2L)
+    edges$member_peak_rank[4] <- NA_integer_
+    expect_true(is.na(msPurity:::.mzs_graph_reader(reader, 6)$used(6)))
 })
