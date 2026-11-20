@@ -158,6 +158,7 @@ Collate:
     'spectralMatching.R'
     'spectrum-pair-metadata.R'
     'spectrum-pair.R'
+    'spectra-search.R'
     'splinepurity.R'
     'xcms-compat.R'
 Config/roxygen2/version: 8.1.1

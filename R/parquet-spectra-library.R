@@ -45,24 +45,8 @@
         d <- Spectra::spectraData(x[ids], columns = vars)
         # Coalesce per entry. A backend can advertise a variable that is
         # missing on some or all spectra.
-        value <- function(..., numeric = FALSE) {
-            result <- rep(if (numeric) NA_real_ else NA_character_, length(ids))
-            for (v in intersect(c(...), vars)) {
-                val <- d[[v]]
-                if (is.list(val) || is(val, "List"))
-                    val <- vapply(as.list(val), function(e) {
-                        if (!length(e) || all(is.na(e))) NA_character_
-                        else paste(as.character(e), collapse = "; ")
-                    }, "")
-                missing <- is.na(result)
-                val <- val[missing]
-                if (numeric) {
-                    if (is.factor(val)) val <- as.character(val)
-                    result[missing] <- suppressWarnings(as.numeric(val))
-                } else result[missing] <- .mzs_na_empty(val)
-            }
-            result
-        }
+        value <- function(..., numeric = FALSE)
+            .sm_metadata_value(d, ..., numeric = numeric)
         field <- function(name, numeric = FALSE) {
             f <- paste0("x_mspurity_", name)
             value(f, fields[[f]], numeric = numeric)
@@ -96,4 +80,23 @@
     bytes <- writeBin(as.double(c(mz, pol, peaks$mz, peaks$i)), raw(),
                       size = 8L, endian = "big")
     paste0("sha256:", tools::sha256sum(bytes = bytes))
+}
+
+.sm_metadata_value <- function(d, ..., numeric = FALSE) {
+    result <- rep(if (numeric) NA_real_ else NA_character_, nrow(d))
+    for (v in intersect(c(...), names(d))) {
+        val <- d[[v]]
+        if (is.list(val) || is(val, "List"))
+            val <- vapply(as.list(val), function(e) {
+                if (!length(e) || all(is.na(e))) NA_character_
+                else paste(as.character(e), collapse = "; ")
+            }, "")
+        missing <- is.na(result)
+        val <- val[missing]
+        if (numeric) {
+            if (is.factor(val)) val <- as.character(val)
+            result[missing] <- suppressWarnings(as.numeric(val))
+        } else result[missing] <- .mzs_na_empty(val)
+    }
+    result
 }

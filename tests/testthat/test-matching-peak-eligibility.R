@@ -180,6 +180,18 @@ test_that("SQLite and Parquet routes score the same eligible peaks", {
     b <- .alignment_match(qp, lp, "parquet")
     expect_identical(nrow(a), 1L)
     expect_identical(nrow(b), 1L)
-    for (s in c("dpc", "rdpc", "cdpc", "mcount", "allcount", "mpercent"))
+    info <- processedSpectrumInfo(qp, method = "all")
+    sp <- readProcessedSpectra(qp, featureId = info$feature_id_[info$grpid == 89],
+        method = "all")
+    object <- spectralMatching(sp, lp)
+    expect_identical(object$referenceRole, "library")
+    expect_identical(nrow(object$matchedResults), 1L)
+    expect_identical(object$matchedResults$library_accession, b$library_accession)
+    for (s in c("dpc", "rdpc", "cdpc", "mcount", "allcount", "mpercent")) {
         expect_identical(as.numeric(a[[s]]), as.numeric(b[[s]]), info = s)
+        # Legacy queryVlibrarySingle combines numeric scores and text metadata
+        # into a character vector before converting the scores back to doubles.
+        expect_equal(object$matchedResults[[s]], as.numeric(b[[s]]),
+            tolerance = 1e-14, info = s)
+    }
 })

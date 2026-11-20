@@ -119,9 +119,8 @@
 #' @noRd
 .mzs_rank_matches <- function(matches, attempted, topn = NA) {
     if (nrow(matches)) {
-        matches$rank <- as.integer(stats::ave(
-            -matches$dpc, matches$qkey,
-            FUN = function(s) rank(s, ties.method = "min", na.last = "keep")))
+        matches$rank <- as.integer(stats::ave(matches$dpc, matches$qkey,
+            FUN = .sm_rank_scores))
         matches$keep <- is.na(topn) | (!is.na(matches$rank) &
                                        matches$rank <= topn)
     } else {
