@@ -59,6 +59,72 @@ methods::setMethod("as.list", "SpectralMatchingParam", function(x, ...) {
         names(.sm_defaults))
 })
 
+#' BLINK fragment scoring parameters
+#'
+#' Select CPU BLINK scoring in `spectralMatching()` or `scoreSpectrumPair()`.
+#' Positive finite fragment intensities are raised to `intensityPower` and
+#' L2-normalized before binning (nearest integer, ties to even). The query
+#' bins are blurred using the upstream discrete kernel. With the defaults,
+#' offsets are -9 through +9 bins. Multiple ions can contribute within a
+#' window, so the approximate cosine can exceed one and the estimated count
+#' can exceed the number of distinct ions. Zero matching ions gives two zeros.
+#' The offline reference fixtures compare the cosine to the CPU implementation
+#' of biorack/blink with absolute tolerance 1e-12 and require identical counts.
+#' @param binWidth Width of a fragment mass bin in Da, positive.
+#' @param blurTolerance Fragment blur tolerance in Da, at least one bin wide.
+#' @param intensityPower Nonnegative exponent. Zero gives equal ion weights.
+#' @param q_ppmProd,l_ppmProd,q_daProd,l_daProd Must be zero. Set
+#'   `blurTolerance` in Da to control BLINK fragment matching.
+#' @inheritParams SpectralMatchingParam
+#' @references \doi{10.1038/s41598-023-40496-9}
+#' @return A BlinkMatchingParam extending SpectralMatchingParam.
+#' @examples
+#' p <- BlinkMatchingParam(blurTolerance = 0.02)
+#' d <- S4Vectors::DataFrame(msLevel = 2L, precursorMz = 200)
+#' d$mz <- list(c(50, 80))
+#' d$intensity <- list(c(100, 20))
+#' sp <- Spectra::Spectra(d, source = Spectra::MsBackendMemory())
+#' result <- spectralMatching(sp, sp, param = p, referenceRole = "library")
+#' result$matchedResults[c("blinkCosine", "blinkMatchingIonCount", "rank")]
+#' @name BlinkMatchingParam
+#' @aliases BlinkMatchingParam-class
+#' @exportClass BlinkMatchingParam
+NULL
+
+.blink_defaults <- c(binWidth = 0.001, blurTolerance = 0.01, intensityPower = 0.5)
+methods::setClass("BlinkMatchingParam", contains = "SpectralMatchingParam",
+    slots = stats::setNames(rep("numeric", 3L), names(.blink_defaults)),
+    prototype = c(as.list(.blink_defaults), list(q_ppmProd = 0, l_ppmProd = 0)),
+    validity = function(object) {
+        for (name in names(.blink_defaults)) {
+            x <- methods::slot(object, name)
+            if (length(x) != 1L || !is.null(dim(x)) || !is.finite(x) || x < 0)
+                return(paste(name, "must be one finite nonnegative number."))
+        }
+        if (object@binWidth == 0 || object@blurTolerance < object@binWidth)
+            return("binWidth must be positive and blurTolerance at least one bin wide.")
+        if (any(c(object@q_ppmProd, object@l_ppmProd, object@q_daProd, object@l_daProd) != 0))
+            return("BLINK uses blurTolerance in Da. Set side-specific fragment tolerances to zero.")
+        TRUE
+    })
+
+#' @rdname BlinkMatchingParam
+#' @export
+BlinkMatchingParam <- function(binWidth = 0.001, blurTolerance = 0.01,
+    intensityPower = 0.5, q_ppmPrec = 5, l_ppmPrec = 5, q_daPrec = 0,
+    l_daPrec = 0, collisionEnergyTolerance = 0, q_ppmProd = 0, l_ppmProd = 0,
+    q_daProd = 0, l_daProd = 0) {
+    do.call(methods::new, c(list(Class = "BlinkMatchingParam"), as.list(environment())))
+}
+
+#' @rdname BlinkMatchingParam
+#' @inheritParams SpectralMatchingParam
+#' @export
+methods::setMethod("as.list", "BlinkMatchingParam", function(x, ...) {
+    c(callNextMethod(), stats::setNames(lapply(names(.blink_defaults),
+        function(name) methods::slot(x, name)), names(.blink_defaults)))
+})
+
 .sm_index <- function(x, i, side) {
     if (!methods::is(x, "Spectra"))
         stop(side, " must be a Spectra object.")
@@ -70,7 +136,10 @@ methods::setMethod("as.list", "SpectralMatchingParam", function(x, ...) {
 .sm_scores <- c("dpc", "rdpc", "cdpc", "mcount", "allcount", "mpercent")
 
 .sm_pair_peaks <- function(x) {
-    p <- .msp_peaks(x)[[1L]]
+    .sm_clean_peaks(.msp_peaks(x)[[1L]])
+}
+
+.sm_clean_peaks <- function(p) {
     keep <- is.finite(p[, "mz"]) & p[, "mz"] > 0 &
         is.finite(p[, "intensity"]) & p[, "intensity"] >= 0
     data.frame(mz = p[keep, "mz"], i = p[keep, "intensity"], row.names = NULL)
@@ -102,7 +171,8 @@ methods::setMethod("as.list", "SpectralMatchingParam", function(x, ...) {
 #' @param queryIndex,referenceIndex One-based positions in the supplied objects.
 #' @return A list with \code{eligible}, \code{reason}, a \code{checks} data
 #'   frame (stage, field, outcome), and \code{scores} named dpc, rdpc, cdpc,
-#'   mcount, allcount and mpercent. A rejected pair reports the first failed
+#'   mcount, allcount and mpercent for the default scorer, or blinkCosine and
+#'   blinkMatchingIonCount for BLINK. A rejected pair reports the first failed
 #'   requirement and has missing scores. Eligible pairs report compatible or
 #'   compatible_partial. If either selected spectrum has no usable signal
 #'   after queued processing, eligibility is retained, the reason is
@@ -125,25 +195,31 @@ scoreSpectrumPair <- function(query, reference, param = SpectralMatchingParam(),
     q <- query[queryIndex]
     l <- reference[referenceIndex]
     level <- Spectra::msLevel(q)
-    .sm_compare_pair(level, Spectra::msLevel(l), Spectra::precursorMz(q),
+    pair <- .sm_eligibility(level, Spectra::msLevel(l), Spectra::precursorMz(q),
         Spectra::precursorMz(l), .sm_stages(query, queryIndex, level),
-        .sm_stages(reference, referenceIndex, level), .sm_pair_peaks(q),
-        .sm_pair_peaks(l), param)
+        .sm_stages(reference, referenceIndex, level), param)
+    blink <- is(param, "BlinkMatchingParam")
+    fields <- if (blink) .blink_scores else .sm_scores
+    pair$scores <- stats::setNames(rep(NA_real_, length(fields)), fields)
+    if (!pair$eligible) return(pair)
+    qp <- .sm_pair_peaks(q)
+    lp <- .sm_pair_peaks(l)
+    if (!any(qp$i > 0) || !any(lp$i > 0)) pair$reason <- "no_usable_peaks"
+    else pair$scores <- unlist(.sm_fragment_scores(qp, list(lp), param)[1L, ], use.names = TRUE)
+    pair
 }
 
-# Stage summaries and peak data are promises. Force them only after the
-# cheaper checks pass, for both single pairs and collection searches.
-.sm_compare_pair <- function(level, referenceLevel, queryMz, referenceMz,
-    qs, ls, qp, lp, param) {
+# Stage summaries are promises, forced only after precursor checks pass.
+.sm_eligibility <- function(level, referenceLevel, queryMz, referenceMz,
+    qs, ls, param) {
     levels <- c(level, referenceLevel)
     reason <- if (anyNA(levels)) "ms_level_missing" else if (
         any(!levels %in% 2:4)) "ms_level_unsupported" else if (
         levels[1L] != levels[2L]) "ms_level_mismatch" else "compatible"
     checks <- data.frame(stage = level, field = "msLevel",
         outcome = if (reason == "compatible") "match" else reason)
-    scores <- stats::setNames(rep(NA_real_, length(.sm_scores)), .sm_scores)
     result <- function(eligible) list(eligible = eligible, reason = reason,
-        checks = checks, scores = scores)
+        checks = checks)
     if (reason != "compatible")
         return(result(FALSE))
 
@@ -180,11 +256,5 @@ scoreSpectrumPair <- function(query, reference, param = SpectralMatchingParam(),
     }
     if (any(checks$outcome != "match"))
         reason <- "compatible_partial"
-    if (!any(qp$i > 0) || !any(lp$i > 0)) {
-        reason <- "no_usable_peaks"
-        return(result(TRUE))
-    }
-    scores <- .sm_score_peaks(qp, lp, param@q_ppmProd, param@l_ppmProd,
-        raW = 0.5, mzW = 2, q_daProd = param@q_daProd, l_daProd = param@l_daProd)
     result(TRUE)
 }

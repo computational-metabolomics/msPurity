@@ -33,6 +33,13 @@
         if (first > last) return(integer())
         sort.int(index[seq.int(first, last)])
     }
+    peaks <- function(ids)
+        stats::setNames(.mzs_matching_peaks(x[ids]), as.character(ids))
+    list(candidates = candidates, metadata = .mzs_library_metadata(x, a, key), peaks = peaks)
+}
+
+# Read descriptive fields only for the requested reference rows.
+.mzs_library_metadata <- function(x, a, key) {
     fields <- .MZS_SPECTRA_LIBRARY_MAP[paste0("x_mspurity_", c(
         "name", "compound_name", "precursor_type", "inchikey", "formula",
         "smiles", "inchi", "exact_mass", "instrument", "instrument_type", "splash"))]
@@ -41,7 +48,7 @@
         unname(fields), names(fields),
         "precursorPurity", "x_mspurity_precursor_purity", "x_mspurity_source_name",
         "x_mspurity_retention_time"))
-    metadata <- function(ids) {
+    function(ids) {
         d <- Spectra::spectraData(x[ids], columns = vars)
         # Coalesce per entry. A backend can advertise a variable that is
         # missing on some or all spectra.
@@ -54,7 +61,7 @@
         accession <- value("accession", "spectrumId", "x_mspurity_splash", "splash")
         pol <- as.integer(d$polarity)
         meta <- data.frame(
-            reference_source = key, reference_run_id = NA_character_,
+            reference_source = rep(key, length(ids)), reference_run_id = rep(NA_character_, length(ids)),
             reference_spectrum_id_ = as.numeric(ids), reference_native_id = accession,
             precursor_mz = as.numeric(d$precursorMz),
             retention_time = value("x_mspurity_retention_time", "rtime", numeric = TRUE),
@@ -68,9 +75,6 @@
             instrument_type = field("instrument_type"), instrument = field("instrument"))
         .mzs_filter_library(meta, a, anonymous = TRUE)
     }
-    peaks <- function(ids)
-        stats::setNames(.mzs_matching_peaks(x[ids]), as.character(ids))
-    list(candidates = candidates, metadata = metadata, peaks = peaks)
 }
 
 # Hash only anonymous candidate entries, using a platform-independent binary

@@ -134,14 +134,14 @@
 #'               \code{"parquet"} (experimental) matches the averaged spectra (and, with \code{q_spectraTypes = "scan"},
 #'               the referenced MS2 scans) of a Parquet results dataset in \code{q_dbPth}, written by
 #'               \code{createDatabase(format = "parquet")}, against a \code{Spectra} library, a converted Parquet library dataset
-#'               (see \code{convertLibraryToParquet()}) or another results dataset. Scores are computed exactly as for
+#'               (see \code{convertLibraryToParquet()}) or another results dataset. Default scores are computed as for
 #'               SQLite. With \code{updateDb = TRUE} the matches are added to the results dataset as identification
 #'               evidence, with long-form scores, compounds and per-query coverage; with \code{copyDb = TRUE} they are
 #'               added to a copy at \code{outPth} instead. Arguments that select spectra of a SQLite database only
 #'               (\code{q_pids}, \code{q_accessions}, \code{q_instruments}, \code{q_instrumentTypes}, \code{q_sources},
 #'               \code{q_raThres}, \code{l_raThres}, \code{l_pids}) are refused when set.
 #' @param topn integer (Parquet or Spectra queries); keep, per query spectrum, the matches ranked \code{topn} or better by dot
-#'             product cosine. Tied scores share a rank, and every match tied at the cut is kept. The cut and its
+#'             product cosine or, when selected, BLINK cosine. Tied scores share a rank, and every match tied at the cut is kept. The cut and its
 #'             boundary score are recorded in the dataset. \code{NA} keeps every match.
 #' @param sourcePaths named character (parquet only); source key -> location, for a study dataset that has moved since
 #'                    the results dataset was written.
@@ -156,6 +156,16 @@
 #' @param param Optional \code{\link{SpectralMatchingParam}} for a Spectra query.
 #'     Without it the four scalar ppm arguments set the tolerances. Explicit
 #'     scalar ppm settings must agree with a supplied parameter object.
+#'     Use \code{\link{BlinkMatchingParam}} with a Spectra query or a Parquet
+#'     results query to rank by BLINK approximate cosine. BLINK supports
+#'     measured and consensus MS2-MS4 spectra and uses the same precursor
+#'     and acquisition checks. The returned \code{scoring} record identifies
+#'     the implementation, version, effective settings and ranking score.
+#'     Hits expose \code{blinkCosine} and \code{blinkMatchingIonCount}.
+#'     Every eligible pair with usable peaks is scored, including pairs with
+#'     zero matching ions. All references tied at the rank cut are retained.
+#'     Parquet writes also record these in the matching activity and software
+#'     record. BLINK scores use separate evidence terms for the cosine and count.
 #' @param referenceRole For a Spectra query and a Spectra reference, use
 #'     \code{"experimental"} (default) or \code{"library"}. For a Parquet
 #'     path the manifest determines the role. A results path supplies the
@@ -177,7 +187,7 @@
 #' matchedResults (NULL when no hit is retained). Each hit includes one-based
 #' queryIndex and referenceIndex into those objects, available run, native
 #' and dataset identifiers, library accession, MS level, compatibility reason,
-#' six scores and within-query rank. Use the indices to retrieve the original
+#' method-specific scores and within-query rank. Use the indices to retrieve the original
 #' acquisition and provenance fields, including for anonymous spectra.
 #'
 #' Each retained hit identifies its \code{queryType} and \code{referenceType}
@@ -243,9 +253,10 @@
 #' \code{splash}, in that order. Entries missing all three receive a SHA-256 identifier
 #' derived from precursor mass, polarity and ordered peak values.
 #'
-#' Only the precursor index spans the full library. Candidate metadata and peaks are read
-#' in batches, including when precursor filtering is disabled. The input can use any row
-#' order. Memory for scoring results depends on the number of matches before the top-n cut.
+#' For default scoring of a Parquet results query against a direct library, only the
+#' precursor index spans the full library. BLINK also retains selection and compatibility
+#' metadata. Both read candidate peaks in batches and accept any input row order.
+#' Memory for scoring results depends on the number of matches before the top-n cut.
 #'
 #' For example, given a Parquet results path \code{query_path}, search an MSP library directly:
 #' \preformatted{
@@ -433,11 +444,20 @@ spectralMatching <- function(
   if (is(q_dbPth, "Spectra")) {
     return(.sm_search_spectra(as.list(environment()), names(match.call())[-1L]))
   }
-  if (!is.null(param) || !is.null(referenceRole))
+  blink <- is(param, "BlinkMatchingParam")
+  if ((!is.null(param) && !blink) || !is.null(referenceRole))
     stop("param and referenceRole require a Spectra query.", call. = FALSE)
   format <- match.arg(format)
   a <- as.list(environment())
-  a[c("param", "referenceRole")] <- NULL
+  a[c("blink", "param", "referenceRole")] <- NULL
+  if (blink) {
+    .sm_validate_topn(topn)
+    if (format != "parquet") stop("BLINK needs a Spectra query or format = 'parquet'.")
+    a$param <- param
+    .sm_search_param(a, names(match.call())[-1L])
+    if (!isTRUE(usePrecursors)) stop("BLINK requires usePrecursors = TRUE.")
+    if (!missing(raW) || !missing(mzW)) stop("Set BLINK intensityPower in BlinkMatchingParam().")
+  }
   if (format == 'parquet'){
     return(.spectralMatching_parquet(a))
   }

@@ -4,6 +4,13 @@
     rank(-scores, ties.method = "min", na.last = "keep")
 }
 
+.sm_validate_topn <- function(topn) {
+    if (length(topn) != 1L || !is.na(topn) &&
+            (!is.numeric(topn) || !is.finite(topn) ||
+                topn < 0 || topn != trunc(topn)))
+        stop("topn must be a nonnegative integer or NA.")
+}
+
 .sm_search_param <- function(a, supplied) {
     ppm <- c("q_ppmPrec", "l_ppmPrec", "q_ppmProd", "l_ppmProd")
     if (is.null(a$param)) return(do.call(SpectralMatchingParam, a[ppm]))
@@ -12,6 +19,8 @@
     methods::validObject(a$param)
     for (name in intersect(ppm, supplied)) {
         x <- a[[name]]
+        if (is(a$param, "BlinkMatchingParam") && endsWith(name, "Prod") && !isTRUE(x == 0))
+            stop("BLINK uses blurTolerance in Da. Set ", name, " to zero or omit it.")
         if (!is.numeric(x) || length(x) != 1L ||
                 !isTRUE(x == methods::slot(a$param, name)))
             stop(name, " conflicts with param.")
@@ -119,13 +128,16 @@
     }
 }
 
-.sm_search_spectra <- function(a, supplied) {
+.sm_search_spectra <- function(a, supplied, queryRows = NULL, referenceRows = NULL,
+        queryPeaks = NULL, referencePeaks = NULL, queryRt = NULL, referenceRt = NULL) {
     supported <- c("q_dbPth", "l_dbPth", "param", "referenceRole", "q_ppmPrec",
         "l_ppmPrec", "q_ppmProd", "l_ppmProd", "q_pol", "l_pol", "q_rtrange",
         "l_rtrange", "rttol", "l_accessions", "topn", "usePrecursors", "format",
         "updateDb", "copyDb")
     # These explicit settings describe the serial D04 scorer and the caller's
     # unfiltered peak selection. Other values require a different operation.
+    if (is(a$param, "BlinkMatchingParam") && any(c("raW", "mzW") %in% supplied))
+        stop("Set BLINK intensityPower in BlinkMatchingParam().")
     fixed <- c(cores = 1, raW = 0.5, mzW = 2)
     for (name in intersect(names(fixed), supplied)) {
         if (!is.numeric(a[[name]]) || !isTRUE(a[[name]] == fixed[[name]]))
@@ -144,10 +156,7 @@
         stop("A Spectra query cannot be searched with a SQLite format.")
     if (!isTRUE(a$usePrecursors))
         stop("usePrecursors must be TRUE for a Spectra query.")
-    if (length(a$topn) != 1L || !is.na(a$topn) &&
-            (!is.numeric(a$topn) || !is.finite(a$topn) ||
-                a$topn < 0 || a$topn != trunc(a$topn)))
-        stop("topn must be a nonnegative integer or NA.")
+    .sm_validate_topn(a$topn)
     if (length(a$rttol) != 1L || !is.na(a$rttol) &&
             (!is.numeric(a$rttol) || a$rttol < 0))
         stop("rttol must be nonnegative or NA.")
@@ -160,8 +169,15 @@
         stop("l_accessions requires a library reference.")
     qm <- .sm_search_metadata(query)
     lm <- .sm_search_metadata(reference)
+    if (!is.null(queryRt)) qm$rt <- queryRt
+    if (!is.null(referenceRt)) lm$rt <- referenceRt
+    if (is.null(queryPeaks)) queryPeaks <- function(i) .sm_pair_peaks(query[i])
+    if (is.null(referencePeaks)) referencePeaks <- function(ids)
+        lapply(.msp_peaks(reference[ids]), .sm_clean_peaks)
     qrows <- .sm_search_rows(qm, a$q_pol, a$q_rtrange)
     lrows <- .sm_search_rows(lm, if ("l_pol" %in% supplied) a$l_pol else NA, a$l_rtrange)
+    if (!is.null(queryRows)) qrows <- intersect(qrows, queryRows)
+    if (!is.null(referenceRows)) lrows <- intersect(lrows, referenceRows)
     if (length(accessions)) {
         keep <- lm$accession %in% accessions |
             (is.na(lm$accession) & any(startsWith(accessions, "sha256:")))
@@ -174,36 +190,54 @@
     lsource <- .sm_source_reader(reference, lm, ref$role)
     status <- .sm_query_status(qm, qrows, qsource$type)
 
-    match_query <- function(i, qp = .sm_pair_peaks(query[i])) {
+    scoring <- .sm_scoring(param)
+    batchSize <- .mzs_batch_size(spectra = TRUE)
+    match_query <- function(i, qp = queryPeaks(i)) {
         level <- qm$level[i]
         ids <- candidates(level, qm$mz[i])
         if (!is.na(a$rttol))
             ids <- ids[which(abs(lm$rt[ids] - qm$rt[i]) < a$rttol)]
-        rows <- lapply(ids, function(j, lp = .sm_pair_peaks(reference[j])) {
-            # Keep both peaks lazy through the eligibility decision. qp is
-            # shared by all reference candidates for this query.
-            pair <- .sm_compare_pair(level, lm$level[j], qm$mz[i], lm$mz[j],
-                qstages(i, level), lstages(j, level), qp, lp, param)
-            if (!pair$eligible) return(pair$reason)
+        reasons <- character()
+        parts <- list()
+        eligible <- 0L
+        .mzs_batches(length(ids), batchSize, function(ix) {
+            j <- ids[ix]
+            decision <- vapply(j, function(k) .sm_eligibility(level, lm$level[k],
+                qm$mz[i], lm$mz[k], qstages(i, level), lstages(k, level), param)$reason, "")
+            ok <- decision %in% c("compatible", "compatible_partial")
+            reasons <<- union(reasons, decision[!ok])
+            j <- j[ok]
+            decision <- decision[ok]
+            if (!length(j)) return()
             accession <- lm$accession[j]
-            if (ref$role == "library" && is.na(accession) &&
-                    (length(accessions) || pair$reason != "no_usable_peaks"))
-                accession <- .mzs_anonymous_accession(lm$mz[j], lm$polarity[j], lp)
-            if (length(accessions) && !accession %in% accessions) return(NULL)
-            if (pair$reason == "no_usable_peaks") return(pair$reason)
-            data.frame(queryIndex = i, referenceIndex = j, msLevel = level,
-                query_run_id = qm$run[i], query_native_id = qm$native[i],
+            signal <- any(qp$i > 0)
+            if (!signal && (!length(accessions) || !anyNA(accession))) {
+                eligible <<- eligible + length(j)
+                return()
+            }
+            peaks <- referencePeaks(j)
+            usable <- signal & vapply(peaks, function(p) any(p$i > 0), logical(1))
+            anonymous <- which(ref$role == "library" & is.na(accession) &
+                (usable | length(accessions) > 0L))
+            for (k in anonymous)
+                accession[k] <- .mzs_anonymous_accession(lm$mz[j[k]], lm$polarity[j[k]], peaks[[k]])
+            selected <- !length(accessions) | accession %in% accessions
+            eligible <<- eligible + sum(selected)
+            keep <- which(selected & usable)
+            if (!length(keep)) return()
+            scores <- .sm_fragment_scores(qp, peaks[keep], param)
+            j <- j[keep]
+            parts[[length(parts) + 1L]] <<- data.frame(queryIndex = i, referenceIndex = j,
+                msLevel = level, query_run_id = qm$run[i], query_native_id = qm$native[i],
                 query_spectrum_id_ = qm$id[i], reference_run_id = lm$run[j],
                 reference_native_id = lm$native[j], reference_spectrum_id_ = lm$id[j],
-                library_accession = if (ref$role == "library") accession else NA_character_,
-                reason = pair$reason, as.list(pair$scores))
+                library_accession = if (ref$role == "library") accession[keep] else NA_character_,
+                reason = decision[keep], scores, row.names = NULL)
         })
-        reasons <- unlist(Filter(is.character, rows), use.names = FALSE)
-        hits <- do.call(rbind, Filter(is.data.frame, rows))
+        hits <- do.call(rbind, parts)
         scored <- NROW(hits)
-        eligible <- scored + sum(reasons == "no_usable_peaks")
         if (scored) {
-            hits$rank <- .sm_rank_scores(hits$dpc)
+            hits$rank <- .sm_rank_scores(hits[[scoring$rankScore]])
             if (!is.na(a$topn))
                 hits <- hits[which(hits$rank <= a$topn), , drop = FALSE]
         }
@@ -225,5 +259,6 @@
     if (!NROW(hits)) hits <- NULL
     sources <- .sm_hit_sources(hits, qsource, lsource)
     list(matchedResults = sources$hits, query = query, reference = reference,
-        referenceRole = ref$role, queryStatus = status, sourceMeasurements = sources$table)
+        referenceRole = ref$role, queryStatus = status, sourceMeasurements = sources$table,
+        scoring = scoring)
 }
