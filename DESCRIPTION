@@ -1,36 +1,44 @@
 Package: msPurity
 Type: Package
-Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
-    Fragmentation in Metabolomics
+Title: Tools for LC-MSⁿ-Based Metabolomics: Precursor Ion Purity Assessment,
+    Fragmentation Data and Spectral Tree Processing, and Spectral Matching
 Version: 1.99.4
 Date: 2026-11-20
 Authors@R: c(
+    person(given = "Ossama", family = "Edbali",
+        email = "o.edbali@bham.ac.uk", role = c("aut", "cre"),
+        comment = c(ORCID = "0000-0003-0132-8668")),
+    person(given = "Ralf", family = "Weber", role = c("aut", "ths"),
+        comment = c(ORCID = "0000-0002-8796-4771")),
     person(given = "Thomas N.", family = "Lawson",
-        email = "thomas.nigel.lawson@gmail.com", role = c("aut", "cre"),
+        email = "thomas.nigel.lawson@gmail.com", role = "aut",
         comment = c(ORCID = "0000-0002-5915-7980")),
-    person(given = "Ralf", family = "Weber", role = "ctb"),
     person(given = "Martin", family = "Jones", role = "ctb"),
     person(given = "Julien", family = "Saint-Vanne", role = "ctb"),
     person(given = "Andris", family = "Jankevics", role = "ctb"),
-    person(given = "Ossama", family = "Edbali",
-        email = "o.edbali@bham.ac.uk", role = "ctb",
-        comment = c(ORCID = "0000-0003-0132-8668")),
     person(given = "Mark", family = "Viant", role = "ths"),
     person(given = "Warwick", family = "Dunn", role = "ths"))
 URL: https://github.com/computational-metabolomics/msPurity/
-Description: msPurity R package was developed to: 
-     1) Assess the spectral quality of fragmentation spectra by evaluating the "precursor ion purity". 
-     2) Process fragmentation spectra. 
-     3) Perform spectral matching.
-    What is precursor ion purity? -What we call "Precursor ion purity" is a measure of the 
-    contribution of a selected precursor peak in an isolation window used for fragmentation. 
-    The simple calculation involves dividing the intensity of the selected precursor peak by the 
-    total intensity of the isolation window. When assessing MS/MS spectra this calculation is 
-    done before and after the MS/MS scan of interest and the purity is interpolated at the 
-    recorded time of the MS/MS acquisition. Additionally, isotopic peaks can be removed, 
-    low abundance peaks are removed that are thought to have limited contribution to the 
-    resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be used 
-    to normalise the intensities used for the calculation.
+Description: Provides tools for precursor ion purity assessment, processing
+    fragmentation data and spectral trees, and spectral matching in
+    LC-MSn-based metabolomics. Precursor ion purity estimates the contribution
+    of a selected precursor to the signal within its isolation window, using
+    neighbouring MS1 measurements for MS2 and linked parent fragmentation
+    spectra for higher MSn levels. Fragmentation spectra can be associated
+    with chromatographic features, filtered and averaged using acquisition-aware
+    settings. Mass Spectral Trees link successive fragmentation spectra, while
+    Precursor-Fragment Trees connect individual precursor and product peaks.
+    Spectral matching compares measured or consensus spectra with experimental
+    spectra and reference libraries, accounting for MS level, precursor
+    relationships and acquisition conditions. Integration with 'Spectra' and
+    'xcms' connects spectrum handling and chromatographic feature information.
+    Parquet datasets link raw measurements, processed spectra and reference
+    libraries, retaining feature associations, processing settings and
+    measurement provenance. Reusable parameter objects and recorded processing
+    history support reproducible analysis and reopening of processed results.
+    Spectrum selection, linked visualisation, library import and export, and
+    reporting of feature information and spectral matches support downstream
+    interpretation and data exchange.
 Encoding: UTF-8
 License: GPL-3 + file LICENSE
 LazyData: TRUE
