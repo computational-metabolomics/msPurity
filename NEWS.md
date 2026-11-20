@@ -1,4 +1,18 @@
+# msPurity 1.99.4
+
+- **DIMS retirement**: `purityD`, its associated processing functions and
+  standalone DIMS functions, including `dimsPredictPuritySingle()`, are
+  deprecated. Calls remain functional during deprecation, but DIMS
+  functionality will receive no further bug fixes or feature development.
+  There is no direct replacement in msPurity. The interfaces will become
+  defunct and be removed in subsequent release cycles.
+
 # msPurity 1.99.3
+
+- `processedSpectrumInfo()`, `readProcessedSpectra()` and
+  `readProcessedProvenance()` reopen Parquet results by feature, MS level,
+  averaging method or run. They expose stored peak statistics, raw study
+  references and the measurements behind an average (#129).
 
 - `purityX()` now accepts `XcmsExperiment` and `XCMSnExp` alongside
   `xcmsSet`. It predicts feature purity from the selected MS1 spectra within

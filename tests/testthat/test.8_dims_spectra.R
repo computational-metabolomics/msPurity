@@ -2,7 +2,7 @@ context("purityD Spectra slots, MsExperiment input and msfr files")
 
 purityD_ref <- .parity_ref("purityD")
 
-test_that("the DIMS workflow is unchanged with only the Spectra slots filled", {
+test_that("the DIMS workflow is unchanged with only the Spectra slots filled", .with_dims_deprecation({
     old <- options(msPurity.legacySlots = FALSE)
     on.exit(options(old))
     q <- .parity_quiet
@@ -26,9 +26,9 @@ test_that("the DIMS workflow is unchanged with only the Spectra slots filled", {
     expect_length(sp, 4)
     expect_setequal(unique(sp$stage), c("orig", "processed"))
     expect_true("medianPurity" %in% Spectra::peaksVariables(sp))
-})
+}))
 
-test_that("purityD() accepts an MsExperiment", {
+test_that("purityD() accepts an MsExperiment", .with_dims_deprecation({
     q <- .parity_quiet
     inDF <- Getfiles(.dims_paths(), pattern = ".mzML", check = FALSE)
     me <- MsExperiment::readMsExperiment(
@@ -46,9 +46,9 @@ test_that("purityD() accepts an MsExperiment", {
         BPPARAM = BiocParallel::SerialParam())))
     expect_identical(pd@fileList$filepth, normalizePath(inDF$filepth))
     expect_identical(pd@fileList$sampleType, c("sample", "sample"))
-})
+}))
 
-test_that("updateObject() adds the Spectra slots to a saved purityD object", {
+test_that("updateObject() adds the Spectra slots to a saved purityD object", .with_dims_deprecation({
     q <- .parity_quiet
     inDF <- Getfiles(.dims_paths(), pattern = ".mzML", check = FALSE)
     pd <- q(averageSpectra(q(purityD(inDF, mzML = TRUE)), snMeth = "median",
@@ -62,7 +62,7 @@ test_that("updateObject() adds the Spectra slots to a saved purityD object", {
     expect_identical(averagedPeaks(up), saved@avPeaks)
     expect_equal(averagedPeaks(q(filterp(saved, thr = 5000, rsd = 10))),
                  purityD_ref$filterp, tolerance = 1e-12)
-})
+}))
 
 test_that("msfr peak lists are read through Spectra", {
     files <- list.files(system.file("extdata", "dims", "msfr-peaks",

@@ -29,7 +29,7 @@ test_that("intra, inter and all averaging honour call-level controls", {
         "averageAllFragSpectra"), 1L)[[1L]]$effective_cores, 1L)
 })
 
-test_that("DIMS averaging and grouping forward execution controls", {
+test_that("DIMS averaging and grouping forward execution controls", .with_dims_deprecation({
     path <- tempfile(fileext = ".csv")
     on.exit(unlink(path), add = TRUE)
     write.csv(data.frame(mz = rep(c(100, 200), 2), i = c(10, 20, 30, 40),
@@ -51,4 +51,4 @@ test_that("DIMS averaging and grouping forward execution controls", {
     parallel <- groupPeaks(parallel, cores = 2, blockSize = 2L)
     expect_equal(serial@groupedPeaks, parallel@groupedPeaks)
     expect_identical(serial@cores, 2)
-})
+}))

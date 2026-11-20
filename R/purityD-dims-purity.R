@@ -19,38 +19,22 @@ NULL
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
 
-#' @title Using purityD object, assess anticipated purity from a DI-MS run
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section dimsPredictPurity:
 #' Assess the precursor purity of anticpated MS/MS spectra.
 #' i.e. it 'predicts' the precursor purity of the DI-MS peaks for a future MS/MS run.
+#'
+#' \strong{Value:} purityD object with predicted purity of peaks
 #'
 #' @aliases dimsPredictPurity
 #'
 #' @param Object object = purityD object
-#' @param sampleOnly boolean = if TRUE will only calculate purity for sample peaklists
-#' @inheritParams dimsPredictPuritySingle
-#
-#' @return  purityD object with predicted purity of peaks
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ## A high signal-to-noise threshold keeps the example short
-#' ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-#' ppDIMS <- filterp(ppDIMS)
-#' ppDIMS <- subtract(ppDIMS)
-#' ppDIMS <- dimsPredictPurity(ppDIMS)
-#' @return purityD object
-#' @seealso \code{\link{dimsPredictPuritySingle}}
-#'
-#'
 #' @export
 setMethod(f="dimsPredictPurity", signature="purityD",
           definition= function(Object, ppm = 1.5, minOffset=0.5, maxOffset=0.5,
                                iwNorm=FALSE, iwNormFun=NULL, ilim=0.05, sampleOnly=FALSE,
                                isotopes=TRUE, im=NULL) {
+            .msp_deprecate_dims("dimsPredictPurity")
             requireNamespace('foreach')
             Object <- .pd_begin(Object)
 
@@ -125,9 +109,8 @@ predictPurityExp <- function(Object, fidx){
 
 
 
-#' @title Predict the precursor purity from a DI-MS dataset
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section dimsPredictPuritySingle:
 #' Given a an DI-MS dataset (either mzML or .csv file) calculate the predicted
 #' purity for a vector of mz values.
 #'
@@ -136,12 +119,13 @@ predictPurityExp <- function(Object, fidx){
 #'
 #' A ppm tolerance is used to find the target mz value in each scan.
 #'
+#' \strong{Value:} a dataframe of the target mz values and the predicted purity score
+#'
 #' @param mztargets vector = mz targets to get predicted purity for
 #' @param filepth character = mzML file path or .csv file path
 #' @param minOffset numeric = isolation window minimum offset
 #' @param maxOffset numeric = isolation window maximum offset
 #' @param ppm numeric = tolerance for target mz value in each scan
-#' @param mzML boolean = Whether an mzML file is to be used or .csv file (TRUE == mzML)
 #' @param iwNorm boolean = if TRUE then the intensity of the isolation window will be normalised based on the iwNormFun function
 #' @param iwNormFun function = A function to normalise the isolation window intensity. The default function is very generalised and just accounts for edge effects
 #' @param ilim numeric = All peaks less than this percentage of the target peak will be removed from the purity calculation, default is 5% (0.05)
@@ -149,12 +133,6 @@ predictPurityExp <- function(Object, fidx){
 #' @param isotopes boolean = TRUE if isotopes are to be removed
 #' @param im matrix = Isotope matrix, default removes C13 isotopes (single, double and triple bonds)
 #' @param sim boolean = TRUE if file is from sim stitch experiment. Default FALSE
-#' @examples
-#' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML",
-#'                        package="msPurityData")
-#' predicted <- dimsPredictPuritySingle(c(173.0806, 216.1045), filepth=mzmlPth,
-#'                              minOffset=0.5, maxOffset=0.5, ppm=5, mzML=TRUE)
-#' @return a dataframe of the target mz values and the predicted purity score
 #' @export
 dimsPredictPuritySingle <- function(mztargets,
                                     filepth,
@@ -169,6 +147,7 @@ dimsPredictPuritySingle <- function(mztargets,
                                     isotopes=TRUE,
                                     im=NULL,
                                     sim=FALSE){
+  .msp_deprecate_dims("dimsPredictPuritySingle")
 
   # open the file and get the scans
   if(mzML==TRUE){

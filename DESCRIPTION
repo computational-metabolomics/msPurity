@@ -2,7 +2,7 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.99.3
+Version: 1.99.4
 Date: 2026-11-20
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
@@ -107,6 +107,7 @@ Collate:
     'parquet-matching.R'
     'parquet-msn.R'
     'parquet-purityA.R'
+    'parquet-read.R'
     'parquet-schemas.R'
     'parquet-sqlite.R'
     'parquet-validate.R'
