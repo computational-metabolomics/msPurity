@@ -6,3 +6,7 @@ check/
 tests/testthat/purityXplots/
 .docs/
 .DS_Store
+
+# Rendered vignettes (the database schema is a source asset)
+/vignettes/*.html
+!/vignettes/spectral-database-schema.html

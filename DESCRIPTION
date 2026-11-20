@@ -2,7 +2,7 @@ Package: msPurity
 Type: Package
 Title: Tools for LC-MSn-Based Metabolomics: Precursor Ion Purity Assessment,
     Fragmentation Data and Spectral Tree Processing, and Spectral Matching
-Version: 1.99.5
+Version: 1.99.6
 Date: 2026-11-20
 Authors@R: c(
     person(given = "Ossama", family = "Edbali",
@@ -81,6 +81,7 @@ Imports:
     utils
 Suggests:
     igraph,
+    lcmsPlot,
     MSnbase,
     testthat (>= 3.2.0),
     xcms,

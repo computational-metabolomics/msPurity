@@ -1,0 +1,333 @@
+---
+title: "LC-MSⁿ data exploration, processing and spectral matching: chemical standards L-tryptophan and L-kynurenine"
+author: "Ralf J. M. Weber and Ossama Edbali"
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    toc_float: true
+bibliography: mspurity.bib
+vignette: >
+  %\VignetteIndexEntry{LC-MSn data exploration, processing and spectral matching of chemical standards}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+# Introduction
+
+msPurity assesses the precursor purity of fragmentation spectra
+[@Lawson2017], links the spectra to LC-MS features, filters and averages
+them, stores the results and compares spectra. This vignette applies these
+steps to MS²–MS⁴ spectra of two standards bundled with the package:
+L-tryptophan and L-kynurenine, measured as [M+H]⁺ ions at m/z 205.0972 and
+209.0921. Each standard was acquired in two positive-mode runs: an MS¹-only
+run and an MS¹–MS⁴ run with HCD and CID fragmentation at several collision
+energies. The files were reduced to the targeted isolation windows and the selected
+fragmentation branches for testing and demonstration purposes.
+
+# Explore the data
+
+msPurity reads raw data through `Spectra`. The MS¹-only runs contain only
+MS¹ scans. In the MS¹–MS⁴ runs, each MS³ spectrum fragments a product ion
+selected from an MS² spectrum, and each MS⁴ spectrum a product ion from an
+MS³ spectrum.
+
+```{r data, message = FALSE}
+library(msPurity)
+library(Spectra)
+library(xcms)
+library(MsExperiment)
+
+dir <- system.file("extdata", "msn-standards", package = "msPurity")
+runs <- data.frame(
+    file = c("msPurity_L_tryptophan_6305_MSn.mzML.gz",
+             "msPurity_L_kynurenine_161166_MSn.mzML.gz",
+             "msPurity_L_tryptophan_6305_MS1.mzML.gz",
+             "msPurity_L_kynurenine_161166_MS1.mzML.gz"),
+    sample_id = c("tryptophan MSn", "kynurenine MSn",
+                  "tryptophan MS1", "kynurenine MS1"),
+    compound = factor(rep(c("tryptophan", "kynurenine"), 2),
+                      levels = c("tryptophan", "kynurenine")),
+    acquisition = rep(c("MS1-MS4", "MS1 only"), each = 2))
+files <- file.path(dir, runs$file)
+compound <- function(x) ifelse(grepl("tryptophan", x), "tryptophan",
+                               "kynurenine")
+serial <- BiocParallel::SerialParam()
+
+raw <- Spectra(files, source = MsBackendMzR(), BPPARAM = serial)
+table(run = runs$sample_id[match(basename(dataOrigin(raw)), runs$file)],
+      msLevel = msLevel(raw))
+```
+
+# Detect features with xcms
+
+xcms detects chromatographic peaks in the MS¹ scans of all four runs and
+groups them into features across runs. For each standard, the peaks of its
+MS¹-only and MS¹–MS⁴ runs form one feature at the [M+H]⁺ m/z. No
+retention-time correction was applied.
+
+```{r features}
+xe <- readMsExperiment(files, sampleData = runs, BPPARAM = serial)
+xe <- findChromPeaks(xe, param = CentWaveParam(ppm = 10, peakwidth = c(3, 30),
+    snthresh = 10, prefilter = c(3, 100), noise = 0),
+    msLevel = 1L, BPPARAM = serial)
+xe <- groupChromPeaks(xe, param = PeakDensityParam(
+    sampleGroups = as.character(runs$compound), binSize = 0.005, bw = 5,
+    minFraction = 0.5))
+
+targets <- c(tryptophan = 205.09715, kynurenine = 209.09207)
+fd <- featureDefinitions(xe)
+features <- vapply(targets, function(mz)
+    which(abs(fd$mzmed - mz) <= mz * 10e-6), integer(1))
+fd[features, c("mzmed", "rtmed", "npeaks")]
+intensities <- featureValues(xe)[features, ]
+colnames(intensities) <- runs$sample_id
+intensities
+```
+
+lcmsPlot draws the ion chromatograms of the two features in each run, with
+the detected peaks shaded. The MS¹ scans of the MS¹–MS⁴ runs are sparser,
+because the instrument spends most of each cycle on MS²–MS⁴ scans.
+
+```{r eic, eval = requireNamespace("lcmsPlot", quietly = TRUE), fig.width = 8, fig.height = 5}
+library(lcmsPlot)
+lcmsPlot(xe, BPPARAM = serial) +
+    lp_chromatogram(features = rownames(fd)[features], ppm = 10,
+                    rt_tol = 30, highlight_peaks = TRUE) +
+    lp_grid(rows = "acquisition", cols = "compound")
+```
+
+# Assess purity and link spectra to features
+
+With `msLevel = 2:4`, `purityA()` estimates MS² purity from the neighbouring
+MS¹ scans and MS³/MS⁴ purity from the parent spectrum the precursor was
+isolated from. `frag4feature()` links MS² spectra to features by precursor
+m/z and retention time, and links MS³/MS⁴ spectra to the same feature
+through their parent spectra. An MS² spectrum excluded by `plim` does not
+exclude its MS³/MS⁴ descendants. `purityA()` receives the same four runs
+as the xcms object; the MS¹-only runs contain no fragmentation spectra and
+add no purity results. Without retention-time correction,
+`convert2RawRT = FALSE`.
+
+```{r purity, message = FALSE}
+pa <- purityA(files, msLevel = 2:4, cores = 1L, plotP = FALSE)
+pa <- frag4feature(pa, xe, ppm = 10, msLevel = 2:4, convert2RawRT = FALSE)
+linked <- groupedSpectra(pa, legacy = FALSE)
+table(compound = compound(dataOrigin(linked)), msLevel = msLevel(linked))
+```
+
+`PurityAParam()` and `Frag4FeatureParam()` hold the same settings as
+reusable parameter objects.
+
+lcmsPlot also draws `purityA` results. For tryptophan, each triangle marks
+MS² events at the time of their precursor MS¹ scan, coloured by precursor
+purity.
+
+```{r purity-overlay, eval = requireNamespace("lcmsPlot", quietly = TRUE), fig.width = 6, fig.height = 3.5}
+precursor <- data.frame(sample_id = "tryptophan MSn",
+                        mz = targets[["tryptophan"]],
+                        rt = fd$rtmed[features[["tryptophan"]]])
+lcmsPlot(pa, metadata = runs, BPPARAM = serial) +
+    lp_chromatogram(features = precursor, sample_ids = "tryptophan MSn",
+                    ppm = 10, rt_tol = 45) +
+    lp_purity_overlay(sample_ids = "tryptophan MSn", threshold = 0.8)
+```
+
+# Filter and average by acquisition condition
+
+`FilterFragSpectraParam()` sets assign filter settings to spectra by MS
+level, mass analyzer, activation type, collision energy or polarity; `select`
+does not discard spectra. Here HCD and CID spectra use different
+signal-to-noise thresholds. The purity threshold (`plim`, default 0.8,
+dashed line) applies to each spectrum's own assessment.
+
+```{r filter, fig.width = 5, fig.height = 3.5}
+filter_sets <- list(
+    HCD = FilterFragSpectraParam(select = list(activationType = "HCD"),
+                                 snr = 2),
+    CID = FilterFragSpectraParam(select = list(activationType = "CID"),
+                                 snr = 3))
+pa <- filterFragSpectra(pa, allfrag = TRUE, msLevel = 2:4,
+                        param = filter_sets)
+assessed <- allFragSpectra(pa, legacy = FALSE)
+table(msLevel = msLevel(assessed), purityPassed = assessed$purity_pass_flag)
+boxplot(assessed$inPurity ~ msLevel(assessed), xlab = "MS level",
+        ylab = "Precursor purity")
+abline(h = 0.8, lty = 2)
+```
+
+`AverageFragSpectraParam()` sets select the spectra to average and can
+combine acquisition conditions. Here each activation type is averaged
+separately, pooling its collision energies. Averages stay separate by
+feature, MS level and precursor path, so a feature has one MS² average per
+set and several MS³/MS⁴ averages. Averages whose inputs kept no peaks after
+filtering are retained as empty spectra.
+
+```{r average}
+average_sets <- list(
+    HCD = AverageFragSpectraParam(select = list(activationType = "HCD"),
+        combine = "collisionEnergy", minfrac = 0, ppm = 10),
+    CID = AverageFragSpectraParam(select = list(activationType = "CID"),
+        combine = "collisionEnergy", minfrac = 0, ppm = 10))
+pa <- averageAllFragSpectra(pa, param = average_sets)
+
+averages <- averagedSpectra(pa, legacy = FALSE)
+averages$compound <- names(features)[match(averages$grpid, features)]
+table(compound = averages$compound, msLevel = msLevel(averages),
+      set = averages$msPurityParameterSet)
+```
+
+The averaged HCD MS² spectra of the two standards:
+
+```{r average-plot, fig.width = 8, fig.height = 5}
+ms2_hcd <- msLevel(averages) == 2L & averages$msPurityParameterSet == "HCD"
+trp_hcd <- which(ms2_hcd & averages$compound == "tryptophan")
+kyn_hcd <- which(ms2_hcd & averages$compound == "kynurenine")
+plotSpectra(averages[c(trp_hcd, kyn_hcd)],
+            main = c("tryptophan", "kynurenine"))
+```
+
+`averageAllFragSpectra()` averages all spectra of a feature, regardless of
+file. For studies with several files, `averageIntraFragSpectra()` averages
+within each file and `averageInterFragSpectra()` then averages across
+files, using each file's average once per feature. Both accept the same
+parameter sets; they are not run here because each standard has one
+MS¹–MS⁴ run.
+
+```{r intra-inter, eval = FALSE}
+pa <- averageIntraFragSpectra(pa, param = average_sets)
+pa <- averageInterFragSpectra(pa, param = average_sets)
+```
+
+`averageMembers()` lists the spectra an average selected and whether they
+contributed peaks; `averagePeakMembers()` gives the input peaks behind each
+averaged peak.
+
+```{r provenance}
+members <- averageMembers(averages, averages$spectrumId[kyn_hcd])
+table(contributes = members$contributes)
+```
+
+# Processing history
+
+Each step records its effective settings, software version and references
+to the spectra it read and wrote. Spectra extracted from the object, such
+as `averages`, keep their history.
+
+```{r history}
+vapply(processingHistory(pa), `[[`, character(1), "step", USE.NAMES = FALSE)
+processingParameters(pa, "filterFragSpectra")[[1L]][c("plim", "msLevel")]
+```
+
+# Store and reopen results in Parquet
+
+MsBackendParquet's `mzMLToParquet()` converts the four raw runs into a
+study dataset; `purityA()` also accepts a `Spectra` object on this dataset
+in place of the mzML files. `createDatabase(format = "parquet")` writes the
+MS²–MS⁴ results, including feature links, filter flags, averages and their
+members, linked to the study. The reader functions reopen them by feature,
+MS level, averaging method (`"all"`, `"intra"` or `"inter"`) or run.
+
+```{r parquet, message = FALSE}
+study <- file.path(tempdir(), "standards-study")
+MsBackendParquet::mzMLToParquet(files, path = study, verbose = FALSE)
+results <- createDatabase(pa, xe, outDir = tempdir(),
+    dbName = "standards.parquet", format = "parquet", study = study)
+
+info <- processedSpectrumInfo(results)
+table(method = info$method, msLevel = info$ms_level)
+stored <- readProcessedSpectra(results, msLevel = 2L)
+provenance <- readProcessedProvenance(results, msLevel = 2L)
+```
+
+# Explore spectral trees
+
+A Mass Spectral Tree follows the parent scans recorded by the instrument.
+The plot shows one tryptophan MS² scan with its MS³ and MS⁴ descendants,
+labelled with their precursor m/z.
+
+```{r scan-tree, eval = requireNamespace("igraph", quietly = TRUE), fig.width = 7, fig.height = 4}
+scans <- massSpectralTrees(raw)
+ms2_nodes <- subset(scans$nodes,
+                    msLevel == 2L & compound(run_id) == "tryptophan")
+children <- table(scans$edges$parentLineageScanId)
+start <- ms2_nodes$lineageScanId[which.max(children[ms2_nodes$lineageScanId])]
+branch <- subsetTree(scans, node = start, mode = "out")
+plot(branch, main = "Tryptophan MS² scan and its descendants",
+     labels = with(branch$nodes, sprintf("MS%d\n%.4f", msLevel, precursorMz)),
+     vertex.label.degree = pi / 2, vertex.label.dist = 2.5)
+```
+
+A Precursor–Fragment Tree links each precursor peak to the fragment peaks
+of the spectrum it was isolated for. Both [M+H]⁺ ions have fragments
+17.0265 Da lower, consistent with a loss of NH₃; the mass difference alone
+does not identify the lost species.
+
+```{r peak-tree}
+links <- fragmentLinks(precursorFragmentTrees(raw))
+nh3 <- subset(links, abs(delta_mz - 17.026549) <= 0.002)
+table(compound = compound(nh3$run_id), precursor = round(nh3$precursor_mz, 3))
+```
+
+See `vignette("measured-spectral-trees", package = "msPurity")` for
+traversal, plotting and GraphML export.
+
+# Compare spectra
+
+`spectralMatching()` accepts measured and consensus MS²–MS⁴ `Spectra`.
+Before reading peaks, each pair is checked for MS level, precursor m/z,
+acquisition conditions and available parent paths (`scoreSpectrumPair()`
+reports this check for a single pair). Here every linked spectrum is
+compared with the averages of both standards.
+
+```{r matching}
+res <- spectralMatching(linked, averages)
+table(status = res$queryStatus$status, msLevel = msLevel(linked))
+hits <- res$matchedResults
+table(query = compound(dataOrigin(linked))[hits$queryIndex],
+      reference = averages$compound[hits$referenceIndex])
+head(hits[, c("msLevel", "reason", "dpc", "rank", "sharedMeasurement")])
+```
+
+Each spectrum is scored only against averages of its own standard and
+activation type. `sharedMeasurement` reports that the measured spectrum
+contributed to the average. `queryStatus` gives the outcome for every
+query, including those without a compatible reference. The mirror plot
+compares the best-scoring measured kynurenine MS² spectrum with its HCD
+average, each scaled to its base peak.
+
+```{r mirror, fig.width = 6, fig.height = 4.5}
+best <- subset(hits, referenceIndex == kyn_hcd)
+best <- best[which.max(best$dpc), ]
+plotSpectraMirror(scalePeaks(linked[best$queryIndex], by = max),
+                  scalePeaks(averages[kyn_hcd], by = max), ppm = 10,
+                  main = sprintf("Measured (top) and averaged (bottom): dpc %.2f",
+                                 best$dpc))
+```
+
+`BlinkMatchingParam()` scores with BLINK instead of the dot-product
+cosines, and the Parquet results can serve as the reference:
+
+```{r blink}
+blink <- spectralMatching(linked[msLevel(linked) == 2L], results,
+                          param = BlinkMatchingParam())
+head(blink$matchedResults[, c("msLevel", "blinkCosine",
+                              "blinkMatchingIonCount")])
+```
+
+Parquet results can also be searched against spectral libraries, including
+`Spectra` libraries read through other backends; see `?spectralMatching`.
+
+# Session information
+
+```{r session}
+sessionInfo()
+```
+
+# References
