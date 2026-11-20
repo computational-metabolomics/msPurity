@@ -1,6 +1,6 @@
 Package: msPurity
 Type: Package
-Title: Tools for LC-MSⁿ-Based Metabolomics: Precursor Ion Purity Assessment,
+Title: Tools for LC-MSn-Based Metabolomics: Precursor Ion Purity Assessment,
     Fragmentation Data and Spectral Tree Processing, and Spectral Matching
 Version: 1.99.5
 Date: 2026-11-20
@@ -30,8 +30,10 @@ Description: Provides tools for precursor ion purity assessment, processing
     Precursor-Fragment Trees connect individual precursor and product peaks.
     Spectral matching compares measured or consensus spectra with experimental
     spectra and reference libraries, accounting for MS level, precursor
-    relationships and acquisition conditions. Integration with 'Spectra' and
-    'xcms' connects spectrum handling and chromatographic feature information.
+    relationships and acquisition conditions. The optional BLINK method computes
+    approximate cosine similarity as described by Harwood et al. (2023)
+    <doi:10.1038/s41598-023-40496-9>. Integration with 'Spectra' and 'xcms'
+    connects spectrum handling and chromatographic feature information.
     Parquet datasets link raw measurements, processed spectra and reference
     libraries, retaining feature associations, processing settings and
     measurement provenance. Reusable parameter objects and recorded processing

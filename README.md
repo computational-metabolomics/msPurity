@@ -1,6 +1,6 @@
 # msPurity
 
-**An R/Bioconductor package for LC-MSⁿ-based metabolomics, providing tools for
+**An R/Bioconductor package for LC-MSn-based metabolomics, providing tools for
 precursor ion purity assessment, processing fragmentation data and spectral
 trees, and spectral matching.**
 
@@ -37,12 +37,12 @@ processing workflow (version 1) with the following additional and improved funct
   processed spectra, with supported inputs from Spectra, MsExperiment and
   XcmsExperiment. MsBackendParquet connects Spectra to spectra stored in Parquet
   datasets.
-- **MSⁿ data processing.** Associate MSⁿ spectra with chromatographic
+- **MSn data processing.** Associate MSn spectra with chromatographic
   features through their acquisition relationships. Filter product peaks and
   average spectra using explicit acquisition conditions, retaining separate
   groups where precursor paths or conditions are incompatible. Assess precursor
   ion purity using neighbouring MS1 spectra for MS2 and the linked parent
-  fragmentation spectrum for higher MSⁿ levels.
+  fragmentation spectrum for higher MSn levels.
 - **Reproducible settings and results.** Reuse parameter objects for purity
   assessment, feature association, filtering and averaging. Processing history
   records the settings applied and the measurements used. Reopen selected
@@ -51,9 +51,11 @@ processing workflow (version 1) with the following additional and improved funct
   Precursor-Fragment Trees linking individual precursor and product peaks.
   Follow parents, children and fragmentation paths, inspect supporting
   measurements, and exchange tree representations for further visualisation.
-- **MSⁿ spectral matching.** Compare measured or consensus spectra with other
+- **MSn spectral matching.** Compare measured or consensus spectra with other
   experimental spectra and reference libraries, accounting for MS level,
-  precursor relationships and acquisition conditions.
+  precursor relationships and acquisition conditions. For approximate cosine
+  similarity, `BlinkMatchingParam()` selects the BLINK method of
+  [Harwood et al. (2023)](https://doi.org/10.1038/s41598-023-40496-9).
 - **Spectrum selection and visualisation.** Select spectra and filter their
   peaks through Spectra. Linked views using lcmsPlot connect chromatographic
   peaks, fragmentation events, spectra and matching results.
@@ -73,7 +75,7 @@ functional during deprecation; see
 Version 2 uses Parquet datasets to retain spectra alongside the information
 needed to interpret and reuse them. The workflow connects three kinds of data:
 
-- **Raw measurements:** convert MSⁿ mzML data with
+- **Raw measurements:** convert MSn mzML data with
   `MsBackendParquet::mzMLToParquet()` and read the resulting spectra through
   Spectra. Spectrum identities and parent references link fragmentation scans
   back to their acquisition context.
@@ -87,7 +89,7 @@ needed to interpret and reuse them. The workflow connects three kinds of data:
   library inputs, including Spectra objects, into Parquet datasets for spectral
   matching.
 
-Parquet is the result-storage route for MSⁿ data processing and acquisition-aware
+Parquet is the result-storage route for MSn data processing and acquisition-aware
 averages. The older SQLite route is limited to MS2 results; supported existing
 SQLite databases can be converted with `convertSqliteToParquet()`.
 
@@ -201,6 +203,13 @@ Dunn, W.B., Weber, R.J.M. and Viant, M.R. (2026). *Experimental and computationa
 approaches for deep metabolome annotation with application to the ecotoxicological
 model organism Daphnia magna.* GigaScience, 15, giag055.
 [doi:10.1093/gigascience/giag055](https://doi.org/10.1093/gigascience/giag055).
+
+If you use BLINK for spectral matching, please also cite its original publication.
+
+Harwood, T.V., Treen, D.G.C., Wang, M., de Jong, W., Northen, T.R. and
+Bowen, B.P. (2023). *BLINK enables ultrafast tandem mass spectrometry cosine
+similarity scoring.* Scientific Reports, 13, 13462.
+[doi:10.1038/s41598-023-40496-9](https://doi.org/10.1038/s41598-023-40496-9).
 
 ## Authors and contributions
 
