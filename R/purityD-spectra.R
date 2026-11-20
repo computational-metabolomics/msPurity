@@ -166,22 +166,23 @@
     Object
 }
 
-#' Update a purityD object to the current class definition
-#'
+#' @rdname msPurity-deprecated
+#' @section updateObject (purityD method):
 #' Objects saved before msPurity stored the averaged DIMS peak lists in a
 #' \code{Spectra} object lack the \code{avSpectra} and \code{experiment}
 #' slots. \code{updateObject()} builds them from \code{avPeaks} and
 #' \code{fileList}. Every purityD method updates its input this way.
 #'
+#' \strong{Value:} An updated purityD object.
+#'
 #' @param object purityD object.
 #' @param ... unused.
 #' @param verbose logical; unused.
 #'
-#' @return An updated purityD object.
 #' @aliases updateObject,purityD-method
-#' @seealso \code{\link{averagedPeaks}}
 #' @export
 setMethod("updateObject", "purityD", function(object, ..., verbose = FALSE) {
+    .msp_deprecate_dims("updateObject")
     if (.pd_is_current(object))
         return(object)
     pd <- methods::new("purityD")
@@ -194,8 +195,8 @@ setMethod("updateObject", "purityD", function(object, ..., verbose = FALSE) {
     pd
 })
 
-#' Averaged peaks of a purityD object
-#'
+#' @rdname msPurity-deprecated
+#' @section averagedPeaks:
 #' The averaged peak list of each file, as the \code{avPeaks} list (a list
 #' with elements \code{orig} and \code{processed}, each with one data frame
 #' per file; \code{legacy = TRUE}, the default) or as a \code{Spectra}
@@ -204,13 +205,15 @@ setMethod("updateObject", "purityD", function(object, ..., verbose = FALSE) {
 #' only filled while \code{options(msPurity.legacySlots = TRUE)}, the
 #' default for this release.
 #'
+#' \strong{Value:} A list or a \code{Spectra} object.
+#'
 #' @param pd purityD object.
 #' @param legacy logical; TRUE for the avPeaks list, FALSE for \code{Spectra}.
 #'
-#' @return A list or a \code{Spectra} object.
 #' @aliases averagedPeaks averagedPeaks,purityD-method
 #' @export averagedPeaks
 setMethod("averagedPeaks", "purityD", function(pd, legacy = TRUE) {
+    .msp_deprecate_dims("averagedPeaks")
     pd <- .pd_update(pd)
     if (legacy) .pd_spectra_to_peaks(pd@avSpectra) else pd@avSpectra
 })

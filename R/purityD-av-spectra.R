@@ -20,35 +20,29 @@ NULL
 # along with msPurity.  If not, see <https://www.gnu.org/licenses/>.
 
 
-#' @title Using purityD object, calculates to average mz, intensity
-#' and signal-to-noise of multiple scans from multiple MS datafiles
-#' (mzML or .csv)
+#' @rdname msPurity-deprecated
+#' @section averageSpectra:
+#' If \code{cores} is omitted, the call uses \code{Object@@cores}
+#' without changing that stored setting.
 #'
-#' @description
 #' Uses a purityD object with references to multiple MS files. For each file:
 #' Averages multiple scans together,
 #' see averageSpectraSingle for more information
 #'
+#' \strong{Value:} purityD object with averaged spectra
+#'
 #' @param Object object; purityD object
-#' @inheritParams averageSpectraSingle
 #' @param cores numeric; Maximum number of workers for this call. If omitted,
 #'   uses \code{Object@@cores} without changing that stored setting.
-#
-#' @aliases averageSpectra
-#' @return  purityD object with averaged spectra
-#' @examples
 #'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ppDIMS <- averageSpectra(ppDIMS)
-#' @seealso \code{\link{averageSpectraSingle}}
+#' @aliases averageSpectra
 #' @export
 setMethod(f="averageSpectra", signature="purityD", definition =
                   function(Object, rtscn = "all", scanRange=NA, timeRange = NA,
                            clustType="hc", ppm=1.5, snthr = 3, av="median",
                            missingV="zero", minfrac=0.6667, normTIC=FALSE,
                            snMeth="median", mzRback="pwiz", cores=1, blockSize=5000L) {
+  .msp_deprecate_dims("averageSpectra")
   if (missing(cores)) cores <- max(1L, Object@cores)
   .clustering_controls(cores, blockSize)
   Object <- .pd_begin(Object)
@@ -129,10 +123,8 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 
 })
 
-#' @title Calculates to average mz, intensity and signal-to-noise of multiple
-#'  scans from 1 MS datafile (mzML or .csv)
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section averageSpectraSingle:
 #' Averages multiple scans of mass spectrometry data together.
 #' Each scan consisting of a minimum of intensity and mz values.
 #'
@@ -148,7 +140,8 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #'
 #' The function will work for both LC-MS or DI-MS datasets.
 #'
-#' @inherit groupPeaksEx details
+#' \strong{Value:} dataframe of the median mz, intensity, signal-to-noise ratio.
+#'
 #'
 #' @param filePth character; Path of the file to be processed
 #' @param rtscn character; Whether it is scans or retention time to be filtered. Use "all" if all scans to be used. \['rt', 'scns', 'all'\]
@@ -160,17 +153,12 @@ setMethod(f="averageSpectra", signature="purityD", definition =
 #' @param av character; What type of averaging to do between peaks
 #' @param missingV character; What to do with missing values (zero or ignore)
 #' @param minfrac numeric; Min fraction of scans with a grouped peak to be an accepted averaged peak
-#' @inheritParams groupPeaksEx
 #' @param csvFile boolean; A csv file can be used as input. Useful for thermo files where the MSFileReader API can extract peaklist. This can consist of an .csv file with
 #'  the following columns c('mz', 'i', 'scanid', 'snr')
 #' @param snMeth character; Type of snMethod to use \['mean', 'median', 'precalc'\]. Precalc only applicable when using the csvFile parameter as TRUE
 #' @param normTIC boolean; If TRUE then RSD calculation will use the normalised intensity (intensity divided by TIC) if FALSE will use standard intensity
 #' @param mzRback character; deprecated and ignored. Raw data is read through Spectra, which uses the pwiz reader
 #' @param MSFileReader boolean; Deprecapted. Use csvFile parameter
-#' @return  dataframe of the median mz, intensity, signal-to-noise ratio.
-#' @examples
-#' mzmlPth <- system.file("extdata", "dims", "mzML", "B02_Daph_TEST_pos.mzML", package="msPurityData")
-#' avP <- averageSpectraSingle(mzmlPth)
 #' @export
 averageSpectraSingle <- function(filePth,
                                  rtscn = "all",
@@ -189,6 +177,7 @@ averageSpectraSingle <- function(filePth,
                                  mzRback='pwiz',
                                  MSFileReader=FALSE,
                                  blockSize=5000L){
+  .msp_deprecate_dims("averageSpectraSingle")
   .clustering_controls(cores, blockSize)
 
   if (MSFileReader){
@@ -359,34 +348,27 @@ msfrProcess <- function(filePth, scanRange, snthr, snMeth){
   return(peaklist)
 }
 
-#' @title Using purityD object, group multiple peaklists by similar mz values
-#' (mzML or .csv)
+#' @rdname msPurity-deprecated
+#' @section groupPeaks:
+#' If \code{cores} is omitted, the call uses \code{Object@@cores}
+#' without changing that stored setting.
 #'
-#' @description
 #' Uses a purityD object to group all the peaklists in the 'avPeaks$processing' slot
+#'
+#' \strong{Value:} data.frame of peaklists grouped together by mz
 #'
 #' @param Object object = purityD object
 #' @param ppm numeric = The ppm tolerance to group peaklists
 #' @param clustType = if 'hc' the hierarchical clustering, if 'simple' the mz values will just be grouped using a simple 1D method
-#' @param sampleOnly = if TRUE the sample peaks will only be grouped
-#' @inheritParams groupPeaksEx
 #' @param cores numeric; Maximum number of workers for this call. If omitted,
 #'   uses \code{Object@@cores} without changing that stored setting.
 #'
 #' @aliases groupPeaks
-#' @return data.frame of peaklists grouped together by mz
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' ## A high signal-to-noise threshold keeps the example short
-#' ppDIMS <- averageSpectra(ppDIMS, snthr = 30)
-#' grpedP <- groupPeaks(ppDIMS)
 #' @export
 setMethod(f="groupPeaks", signature="purityD", definition =
             function(Object, ppm=3, sampleOnly=FALSE, clustType='hc',
                      cores=1, blockSize=5000L) {
+              .msp_deprecate_dims("groupPeaks")
               if (missing(cores)) cores <- max(1L, Object@cores)
               .clustering_controls(cores, blockSize)
               Object <- .pd_begin(Object)
@@ -408,10 +390,11 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 
 })
 
-#' @title Group peaklists from a list of dataframes
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section groupPeaksEx:
 #' Group a list of dataframes by their m/z values
+#'
+#' \strong{Value:} data.frame of peaklists grouped together by mz
 #'
 #' @details
 #' With hierarchical clustering, matching peaks stay together. The call stops
@@ -430,16 +413,10 @@ setMethod(f="groupPeaks", signature="purityD", definition =
 #'   with this limit.
 #'
 #' @aliases groupPeaksEx
-#' @return data.frame of peaklists grouped together by mz
-#' @examples
-#'
-#' peak_list <- list(
-#'     blank = data.frame(peakID = 1:3, mz = c(100.0010, 150.0583, 200.1000)),
-#'     sample = data.frame(peakID = 1:4, mz = c(100.0012, 150.0585, 175.0500, 200.1003)))
-#' grpedP <- groupPeaksEx(peak_list, ppm = 3)
 #' @export
 groupPeaksEx <- function(peak_list, cores = 1, clustType = 'hc',  ppm = 2,
     blockSize = 5000L){
+  .msp_deprecate_dims("groupPeaksEx")
   .clustering_controls(cores, blockSize)
   comb <- plyr::ldply(peak_list)
 

@@ -185,8 +185,8 @@
     system.file("extdata", "dims", "mzML", package = "msPurityData")
 }
 
-# The DIMS workflow from the vignette, returning the peak lists by stage.
-.parity_purityD <- function() {
+# The retired DIMS workflow, returning the peak lists by stage.
+.parity_purityD <- function() .with_dims_deprecation({
     q <- .parity_quiet
     inDF <- Getfiles(.dims_paths(), pattern = ".mzML", check = FALSE)
     pd <- q(purityD(inDF, mzML = TRUE))
@@ -201,7 +201,7 @@
     pd <- q(groupPeaks(pd))
     out$groupPeaks <- pd@groupedPeaks
     out
-}
+})
 
 # Matrices saved before R 4.2 have no column names in grped_ms2.
 .label_ms2 <- function(ms2) {

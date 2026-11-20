@@ -17,11 +17,12 @@
 
 
 
-#' @title Get files for DI-MS processing
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section Getfiles:
 #' Takes in a folder path and outputs the a data frame structure for purityD.
 #' Function modified from mzmatch.
+#'
+#' \strong{Value:} dataframe of files
 #'
 #' @param projectFolder character; Directory path
 #' @param recursive boolean; Recursively check for files
@@ -31,15 +32,11 @@
 #' @param raw (REDUNDANT)
 #' @param peakout (REDUNDANT)
 #' @param mzml_out (REDUNDANT)
-#' @return dataframe of files
-#' @examples
-#'
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
 #' @export
 Getfiles = function(projectFolder=NULL, recursive = FALSE, pattern = ".csv",
                     check = TRUE, raw = FALSE, peakout = NA, cStrt = TRUE,
                     mzml_out=FALSE){
+  .msp_deprecate_dims("Getfiles")
 
 
   #If no list provided, search Path for files.

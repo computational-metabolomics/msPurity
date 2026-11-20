@@ -1,3 +1,12 @@
+# msPurity 1.99.4
+
+- **DIMS retirement**: `purityD`, its associated processing functions and
+  standalone DIMS functions, including `dimsPredictPuritySingle()`, are
+  deprecated. Calls remain functional during deprecation, but DIMS
+  functionality will receive no further bug fixes or feature development.
+  There is no direct replacement in msPurity. The interfaces will become
+  defunct and be removed in subsequent release cycles.
+
 # msPurity 1.99.3
 
 - `purityX()` now accepts `XcmsExperiment` and `XCMSnExp` alongside

@@ -17,21 +17,22 @@
 
 
 
-#' @title Using purityD object, save peaks as text files
+#' @rdname msPurity-deprecated
+#' @section writeOut:
+#' Writes processed peak lists to CSV files, and also writes the original
+#' peak lists when \code{original = TRUE}.
 #'
-#' @description
-#' Uses a purityD object with references to multiple MS files.
-#' Predicts the purity of the processed sample files
+#' \strong{Value:} purityD object
 #'
 #' @aliases writeOut
 #'
 #' @param Object object; purityD object
 #' @param outDir character; Directory to save text files
 #' @param original boolean; If the original (unprocessed) files are to be saved to text files
-#' @return  purityD object
 #' @export
 setMethod(f="writeOut", signature="purityD",
           definition= function(Object, outDir, original) {
+  .msp_deprecate_dims("writeOut")
   Object <- .pd_begin(Object)
 
   dir.create(outDir)

@@ -20,20 +20,14 @@
 ######################################################################
 # Constructor
 ######################################################################
-#' @title An S4 class to represent a DI-MS purityD
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section purityD:
 #' The class used to assess anticipated purity from a DI-MS run
 #'
+#' \strong{Value:} purityD object
+#'
 #' @param .Object object; purityD object
-#' @param fileList data.frame; Created using GetFiles, data.frame with filepaths and sample class information
 #' @param cores numeric; Number of cores used to perform Hierarchical clustering WARNING: memory intensive, default 1
-#' @param mzML boolean; TRUE if mzML to be used FALSE if .csv file to be used
-#' @examples
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' @return purityD object
 #' @export purityD
 purityD <- setClass(
   # Set the name for the class
@@ -66,24 +60,23 @@ purityD <- setClass(
 ######################################################################
 # A few getters and Setters
 ######################################################################
-#' @title Get peaklist for a purityD object
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section getP:
 #' output peak list for a purityD object
+#'
+#' \strong{Value:} peaks
 #'
 #' @aliases getP
 #'
 #' @param x object; purityD object
-#' @return peaks
-#' @examples
-#' datapth <- system.file("extdata", "dims", "mzML", package="msPurityData")
-#' inDF <- Getfiles(datapth, pattern=".mzML", check = FALSE, cStrt = FALSE)
-#' ppDIMS <- purityD(fileList=inDF, cores=1, mzML=TRUE)
-#' peaks <- getP(ppDIMS)
 #' @export
-setMethod("getP", "purityD", function(x) averagedPeaks(x))
+setMethod("getP", "purityD", function(x) {
+  .msp_deprecate_dims("getP")
+  averagedPeaks(x)
+})
 
 setMethod("updatePeaks", "purityD", function(x, newlist) {
+  .msp_deprecate_dims("updatePeaks")
   x <- .pd_update(x)
   x@avPeaks <- newlist;
   x <- .pd_end(x)
@@ -95,14 +88,15 @@ setMethod("updatePeaks", "purityD", function(x, newlist) {
 ######################################################################
 # Show method
 ######################################################################
-#' @title Show method for purityD
-#'
-#' @description
+#' @rdname msPurity-deprecated
+#' @section show (purityD method):
 #' Show method for purityD object
 #'
+#' \strong{Value:} a print statement of regarding object
+#'
 #' @param object = purityD object
-#' @return a print statement of regarding object
 #' @export
 setMethod("show", "purityD", function(object) {
+  .msp_deprecate_dims("show")
   print("purityD object for processing MS data")
 })
