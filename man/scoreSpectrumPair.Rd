@@ -22,7 +22,8 @@ scoreSpectrumPair(
 \value{
 A list with \code{eligible}, \code{reason}, a \code{checks} data
 frame (stage, field, outcome), and \code{scores} named dpc, rdpc, cdpc,
-mcount, allcount and mpercent. A rejected pair reports the first failed
+mcount, allcount and mpercent for the default scorer, or blinkCosine and
+blinkMatchingIonCount for BLINK. A rejected pair reports the first failed
 requirement and has missing scores. Eligible pairs report compatible or
 compatible_partial. If either selected spectrum has no usable signal
 after queued processing, eligibility is retained, the reason is

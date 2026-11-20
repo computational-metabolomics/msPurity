@@ -815,8 +815,13 @@ validateParquet <- function(path, sourcePaths = NULL) {
     if (have("evidence") && have("evidence_score")) {
         ev <- read("evidence")
         es <- read("evidence_score")
-        dpc <- es[es$score_term == .MZS_SCORE_TERMS[["dpc"]], ]
-        s <- dpc$score_value[match(ev$evidence_id_, dpc$evidence_id_)]
+        rank_terms <- vapply(m$provenance, function(a)
+            unname(.MZS_SCORE_TERMS[a$parameters$rank_score %||% "dpc"]), "")
+        ids <- vapply(m$provenance, `[[`, "", "id")
+        term <- rank_terms[match(ev$activity, ids)]
+        term[is.na(term)] <- .MZS_SCORE_TERMS[["dpc"]]
+        s <- es$score_value[match(paste(ev$evidence_id_, term),
+            paste(es$evidence_id_, es$score_term))]
         g <- paste(ev$evidence_input_id, ev$activity)
         ok <- !is.na(s) & !is.na(ev$rank)
         if (any(ok)) {

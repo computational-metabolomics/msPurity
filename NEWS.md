@@ -1,5 +1,9 @@
 # msPurity 1.99.4
 
+- `BlinkMatchingParam()` selects BLINK fragment scoring for MS2–MS4
+  searches. Hits report approximate cosine and estimated matching-ion count.
+  Parquet evidence records both scores and the settings used (#161).
+
 - For `Spectra` queries, `spectralMatching()` reports an outcome for every
   input query. Retained hits identify shared scans and source files, with
   the original measurements contributing to each stored consensus (#160).
