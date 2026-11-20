@@ -1,5 +1,9 @@
 # msPurity 1.99.4
 
+- For `Spectra` queries, `spectralMatching()` reports an outcome for every
+  input query. Retained hits identify shared scans and source files, with
+  the original measurements contributing to each stored consensus (#160).
+
 - `spectralMatching()` accepts experimental `Spectra` queries for in-memory
   MS2–MS4 searches against experimental spectra or a reference library. Hits
   carry the input positions, compatibility reason, scores and rank (#159).

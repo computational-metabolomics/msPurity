@@ -334,6 +334,58 @@ queryIndex and referenceIndex into those objects, available run, native
 and dataset identifiers, library accession, MS level, compatibility reason,
 six scores and within-query rank. Use the indices to retrieve the original
 acquisition and provenance fields, including for anonymous spectra.
+
+Each retained hit identifies its \code{queryType} and \code{referenceType}
+as \code{measured}, \code{consensus} or \code{library}. Join the hit to
+\code{queryStatus} by \code{queryIndex}. This table has one row per supplied
+query, including duplicates, in input order. A \code{filtered} query fell
+outside the requested polarity or retention-time selection. An
+\code{invalid_query} lacks a supported MS level or valid precursor mass.
+For a valid query, \code{no_eligible_reference} means no reference passed
+selection and compatibility checks. An \code{unscorable} query had eligible
+references but no pair had usable peaks on both sides. A \code{scored} query
+can still have zero retained hits after the rank cut, for example with
+\code{topn = 0}. Inspect \code{reason}, \code{nEligible}, \code{nScored}
+and \code{nRetained} to distinguish these outcomes.
+
+For experimental pairs, \code{sharedMeasurement} and \code{sharedSourceFile}
+each report TRUE for established overlap, FALSE for known disjoint sources
+and NA when the available identities cannot decide. Two scans can share a
+file while having distinct measurement identities. The file is identified
+by its recorded absolute origin path or URI, or by a run within an identified
+Parquet dataset. Within that scope use the dataset spectrum ID, native ID or
+acquisition number, in that order when both sides have it. A bare file name,
+local feature link or unqualified scan number cannot establish overlap.
+External library entries have unknown measurement provenance.
+
+Inspect \code{sourceMeasurements} by \code{side} ("query" or "reference")
+and \code{inputIndex}. Each participating spectrum lists its distinct measured
+contributors once, with their file, dataset, run and scan identifiers.
+\code{fileComplete} and \code{measurementComplete} describe the available
+identities for the whole spectrum. An unknown branch is represented by missing
+identifiers. For a consensus, the contributors supplied peaks to the stored
+average, including through intermediate averages. Subsequent peak filtering
+affects the score, while the reported provenance describes the stored average.
+
+For example, compare a contributing scan and a scan with a different precursor
+against one consensus from the bundled LC-MS/MS data.
+\preformatted{
+pa <- readRDS(system.file("extdata", "tests", "purityA",
+    "2_frag4feature_pa.rds", package = "msPurity"))
+pa <- averageAllFragSpectra(pa, param = AverageFragSpectraParam(
+    minfrac = 0, minnum = 0, snr = 0))
+ref <- averagedSpectra(pa, legacy = FALSE)[1L]
+scans <- groupedSpectra(pa, legacy = FALSE)
+members <- averagePeakMembers(ref, ref$spectrumId, depth = "original")
+measured <- match(members$pid[1L], scans$pid)
+other <- which(abs(scans$precursorMz - ref$precursorMz) > 1)[1L]
+res <- spectralMatching(scans[c(measured, other)], ref, q_ppmPrec = 50)
+res$queryStatus[, c("queryIndex", "status", "nEligible", "nRetained")]
+res$matchedResults[, c("queryIndex", "sharedMeasurement", "sharedSourceFile")]
+subset(res$sourceMeasurements, side == "reference")
+}
+The contributing scan has both overlap flags set to TRUE. The second query
+has status \code{no_eligible_reference} and zero retained hits.
 }
 
 \section{Spectra library variables}{

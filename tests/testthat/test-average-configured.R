@@ -406,6 +406,7 @@ test_that("contributor indices are positions within each feature", {
 
 test_that("selected links that contribute no retained peak are not used", {
     pa <- .average_msn_fixture()
+    pa@fragSpectra$dataOrigin <- "/experiment/raw.mzML"
     # MS2 of feature 1 combined: m/z 100 and 150 (pid 1 and 2) have two peaks;
     # pid 3 (CID, m/z 110 and 120) and m/z 200 have one and are removed.
     out <- averageAllFragSpectra(pa, rmp = TRUE,
@@ -425,6 +426,19 @@ test_that("selected links that contribute no retained peak are not used", {
     expect_equal(Spectra::rtime(average), 25)
     expect_false("msPurityAverageStatus" %in%
         Spectra::spectraVariables(average))
+
+    # Give all three queries compatible conditions, retaining their original
+    # scan identities. The third scan was selected but supplied no stored peak.
+    q <- pa@fragSpectra[match(1:3, pa@fragSpectra$pid)]
+    q$activationType <- rep("HCD", 3L)
+    q$collisionEnergy <- rep(30, 3L)
+    queued <- Spectra::filterMzRange(average, mz = c(95, 105))
+    result <- spectralMatching(q, queued)
+    hit <- result$matchedResults
+    expect_identical(hit$sharedMeasurement, c(TRUE, TRUE, FALSE))
+    expect_identical(hit$sharedSourceFile, rep(TRUE, 3L))
+    sources <- subset(result$sourceMeasurements, side == "reference")
+    expect_setequal(sources$scanNumber, as.character(q$acquisitionNum[1:2]))
 })
 
 test_that("averaged peak flags are exposed through Spectra", {

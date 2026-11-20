@@ -19,17 +19,31 @@ test_that("offline measured and consensus MS2-MS4 searches survive Parquet readb
     r <- reopened[match(num[chain], reopened$acquisitionNum)]
     scores <- c("dpc", "rdpc", "cdpc", "mcount", "allcount", "mpercent")
     compare <- function(q, r) {
-        direct <- spectralMatching(q, q)$matchedResults
+        result <- spectralMatching(q, q)
+        direct <- result$matchedResults
+        expect_true(all(direct$sharedMeasurement & direct$sharedSourceFile))
         expect_identical(direct$msLevel, 4:2)
         expect_true(all(direct$mcount > 0L))
         expect_false(anyNA(direct[scores]))
-        for (hit in list(spectralMatching(q, r)$matchedResults,
-                         spectralMatching(r, r)$matchedResults)) {
+        for (reopened in list(spectralMatching(q, r), spectralMatching(r, r))) {
+            hit <- reopened$matchedResults
+            expect_identical(reopened$queryStatus$status, result$queryStatus$status)
+            expect_identical(reopened$queryStatus$nEligible, result$queryStatus$nEligible)
+            expect_identical(hit$referenceType, direct$referenceType)
+            expect_true(all(hit$sharedMeasurement & hit$sharedSourceFile))
             expect_identical(hit$msLevel, direct$msLevel)
             expect_equal(hit[scores], direct[scores], tolerance = 1e-12)
         }
     }
     compare(q, r)
+    # The native identifiers and acquisition numbers are repeated in a
+    # different source file. Reverse the reopened reference selection.
+    other <- Spectra::setBackend(q, Spectra::MsBackendMemory())
+    other$dataOrigin <- rep(file.path(dirname(f), "replicate", basename(f)), length(q))
+    separate <- spectralMatching(other, r[3:1])$matchedResults
+    expect_identical(separate$referenceIndex, 3:1)
+    expect_identical(separate$sharedMeasurement, rep(FALSE, 3))
+    expect_identical(separate$sharedSourceFile, rep(FALSE, 3))
 
     xe <- .msn_standard_feature("tryptophan", "MSn")$xe
     pa <- purityA(f, cores = 1L, plotP = FALSE, msLevel = 2:4)
@@ -48,7 +62,19 @@ test_that("offline measured and consensus MS2-MS4 searches survive Parquet readb
     stored <- readProcessedSpectra(path, msLevel = 2:4, method = "all")
     r <- stored[match(q$spectrumId, stored$x_mspurity_spectrum_key)]
     compare(q, r)
-    mixed <- spectralMatching(measured, r)$matchedResults
+    comparison <- spectralMatching(measured, r)
+    mixed <- comparison$matchedResults
+    expect_true(all(mixed$queryType == "measured" & mixed$referenceType == "consensus"))
+    expect_true(all(mixed$sharedSourceFile))
+    for (j in seq_along(r)) {
+        inputs <- averagePeakMembers(q, q$spectrumId[j], depth = "original")
+        h <- mixed[mixed$referenceIndex == j, ]
+        expect_identical(h$sharedMeasurement, h$query_native_id %in% inputs$member)
+        sources <- subset(comparison$sourceMeasurements, side == "reference" & inputIndex == j)
+        expect_setequal(sources$native_id, inputs$member)
+        expect_equal(nrow(sources), length(unique(inputs$member)))
+    }
+    expect_true(any(mixed$sharedMeasurement))
     expect_setequal(unique(mixed$msLevel), 2:4)
     expect_true(all(mixed$query_native_id == measured$spectrumId[mixed$queryIndex]))
     expect_identical(mixed$reference_native_id, r$x_mspurity_spectrum_key[mixed$referenceIndex])
@@ -57,7 +83,25 @@ test_that("offline measured and consensus MS2-MS4 searches survive Parquet readb
     expect_identical(found$referenceRole, "experimental")
     hit <- found$matchedResults
     self <- hit[hit$query_native_id == hit$reference_native_id, ]
+    expect_true(all(self$sharedMeasurement & self$sharedSourceFile))
     expect_identical(self$query_native_id, q$spectrumId)
     expect_equal(self[scores], spectralMatching(q, r)$matchedResults[scores],
         ignore_attr = TRUE)
+})
+
+test_that("a Parquet library accession does not identify an experimental measurement", {
+    skip_if_no_arrow()
+    d <- S4Vectors::DataFrame(msLevel = 2L, precursorMz = 200, polarity = 1L,
+        spectrumId = "scan=1", accession = "entry-1", dataOrigin = "/experiment/raw.mzML")
+    d$mz <- list(c(50, 80))
+    d$intensity <- list(c(100, 20))
+    q <- Spectra::Spectra(d, source = Spectra::MsBackendMemory())
+    path <- tempfile()
+    convertLibraryToParquet(q, path, version = "fixture")
+    res <- spectralMatching(q, path)
+    expect_identical(res$queryStatus$status, "scored")
+    expect_identical(res$matchedResults$referenceType, "library")
+    expect_identical(res$matchedResults$library_accession, "entry-1")
+    expect_identical(res$matchedResults$sharedMeasurement, NA)
+    expect_identical(res$matchedResults$sharedSourceFile, NA)
 })

@@ -65,7 +65,11 @@ test_that("ancestor conflicts and unsupported arguments are resolved before peak
     sp$spectrumId <- rep(c("root", "middle", "leaf"), 2)
     q <- Spectra::addProcessing(sp[c(3,1,2)], function(x, ...) stop("peaks read"))
     r <- Spectra::addProcessing(sp[c(4,6,5)], function(x, ...) stop("peaks read"))
-    expect_null(spectralMatching(q, r)$matchedResults)
+    rejected <- spectralMatching(q, r)
+    expect_null(rejected$matchedResults)
+    expect_identical(rejected$queryStatus$status, rep("no_eligible_reference", 3))
+    expect_identical(rejected$queryStatus$reason,
+        c("ancestor_precursor_mismatch", "no_compatible_reference", "ancestor_precursor_mismatch"))
     expect_error(spectralMatching(q, r, usePrecursors = FALSE), "usePrecursors")
     expect_error(spectralMatching(q, r, updateDb = TRUE), "updateDb")
     expect_error(spectralMatching(q, r, copyDb = TRUE), "copyDb")
@@ -76,4 +80,87 @@ test_that("ancestor conflicts and unsupported arguments are resolved before peak
     same <- spectralMatching(sp[c(6,3,1,4,5,2)], sp)$matchedResults
     expect_identical(same$referenceIndex, c(6L, 3L, 1L, 4L, 5L, 2L))
     expect_identical(same$query_run_id, same$reference_run_id)
+})
+
+test_that("every supplied query has an outcome independent of the rank cut", {
+    sp <- .search_sp(c(100, 100, 200, NA, 100, 100), c(2L, 2L, 2L, 2L, 1L, 2L))
+    sp$polarity <- c(0L, 0L, 0L, 0L, 0L, 1L)
+    sp$intensity <- c(list(c(0, 0)), rep(list(c(2, 10)), 5L))
+    query <- sp[c(2, 3, 1, 5, 4, 6, 2)]
+    ref <- sp[c(1, 2, 2)]
+    res <- spectralMatching(query, ref, q_pol = "negative")
+    s <- res$queryStatus
+    expect_identical(s$queryIndex, seq_along(query))
+    expect_identical(s$query_native_id, query$spectrumId)
+    expect_identical(s$status, c("scored", "no_eligible_reference", "unscorable",
+        "invalid_query", "invalid_query", "filtered", "scored"))
+    expect_identical(s$reason, c("hit_retained", "no_compatible_reference",
+        "no_usable_peaks", "ms_level_unsupported", "missing_precursor",
+        "query_filter", "hit_retained"))
+    expect_identical(s$nEligible, c(3L, 0L, 3L, 0L, 0L, 0L, 3L))
+    expect_identical(s$nScored, s$nRetained)
+    expect_identical(s$nRetained, c(2L, 0L, 0L, 0L, 0L, 0L, 2L))
+    zero <- spectralMatching(query[1], ref, topn = 0L)
+    expect_null(zero$matchedResults)
+    expect_identical(zero$queryStatus$status, "scored")
+    expect_identical(zero$queryStatus$reason, "rank_cutoff")
+    expect_identical(zero$queryStatus$nScored, 2L)
+    expect_identical(zero$queryStatus$nRetained, 0L)
+    expect_equal(nrow(zero$sourceMeasurements), 0L)
+    empty <- spectralMatching(query[integer()], ref)
+    expect_identical(empty$queryStatus, s[integer(), ])
+    expect_identical(empty$sourceMeasurements, res$sourceMeasurements[integer(), ])
+    expect_identical(spectralMatching(query[1], ref[integer()])$queryStatus$status,
+        "no_eligible_reference")
+    anonymous <- ref[2]
+    anonymous$spectrumId <- NA_character_
+    anonymous <- Spectra::addProcessing(anonymous, function(x, ...) stop("peaks read"))
+    empty_query <- spectralMatching(query[3], anonymous, referenceRole = "library")
+    expect_identical(empty_query$queryStatus$status, "unscorable")
+})
+
+test_that("measured identities are file scoped and unknown sources stay unknown", {
+    sp <- .search_sp(rep(100, 4))
+    sp$dataOrigin <- c("/study/a/raw.mzML", "/study/a/raw.mzML", "/study/b/raw.mzML", NA)
+    sp$spectrumId <- c("scan=1", "scan=2", "scan=1", "scan=1")
+    sp$acquisitionNum <- c(1L, 2L, 1L, 1L)
+    ref <- sp[c(3, 1, 4, 2)]
+    ref$dataOrigin[2] <- "file:///study/a/raw.mzML"
+    res <- spectralMatching(sp[c(1, 1)], ref)
+    hit <- res$matchedResults
+    expect_identical(hit$referenceIndex, rep(1:4, 2L))
+    expect_identical(hit$sharedMeasurement, rep(c(FALSE, TRUE, NA, FALSE), 2L))
+    expect_identical(hit$sharedSourceFile, rep(c(FALSE, TRUE, NA, TRUE), 2L))
+    expect_true(all(hit$queryType == "measured" & hit$referenceType == "measured"))
+    src <- res$sourceMeasurements
+    expect_equal(nrow(src), 6L)
+    sr <- src[src$side == "reference", ]
+    expect_identical(sr$native_id, ref$spectrumId[sr$inputIndex])
+    expect_identical(sr$measurementComplete, !is.na(sr$dataOrigin))
+    library <- spectralMatching(sp[1], ref, referenceRole = "library")
+    expect_true(all(library$matchedResults$referenceType == "library"))
+    expect_true(all(is.na(library$matchedResults$sharedMeasurement)))
+    expect_true(all(is.na(library$matchedResults$sharedSourceFile)))
+    sr <- subset(library$sourceMeasurements, side == "reference")
+    expect_true(all(!sr$measurementComplete & !sr$fileComplete))
+})
+
+test_that("partial consensus records can establish overlap but cannot exclude it", {
+    measured <- .search_sp(c(100, 100))
+    measured$dataOrigin <- c("/run/a.mzML", "/run/b.mzML")
+    consensus <- measured[1]
+    consensus$av_level <- "av_all"
+    historical <- spectralMatching(measured, consensus)$matchedResults
+    expect_true(all(historical$referenceType == "consensus"))
+    expect_true(all(is.na(historical$sharedMeasurement)))
+    expect_true(all(is.na(historical$sharedSourceFile)))
+
+    known <- data.frame(dataOrigin = measured$dataOrigin[1], spectrumId = "scan=1")
+    consensus$msPurityContributors <- list(rbind(known, known, known[NA_integer_, ]))
+    result <- spectralMatching(measured, consensus)
+    expect_identical(result$matchedResults$sharedMeasurement, c(TRUE, NA))
+    expect_identical(result$matchedResults$sharedSourceFile, c(TRUE, NA))
+    ref <- subset(result$sourceMeasurements, side == "reference")
+    expect_equal(nrow(ref), 2L)
+    expect_false(any(ref$fileComplete | ref$measurementComplete))
 })

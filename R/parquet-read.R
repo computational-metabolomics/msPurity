@@ -147,45 +147,57 @@ utils::globalVariables(c("arrow_list_value_length", "mz"))
     edges <- by_peak <- NULL
     # Original feature-link occurrences contributing to the specified stored
     # peaks. NULL peak positions request every stored peak of the root.
-    used <- function(id, positions = NULL, visiting = numeric()) {
+    used_rows <- function(id, positions = NULL, visiting = numeric()) {
         if (id %in% visiting) .mzs_abort("semantic", "Cycle in averaging membership.")
         rows <- members(id)
-        if (!nrow(rows) || !all(rows$members_complete %in% TRUE) ||
-            is.null(rows$x_mspurity_contributes) || anyNA(rows$x_mspurity_contributes))
-            return(NA_character_)
+        if (!nrow(rows)) return(NA_integer_)
+        incomplete <- !all(rows$members_complete %in% TRUE) ||
+            is.null(rows$x_mspurity_contributes) || anyNA(rows$x_mspurity_contributes)
         if (is.null(by_peak)) {
             edges <<- reader$table("x_mspurity_merge_peak", "merged_spectrum_id_", family)
             by_peak <<- split(seq_len(nrow(edges)), edges$merged_spectrum_id_)
         }
         e <- edges[by_peak[[as.character(id)]], , drop = FALSE]
-        if (!is.null(positions) && !all(positions %in% e$merged_peak_rank))
-            return(NA_character_)
-        if (!is.null(positions)) e <- e[e$merged_peak_rank %in% positions, ]
+        if (!is.null(positions)) {
+            incomplete <- incomplete || !all(positions %in% e$merged_peak_rank)
+            e <- e[e$merged_peak_rank %in% positions, ]
+        } else {
+            expected <- rows$member_rank[rows$x_mspurity_contributes %in% TRUE]
+            incomplete <- incomplete || !all(expected %in% e$member_rank)
+        }
         if (!nrow(e)) {
-            if (is.null(positions) && any(rows$x_mspurity_contributes))
-                return(NA_character_)
-            return(character())
+            if (incomplete) return(NA_integer_)
+            return(integer())
         }
         ranks <- unique(e$member_rank)
-        rows <- rows[match(ranks, rows$member_rank), ]
+        index <- by_id[[as.character(id)]][match(ranks, rows$member_rank)]
+        rows <- mm[index, , drop = FALSE]
         if (anyNA(rows$member_source))
             .mzs_abort("semantic", "Unresolved member rank for averaged spectrum ", id)
         measured <- rows$member_source != "self"
-        out <- character(sum(measured))
-        if (any(measured)) {
-            # Multiple peaks from one feature-link occurrence count once.
-            out <- paste(id, ranks[measured], sep = ":")
-            link <- rows$x_mspurity_feature_link_index[measured]
-            if (length(link)) out[!is.na(link)] <- paste0("link:", link[!is.na(link)])
-        }
+        out <- index[measured]
+        if (incomplete) out <- c(out, NA_integer_)
         for (i in which(!measured)) {
             p <- e$member_peak_rank[e$member_rank == ranks[i]]
-            if (anyNA(p)) return(NA_character_)
-            out <- c(out, used(rows$member_spectrum_id_[i], p, c(visiting, id)))
+            if (anyNA(p)) out <- c(out, NA_integer_)
+            p <- unique(p[!is.na(p)])
+            if (length(p))
+                out <- c(out, used_rows(rows$member_spectrum_id_[i], p, c(visiting, id)))
         }
         unique(out)
     }
-    list(lineage = lineage, members = members, used = used, indices = by_id, family = family)
+    used <- function(id) {
+        ix <- used_rows(id)
+        if (anyNA(ix)) return(NA_character_)
+        # Counts in processedSpectrumInfo refer to feature-link occurrences.
+        if (!length(ix)) return(character())
+        out <- paste(mm$merged_spectrum_id_[ix], mm$member_rank[ix], sep = ":")
+        link <- mm$x_mspurity_feature_link_index[ix]
+        out[!is.na(link)] <- paste0("link:", link[!is.na(link)])
+        unique(out)
+    }
+    list(lineage = lineage, members = members, used = used, usedRows = used_rows,
+        indices = by_id, family = family)
 }
 
 .mzs_source_state <- function(reader, refs) {
