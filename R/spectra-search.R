@@ -42,7 +42,7 @@
     vars <- c("msLevel", "precursorMz", "rtime", "polarity", "run_id", "dataOrigin",
         "fileid", "spectrumId", "nativeId", "acquisitionNum", "spectrum_id_",
         "x_mspurity_spectrum_key", "accession", "x_mspurity_splash", "splash",
-        "x_mspurity_retention_time")
+        "x_mspurity_retention_time", "av_level")
     d <- Spectra::spectraData(sp, columns = intersect(vars, Spectra::spectraVariables(sp)))
     value <- function(...) .sm_metadata_value(d, ...)
     data.frame(level = d$msLevel, mz = d$precursorMz,
@@ -51,7 +51,26 @@
         run = value("run_id", "dataOrigin", "fileid"),
         native = value("x_mspurity_spectrum_key", "spectrumId", "nativeId", "acquisitionNum"),
         id = value("spectrum_id_"),
-        accession = value("accession", "spectrumId", "x_mspurity_splash", "splash"))
+        accession = value("accession", "spectrumId", "x_mspurity_splash", "splash"),
+        consensus = !is.na(value("av_level", "x_mspurity_spectrum_key")),
+        origin = value("dataOrigin"), runId = value("run_id"),
+        nativeId = value("spectrumId", "nativeId"), scan = value("acquisitionNum"))
+}
+
+.sm_query_status <- function(meta, rows, type) {
+    n <- nrow(meta)
+    status <- rep("filtered", n)
+    reason <- rep("query_filter", n)
+    reason[!is.finite(meta$mz) | meta$mz <= 0] <- "missing_precursor"
+    reason[!meta$level %in% 2:4] <- "ms_level_unsupported"
+    reason[is.na(meta$level)] <- "ms_level_missing"
+    status[reason != "query_filter"] <- "invalid_query"
+    status[rows] <- "no_eligible_reference"
+    reason[rows] <- "no_compatible_reference"
+    data.frame(queryIndex = seq_len(n), query_run_id = meta$run,
+        query_native_id = meta$native, query_spectrum_id_ = meta$id,
+        queryType = type, msLevel = meta$level, status = status, reason = reason,
+        nEligible = integer(n), nScored = integer(n), nRetained = integer(n))
 }
 
 .sm_search_rows <- function(meta, polarity, rt) {
@@ -151,6 +170,9 @@
     candidates <- .sm_candidate_index(lm, lrows, param)
     qstages <- .sm_stage_reader(query)
     lstages <- .sm_stage_reader(reference)
+    qsource <- .sm_source_reader(query, qm)
+    lsource <- .sm_source_reader(reference, lm, ref$role)
+    status <- .sm_query_status(qm, qrows, qsource$type)
 
     match_query <- function(i, qp = .sm_pair_peaks(query[i])) {
         level <- qm$level[i]
@@ -162,11 +184,13 @@
             # shared by all reference candidates for this query.
             pair <- .sm_compare_pair(level, lm$level[j], qm$mz[i], lm$mz[j],
                 qstages(i, level), lstages(j, level), qp, lp, param)
-            if (!pair$eligible || pair$reason == "no_usable_peaks") return(NULL)
+            if (!pair$eligible) return(pair$reason)
             accession <- lm$accession[j]
-            if (ref$role == "library" && is.na(accession))
+            if (ref$role == "library" && is.na(accession) &&
+                    (length(accessions) || pair$reason != "no_usable_peaks"))
                 accession <- .mzs_anonymous_accession(lm$mz[j], lm$polarity[j], lp)
             if (length(accessions) && !accession %in% accessions) return(NULL)
+            if (pair$reason == "no_usable_peaks") return(pair$reason)
             data.frame(queryIndex = i, referenceIndex = j, msLevel = level,
                 query_run_id = qm$run[i], query_native_id = qm$native[i],
                 query_spectrum_id_ = qm$id[i], reference_run_id = lm$run[j],
@@ -174,13 +198,32 @@
                 library_accession = if (ref$role == "library") accession else NA_character_,
                 reason = pair$reason, as.list(pair$scores))
         })
-        hits <- do.call(rbind, rows)
-        if (is.null(hits)) return(NULL)
-        hits$rank <- .sm_rank_scores(hits$dpc)
-        if (is.na(a$topn)) return(hits)
-        hits[!is.na(hits$rank) & hits$rank <= a$topn, , drop = FALSE]
+        reasons <- unlist(Filter(is.character, rows), use.names = FALSE)
+        hits <- do.call(rbind, Filter(is.data.frame, rows))
+        scored <- NROW(hits)
+        eligible <- scored + sum(reasons == "no_usable_peaks")
+        if (scored) {
+            hits$rank <- .sm_rank_scores(hits$dpc)
+            if (!is.na(a$topn))
+                hits <- hits[which(hits$rank <= a$topn), , drop = FALSE]
+        }
+        outcome <- if (scored) "scored" else if (eligible) "unscorable" else
+            "no_eligible_reference"
+        reason <- if (scored) {
+            if (NROW(hits)) "hit_retained" else "rank_cutoff"
+        } else if (eligible) "no_usable_peaks" else if (length(unique(reasons)) == 1L)
+            reasons[1L] else "no_compatible_reference"
+        list(hits = hits, status = data.frame(status = outcome, reason = reason,
+            nEligible = eligible, nScored = scored, nRetained = NROW(hits)))
     }
-    hits <- do.call(rbind, lapply(qrows, match_query))
+    results <- lapply(qrows, match_query)
+    if (length(results)) {
+        counts <- do.call(rbind, lapply(results, `[[`, "status"))
+        status[qrows, names(counts)] <- counts
+    }
+    hits <- do.call(rbind, lapply(results, `[[`, "hits"))
     if (!NROW(hits)) hits <- NULL
-    list(matchedResults = hits, query = query, reference = reference, referenceRole = ref$role)
+    sources <- .sm_hit_sources(hits, qsource, lsource)
+    list(matchedResults = sources$hits, query = query, reference = reference,
+        referenceRole = ref$role, queryStatus = status, sourceMeasurements = sources$table)
 }

@@ -168,9 +168,19 @@
             "acquisitionNum", "msPurityProcessingId"),
             Spectra::spectraVariables(pa@fragSpectra)))
         refs[[nm]] <- pa@fragSpectra[[nm]][rows]
-    graph$links <- refs
+    graph$links <- .pa_graph_qualify_links(refs, pa, rows)
     pa@params$averageGraph <- graph
     pa
+}
+
+# Keep source identities on the graph so its measured leaves can be compared
+# with scans outside this object, even after subsetting the averages.
+.pa_graph_qualify_links <- function(refs, pa, rows) {
+    for (nm in intersect(c("dataOrigin", "run_id", "spectrum_id_"),
+            Spectra::spectraVariables(pa@fragSpectra)))
+        refs[[nm]] <- pa@fragSpectra[[nm]][rows]
+    refs$datasetUid <- rep(.pa_study(pa)$uid %||% NA_character_, nrow(refs))
+    refs
 }
 
 .pa_graph_index <- function(g) {
@@ -494,8 +504,13 @@ averagePeakMembers <- function(object, spectrumId, peak = NULL,
 .pa_graph_view <- function(pa, sp = pa@avSpectra) {
     g <- .pa_graph_data(pa)
     if (is.null(g)) return(sp)
-    if ("msPurityKey" %in% Spectra::spectraVariables(sp)) {
-        sp <- .pa_graph_set_ids(sp, .pa_graph_sp_ids(sp))
+    historical <- NROW(g$links) > 0L && is.null(g$links$datasetUid)
+    if (historical)
+        g$links <- .pa_graph_qualify_links(g$links, pa,
+            match(g$links$pid, pa@fragSpectra$pid))
+    old_keys <- "msPurityKey" %in% Spectra::spectraVariables(sp)
+    if (old_keys) sp <- .pa_graph_set_ids(sp, .pa_graph_sp_ids(sp))
+    if (historical || old_keys) {
         meta <- .pa_spectra_metadata(sp)
         meta$msPurityAverageGraph <- g
         .pa_spectra_metadata(sp) <- meta

@@ -120,6 +120,7 @@ test_that("configured execution records direct and empty work without starting w
 
 test_that("intra-file averages keep files apart", {
     pa <- .average_files_fixture()
+    pa@fragSpectra$dataOrigin <- paste0("/experiment/", pa@fragSpectra$dataOrigin)
     out <- averageIntraFragSpectra(pa, param = .average_param())
     averages <- averagedSpectra(out, legacy = FALSE)
     members <- .average_members(averages)
@@ -140,6 +141,16 @@ test_that("intra-file averages keep files apart", {
         cbind(c(100, 150, 200), c(600, 300, 90), 1, 2))
     expect_equal(.average_peak_matrix(averages[members[["1 5,6"]]]),
         cbind(c(60, 80), c(45, 110), 2, 2))
+    first <- averages[members[["1 1,2"]]]
+    second <- averages[members[["2 3,4"]]]
+    # Only pid 4 supplies the queued peak. The stored average used both scans.
+    queued <- Spectra::filterMzRange(second, mz = c(190, 210))
+    result <- spectralMatching(first, queued)
+    expect_identical(result$matchedResults$sharedMeasurement, FALSE)
+    expect_identical(result$matchedResults$sharedSourceFile, FALSE)
+    expect_equal(result$matchedResults$mcount, 0)
+    sources <- subset(result$sourceMeasurements, side == "reference")
+    expect_setequal(sources$scanNumber, c("2", "3"))
 })
 
 test_that("native spectrum IDs retain their measured file and feature-link identities", {
@@ -480,6 +491,7 @@ test_that("intra-file averages without eligible input peaks are not inputs", {
 
 test_that("inter-file compatibility uses only passing intra-file clusters", {
     pa <- .average_files_fixture()
+    pa@fragSpectra$dataOrigin <- paste0("/experiment/", pa@fragSpectra$dataOrigin)
     row <- match(6L, pa@fragSpectra$pid)
     mz <- Spectra::mz(pa@fragSpectra)
     intensity <- Spectra::intensity(pa@fragSpectra)
@@ -514,6 +526,12 @@ test_that("inter-file compatibility uses only passing intra-file clusters", {
         expect_setequal(.average_selected_links(inter)[[1L]]$pid, c(5L, 6L, 7L))
         expect_identical(inter$msPurityContributors[[1L]]$pid,
             c(5L, 7L), info = case)
+        hit <- spectralMatching(inter, inter)
+        leaves <- subset(hit$sourceMeasurements, side == "query")
+        used <- pa@fragSpectra[match(c(5L, 7L), pa@fragSpectra$pid)]
+        expect_setequal(paste(basename(leaves$dataOrigin), leaves$scanNumber),
+            paste(basename(used$dataOrigin), used$acquisitionNum))
+        expect_identical(hit$matchedResults$sharedMeasurement, TRUE)
         expect_equal(unname(inter$msPurityClusterContributors[[1L]]),
             list(c(5L, 7L)), info = case)
         expect_equal(inter$msPurityPrecursorPath[[1L]],

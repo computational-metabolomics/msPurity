@@ -287,6 +287,9 @@ test_that("original measurement counts respect peak paths and repeated feature l
     graph <- msPurity:::.mzs_graph_reader(reader, 6)
     expect_equal(length(graph$used(5)), 3L)
     expect_equal(length(graph$used(6)), 2L)
+    expect_identical(unique(members$member_spectrum_id_[graph$usedRows(6)]), 10)
     edges$member_peak_rank[4] <- NA_integer_
-    expect_true(is.na(msPurity:::.mzs_graph_reader(reader, 6)$used(6)))
+    partial <- msPurity:::.mzs_graph_reader(reader, 6)
+    expect_true(is.na(partial$used(6)))
+    expect_setequal(partial$usedRows(6), c(1L, 2L, NA_integer_))
 })
