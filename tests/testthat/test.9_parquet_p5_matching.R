@@ -267,3 +267,119 @@ test_that("combineAnnotations() ranks the same on Parquet as on SQLite", {
     v <- validateParquet(p)
     expect_identical(v$message[v$level == "MUST"], character())
 })
+
+test_that("Spectra libraries match converted libraries across backends and batches", {
+    skip_if_not_installed("MsBackendMsp")
+    p <- .query_dataset()
+    msp <- MsBackendMsp::MsBackendMsp()
+    lib <- Spectra::Spectra(.example("library", "mini_mona.msp"), source = msp,
+        mapping = Spectra::spectraVariableMapping(msp, "mona"))
+    path <- tempfile()
+    convertLibraryToParquet(lib, path, version = "fixture")
+    search <- function(x, ...) .sm(p, x, l_spectraTypes = NA, ...)
+    expected <- search(path)$matchedResults
+    expect_gt(nrow(expected), 0L)
+    disk <- Spectra::setBackend(lib, MsBackendParquet::MsBackendParquet(), path = tempfile())
+    old <- options(msPurity.parquet.batch_spectra = 1L)
+    on.exit(options(old))
+    fields <- c("qpid", "library_accession", "library_entry_name", "library_compound_name",
+                "library_precursor_type", "inchikey", "library_precursor_mz", "rank",
+                "dpc", "rdpc", "cdpc", "mcount", "allcount", "mpercent")
+    compare <- function(mr) {
+        out <- mr[order(mr$qpid, mr$library_accession), fields]
+        rownames(out) <- NULL
+        out
+    }
+    checksum <- paste(rep("ab", 32), collapse = "")
+    for (x in list(lib, disk)) {
+        actual <- search(x, libraryVersion = "fixture", libraryChecksum = checksum,
+                         updateDb = TRUE)$matchedResults
+        expect_identical(compare(actual), compare(expected))
+    }
+    src <- Filter(function(s) identical(s$version, "fixture"), .manifest(p)$sources)
+    expect_length(src, 1L)
+    expect_identical(src[[1]]$digest, paste0("sha256:", checksum))
+    expect_identical(src[[1]]$resolution, "external")
+    ev <- .read_table(p, "evidence")
+    ev <- ev[ev$reference_source == src[[1]]$key, ]
+    expect_gt(nrow(ev), 0L)
+    expect_true(all(is.na(ev$reference_spectrum_id_)))
+    expect_setequal(ev$reference_native_id, expected$library_accession)
+    scores <- .read_table(p, "evidence_score")
+    counts <- table(factor(scores$evidence_id_, levels = ev$evidence_id_))
+    expect_identical(as.integer(counts), rep(6L, nrow(ev)))
+    # A later library can introduce new compounds as well as new evidence.
+    new <- lib[which(lib$accession %in% expected$library_accession)[1L]]
+    new$inchikey <- "ABCDEFGHIJKLMN-ABCDEFGHIJ-A"
+    search(new, updateDb = TRUE)
+    updated <- .read_table(p, "evidence")
+    latest <- updated[updated$activity == max(updated$activity), ]
+    cmp <- .read_table(p, "compound")
+    expect_gt(nrow(latest), 0L)
+    expect_identical(unique(cmp$inchikey[match(latest$compound_id_, cmp$compound_id_)]),
+                     new$inchikey)
+    expect_parquet_error(.mzs(".mzs_commit_update")(p, expected_generation = -1L),
+                         "conflict")
+    v <- validateParquet(p)
+    expect_identical(v$message[v$level == "MUST"], character(), info = paste(v$message, collapse = "\n"))
+    expect_null(search(lib[integer()])$matchedResults)
+    expect_null(search(lib, l_accessions = "absent")$matchedResults)
+    expect_null(search(lib, l_pol = "negative")$matchedResults)
+    expect_parquet_error(search(lib, libraryChecksum = "bad"), "format")
+})
+
+test_that("anonymous Spectra references survive reordering and queued peak processing", {
+    p <- .query_dataset()
+    lib <- Spectra::Spectra(S4Vectors::DataFrame(
+        msLevel = c(2L, 2L), precursorMz = c(123.06, 123.06),
+        polarity = c(1L, 1L), name = c("first", "second"),
+        spectrumId = c(NA_character_, "native-2"), accession = c("", NA_character_),
+        mz = IRanges::NumericList(c(80, 100), c(91, 100)),
+        intensity = IRanges::NumericList(c(15, 50), c(20, 25))))
+    search <- function(x, ...) .sm(p, x, l_spectraTypes = NA, usePrecursors = FALSE,
+                                   ...)$matchedResults
+    mr <- search(lib)
+    old <- options(msPurity.parquet.batch_spectra = 1L)
+    on.exit(options(old))
+    expect_identical(search(lib), mr)
+    ids <- unique(mr$library_accession)
+    expect_length(ids, 2L)
+    hash <- ids[startsWith(ids, "sha256:")]
+    expect_match(hash, "^sha256:[[:xdigit:]]{64}$")
+    expect_true("native-2" %in% ids)
+    expect_identical(unique(search(lib[2:1], l_accessions = hash)$library_accession), hash)
+    scaled <- Spectra::addProcessing(lib[1], function(x, ...) {
+        x[, "intensity"] <- x[, "intensity"] * 2
+        x
+    })
+    expect_false(hash %in% search(scaled)$library_accession)
+})
+
+test_that("precursor selection needs only the matching rows of an unordered library", {
+    # Expanding the lazy peaks to the converter's text representation would
+    # exceed R's single-string limit. Reject any out-of-window peak read.
+    p <- .query_dataset()
+    n <- 32769L
+    lib <- Spectra::Spectra(S4Vectors::DataFrame(
+        msLevel = c(2L, 2L), polarity = c(1L, 1L),
+        precursorMz = c(1e6, 123.0553), accession = c("far", "near"),
+        mz = IRanges::NumericList(pi, c(80, 100)),
+        intensity = IRanges::NumericList(exp(1), c(15, 50))))
+    lib <- lib[c(rep(1L, n %/% 2L), 2L, rep(1L, n %/% 2L))]
+    guard <- new.env()
+    guard$searching <- FALSE
+    lib <- Spectra::addProcessing(lib, function(x, ...) {
+        if (x[1L, "mz"] != pi) return(x)
+        if (guard$searching) stop("An out-of-window spectrum was read")
+        x[rep(1L, 4097L), , drop = FALSE]
+    })
+    far <- Spectra::peaksData(lib[1L])[[1L]]
+    entry <- paste(format(far[, "mz"], digits = 17), format(far[, "intensity"], digits = 17),
+                   collapse = " ")
+    expect_gt(as.double(n - 1L) * nchar(entry, type = "bytes"), .Machine$integer.max)
+    guard$searching <- TRUE
+    mr <- .sm(p, lib, l_spectraTypes = NA)$matchedResults
+    expect_gt(nrow(mr), 0L)
+    expect_identical(unique(mr$library_accession), "near")
+    expect_identical(unique(mr$lpid), as.numeric(n %/% 2L + 1L))
+})

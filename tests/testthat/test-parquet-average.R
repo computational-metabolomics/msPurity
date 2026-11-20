@@ -74,6 +74,27 @@ test_that("averages of every level are exported with their provenance", {
         columns = c("mz", "intensity", "contributor_count", "x_mspurity_ra_pass_flag"))
     live <- Spectra::peaksData(view, columns = c("mz", "intensity", "count", "ra_pass_flag"))
 
+    # D02 consensus metadata and its JSON representation describe the same pair.
+    for (level in 2:4) {
+        rows <- which(av$ms_level == level)
+        positions <- match(av$x_mspurity_spectrum_key[rows], view$spectrumId)
+        count <- vapply(as.list(live[positions]), nrow, integer(1L))
+        row <- rows[which.min(ifelse(count > 0L, count, Inf))]
+        i <- match(av$x_mspurity_spectrum_key[row], view$spectrumId)
+        j <- match(av$spectrum_id_[row], info$spectrum_id_)
+        local <- scoreSpectrumPair(view, view, queryIndex = i, referenceIndex = i)
+        reopened <- scoreSpectrumPair(view, bundle$processed, queryIndex = i,
+            referenceIndex = j)
+        if (level == 4L) {
+            # No MS4 peaks survived this averaging configuration.
+            expect_identical(local$reason, "missing_precursor")
+        } else {
+            expect_true(local$eligible)
+            expect_gt(local$scores[["mcount"]], 0)
+        }
+        expect_equal(reopened, local)
+    }
+
     ## merge_member and the peak edges are the recorded provenance.
     mm <- .read_table(p_pq, "merge_member")
     mp <- .read_table(p_pq, "x_mspurity_merge_peak")
@@ -266,6 +287,9 @@ test_that("original measurement counts respect peak paths and repeated feature l
     graph <- msPurity:::.mzs_graph_reader(reader, 6)
     expect_equal(length(graph$used(5)), 3L)
     expect_equal(length(graph$used(6)), 2L)
+    expect_identical(unique(members$member_spectrum_id_[graph$usedRows(6)]), 10)
     edges$member_peak_rank[4] <- NA_integer_
-    expect_true(is.na(msPurity:::.mzs_graph_reader(reader, 6)$used(6)))
+    partial <- msPurity:::.mzs_graph_reader(reader, 6)
+    expect_true(is.na(partial$used(6)))
+    expect_setequal(partial$usedRows(6), c(1L, 2L, NA_integer_))
 })

@@ -68,7 +68,8 @@
 .MZS_SCORE_TERMS <- c(dpc = "MSPURITY:0000010", rdpc = "MSPURITY:0000011",
                       cdpc = "MSPURITY:0000012", mcount = "MSPURITY:0000013",
                       allcount = "MSPURITY:0000014",
-                      mpercent = "MSPURITY:0000015")
+                      mpercent = "MSPURITY:0000015", blinkCosine = "MSPURITY:0000034",
+                      blinkMatchingIonCount = "MSPURITY:0000035")
 
 # Identification method of every evidence row spectralMatching() writes.
 .MZS_LIBRARY_SEARCH <- "MS:1001031"

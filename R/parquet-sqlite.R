@@ -632,9 +632,9 @@ convertSqliteToParquet <- function(db, path, study = NULL, studyKey = "study",
             p$ra_pass_flag & p$minnum_pass_flag
         avp[[length(avp) + 1L]] <- p
     }
-    avm <- do.call(rbind, avm)
+    avm <- do.call(rbind, avm) %||% data.frame()
     avm <- .mzs_canon_cols(avm, names(avm), c("pid", "grpid", "fileid"))
-    avp <- do.call(rbind, avp)
+    avp <- do.call(rbind, avp) %||% data.frame()
     avp <- .mzs_canon_cols(avp, .MZS_CANON_AV_PEAK,
                            c("pid", "count", "total", "cl"),
                            grep("_flag$", .MZS_CANON_AV_PEAK, value = TRUE))

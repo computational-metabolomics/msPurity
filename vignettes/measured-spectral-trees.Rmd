@@ -1,0 +1,133 @@
+---
+title: "Trace scans and search precursor–fragment links"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Trace scans and search precursor–fragment links}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Follow a scan branch
+
+A scan tree follows the acquisition references recorded by the instrument.
+This kynurenine run contains a survey scan, 966, followed by three successive
+fragmentation stages along one branch. To work with a large file, select scans
+of interest using `Spectra::filterPrecursorScan()` before reading peak arrays.
+
+```{r load}
+library(msPurity)
+file <- system.file("extdata", "msn-standards", "msPurity_L_kynurenine_161166_MSn.mzML.gz",
+                    package = "msPurity", mustWork = TRUE)
+spectra <- Spectra::Spectra(file, source = Spectra::MsBackendMzR(),
+                           BPPARAM = BiocParallel::SerialParam())
+four <- spectra[match(c(966L, 977L, 985L, 987L), Spectra::acquisitionNum(spectra))]
+scans <- massSpectralTrees(four)
+children <- subsetTree(scans, scan = 977L, mode = "out", depth = 1L)
+children$nodes[, c("acquisitionNum", "msLevel")]
+```
+
+For a tree containing several runs, supply the run identifier with the scan
+number. To retain the immediate acquisition parent in a downstream branch,
+set `includeParent = TRUE`.
+
+## Search measured peaks and candidate neutral losses
+
+With raw spectra, a precursor–fragment tree matches each isolation m/z
+to a measured peak in its acquisition parent. The default window is ±5 ppm. Supply `ppm` and
+`tolerance` (Da) to change the window. If the parent peak is missing or
+ambiguous, the fragment still has a link with a missing measured precursor m/z.
+
+```{r links}
+peaks <- precursorFragmentTrees(scans, spectra = four)
+links <- fragmentLinks(peaks)
+within_ppm <- function(x, target, ppm = 5) abs(x - target) <= target * ppm / 1e6
+precursors <- subset(links, within_ppm(precursor_mz, 146.05989))
+fragments <- subset(links, within_ppm(fragment_mz, 118.10124))
+fragments[, c("precursor_scan", "precursor_peak", "fragment_scan", "fragment_peak")]
+```
+
+Each row is a direct link between two peak occurrences. `delta_mz` equals
+the measured precursor m/z minus the measured fragment m/z. For a series
+assumed to retain the same single charge and adduct, a difference near
+18.010565 is consistent with a neutral loss of 18.010565 Da. Set a separate
+absolute tolerance for this search. If both ions retain the same known charge
+of greater magnitude, multiply `delta_mz` by that magnitude before comparing
+with a target in Da. The mass agreement alone cannot identify the lost species.
+
+```{r loss}
+loss_hits <- subset(links, abs(delta_mz - 18.010565) <= 0.002)
+loss_hits[, c("precursor_mz", "fragment_mz", "delta_mz", "source", "target")]
+# Restrict the loss search to a particular measured precursor.
+subset(loss_hits, within_ppm(precursor_mz, 209.09215),
+       select = c(precursor_scan, precursor_peak, fragment_scan, fragment_peak))
+```
+
+## Use the parent peak recorded by purityA {#recorded-parent-peaks}
+
+Pass the whole `purityA` result to `precursorFragmentTrees()` to reuse the
+peak selected during each MS³ or MS⁴ purity assessment. The `ppm` argument
+applies when the tree has to find a peak by m/z. An assessment that could
+not identify a peak keeps its recorded status.
+
+```{r assess-peaks, results='hide'}
+pa <- purityA(spectra, msLevel = 2:4, cores = 1L, plotP = FALSE)
+```
+
+```{r compare-peak-assignments}
+raw_peaks <- precursorFragmentTrees(spectra)
+pa_peaks <- precursorFragmentTrees(pa)
+child <- c(977L, 987L, 1053L)
+raw <- raw_peaks$selections[match(child, raw_peaks$selections$acquisitionNum), ]
+assessed_peaks <- pa_peaks$selections[match(child, pa_peaks$selections$acquisitionNum), ]
+data.frame(child, raw_peak = raw$parent_peak_index, raw_status = raw$match_status,
+           pa_peak = assessed_peaks$parent_peak_index, pa_mz = assessed_peaks$measured_mz,
+           pa_source = assessed_peaks$assignment_source)
+```
+
+For scan **977**, only the raw file contains the peaks of survey scan **966**.
+Both inputs identify peak **44** in scan **985** as the precursor of scan **987**.
+For scan **1053**, the instrument targeted m/z **174.05460**. The assessment
+selected peak **15** in scan **1047** at m/z **174.05566**, about **6.14 ppm**
+from the target. The default raw search leaves that assignment unresolved.
+The PA tree uses peak 15 for all 16 products.
+
+Trace one product of scan 1053 back to the measured precursor. The edge
+points from the parent peak to the fragment.
+
+```{r recorded-peak-branch, eval=requireNamespace("igraph", quietly = TRUE), fig.width=6, fig.height=3}
+product <- subset(fragmentLinks(pa_peaks), fragment_scan == 1053 & fragment_peak == 1L)
+parent_pair <- subsetTree(pa_peaks, node = product$target, mode = "in", depth = 1L)
+labels <- with(parent_pair$nodes,
+    sprintf("Scan %d · peak %d\nm/z %.5f", acquisitionNum, peak_index, mz))
+plot(parent_pair, labels = labels, main = "Parent peak recorded by purityA",
+     vertex.label.degree = -pi / 2, vertex.label.dist = 8, vertex.label.adj = c(0.5, 0.5))
+```
+
+## Plot or export a hit
+
+Use the exact target ID to follow a matching fragment back to its immediate
+precursor. The ID distinguishes peaks with the same m/z in different scans.
+Plotting, igraph conversion and GraphML export use the optional igraph package.
+
+```{r display, eval=requireNamespace("igraph", quietly = TRUE), fig.width=6, fig.height=3}
+branch <- subsetTree(peaks, node = loss_hits$target[1L], mode = "in", depth = 1L)
+plot(branch)
+igraph::as_edgelist(as_igraph(branch))
+writeGraphML(branch, tempfile(fileext = ".graphml"))
+```
+
+
+## Keep passing products after filtering
+
+`passingOnly = TRUE` uses the product flags saved by `filterFragSpectra()`.
+A failed product can still be the measured precursor of a later scan.
+Here, peak 44 in scan 985 supplies the two passing products of scan 987.
+
+```{r passing-products}
+filtered <- filterFragSpectra(pa, msLevel = 2:4, allfrag = TRUE,
+    plim = 0.95, snr = 3, rmp = TRUE, cores = 1L)
+passing <- precursorFragmentTrees(filtered, passingOnly = TRUE)
+subset(fragmentLinks(passing), fragment_scan == 987,
+       select = c(precursor_scan, precursor_peak, fragment_scan, fragment_peak,
+                  fragment_mz, assignment_source))
+```

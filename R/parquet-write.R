@@ -499,8 +499,12 @@
 #' @noRd
 .mzs_commit_update <- function(path, append = list(), supersede = list(),
                                selection = list(), sources = list(),
-                               activity, sourcePaths = NULL) {
+                               activity, sourcePaths = NULL, expected_generation = NULL) {
     m <- MsBackendParquet::readManifest(path)
+    if (!is.null(expected_generation) && m$generation != expected_generation)
+        .mzs_conflict(MsBackendParquet::mzstackCondition("conflict",
+            "The results dataset changed while preparing the update. ",
+            "Run the search again against the current generation."))
     if (!identical(m$role, "results"))
         .mzs_abort("unsupported", "'", path, "' is not a results dataset.")
     if (!identical(.mzs_semver_major(m$results$version), .MZS_RESULTS_MAJOR))

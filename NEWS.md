@@ -1,4 +1,35 @@
+# msPurity 1.99.5
+
+- Build scan and precursor–fragment trees from measured spectra and follow
+  a branch with `subsetTree()`. Peak trees reuse the parent peaks recorded
+  by `purityA()` for MS3/MS4. For raw spectra, peak matching uses 5 ppm
+  by default.
+  `fragmentLinks()` exposes measured masses and their signed difference for
+  fragment and candidate neutral-loss searches. Plot or export a selected
+  branch with `plot()`, `as_igraph()` or `writeGraphML()` (#155).
+
 # msPurity 1.99.4
+
+- `BlinkMatchingParam()` selects BLINK fragment scoring for MS2–MS4
+  searches. Hits report approximate cosine and estimated matching-ion count.
+  Parquet evidence records both scores and the settings used (#161).
+
+- For `Spectra` queries, `spectralMatching()` reports an outcome for every
+  input query. Retained hits identify shared scans and source files, with
+  the original measurements contributing to each stored consensus (#160).
+
+- `spectralMatching()` accepts experimental `Spectra` queries for in-memory
+  MS2–MS4 searches against experimental spectra or a reference library. Hits
+  carry the input positions, compatibility reason, scores and rank (#159).
+
+- `scoreSpectrumPair()` checks MS2–MS4 precursor masses, acquisition
+  conditions and available ancestry before reading peaks. It reports the
+  decision alongside the six existing scores. `SpectralMatchingParam()`
+  sets separate ppm and Da windows for each side of the comparison (#158).
+
+- Parquet spectral matching accepts a `Spectra` library directly, including
+  disk-backed libraries. Searches read candidate peaks in batches and can
+  record the library release and checksum with the evidence (#154).
 
 - **DIMS retirement**: `purityD`, its associated processing functions and
   standalone DIMS functions, including `dimsPredictPuritySingle()`, are

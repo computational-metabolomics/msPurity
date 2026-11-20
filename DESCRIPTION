@@ -2,7 +2,7 @@ Package: msPurity
 Type: Package
 Title: Tools for LC-MSⁿ-Based Metabolomics: Precursor Ion Purity Assessment,
     Fragmentation Data and Spectral Tree Processing, and Spectral Matching
-Version: 1.99.4
+Version: 1.99.5
 Date: 2026-11-20
 Authors@R: c(
     person(given = "Ossama", family = "Edbali",
@@ -46,6 +46,7 @@ BugReports: https://github.com/computational-metabolomics/msPurity/issues/new
 Depends:
     Rcpp
 Imports:
+    Matrix,
     plyr,
     dplyr (>= 1.1.0),
     dbplyr,
@@ -77,6 +78,7 @@ Imports:
     tools,
     utils
 Suggests:
+    igraph,
     MSnbase,
     testthat (>= 3.2.0),
     xcms,
@@ -99,13 +101,16 @@ Collate:
     'createDatabase.R'
     'deprecation.R'
     'flag-filter-remove.R'
+    'fragment-links.R'
     'iw-norm.R'
+    'mass-spectral-trees.R'
     'matching-algs.R'
     'meta_extract.R'
     'msPurity.R'
     'parquet-annotations.R'
     'parquet-average.R'
     'parquet-batches.R'
+    'parquet-blink.R'
     'parquet-conditions.R'
     'parquet-converter.R'
     'parquet-index.R'
@@ -117,12 +122,14 @@ Collate:
     'parquet-purityA.R'
     'parquet-read.R'
     'parquet-schemas.R'
+    'parquet-spectra-library.R'
     'parquet-sqlite.R'
     'parquet-validate.R'
     'parquet-validation-store.R'
     'parquet-write.R'
     'parquet-xcms.R'
     'pcalc.R'
+    'precursor-fragment-trees.R'
     'purityA-0-class.R'
     'purityA-av-spectra.R'
     'purityA-average-configured.R'
@@ -163,6 +170,15 @@ Collate:
     'spectra-io.R'
     'spectral-matching.R'
     'spectralMatching.R'
+    'spectrum-pair-metadata.R'
+    'spectrum-pair.R'
+    'blink-scoring.R'
+    'spectra-search.R'
+    'spectra-search-provenance.R'
     'splinepurity.R'
+    'tree-graphml.R'
+    'tree-igraph.R'
+    'tree-plot.R'
+    'tree-selection.R'
     'xcms-compat.R'
 Config/roxygen2/version: 8.1.1
