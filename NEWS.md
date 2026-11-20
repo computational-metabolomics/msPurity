@@ -1,7 +1,9 @@
 # msPurity 1.99.5
 
 - Build scan and precursor–fragment trees from measured spectra and follow
-  a branch with `subsetTree()`. Peak assignment uses 5 ppm by default.
+  a branch with `subsetTree()`. Peak trees reuse the parent peaks recorded
+  by `purityA()` for MS3/MS4. For raw spectra, peak matching uses 5 ppm
+  by default.
   `fragmentLinks()` exposes measured masses and their signed difference for
   fragment and candidate neutral-loss searches. Plot or export a selected
   branch with `plot()`, `as_igraph()` or `writeGraphML()` (#155).

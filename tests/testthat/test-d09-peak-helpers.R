@@ -16,7 +16,9 @@ test_that("purity annotations come from the current source in stored scan order"
     pa@spectra <- s[c(3, 1, 2)]
     pa@spectra$inPurity <- c(0.47, NA, 0.6)
     expect_identical(massSpectralTrees(pa)$nodes$inPurity, c(NA_real_, 0.6, 0.47))
-    expect_identical(precursorFragmentTrees(pa)$selections$source, c("peak:a:2", "peak:b:2"))
+    selections <- precursorFragmentTrees(pa)$selections
+    expect_identical(selections$source, c("peak:a:2", "peak:b:2"))
+    expect_identical(selections$assignment_source, c("mz_window", "mz_window"))
 })
 
 test_that("ambiguous, unmatched and external parents stay explicitly unmeasured", {
@@ -66,6 +68,9 @@ test_that("filtered products retain original peak positions and precursor contex
     expect_identical(links$source, c("peak:a:9", "peak:b:9"))
     expect_identical(links$target, c("peak:b:3", "peak:c:3"))
     expect_identical(tree$pft$nodes$pass_flag[tree$pft$nodes$context], c(0, 0))
+    flagged$pid <- 1:3
+    pa <- methods::new("purityA", spectra = flagged)
+    expect_identical(fragmentLinks(precursorFragmentTrees(pa, passingOnly = TRUE))$target, links$target)
     queued <- Spectra::filterMzRange(s, mz = c(75, 250))
     expect_identical(fragmentLinks(precursorFragmentTrees(queued))$target, "peak:b:2")
     expect_error(precursorFragmentTrees(s, passingOnly = TRUE), "pass_flag")
@@ -110,6 +115,57 @@ test_that("native four-scan peak assignments agree with the independent saved tr
     expect_identical(nrow(x$pft$nodes), 122L)
     products <- subsetTree(x, scan = 985L, peak = 44L, mode = "out", depth = 1L)
     expect_identical(fragmentLinks(products)$fragment_peak, 1:7)
+})
+
+test_that("assessed scans reuse their own processing step and retain filtered product identities", {
+    f <- system.file("extdata", "msn-standards", "msPurity_L_kynurenine_161166_MSn.mzML.gz",
+        package = "msPurity", mustWork = TRUE)
+    s <- Spectra::Spectra(f, source = Spectra::MsBackendMzR(), BPPARAM = BiocParallel::SerialParam())
+    raw <- precursorFragmentTrees(s)$selections
+    expect_identical(raw$match_status[raw$acquisitionNum == 1053], "unmatched")
+
+    first <- purityA(s, msLevel = 2:3, cores = 1L, plotP = FALSE)
+    pa <- purityA(first@spectra, msLevel = 4L, cores = 1L, plotP = FALSE)
+    tree <- precursorFragmentTrees(pa, ppm = 0)
+    rows <- tree$selections[match(c(977, 987, 1053), tree$selections$acquisitionNum), ]
+    expect_identical(rows$assignment_source, c("unavailable", "purityA", "purityA"))
+    expect_identical(rows$parent_peak_index, c(NA_integer_, 44L, 15L))
+    expect_equal(rows$measured_mz[3], 174.0556640625, tolerance = 1e-10)
+    links <- subset(fragmentLinks(tree), fragment_scan == 1053)
+    expect_identical(links$fragment_peak, 1:16)
+    expect_true(all(links$precursor_scan == 1047 & links$precursor_peak == 15))
+    expect_error(precursorFragmentTrees(pa, passingOnly = TRUE), "filterFragSpectra")
+
+    for (remove_failed in c(FALSE, TRUE)) {
+        filtered <- filterFragSpectra(pa, msLevel = 2:4, allfrag = TRUE,
+            plim = 0.95, snr = 3, rmp = remove_failed, cores = 1L)
+        passing <- subset(fragmentLinks(precursorFragmentTrees(filtered, passingOnly = TRUE)),
+            fragment_scan == 987)
+        expect_identical(passing$fragment_peak, c(5L, 7L), info = paste("rmp", remove_failed))
+        expect_true(all(passing$precursor_scan == 985 & passing$precursor_peak == 44L &
+            passing$assignment_source == "purityA"), info = paste("rmp", remove_failed))
+    }
+})
+
+test_that("an unavailable or unresolved recorded peak is never replaced by a nearby peak", {
+    s <- .d09_peak_scans()
+    pa <- purityA(s, msLevel = 3L, parentReference = "acquisitionNum", offsets = c(0.5, 0.5))
+    retained <- pa
+    retained@spectra <- Spectra::filterMzRange(pa@spectra, mz = c(70, 100))
+    row <- subset(precursorFragmentTrees(retained)$selections, acquisitionNum == 30)
+    expect_identical(row$parent_peak_index, 2L)
+    expect_identical(row$measured_mz, 80)
+
+    pa@spectra <- Spectra::filterMzRange(pa@spectra, mz = c(30, 65))
+    links <- subset(fragmentLinks(precursorFragmentTrees(pa, tolerance = 100)), fragment_scan == 30)
+    expect_identical(unique(links$match_status), "recorded_peak_unavailable")
+    expect_identical(links$precursor_peak, c(NA_integer_, NA_integer_))
+
+    s$precursorMz <- c(NA, 200, 70)
+    unresolved <- purityA(s, msLevel = 3L, parentReference = "acquisitionNum", offsets = c(0.5, 0.5))
+    row <- subset(precursorFragmentTrees(unresolved, tolerance = 100)$selections, acquisitionNum == 30)
+    expect_identical(row$match_status, "missing_precursor_peak")
+    expect_identical(row$assignment_source, "purityA")
 })
 
 test_that("duplicate scan numbers in different runs have distinct peak occurrences", {

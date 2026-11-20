@@ -1,26 +1,35 @@
 #' Construct a precursor-fragment tree from measured spectra
 #'
-#' Match each fragmentation scan's recorded precursor m/z against peaks in
-#' its acquisition parent and link the selection to its observed products.
+#' Link each fragmentation scan's observed products to a measured peak in
+#' its acquisition parent. A `purityA` input reuses recorded parent peak
+#' assignments from MS3/MS4 purity assessments.
 #'
 #' @inheritParams massSpectralTrees
 #' @param object Measured `Spectra`, a `purityA` result (its retained source
 #'   spectra), or a scan tree from [massSpectralTrees()].
-#' @param ppm,tolerance Nonnegative relative tolerance in ppm and absolute
+#' @param ppm,tolerance For scans without a recorded assignment, the
+#'   nonnegative relative tolerance in ppm and absolute
 #'   tolerance in Da, defaulting to 5 ppm and 0 Da. The inclusive half-window is
 #'   `tolerance + abs(precursorMz) * ppm / 1e6`.
 #' @param spectra For a stored scan tree, supply the corresponding measured
 #'   spectra. Acquisition metadata and directed links must agree. The
 #'   supplied peak arrays define the measurements for this call.
 #' @param passingOnly Use only products whose stored `pass_flag` equals one.
-#'   Requires flagged spectra, e.g. `allFragSpectra(pa, legacy = FALSE)`
-#'   after filtering. A retained parent peak may still supply measured
-#'   precursor context when its own product flag failed.
-#' @details Exactly one parent peak in the window supplies a measured
+#'   Supply flagged spectra or the result of [filterFragSpectra()]. A parent
+#'   peak retained in the source can supply precursor context even when
+#'   filtering removed it from the products.
+#' @details With a `purityA` object, the active assessment for each scan
+#'   supplies its recorded parent, peak position and measured m/z. These
+#'   must agree with the available parent measurement. A recorded unresolved
+#'   selection keeps its status. If the recorded peak is no longer available,
+#'   its products remain linked to an unmeasured selection. MS2 scans and
+#'   older results without a peak observation use the mass window when the
+#'   parent spectrum is present.
+#'
+#'   With measured `Spectra`, exactly one parent peak in the window supplies a measured
 #'   precursor. Multiple candidates, no candidate or an unresolved parent
 #'   produce an unmeasured selection with an explicit status. Purity scores
-#'   describe the original isolation assessment. The peak match here uses the
-#'   stated mass window. Known profile data and multiple isolated precursors
+#'   describe the original isolation assessment. Known profile data and multiple isolated precursors
 #'   per scan are unsupported. Subset large runs with
 #'   [Spectra::filterPrecursorScan()] before reading peak arrays.
 #'
@@ -31,7 +40,9 @@
 #' @return A `PrecursorFragmentTrees` list. Its `mst` holds the scan tree,
 #'   including empty scans. Its `pft` holds peak nodes and fragmentation
 #'   edges. Its `selections` table has one row per fragmentation scan,
-#'   including scans with zero products. Use [fragmentLinks()] for a table
+#'   including scans with zero products. Its `assignment_source` column
+#'   distinguishes `purityA` observations, `mz_window` matching and
+#'   `unavailable` parents. Use [fragmentLinks()] for a table
 #'   of products with measured masses and [subsetTree()] to follow a branch.
 #' @examples
 #' f <- system.file("extdata", "msn-standards",
@@ -71,8 +82,11 @@ precursorFragmentTrees <- function(object, ppm = 5, tolerance = 0,
             stop("Multiple isolated precursors per scan are unsupported.", call. = FALSE)
 
     peak_vars <- Spectra::peaksVariables(spectra)
-    if (passingOnly && !"pass_flag" %in% peak_vars)
-        stop("passingOnly requires a stored pass_flag peak variable.", call. = FALSE)
+    use_pa_flags <- passingOnly && methods::is(object, "purityA") &&
+        length(object@filter_frag_params) > 0L
+    if (passingOnly && !use_pa_flags && !"pass_flag" %in% peak_vars)
+        stop("passingOnly requires a stored pass_flag or a result from filterFragSpectra().",
+            call. = FALSE)
     columns <- c("mz", "intensity", intersect(c("original_peak_index", "pass_flag"), peak_vars))
     arrays <- if (length(needed)) as.list(Spectra::peaksData(source, columns = columns,
         BPPARAM = .msp_bpparam())) else list()
@@ -90,11 +104,16 @@ precursorFragmentTrees <- function(object, ppm = 5, tolerance = 0,
     products <- scans$msLevel[scan_row] > 1L
     flags <- if ("pass_flag" %in% peak_vars)
         as.numeric(flat(lapply(arrays, function(a) a[, "pass_flag"]))) else NULL
+    if (use_pa_flags)
+        flags <- as.numeric(flat(.pft_pa_flags(object, source, arrays, positions)))
     if (passingOnly) products <- products & flags %in% 1
 
     targets <- scans$precursorMz[events]
-    assignment <- .pft_assign_precursors(arrays, counts, match(parents, needed),
-        targets, scans$parentStatus[events], ppm, tolerance)
+    recorded <- NULL
+    if (methods::is(object, "purityA"))
+        recorded <- .pft_pa_observations(object, spectra, scans, events)
+    assignment <- .pft_assign_precursors(arrays, positions, counts, match(parents, needed),
+        scans[events, , drop = FALSE], recorded, ppm, tolerance)
     selected <- assignment$row
     status <- assignment$status
     matched <- !is.na(selected)
@@ -106,7 +125,7 @@ precursorFragmentTrees <- function(object, ppm = 5, tolerance = 0,
         acquisitionNum = scans$acquisitionNum[events], parentLineageScanId = scans$parentLineageScanId[events],
         rawParentReference = scans$rawParentReference[events], isolationMz = targets,
         source = source_id, parent_peak_index = index[selected], measured_mz = mz[selected],
-        match_status = status, stringsAsFactors = FALSE)
+        match_status = status, assignment_source = assignment$source, stringsAsFactors = FALSE)
 
     # Include every eligible product and the parent peaks used by those acquisitions.
     keep <- products
@@ -135,7 +154,8 @@ precursorFragmentTrees <- function(object, ppm = 5, tolerance = 0,
         ":", index[products], recycle0 = TRUE)
     edges <- data.frame(source = source_id[child], target = peak_id[products],
         relationship = rep("fragmentation", length(child)), observation_id = observation,
-        match_status = status[child], isolationMz = targets[child], stringsAsFactors = FALSE)
+        match_status = status[child], assignment_source = assignment$source[child],
+        isolationMz = targets[child], stringsAsFactors = FALSE)
     metadata <- list(structure = "PFT", ppm = ppm, tolerance = tolerance,
         passingOnly = passingOnly, parentReference = mst$metadata$parentReference)
     pft <- structure(list(nodes = nodes, edges = edges, metadata = metadata),
@@ -180,21 +200,102 @@ precursorFragmentTrees <- function(object, ppm = 5, tolerance = 0,
     list(mst = mst, spectra = spectra)
 }
 
-.pft_assign_precursors <- function(arrays, counts, parent_array, targets, status, ppm, tolerance) {
-    # Array offsets give direct access to each resolved parent's peaks.
+# Product flags belong to the filtered output. Keep the source arrays for
+# parent measurements, including peaks removed from that output.
+.pft_pa_flags <- function(pa, source, arrays, positions) {
+    filtered <- if (isTRUE(pa@filter_frag_params$allfrag))
+        allFragSpectra(pa, legacy = FALSE) else groupedSpectra(pa, legacy = FALSE)
+    flags <- lapply(positions, function(pos) rep(NA_real_, length(pos)))
+    if (!length(filtered)) return(flags)
+    vars <- c("original_peak_index", "pass_flag")
+    if (!all(vars %in% Spectra::peaksVariables(filtered)))
+        stop("Filtered spectra need stored original peak positions and pass_flag.", call. = FALSE)
+    if (anyNA(filtered$pid) || anyDuplicated(filtered$pid))
+        stop("Filtered spectra need unique scan pids.", call. = FALSE)
+    source_row <- match(filtered$pid, source$pid)
+    if (anyNA(source_row))
+        stop("A filtered scan is missing from the retained source.", call. = FALSE)
+    values <- Spectra::peaksData(filtered, columns = c("mz", "intensity", vars),
+        BPPARAM = .msp_bpparam())
+    for (i in seq_along(values)) {
+        j <- source_row[i]
+        m <- values[[i]]
+        row <- match(m[, "original_peak_index"], positions[[j]])
+        if (anyNA(row) || anyDuplicated(row) || !isTRUE(all(
+                m[, "mz"] == arrays[[j]][row, "mz"] &
+                m[, "intensity"] == arrays[[j]][row, "intensity"])))
+            stop("Filtered peak positions and measurements must agree with the source.", call. = FALSE)
+        flags[[j]][row] <- m[, "pass_flag"]
+    }
+    flags
+}
+
+# A later purityA run can assess only some stages. Each child names the
+# processing step that produced its own assessment.
+.pft_pa_observations <- function(pa, spectra, scans, events) {
+    if (!length(events) || !"msPurityProcessingId" %in% Spectra::spectraVariables(spectra))
+        return(NULL)
+    step <- spectra$msPurityProcessingId[events]
+    records <- processingParameters(pa, "purityA")
+    selected <- lapply(intersect(unique(step), names(records)), function(id) {
+        obs <- records[[id]]$msn_purity$observations
+        if (!NROW(obs) || !"parent_peak_index" %in% names(obs))
+            return(NULL)
+        if (anyDuplicated(obs$childLineageScanId))
+            stop("A purityA assessment contains duplicate child scan identities.", call. = FALSE)
+        event <- which(step == id & scans$msLevel[events] > 2L)
+        row <- match(scans$lineageScanId[events[event]], obs$childLineageScanId)
+        keep <- !is.na(row)
+        obs <- obs[row[keep], c("parentLineageScanId", "parent_peak_index", "matched_mz",
+            "status"), drop = FALSE]
+        obs$event <- event[keep]
+        obs
+    })
+    do.call(rbind, selected)
+}
+
+.pft_assign_precursors <- function(arrays, positions, counts, parent_array, events,
+        recorded, ppm, tolerance) {
     offsets <- cumsum(as.double(c(0L, counts)))
-    selected <- rep(NA_real_, length(targets))
-    for (i in which(!is.na(parent_array))) {
+    selected <- rep(NA_real_, nrow(events))
+    status <- events$parentStatus
+    source <- rep("mz_window", nrow(events))
+    source[is.na(parent_array)] <- "unavailable"
+
+    if (NROW(recorded)) {
+        source[recorded$event] <- "purityA"
+        status[recorded$event] <- recorded$status
+        for (k in which(!is.na(recorded$parent_peak_index))) {
+            i <- recorded$event[k]
+            j <- parent_array[i]
+            status[i] <- "recorded_peak_unavailable"
+            if (is.na(j) || !isTRUE(recorded$parentLineageScanId[k] == events$parentLineageScanId[i]))
+                next
+            # The recorded row is in the assessment's peak array. Filtering
+            # can move that row while retaining its original position.
+            pos <- recorded$parent_peak_index[k]
+            rows <- unique(c(pos, match(pos, positions[[j]])))
+            rows <- rows[!is.na(rows) & rows >= 1L & rows <= counts[j]]
+            hits <- rows[which(arrays[[j]][rows, "mz"] == recorded$matched_mz[k])]
+            if (length(hits) == 1L) {
+                selected[i] <- offsets[j] + hits
+                status[i] <- "matched"
+            }
+        }
+    }
+
+    for (i in which(source == "mz_window")) {
         j <- parent_array[i]
-        if (!is.finite(targets[i]) || targets[i] <= 0) {
+        target <- events$precursorMz[i]
+        if (!is.finite(target) || target <= 0) {
             status[i] <- "missing_precursor_mz"
             next
         }
-        window <- tolerance + abs(targets[i]) * ppm / 1e6
-        hits <- which(abs(arrays[[j]][, "mz"] - targets[i]) <= window)
+        window <- tolerance + abs(target) * ppm / 1e6
+        hits <- which(abs(arrays[[j]][, "mz"] - target) <= window)
         if (length(hits) == 1L) selected[i] <- offsets[j] + hits
         status[i] <- if (!length(hits)) "unmatched" else if (length(hits) == 1L)
             "matched" else "ambiguous"
     }
-    list(row = selected, status = status)
+    list(row = selected, status = status, source = source)
 }

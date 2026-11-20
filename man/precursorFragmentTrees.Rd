@@ -17,7 +17,8 @@ precursorFragmentTrees(
 \item{object}{Measured \code{Spectra}, a \code{purityA} result (its retained source
 spectra), or a scan tree from \code{\link[=massSpectralTrees]{massSpectralTrees()}}.}
 
-\item{ppm, tolerance}{Nonnegative relative tolerance in ppm and absolute
+\item{ppm, tolerance}{For scans without a recorded assignment, the
+nonnegative relative tolerance in ppm and absolute
 tolerance in Da, defaulting to 5 ppm and 0 Da. The inclusive half-window is
 \code{tolerance + abs(precursorMz) * ppm / 1e6}.}
 
@@ -32,27 +33,37 @@ spectra. Acquisition metadata and directed links must agree. The
 supplied peak arrays define the measurements for this call.}
 
 \item{passingOnly}{Use only products whose stored \code{pass_flag} equals one.
-Requires flagged spectra, e.g. \code{allFragSpectra(pa, legacy = FALSE)}
-after filtering. A retained parent peak may still supply measured
-precursor context when its own product flag failed.}
+Supply flagged spectra or the result of \code{\link[=filterFragSpectra]{filterFragSpectra()}}. A parent
+peak retained in the source can supply precursor context even when
+filtering removed it from the products.}
 }
 \value{
 A \code{PrecursorFragmentTrees} list. Its \code{mst} holds the scan tree,
 including empty scans. Its \code{pft} holds peak nodes and fragmentation
 edges. Its \code{selections} table has one row per fragmentation scan,
-including scans with zero products. Use \code{\link[=fragmentLinks]{fragmentLinks()}} for a table
+including scans with zero products. Its \code{assignment_source} column
+distinguishes \code{purityA} observations, \code{mz_window} matching and
+\code{unavailable} parents. Use \code{\link[=fragmentLinks]{fragmentLinks()}} for a table
 of products with measured masses and \code{\link[=subsetTree]{subsetTree()}} to follow a branch.
 }
 \description{
-Match each fragmentation scan's recorded precursor m/z against peaks in
-its acquisition parent and link the selection to its observed products.
+Link each fragmentation scan's observed products to a measured peak in
+its acquisition parent. A \code{purityA} input reuses recorded parent peak
+assignments from MS3/MS4 purity assessments.
 }
 \details{
-Exactly one parent peak in the window supplies a measured
+With a \code{purityA} object, the active assessment for each scan
+supplies its recorded parent, peak position and measured m/z. These
+must agree with the available parent measurement. A recorded unresolved
+selection keeps its status. If the recorded peak is no longer available,
+its products remain linked to an unmeasured selection. MS2 scans and
+older results without a peak observation use the mass window when the
+parent spectrum is present.
+
+With measured \code{Spectra}, exactly one parent peak in the window supplies a measured
 precursor. Multiple candidates, no candidate or an unresolved parent
 produce an unmeasured selection with an explicit status. Purity scores
-describe the original isolation assessment. The peak match here uses the
-stated mass window. Known profile data and multiple isolated precursors
+describe the original isolation assessment. Known profile data and multiple isolated precursors
 per scan are unsupported. Subset large runs with
 \code{\link[Spectra:filterPrecursorScan]{Spectra::filterPrecursorScan()}} before reading peak arrays.
 
