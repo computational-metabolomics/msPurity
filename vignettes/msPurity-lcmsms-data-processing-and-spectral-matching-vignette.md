@@ -1,7 +1,7 @@
 ---
 title: "LC-MS/MS data processing and spectral matching workflow using msPurity and XCMS"
 author: "Thomas N. Lawson"
-date: "2019-09-05"
+date: "2026-11-20"
 output: 
   BiocStyle::html_document:
     toc: true
@@ -14,233 +14,211 @@ vignette: >
   %\VignetteIndexEntry{msPurity spectral matching}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+link-citations: true
 ---
 
 # LC-MS/MS data processing and spectral matching workflow
 
-## Overview
-The msPurity package can be used with XCMS as part of a data processing and annotation workflow for LC-MS/MS data
+## Read the two DDA runs as a Parquet study
 
-* Purity assessments
-   +  (mzML files) -> purityA -> (pa)
-* XCMS processing
-   +  (mzML files) -> xcms.findChromPeaks -> (optionally) xcms.adjustRtime -> xcms.groupChromPeaks -> (xcmsObj)
-   +  --- *Older versions of XCMS* --- (mzML files) -> xcms.xcmsSet -> xcms.group -> xcms.retcor -> xcms.group -> (xcmsObj)
-* Fragmentation processing
-   + (xcmsObj, pa) -> frag4feature -> filterFragSpectra -> averageAllFragSpectra -> createDatabase -> **spectralMatching** -> (sqlite spectral database)
+This workflow links acquired MS2 spectra to chromatographic features,
+averages the fragmentation spectra for each feature, and searches the same
+queries and references with two scoring methods. The runs come from `msPurityData`, and the reference library ships with `msPurity`.
 
 
-## XCMS processing
-We first need to run XCMS so that we can later link the spectral matching result back to XCMS feature.
-
-(Please use the appropiate settings for your data)
-
-
-```r
+``` r
 library(msPurity)
-library(magrittr)
 library(xcms)
-library(MSnbase)
-mzMLpths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
-
-#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)
-rtr = c(30, 90)
-mzr = c(100, 200)
-msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
-
-#perform feature detection in individual files
-cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-#update metadata
-xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
-xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
-#group chromatographic peaks across samples (correspondence analysis)
-pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
 ```
 
 
-## Purity assesments and linking fragmentation to XCMS features
-
-The `purityA` function is then called to calculate the precursor purity of the fragmentation results and the `frag4feature` function will link the 
-fragmentation data back to the XCMS feature.
-
-
-```r
-pa  <- purityA(mzMLpths)
-pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+``` r
+mzml_dir <- system.file("extdata", "lcms", "mzML", package = "msPurityData",
+                        mustWork = TRUE)
+files <- list.files(mzml_dir, pattern = "^LCMSMS_.*[.]mzML$", full.names = TRUE)
+work <- tempfile("mspurity-")
+dir.create(work)
+study <- file.path(work, "study")
+MsBackendParquet::mzMLToParquet(files, path = study, engine = "mzr",
+                                verbose = FALSE)
+raw <- Spectra::Spectra(Spectra::backendInitialize(
+    MsBackendParquet::MsBackendParquet(), path = study))
 ```
 
-## Filtering and averaging
+## Detect chromatographic features with xcms 4
 
-The fragmentation can be filtered prior to averaging using the “filterFragSpectra” function
-
-
-```r
-pa <- filterFragSpectra(pa = pa)
-```
+Limit peak detection to MS1 scans between 30 and 90 seconds and ions from
+100 to 200 *m/z*. Keep the original spectra for precursor purity assessment
+and MS2 processing. Each sample links to its scans by their common source
+file name.
 
 
-Averaging of the fragmentation spectra can be done with either “averageAllFragSpectra” or with “averageIntraFragSpectra” and averageInterFragSpectra”. This will depend if the user wishes to treat the fragmentation spectra from within a file and between files. Another alternative is to ignore the averaging completely and just use the non-averaged fragmentation spectra for the spectral matching.
+``` r
+ms1 <- Spectra::filterMsLevel(raw, 1L)
+ms1 <- Spectra::filterMzRange(Spectra::filterRt(ms1, c(30, 90)), c(100, 200))
+origins <- unique(Spectra::dataOrigin(ms1))
+samples <- S4Vectors::DataFrame(sample_name = basename(origins), origin = origins)
+experiment <- MsExperiment::MsExperiment(sampleData = samples, spectra = ms1)
+experiment <- MsExperiment::linkSampleData(
+    experiment, with = "sampleData.origin = spectra.dataOrigin")
 
-If the inter and intra fragmentation scans are to be treated differently the following should be followed:
-
-
-```r
-pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra 
-pa <- averageInterFragSpectra(pa = pa) # use parameters specific to inter spectra
-```
-
-If the inter and intra fragmentation scans are to be treated the same the following workflow should be used.
-
-
-```r
-pa <- averageAllFragSpectra(pa = pa) 
-```
-
-## Creating a spectral-database
-
-An SQLite database is then created of the LC-MS/MS experiment. The SQLite schema of the spectral database can be detailed [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-datatabase-schema.html).
-
-
-```r
-td <- tempdir()
-q_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'lcmsms-processing.sqlite')
-```
-
-## Spectral matching
-
-The spectralMatching function allows users to perform spectral matching to be performed for **Query** SQLite spectral-database against a **Library** SQLite spectral-database.
-
-The query spectral-database in most cases should contain be the "unknown" spectra database generated the msPurity function createDatabase as part of a msPurity-XCMS data processing workflow.
-
-The library spectral-database in most cases should contain the "known" spectra from either public or user generated resources. The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS. A larger database can be downloaded from here. To create a user generated library SQLite database the following tool can be used to generate a SQLite database from a collection of MSP files: msp2db. It should be noted though, that as long as the schema of the spectral-database is as described here, then any database can be used for either the library or query - even allowing for the same database to be used.
-
-The spectral matching functionality has four main components, **spectral filtering**, **spectral alignment**, **spectral matching** and finally summarising the results.
-
-**Spectral filtering** is simply filtering both the library and query spectra to be search against (e.g. choosing the library source, instrument, retention time, precursor PPM tolerance, xcms features etc).
-
-The **spectral alignment** stage involves aligning the query peaks to the library peaks. The approach used is similar to modified pMatch algorithm described in [@Zhou2014].
-
-The **spectral matching** of the aligned spectra is performed against a combined intensity and m/z weighted vector - created for both the query and library spectra (wq and wl). See below:
-
-$$ \vec{w}=\vec{intensity}^x \cdot \vec{mz}^y$$
-
-Where x and y represent weight factors, defaults to $x=0.5$ and $y=2$ as per MassBank recommendations for ESI based data [@Horai2008]. These can be adjusted by the user though.
-
-The aligned weighted vectors are then matched using dot product cosine, reverse dot product cosine and the composite dot product. See below for dot product cosine equation.
-
-$$ F_{dpc} = \frac{\sum \vec{w_{Q} }\cdot \vec{w_{L}}}{\sqrt{\sum \vec{w_{Q}^{2}}} \cdot \sqrt{\sum \vec{w_{L}^{2}}}} $$
-
-The reverse dot product cosine (rpdc) uses the same algorithm as dpc but all peaks that do not match in the query spectra (based on the alignment) are omitted from the calculation. This will improve scores when the query spectra is noisy but should be used with caution as it might lead to more false positives.
-
-The composite dot product cosine (cdpc) approach is also calculated - this appraoch is used in the NIST MS search tool and incorporates relative intensity of neighbouring peaks (see function $M_{rel}$ ), where $N$=number of peaks, $Q$=query, $L$=library, $L\&Q$= matching library and query peaks, $w$ is the weighted value and $n$ is either 1 (if the abundance ratio of the library, i.e. $\frac{w_{L,i}}{w_{L,i-1}}$, is $<$ than the abundance ratio of the query i.e. $\frac{w_{Q,i}}{w_{Q,i-1}}$) or -1 (if the abundance ratio of the library is $>$ than the abundance ratio of the query). The approach was first described in [@stein1994optimization].
-
-$$ F_{rel} = \Bigg( \frac{1}{N_{L\&Q}-1} \Bigg) \cdot \sum_{i=2}^{N_{L\&Q}} \Bigg( \frac{w_{L,i}}{w_{L,i-1}} \Bigg)_{}{^n} \cdot \Bigg( \frac{w_{Q,i}}{w_{Q,i-1}} \Bigg)_{}{^{-n}}$$
-
-$$ F_{cpdc} = \frac{1000}{N_{Q} + N_{L\&Q}} \cdot (N_{Q} \cdot F_{dpc} + N_{L\&Q} \cdot F_{rel}) $$
-
-The following example shows how to match two xcms groups against two of the library spectral filtered by their MoNA/MassBank accession ids.
-
-
-```r
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), l_accessions=c('CCMSLIB00003740033'))
+peaks <- findChromPeaks(experiment, param = CentWaveParam(
+    snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30)),
+    BPPARAM = BiocParallel::SerialParam())
+features <- groupChromPeaks(peaks, param = PeakDensityParam(
+    sampleGroups = rep("sample", nrow(samples)), minFraction = 0,
+    bw = 5, binSize = 0.017))
+head(featureDefinitions(features)[, c("mzmed", "rtmed", "npeaks")])
 ```
 
 ```
-## Running msPurity spectral matching function for LC-MS(/MS) data
+##          mzmed    rtmed npeaks
+## FT001 100.0760 51.44504      1
+## FT002 101.0035 60.76616      1
+## FT003 101.0714 40.33178      1
+## FT004 102.0553 36.42353      2
+## FT005 102.0634 30.95213      1
+## FT006 104.1073 50.08379      1
+```
+
+## Build the query and reference datasets
+
+`purityA()` measures precursor ion purity for each fragmentation event
+[@Lawson2017]. `frag4feature()` links the events to the chromatographic peaks
+in their corresponding runs. Assess only MS2 events in the feature detection region, retaining all MS1
+scans so each event keeps its original isolation-window context. Filter the
+fragments and average the scans for
+each feature across runs. The results dataset retains links to the source
+measurements. A warning flags scans whose recorded precursor lies outside the
+isolation bounds. Their purity is missing.
+
+
+``` r
+rt <- Spectra::rtime(raw)
+precursor <- Spectra::precursorMz(raw)
+selected_ms2 <- rt >= 30 & rt <= 90 & precursor >= 100 & precursor <= 200
+scans <- raw[which(Spectra::msLevel(raw) == 1L | selected_ms2)]
+pa <- purityA(scans, cores = 1L)
 ```
 
 ```
-## Filter query dataset
+## Warning: 9 MS2 precursors are outside their recorded isolation bounds; purity
+## is unavailable. Supply offsets when known.
+## Warning: 9 MS2 precursors are outside their recorded isolation bounds; purity
+## is unavailable. Supply offsets when known.
+```
+
+``` r
+pa <- frag4feature(pa, xcmsObj = features)
+pa <- filterFragSpectra(pa)
+pa <- averageAllFragSpectra(pa)
+results <- createDatabase(pa, features, format = "parquet", study = study,
+                          outDir = work, dbName = "results")
+```
+
+Convert the bundled MoNA MSP file once. With your own data, supply the path
+to the appropriate reference library.
+
+
+``` r
+msp <- system.file("extdata", "tests", "library", "mini_mona.msp",
+                   package = "msPurity", mustWork = TRUE)
+reference <- convertLibraryToParquet(msp, file.path(work, "library"),
+                                     format = "msp", dialect = "mona")
+```
+
+## Rank library hits with the default score
+
+Select the pooled MS2 averages (`av_all`). The default search considers
+precursor-compatible library spectra, aligns fragment peaks [@Zhou2014],
+and ranks hits within each query by dot product cosine (`dpc`). With the
+default weights each aligned peak contributes $w = I^{0.5}(m/z)^2$
+[@Horai2008]. The results also include a reverse dot product that discounts
+unmatched query peaks and a composite dot product that incorporates
+neighbouring peak intensity ratios [@stein1994optimization].
+
+
+``` r
+aligned <- spectralMatching(results, reference, format = "parquet",
+                            q_spectraTypes = "av_all")
+aligned$matchedResults[c("qpid", "library_accession", "rank", "dpc", "mcount")]
 ```
 
 ```
-## Filter library dataset
+##   qpid  library_accession rank       dpc mcount
+## 1    1 CCMSLIB00000577898    1 0.8739497      1
+## 2    2           ML005101    1 0.9341948      2
+## 3    3 CCMSLIB00003740024    1 0.5071041      2
+## 4   19           PR100407    1 0.9693564      2
+```
+
+`qpid` identifies the query spectrum. The library accession identifies the
+candidate, and `mcount` counts matched fragment peaks. Rank 1 is the best
+score for that query. A library hit provides a candidate annotation.
+
+## Search the same spectra with BLINK
+
+BLINK computes an approximate cosine from binned fragment spectra
+[@Harwood2023]. The defaults square-root transform and normalise intensities,
+bin fragment masses at 0.001 Da, and apply a blur tolerance of 0.01 Da.
+Multiple ions can contribute to a bin neighbourhood, so the cosine can
+exceed one and the matching ion count is an estimate.
+
+
+``` r
+blink <- spectralMatching(results, reference, format = "parquet",
+                          q_spectraTypes = "av_all", param = BlinkMatchingParam(),
+                          updateDb = TRUE)
+blink$matchedResults[c("qpid", "library_accession", "rank", "blinkCosine",
+                       "blinkMatchingIonCount")]
 ```
 
 ```
-## aligning and matching
+##   qpid  library_accession rank blinkCosine blinkMatchingIonCount
+## 1    1 CCMSLIB00000577898    1   0.5663570                     1
+## 2    2           ML005101    1   0.8858762                     2
+## 3    3 CCMSLIB00003740024    1   0.2584305                     2
+## 4   19           PR100407    1   0.7607654                     2
+```
+
+## Read the saved evidence
+
+`updateDb = TRUE` records the BLINK search in the query results dataset.
+Use its manifest to locate the evidence and score tables. Each evidence row
+identifies a ranked candidate and links to its scores by `evidence_id_`.
+
+
+``` r
+manifest <- MsBackendParquet::readManifest(results)
+tables <- manifest$results$tables
+read_table <- function(name) {
+    path <- file.path(results, tables[[name]]$path)
+    as.data.frame(arrow::open_dataset(path))
+}
+evidence <- read_table("evidence")
+scores <- read_table("evidence_score")
+head(merge(evidence[c("evidence_id_", "database_identifier", "rank")],
+           scores[c("evidence_id_", "score_term", "score_value")],
+           by = "evidence_id_"))
 ```
 
 ```
-## Summarising LC feature annotations
+##   evidence_id_ database_identifier rank       score_term score_value
+## 1            1  CCMSLIB00000577898    1 MSPURITY:0000034   0.5663570
+## 2            1  CCMSLIB00000577898    1 MSPURITY:0000035   1.0000000
+## 3            2            PR100407    1 MSPURITY:0000034   0.7607654
+## 4            2            PR100407    1 MSPURITY:0000035   2.0000000
+## 5            3            ML005101    1 MSPURITY:0000034   0.8858762
+## 6            3            ML005101    1 MSPURITY:0000035   2.0000000
 ```
 
-```r
-print(result)
+``` r
+activity <- tail(manifest$provenance, 1)[[1]]
+activity$parameters$scoring$method
 ```
 
 ```
-## $q_dbPth
-## [1] "C:\\Users\\jonesmr\\AppData\\Local\\Temp\\RtmpiWuMIx/lcmsms-processing.sqlite"
-## 
-## $matchedResults
-##    lpid qpid mid      dpc     rdpc      cdpc mcount allcount  mpercent library_rt query_rt rtdiff library_precursor_mz
-## 1 14082 1700   1 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364     NA              150.058
-## 2 14082 1701   2 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364     NA              150.058
-##   query_precursor_mz library_precursor_ion_purity query_precursor_ion_purity  library_accession library_precursor_type
-## 1           150.0581                         <NA>                          1 CCMSLIB00003740033                    M+H
-## 2           150.0581                         <NA>                          1 CCMSLIB00003740033                    M+H
-##   library_entry_name                    inchikey library_source_name library_compound_name
-## 1         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
-## 2         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
-## 
-## $xcmsMatchedResults
-##    pid grpid       mz   mzmin    mzmax       rt    rtmin    rtmax npeaks blank sample                peakidx ms_level LCMS_1_mzML
-## 1 1700   432 150.0581 150.058 150.0582 59.83364 57.10389 63.07817      4     2      2 1046, 2158, 2619, 2995        1   642676169
-## 2 1701   432 150.0581 150.058 150.0582 59.83364 57.10389 63.07817      4     2      2 1046, 2158, 2619, 2995        1   642676169
-##   LCMS_2_mzML LCMSMS_1_mzML LCMSMS_2_mzML grp_name  lpid mid      dpc     rdpc      cdpc mcount allcount  mpercent library_rt query_rt
-## 1   643826651     455365992     461585449   FT0432 14082   1 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364
-## 2   643826651     455365992     461585449   FT0432 14082   2 0.939585 0.939585 0.9007655      4       15 0.2666667       <NA> 59.83364
-##   rtdiff library_precursor_mz query_precursor_mz library_precursor_ion_purity query_precursor_ion_purity  library_accession
-## 1     NA              150.058           150.0581                         <NA>                          1 CCMSLIB00003740033
-## 2     NA              150.058           150.0581                         <NA>                          1 CCMSLIB00003740033
-##   library_precursor_type library_entry_name                    inchikey library_source_name library_compound_name
-## 1                    M+H         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
-## 2                    M+H         Methionine FFEARJCKVFRZRR-UHFFFAOYSA-N                gnps            Methionine
+## [1] "BLINK"
 ```
-
-
-The output of spectralMatching returns a list containing the following elements:
-
-**q_dbPth**: Path of the query database (this will have been updated with the annotation results if updateDb argument used)
-
-**xcmsMatchedResults**
-  If the qeury spectra had XCMS based chromotographic peaks tables (e.g c_peak_groups, c_peaks) in the sqlite database - it will
- be possible to summarise the matches for each XCMS grouped feature. The dataframe contains the following columns
-
-* lpid - id in database of library spectra
-* qpid - id in database of query spectra
-* dpc - dot product cosine of the match
-* rdpc - reverse dot product cosine of the match
-* cdpc - composite dot product cosine of the match
-* mcount - number of matching peaks
-* allcount - total number of peaks across both query and library spectra
-* mpercent - percentage of matching peaks across both query and library spectra
-* library_rt - retention time of library spectra
-* query_rt - retention time of query spectra
-* rtdiff - difference between library and query retention time
-* library_precursor_mz - library precursor mz
-* query_precursor_mz - query precursor mz
-* library_precursor_ion_purity - library precursor ion purity
-* query_precursor_ion_purity - query precursor ion purity
-* library_accession -  library accession value (unique string or number given to eith MoNA or Massbank data entires)
-* library_precursor_type - library precursor type (i.e. adduct)
-* library_entry_name - Name given to the library spectra
-* inchikey - inchikey of the matched library spectra
-* library_source_name - source of the spectra (e.g. massbank, gnps)
-* library_compound_name - name of compound spectra was obtained from
-
-**matchedResults**
-
-All matched results from the query spectra to the library spectra. Contains the same columns as above
-but without the XCMS details. This table is useful to observe spectral matching results
-for all MS/MS spectra irrespective of if they are linked to XCMS MS1 features.
-
-
-It should be noted that in a typical Data Dependent Acquisition (DDA) experiment not all the fragmentation scans collected can be linked backed to an associated XCMS features and in some cases the percentage of XCMS features with fragmentation spectra can sometimes be quite small.
-
 
 # References

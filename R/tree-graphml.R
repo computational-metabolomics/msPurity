@@ -24,7 +24,6 @@ writeGraphML <- function(x, file, structure = NULL, overwrite = FALSE,
     file <- path.expand(file)
     if (!dir.exists(dirname(file)) || dir.exists(file))
         stop("Supply a file in an existing directory.", call. = FALSE)
-    file <- file.path(normalizePath(dirname(file)), basename(file))
     if (!overwrite && file.exists(file))
         stop("Output exists. Use overwrite = TRUE to replace it.", call. = FALSE)
 
@@ -48,7 +47,7 @@ writeGraphML <- function(x, file, structure = NULL, overwrite = FALSE,
     # A hard link makes the no-overwrite check atomic even for concurrent writers.
     published <- if (overwrite) file.rename(tmp, file) else file.link(tmp, file)
     if (!published) stop("Could not publish GraphML at ", file, call. = FALSE)
-    invisible(file)
+    invisible(normalizePath(file, mustWork = TRUE))
 }
 
 .tree_graphml_text <- function(value) {

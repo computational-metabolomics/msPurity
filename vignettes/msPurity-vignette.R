@@ -1,124 +1,97 @@
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
+## ----packages, message=FALSE, warning=FALSE-----------------------------------
 library(msPurity)
-msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+library(xcms)
 
 
-## ----message=FALSE------------------------------------------------------------
-pa <- purityA(msPths)
-
-print(pa@puritydf[1:3,])
-
-
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa_norm <- purityA(msPths[3], iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=0.5))
-
-
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
-
-##for xcms version 3+
-suppressPackageStartupMessages(library(xcms))
-suppressPackageStartupMessages(library(MSnbase))
-suppressPackageStartupMessages(library(magrittr))
-
-#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-msdata = MSnbase::readMSData(msPths, mode = 'onDisk', msLevel. = 1)
-rtr = c(30, 90)
-mzr = c(100, 200)
-msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
-
-#perform feature detection in individual files
-cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-#update metadata
-#for(i in 1:length(msPths)){
-#  xcmsObj@processingData@files[i] <- msPths[i]
-#}
-
-xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
-xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
-#group chromatographic peaks across samples (correspondence analysis)
-pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+## ----study, message=FALSE-----------------------------------------------------
+mzml_dir <- system.file("extdata", "lcms", "mzML", package = "msPurityData",
+                        mustWork = TRUE)
+files <- list.files(mzml_dir, pattern = "[.]mzML$", full.names = TRUE)
+work <- tempfile("mspurity-")
+dir.create(work)
+study <- file.path(work, "study")
+MsBackendParquet::mzMLToParquet(files, path = study, engine = "mzr",
+                                verbose = FALSE)
+raw <- Spectra::Spectra(Spectra::backendInitialize(
+    MsBackendParquet::MsBackendParquet(), path = study))
+is_dda <- startsWith(basename(Spectra::dataOrigin(raw)), "LCMSMS_")
+dda <- raw[is_dda]
 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
-pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+## ----acquired-purity, message=FALSE-------------------------------------------
+rt <- Spectra::rtime(dda)
+precursor <- Spectra::precursorMz(dda)
+selected_ms2 <- rt >= 30 & rt <= 90 & precursor >= 100 & precursor <= 200
+scans <- dda[which(Spectra::msLevel(dda) == 1L | selected_ms2)]
+pa <- purityA(scans, cores = 1L)
+purity <- purityTable(pa)
+head(purity[c("filename", "seqNum", "precursorMZ", "precursorRT", "inPurity")])
 
 
-## -----------------------------------------------------------------------------
-print(pa@grped_df[c(48,49),])
+## ----isolation-efficiency, message=FALSE--------------------------------------
+origin <- Spectra::dataOrigin(scans)
+weighted <- purityA(scans[origin == origin[1]], cores = 1L, iwNorm = TRUE,
+                    iwNormFun = iwNormGauss(sdlim = 3, minOff = -0.5, maxOff = 0.5))
+head(purityTable(weighted)[c("seqNum", "precursorMZ", "inPurity")])
 
 
-## -----------------------------------------------------------------------------
-print(pa@grped_ms2[[18]])  # fragmentation associated with the first XCMS grouped feature (i.e. xcmsObj@groups[432,] for xcms versions < 3 and featureDefinitions(xcmsObj)[432,] for xcms v3+)
+## ----detect-features, message=FALSE-------------------------------------------
+detect_features <- function(ms1, noise = 100) {
+    origins <- unique(Spectra::dataOrigin(ms1))
+    samples <- S4Vectors::DataFrame(sample_name = basename(origins), origin = origins)
+    experiment <- MsExperiment::MsExperiment(sampleData = samples, spectra = ms1)
+    experiment <- MsExperiment::linkSampleData(
+        experiment, with = "sampleData.origin = spectra.dataOrigin")
+
+    peaks <- findChromPeaks(experiment, param = CentWaveParam(
+        snthresh = 3, noise = noise, ppm = 10, peakwidth = c(3, 30)),
+        BPPARAM = BiocParallel::SerialParam())
+    mz <- chromPeaks(peaks)[, "mz"]
+    peaks <- filterChromPeaks(peaks, keep = mz >= 100 & mz <= 200)
+    groupChromPeaks(peaks, param = PeakDensityParam(
+        sampleGroups = rep("sample", nrow(samples)), minFraction = 0,
+        bw = 5, binSize = 0.017))
+}
+ms1_window <- function(sp) {
+    Spectra::filterRt(Spectra::filterMsLevel(sp, 1L), c(30, 90))
+}
+features <- detect_features(Spectra::filterMzRange(ms1_window(dda), c(100, 200)))
+pa <- frag4feature(pa, xcmsObj = features)
+linked <- groupedSpectra(pa, legacy = FALSE)
+head(Spectra::spectraData(linked, c("precursorMz", "rtime")))
 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
+## ----average-and-export, message=FALSE----------------------------------------
 pa <- filterFragSpectra(pa)
-
-
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
 pa <- averageAllFragSpectra(pa)
+length(averagedSpectra(pa, legacy = FALSE))
+createMSP(pa, method = "all", msp_file_pth = file.path(work, "features.msp"))
 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
-pa <- averageIntraFragSpectra(pa)
+## ----per-run-averages, eval=FALSE---------------------------------------------
+# pa <- averageIntraFragSpectra(pa)
+# pa <- averageInterFragSpectra(pa)
 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
-pa <- averageInterFragSpectra(pa)
+## ----parquet-results, message=FALSE-------------------------------------------
+results <- createDatabase(pa, features, format = "parquet", study = study,
+                          outDir = work, dbName = "results")
+consensus <- readProcessedSpectra(results, msLevel = 2L, method = "all")
+length(consensus)
+msp <- system.file("extdata", "tests", "library", "mini_mona.msp",
+                   package = "msPurity", mustWork = TRUE)
+reference <- convertLibraryToParquet(msp, file.path(work, "library"),
+                                     format = "msp", dialect = "mona")
+search <- spectralMatching(results, reference, format = "parquet",
+                           q_spectraTypes = "av_all")
+head(search$matchedResults[c("qpid", "library_accession", "dpc", "rank")])
 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
-td <- tempdir()
-createMSP(pa, msp_file_pth = file.path(td, 'out.msp'))
-
-
-## ----results='hide', message=FALSE, warning=FALSE,  echo = T------------------
-q_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'test-mspurity-vignette.sqlite')
-
-
-## -----------------------------------------------------------------------------
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), cores=1, l_accessions=c('CCMSLIB00003740033'))
-
-
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
-
-
-## run xcms (version 3+)
-# suppressPackageStartupMessages(library(xcms))
-# suppressPackageStartupMessages(library(MSnbase))
-# suppressPackageStartupMessages(library(magrittr))
-#
-# #read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-# msdata = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
-# rtr = c(30, 90)
-# mzr = c(100, 200)
-# msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
-#
-# #perform feature detection in individual files
-# cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-# xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-# #update metadata
-# for(i in 1:length(msPths)){
-#   xcmsObj@processingData@files[i] <- msPths[i]
-# }
-#
-# xcmsObj@phenoData@data$class = c('sample', 'sample')
-# xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
-# #group chromatographic peaks across samples (correspondence analysis)
-# pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-# xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
-
-## Or load an XCMS xcmsSet object saved earlier
-xcmsObj <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xcmsnexp.rds", package="msPurity"))
-
-## Make sure the file paths are correct
-xcmsObj@processingData@files[1] = msPths[basename(msPths)=="LCMS_1.mzML"]
-xcmsObj@processingData@files[2] = msPths[basename(msPths)=="LCMS_2.mzML"]
-
-
-## -----------------------------------------------------------------------------
-px <- purityX(xset =  as(xcmsObj, 'xcmsSet'), cores = 1, xgroups = c(1, 2), ilim=0)
+## ----predicted-purity, message=FALSE------------------------------------------
+ms1_features <- detect_features(ms1_window(raw[!is_dda]), noise = 5e5)
+area <- rowMeans(featureValues(ms1_features, value = "into"))
+selected <- head(order(area, decreasing = TRUE, na.last = NA), 2)
+px <- purityX(ms1_features, xgroups = selected, purityType = "purityFWmedian",
+              offsets = c(0.5, 0.5), ilim = 0, cores = 1L)
+px@predictions
 

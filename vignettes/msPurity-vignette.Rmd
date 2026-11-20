@@ -31,7 +31,7 @@ A number of updates have been made since the original paper and the full functio
 * Export fragmentation spectra to MSP format
 
 
-What we call "Precursor ion purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is  similar to the "Precursor Ion Fraction"" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS/MS acquisition using bordering full-scan spectra. Additionally, low abundance ions that are remove that are thought to have limited contribution to the resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be used to normalise the contributing ions.
+What we call "Precursor ion purity" is a measure of the contribution of a selected precursor peak in an isolation window used for fragmentation. The simple calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window. When assessing MS/MS spectra this calculation is done before and after the MS/MS scan of interest and the purity is interpolated at the time of the MS/MS acquisition. The calculation is  similar to the "Precursor Ion Fraction" (PIF) metric described by [@Michalski2011] for proteomics with the exception that purity here is interpolated at the recorded point of MS/MS acquisition using bordering full-scan spectra. Low-abundance ions can be excluded, and an instrument-specific isolation efficiency curve can weight the contributing ions.
 
 The supported workflows use two main classes
 
@@ -47,292 +47,193 @@ The DIMS workflow, including `purityD()` and `dimsPredictPuritySingle()`, is dep
 
 ## Assessing precursor purity of previously acquired MS/MS spectra
 
-Given a vector of LC-MS/MS or DIMS/MS mzML file paths the precursor ion purity of each MS/MS scan can be calculated and stored in the purityA S4 class object where a dataframe of the purity results can be accessed using the appropriate slot (`pa@puritydf`).
+Start with the four runs in `msPurityData`. Two contain acquired MS/MS scans
+(`LCMSMS_`) and two contain MS1 scans only (`LCMS_`). Convert them into one
+Parquet study. Both workflows below reuse these spectra.
 
-The calculation involves dividing the intensity of the selected precursor peak by the total intensity of the isolation window and is performed before and after the MS/MS scan of interest and interpolated at the recorded time of the MS/MS acquisition. See below 
-
-![Assessment of acquired MS/MS precursor ion purity for a standard DDA-based experiment (from figure 1 of Lawson et al 2017) )](figure1_analytical_chemistry.jpg)
-
-
-Additionally, isotopic peaks can estimated and omitted from the calculation, low abundance peaks are removed that are thought to have limited contribution to the resulting MS/MS spectra and the isolation efficiency of the mass spectrometer can be used to normalise the intensities used for the calculation.
-
-The purity dataframe (`pa@puritydf`) consists of the following columns:
-
-* **pid**: unique id for MS/MS scan
-* **fileid**: unique id for file
-* **seqNum**: scan number
-* **precursorIntensity**: precursor intensity value as defined from mzML file
-* **precursorMZ**: precursor m/z value as defined from mzML file
-* **precursorRT**: precursor RT value as defined from mzML file
-* **precursorScanNum**: precursor scan number value as defined from mzML file
-* **id**: unique id (redundant)
-* **filename**: mzML filename
-* **precursorNearest**: MS1 scan nearest to this MS/MS scan
-* **aMz**: The m/z value in the precursorNearest scan which most closely matches the precursorMZ value provided from the mzML file
-* **aPurity**: The purity score for **aMz**
-* **apkNm**: The number of peaks in the isolation window for **aMz**
-* **iMz**: The m/z value in the precursorNearest scan that is the most intense within the isolation window.
-* **iPurity**: The purity score for **iMz**
-* **ipkNm**: The number of peaks in the isolation window for **iMz**
-* **inPurity**: The interpolated purity score
-* **inpkNm**: The interpolated number of peaks in the isolation window
-
-The remaining slots for purityA class include
-
-* **cores**: The number of CPUs to be used for any further processing with this purityA object
-* **fileList**: list of the files that have been processed
-* **mzRback**: The backend library used by mzR to extract information from the mzML file (e.g. pwiz)
-* **grped_df**: If frag4feature has been performed, a dataframe of the grouped XCMS features linked to the associated fragmentation spectra precursor * details is recorded here
-* **grped_MS/MS**:  If frag4feature has been performed, a list of fragmentation spectra assoicated with each grouped XCMS feature is recorded here
-* **f4f_link_type**: If frag4feature has been performed, the linking method is recorded here
-* **av_spectra**: if averageIntraFragSpectra, averageInterFragSpectra,  or averageAllFragSpectra have been performed, the average spectra is recorded here
-* **av_intra_params**:  If averageIntraFragSpectra has been performed, the parameters are recorded here
-* **av_inter_params**: if averageInterFragSpectra has been performed, the  parameters are recorded here
-* **av_all_params**: If averageAllFragSpectra has been performed, the parameters are recorded here
-* **db_path**: If create_database has been performed, the resulting database path is recorded here
-
-
-
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
+```{r packages, message=FALSE, warning=FALSE}
 library(msPurity)
-msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE)
+library(xcms)
 ```
 
-Note that if there are any mzML files that do not have MS/MS scans - then an ID is saved of the file but no assessments will be made.
-
-```{r message=FALSE}
-pa <- purityA(msPths)
-
-print(pa@puritydf[1:3,])
+```{r study, message=FALSE}
+mzml_dir <- system.file("extdata", "lcms", "mzML", package = "msPurityData",
+                        mustWork = TRUE)
+files <- list.files(mzml_dir, pattern = "[.]mzML$", full.names = TRUE)
+work <- tempfile("mspurity-")
+dir.create(work)
+study <- file.path(work, "study")
+MsBackendParquet::mzMLToParquet(files, path = study, engine = "mzr",
+                                verbose = FALSE)
+raw <- Spectra::Spectra(Spectra::backendInitialize(
+    MsBackendParquet::MsBackendParquet(), path = study))
+is_dda <- startsWith(basename(Spectra::dataOrigin(raw)), "LCMSMS_")
+dda <- raw[is_dda]
 ```
+
+For each fragmentation event, `purityA()` assesses the isolation window in
+the preceding and following MS1 scans and interpolates to the acquisition time.
+Select MS2 events in the feature detection region (30–90 seconds, precursor
+*m/z* 100–200). Retain every MS1 scan and its full mass range so each event
+has its original neighbours and potential contaminating ions.
+
+![Assessment of acquired MS/MS precursor ion purity for a DDA experiment (figure 1 of Lawson et al. 2017)](figure1_analytical_chemistry.jpg)
+
+```{r acquired-purity, message=FALSE}
+rt <- Spectra::rtime(dda)
+precursor <- Spectra::precursorMz(dda)
+selected_ms2 <- rt >= 30 & rt <= 90 & precursor >= 100 & precursor <= 200
+scans <- dda[which(Spectra::msLevel(dda) == 1L | selected_ms2)]
+pa <- purityA(scans, cores = 1L)
+purity <- purityTable(pa)
+head(purity[c("filename", "seqNum", "precursorMZ", "precursorRT", "inPurity")])
+```
+
+`aPurity` measures the peak closest to the recorded precursor mass in the
+nearest MS1 scan. `iPurity` measures the most intense peak in that window.
+`inPurity` is the interpolated score and `inpkNm` is the interpolated number
+of peaks in the window. Some example scans have a recorded precursor outside
+its isolation bounds. Their interpolated purity is missing.
 
 ## Isolation efficiency
 
-We define here "isolation efficiency"" as the effect of the position of an ion within an isolation window on its relative intensity in corresponding fragmentation spectra. When the isolation efficiency of an instrument is known, the peak intensities within an isolation window can be normalised for the precursor purity calculation. In the example in beloq, an R-Cosine isolation efficiency curve is used, the red peak (the targeted precursor ion peak) would not change following normalisation -  as the contribution is at 1 (i.e. 100%) - however the the black peak (a contaminating ion) would be normalised by approximately 0.1 (i.e. 10%) and the normalised intensity would be calculated as 1000 (i.e. original intensity of 10000 x 0.1)
+An ion's position in the isolation window affects how much of its intensity
+reaches the fragmentation spectrum. In the example below the target (red)
+has weight 1, while a contaminant (black) has weight 0.1. Its contribution
+falls from 10,000 to 1,000 after weighting.
 
+![Example of a weighted isolation window](isolation.png)
 
-![isolation window example](isolation.png)
+Sliding a window across a single precursor of known mass measures how the
+instrument transmits ions at different positions in the window.
 
+![Sliding a window across a precursor at m/z 200](isolation_exp.png)
 
-The isolation efficiency can be estimated by looking at a single precursor with a sliding window - see below for an example demonstrating a sliding window around a target m/z of 200. 
+The measured response for a Thermo Fisher Q Exactive with a 0.5 Da window
+is available as `iwNormQE.5()` [@Lawson2017]. Other options include a Gaussian
+curve (`iwNormGauss()`), a raised cosine (`iwNormRcosine()`), or a custom
+function returning a weight between zero and one for each offset.
 
-![sliding window example](isolation_exp.png)
+![Isolation efficiency on the Q Exactive (figure 3 of Lawson et al. 2017)](figure3_analytical_chemistry.jpg)
 
-A sliding window experiment has been performed to assess Thermo Fisher Q-Exactive Mass spectrometer using 0.5 Da windows and can be set within msPurity by using msPurity::iwNormQE.5() as the input to the iwNormFunc argument. See below:
+To see how weighting affects the same scans, apply a Gaussian curve to one
+of the two DDA runs.
 
-![Isolation efficiency of Thermo Fisher Q-Exactive Mass spectrometer using 0.5 Da windows (from figure 3 of Lawson et al 2017) )](figure3_analytical_chemistry.jpg)
-
-
-Other available options are to use gaussian isolation window msPurity::iwNormGauss(minOff=-0.5, maxOff = 0.5) or a R-Cosine window msPurity::iwNormRCosine(minOff=-0.5, maxOff=0.5). Where the minOff and maxOff can be changed depending on the isolation window. 
-
-A user can also create their own normalisation function. The only requirement of the function is that given a value between the minOff and maxOff a normalisation value between 0-1 is returned.
-
-See below for example of using one of the default provided normalisation functions. 
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-pa_norm <- purityA(msPths[3], iwNorm=TRUE, iwNormFun=iwNormGauss(sdlim=3, minOff=-0.5, maxOff=0.5))
+```{r isolation-efficiency, message=FALSE}
+origin <- Spectra::dataOrigin(scans)
+weighted <- purityA(scans[origin == origin[1]], cores = 1L, iwNorm = TRUE,
+                    iwNormFun = iwNormGauss(sdlim = 3, minOff = -0.5, maxOff = 0.5))
+head(purityTable(weighted)[c("seqNum", "precursorMZ", "inPurity")])
 ```
 
-If the isolation efficiency of the instrument is not known, by default iwNorm is set to FALSE and no normalisation will occur.
+## Map fragmentation scans to xcms features
 
+In xcms 4, each sample links to its MS1 spectra through the run recorded in
+`dataOrigin`. The helper below detects chromatographic peaks with centWave and
+groups peaks across the two runs. We use the same procedure later for the
+MS1-only samples. Restrict feature detection to 30–90 seconds for this example.
 
-## frag4feature - mapping XCMS features to fragmentation spectra
-First an xcmsSet object of the same files is required
+```{r detect-features, message=FALSE}
+detect_features <- function(ms1, noise = 100) {
+    origins <- unique(Spectra::dataOrigin(ms1))
+    samples <- S4Vectors::DataFrame(sample_name = basename(origins), origin = origins)
+    experiment <- MsExperiment::MsExperiment(sampleData = samples, spectra = ms1)
+    experiment <- MsExperiment::linkSampleData(
+        experiment, with = "sampleData.origin = spectra.dataOrigin")
 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
-
-##for xcms version 3+
-suppressPackageStartupMessages(library(xcms))
-suppressPackageStartupMessages(library(MSnbase))
-suppressPackageStartupMessages(library(magrittr))
-
-#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-msdata = MSnbase::readMSData(msPths, mode = 'onDisk', msLevel. = 1)
-rtr = c(30, 90)
-mzr = c(100, 200)
-msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
-
-#perform feature detection in individual files
-cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-#update metadata
-#for(i in 1:length(msPths)){
-#  xcmsObj@processingData@files[i] <- msPths[i]
-#}
-
-xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
-xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
-#group chromatographic peaks across samples (correspondence analysis)
-pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+    peaks <- findChromPeaks(experiment, param = CentWaveParam(
+        snthresh = 3, noise = noise, ppm = 10, peakwidth = c(3, 30)),
+        BPPARAM = BiocParallel::SerialParam())
+    mz <- chromPeaks(peaks)[, "mz"]
+    peaks <- filterChromPeaks(peaks, keep = mz >= 100 & mz <= 200)
+    groupChromPeaks(peaks, param = PeakDensityParam(
+        sampleGroups = rep("sample", nrow(samples)), minFraction = 0,
+        bw = 5, binSize = 0.017))
+}
+ms1_window <- function(sp) {
+    Spectra::filterRt(Spectra::filterMsLevel(sp, 1L), c(30, 90))
+}
+features <- detect_features(Spectra::filterMzRange(ms1_window(dda), c(100, 200)))
+pa <- frag4feature(pa, xcmsObj = features)
+linked <- groupedSpectra(pa, legacy = FALSE)
+head(Spectra::spectraData(linked, c("precursorMz", "rtime")))
 ```
 
-Then the MS/MS spectra can be assigned to an XCMS grouped feature using the `frag4feature` function. 
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
-pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
-```
+`frag4feature()` links a fragmentation scan to a chromatographic peak by its
+precursor mass, retention time and sample. A scan outside the detected peaks
+can still have a precursor purity measurement.
 
-The slot `grped_df` is a dataframe of the grouped XCMS features linked to a reference to any associated MS/MS scans in the region of the full width of the XCMS feature in each file. The dataframe contains the following columns.
+## Filter, average and export fragmentation spectra
 
-* **grpid**: XCMS grouped feature id
-* **mz**: derived from XCMS peaklist
-* **mzmin**: derived from XCMS peaklist
-* **mzmax**: derived from XCMS peaklist
-* **rt**: derived from XCMS peaklist
-* **rtmin**: derived from XCMS peaklist
-* **rtmax**: derived from XCMS peaklist 
-* **into**: derived from XCMS peaklist
-* **intb**: derived from XCMS peaklist
-* **maxo**: derived from XCMS peaklist
-* **sn**: derived from XCMS peaklist
-* **sample**: derived from XCMS peaklist
-* **id**: unique id of MS/MS scan
-* **precurMtchID**: Associated nearest precursor scan id (file specific)
-* **precurMtchRT**: Associated precursor scan RT
-* **precurMtchMZ**: Associated precursor _m/z_
-* **precurMtchPPM**: Associated precursor _m/z_ parts per million (ppm) tolerance to XCMS feauture _m/z_
-* **inPurity**: The interpolated purity score
+`filterFragSpectra()` flags peaks using signal-to-noise ratio, relative
+abundance, intensity and precursor purity. Here we pool scans linked to each
+feature across both runs and export the averages for exchange with MSP tools.
 
-```{r}
-print(pa@grped_df[c(48,49),])
-```
-
-The slot `grped_MS2` is a list of the associated fragmentation spectra for the grouped features. 
-
-```{r}
-print(pa@grped_ms2[[18]])  # fragmentation associated with the first XCMS grouped feature (i.e. xcmsObj@groups[432,] for xcms versions < 3 and featureDefinitions(xcmsObj)[432,] for xcms v3+)
-```
-
-## filterFragSpectra - filter the fragmentation spectra
-
-Flag and filter features based on signal-to-noise ratio, relative abundance, intensity threshold and precursor ion purity of the precursor.
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
+```{r average-and-export, message=FALSE}
 pa <- filterFragSpectra(pa)
-```
-
-
-## averageAllFragSpectra - average all fragmentation spectra
-
-Average and filter fragmentation spectra for each XCMS feature within and across MS data files (ignoring intra and inter relationships).
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 pa <- averageAllFragSpectra(pa)
+length(averagedSpectra(pa, legacy = FALSE))
+createMSP(pa, method = "all", msp_file_pth = file.path(work, "features.msp"))
 ```
 
-## averageIntraFragSpectra - average all fragmentation spectra
+To give each run its own average before combining runs, use the following
+sequence on the filtered object instead.
 
-Average and filter fragmentation spectra for each XCMS feature within a MS data file.
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
+```{r per-run-averages, eval=FALSE}
 pa <- averageIntraFragSpectra(pa)
-```
-
-## averageInterFragSpectra - average all fragmentation spectra
-
-Average and filter fragmentation spectra for each XCMS feature across MS data files. This can only be run after averageIntraFragSpectra has been used.
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
 pa <- averageInterFragSpectra(pa)
 ```
 
+## Reopen and match the processed spectra
 
-## createMSP - create an MSP file of the fragmentation spectra
+The results dataset stores feature associations, consensus spectra and links
+back to the raw study. Reopen the MS2 averages with `readProcessedSpectra()`
+and search them against the small MoNA library bundled with msPurity.
 
-Create an MSP file for all the fragmentation spectra that has been linked to an XCMS feature via frag4feature. Can export all the associated scans individually or the averaged fragmentation spectra can be exported.
-
-Additional metadata can be included in a dataframe (each column will be added to metadata of the MSP spectra). The dataframe must contain the column "grpid" corresponding to the XCMS grouped feature.
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
-td <- tempdir()
-createMSP(pa, msp_file_pth = file.path(td, 'out.msp'))
+```{r parquet-results, message=FALSE}
+results <- createDatabase(pa, features, format = "parquet", study = study,
+                          outDir = work, dbName = "results")
+consensus <- readProcessedSpectra(results, msLevel = 2L, method = "all")
+length(consensus)
+msp <- system.file("extdata", "tests", "library", "mini_mona.msp",
+                   package = "msPurity", mustWork = TRUE)
+reference <- convertLibraryToParquet(msp, file.path(work, "library"),
+                                     format = "msp", dialect = "mona")
+search <- spectralMatching(results, reference, format = "parquet",
+                           q_spectraTypes = "av_all")
+head(search$matchedResults[c("qpid", "library_accession", "dpc", "rank")])
 ```
 
-
-## createDatabase - create a spectral database
-
-A database can be made of the LC-MS/MS dataset - this can then be udpated with the spectral matching data (from spectralMatching function). The full schema of the database is found [here](https://bioconductor.org/packages/release/bioc/vignettes/msPurity/inst/doc/msPurity-spectral-database-vignette.html). This replaces the old schema used by the deprecated function spectral_matching.
-
-```{r results='hide', message=FALSE, warning=FALSE,  echo = T}
-q_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'test-mspurity-vignette.sqlite')
-```
-
-## spectralMatching - perfroming spectral matching to a spectral library
-
-A query SQLite database can be matched against a library SQLite database with the spectralMatching function. The library spectral-database in most cases should contain the "known" spectra from either public or user generated resources. The library SQLite database by default contains data from MoNA including Massbank, HMDB, LipidBlast and GNPS. A larger database can be downloaded from [here](https://github.com/computational-metabolomics/msp2db/releases).
-
-
-```{r}
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), cores=1, l_accessions=c('CCMSLIB00003740033'))
-```
-
+The LC-MS/MS processing and spectral matching vignette compares this score
+with BLINK [@Harwood2023] and shows how to recover the match evidence from disk.
 
 # purityX
 
+## Predict precursor purity from an MS1-only run
 
-## Assessing anticipated purity of XCMS features from an LC-MS run
+`purityX()` estimates how much of a hypothetical isolation window a feature
+would occupy. Use the MS1-only runs from the same study and choose offsets
+that reflect the planned fragmentation experiment. Here a higher centWave
+noise threshold selects strong chromatographic peaks and speeds up feature
+detection. The purity calculation uses the original MS1 intensities across
+the full isolation window. Select the two features with the largest mean peak
+area observed in both runs.
 
-A processed xcmsSet object is required to determine the anticipated (predicted) precursor purity score from an LC-MS dataset. The offsets chosen in the parameters should reflect what settings would be used in a hypothetical fragmentation experiment.
+![Assessing anticipated isolation windows for two chromatographic features (figure 2 of Lawson et al. 2017)](figure2_analytical_chemistry.jpg)
 
-![Assessing precursor purity of anticipated isolation windows for two XCMS features derived from a MS/MS data set (from figure 2 of Lawson et al 2017) )](figure2_analytical_chemistry.jpg)
-
-The slot `predictions` provides the anticipated (predicted) purity scores for each feature. The dataframe contains the following columns:
-
-* **grpid**: XCMS grouped feature id
-* **mean**: Mean predicted purity of the feature
-* **median**: Median predicted purity of the feature
-* **sd**: Standard deviation of the predicted purity of the feature
-* **stde**: Standard error of the predicted purity of the feature
-* **pknm**: Median peak number in isolation window
-* **RSD**: Relative standard deviation of the predicted purity of the feature
-* **i**: Median intensity of the grouped feature. Uses XCMS "into" intensity value.
-* **mz**: _m/z_ of the XCMS grouped feature
-
-_XCMS run on an LC-MS dataset_
-```{r results='hide', message=FALSE, warning=FALSE,  echo = TRUE}
-msPths <- list.files(system.file("extdata", "lcms", "mzML", package="msPurityData"), full.names = TRUE, pattern = "LCMS_")
-
-
-## run xcms (version 3+)
-# suppressPackageStartupMessages(library(xcms))
-# suppressPackageStartupMessages(library(MSnbase))
-# suppressPackageStartupMessages(library(magrittr))
-#
-# #read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-# msdata = readMSData(msPths, mode = 'onDisk', msLevel. = 1)
-# rtr = c(30, 90)
-# mzr = c(100, 200)
-# msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
-#
-# #perform feature detection in individual files
-# cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-# xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-# #update metadata
-# for(i in 1:length(msPths)){
-#   xcmsObj@processingData@files[i] <- msPths[i]
-# }
-#
-# xcmsObj@phenoData@data$class = c('sample', 'sample')
-# xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
-# #group chromatographic peaks across samples (correspondence analysis)
-# pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-# xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
-
-## Or load an XCMS xcmsSet object saved earlier
-xcmsObj <- readRDS(system.file("extdata", "tests", "xcms", "ms_only_xcmsnexp.rds", package="msPurity"))
-
-## Make sure the file paths are correct
-xcmsObj@processingData@files[1] = msPths[basename(msPths)=="LCMS_1.mzML"]
-xcmsObj@processingData@files[2] = msPths[basename(msPths)=="LCMS_2.mzML"]
+```{r predicted-purity, message=FALSE}
+ms1_features <- detect_features(ms1_window(raw[!is_dda]), noise = 5e5)
+area <- rowMeans(featureValues(ms1_features, value = "into"))
+selected <- head(order(area, decreasing = TRUE, na.last = NA), 2)
+px <- purityX(ms1_features, xgroups = selected, purityType = "purityFWmedian",
+              offsets = c(0.5, 0.5), ilim = 0, cores = 1L)
+px@predictions
 ```
 
-_Perform purity calculations_
-```{r}
-px <- purityX(xset =  as(xcmsObj, 'xcmsSet'), cores = 1, xgroups = c(1, 2), ilim=0)
-```
-
-
+Each row summarises one feature across its chromatographic peaks. Here each
+peak contributes its median purity over its full retention-time width. The mean
+and median describe predicted precursor purity, and `pknm` gives the median
+number of peaks in the isolation window. Features with high predicted purity
+are candidates for targeted MS/MS acquisition.
 
 # References
-

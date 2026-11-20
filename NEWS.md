@@ -1,3 +1,19 @@
+# msPurity 1.99.6
+
+- The new `msPurity-msn-standards` vignette follows L-tryptophan and
+  L-kynurenine from MS1 feature detection through MS2–MS4 purity assessment,
+  spectral trees and matching. It uses the suggested package `lcmsPlot` to
+  display chromatograms, detected peaks and precursor purity.
+- The general and LC-MS/MS matching vignettes now use Parquet studies and
+  xcms 4. The matching workflow compares the default score and BLINK against
+  a bundled MoNA library and reads the saved match evidence from Parquet.
+  Vignette HTML is generated from the R Markdown sources during package builds.
+- `writeGraphML()` returns the normalized output path on Windows after the
+  file has been written.
+- The README and package description document the LC-MSn workflows and cite
+  the BLINK method. `citation("msPurity")` includes both the original package
+  paper and the deep metabolome annotation workflow paper.
+
 # msPurity 1.99.5
 
 - Build scan and precursor–fragment trees from measured spectra and follow

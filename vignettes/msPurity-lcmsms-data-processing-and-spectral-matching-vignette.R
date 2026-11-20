@@ -1,70 +1,85 @@
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
+## ----packages, message=FALSE, warning=FALSE-----------------------------------
 library(msPurity)
 library(xcms)
-mzMLdir <- system.file("extdata", "lcms", "mzML", package = "msPurityData")
-mzMLpths <- list.files(mzMLdir, pattern = "[.]mzML$", full.names = TRUE)
 
 
-## ----legacy-grouped-peaks-----------------------------------------------------
-xcmsObj <- readRDS(system.file("extdata", "lcms-grouped-xcmsSet.rds",
-                               package = "msPurity", mustWork = TRUE))
-xcms::filepaths(xcmsObj) <- file.path(mzMLdir, xcms::filepaths(xcmsObj))
-head(xcms::groups(xcmsObj), 3)
+## ----study, message=FALSE-----------------------------------------------------
+mzml_dir <- system.file("extdata", "lcms", "mzML", package = "msPurityData",
+                        mustWork = TRUE)
+files <- list.files(mzml_dir, pattern = "^LCMSMS_.*[.]mzML$", full.names = TRUE)
+work <- tempfile("mspurity-")
+dir.create(work)
+study <- file.path(work, "study")
+MsBackendParquet::mzMLToParquet(files, path = study, engine = "mzr",
+                                verbose = FALSE)
+raw <- Spectra::Spectra(Spectra::backendInitialize(
+    MsBackendParquet::MsBackendParquet(), path = study))
 
 
-## ----reproduce-legacy-peaks, eval=FALSE---------------------------------------
-# #read in the data
-# xset = xcms::xcmsSet(mzMLpths, method = 'centWave', mslevel=1, snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-#
-# #for this example we will subset the data to focus on retention time range 30-90 seconds and scan range 100-200 m/z
-# xset@peaks = xset@peaks[xset@peaks[,4] >= 30 & xset@peaks[,4] <= 90,] #retention time filter
-# xset@peaks = xset@peaks[xset@peaks[,1] >= 100 & xset@peaks[,1] <= 200,] #m/z filter
-#
-# #group features across samples
-# xset = xcms::group(xset, minfrac = 0, bw = 5, mzwid = 0.017)
-# xcmsObj = xset
+## ----features, message=FALSE--------------------------------------------------
+ms1 <- Spectra::filterMsLevel(raw, 1L)
+ms1 <- Spectra::filterMzRange(Spectra::filterRt(ms1, c(30, 90)), c(100, 200))
+origins <- unique(Spectra::dataOrigin(ms1))
+samples <- S4Vectors::DataFrame(sample_name = basename(origins), origin = origins)
+experiment <- MsExperiment::MsExperiment(sampleData = samples, spectra = ms1)
+experiment <- MsExperiment::linkSampleData(
+    experiment, with = "sampleData.origin = spectra.dataOrigin")
+
+peaks <- findChromPeaks(experiment, param = CentWaveParam(
+    snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30)),
+    BPPARAM = BiocParallel::SerialParam())
+features <- groupChromPeaks(peaks, param = PeakDensityParam(
+    sampleGroups = rep("sample", nrow(samples)), minFraction = 0,
+    bw = 5, binSize = 0.017))
+head(featureDefinitions(features)[, c("mzmed", "rtmed", "npeaks")])
 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-library(magrittr)
-library(MSnbase)
-
-#read in data and subset to use data between 30 and 90 seconds and 100 and 200 m/z
-msdata = readMSData(mzMLpths, mode = 'onDisk', msLevel. = 1)
-rtr = c(30, 90)
-mzr = c(100, 200)
-msdata = msdata %>%  MSnbase::filterRt(rt = rtr) %>%  MSnbase::filterMz(mz = mzr)
-
-#perform feature detection in individual files
-cwp <- CentWaveParam(snthresh = 3, noise = 100, ppm = 10, peakwidth = c(3, 30))
-xcmsObj <- xcms::findChromPeaks(msdata, param = cwp)
-#update metadata
-xcmsObj@phenoData@data$class = c('blank', 'blank', 'sample', 'sample')
-xcmsObj@phenoData@varMetadata = data.frame('labelDescription' = c('sampleNames', 'class'))
-#group chromatographic peaks across samples (correspondence analysis)
-pdp <- PeakDensityParam(sampleGroups = xcmsObj@phenoData@data$class, minFraction = 0, bw = 5, binSize = 0.017)
-xcmsObj <- groupChromPeaks(xcmsObj, param = pdp)
+## ----query, message=FALSE-----------------------------------------------------
+rt <- Spectra::rtime(raw)
+precursor <- Spectra::precursorMz(raw)
+selected_ms2 <- rt >= 30 & rt <= 90 & precursor >= 100 & precursor <= 200
+scans <- raw[which(Spectra::msLevel(raw) == 1L | selected_ms2)]
+pa <- purityA(scans, cores = 1L)
+pa <- frag4feature(pa, xcmsObj = features)
+pa <- filterFragSpectra(pa)
+pa <- averageAllFragSpectra(pa)
+results <- createDatabase(pa, features, format = "parquet", study = study,
+                          outDir = work, dbName = "results")
 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa  <- purityA(mzMLpths)
-pa <- frag4feature(pa = pa, xcmsObj = xcmsObj)
+## ----reference, message=FALSE-------------------------------------------------
+msp <- system.file("extdata", "tests", "library", "mini_mona.msp",
+                   package = "msPurity", mustWork = TRUE)
+reference <- convertLibraryToParquet(msp, file.path(work, "library"),
+                                     format = "msp", dialect = "mona")
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa <- filterFragSpectra(pa = pa)
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa <- averageIntraFragSpectra(pa = pa) # use parameters specific to intra spectra 
-pa <- averageInterFragSpectra(pa = pa) # use parameters specific to inter spectra
+## ----default-matching, message=FALSE------------------------------------------
+aligned <- spectralMatching(results, reference, format = "parquet",
+                            q_spectraTypes = "av_all")
+aligned$matchedResults[c("qpid", "library_accession", "rank", "dpc", "mcount")]
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-pa <- averageAllFragSpectra(pa = pa) 
 
-## ----results='hide', message=FALSE, warning=FALSE,  echo = TRUE---------------
-td <- tempdir()
-q_dbPth <- createDatabase(pa = pa, xcmsObj = xcmsObj, outDir = td, dbName = 'lcmsms-processing.sqlite')
+## ----blink-matching, message=FALSE--------------------------------------------
+blink <- spectralMatching(results, reference, format = "parquet",
+                          q_spectraTypes = "av_all", param = BlinkMatchingParam(),
+                          updateDb = TRUE)
+blink$matchedResults[c("qpid", "library_accession", "rank", "blinkCosine",
+                       "blinkMatchingIonCount")]
 
-## -----------------------------------------------------------------------------
-result <- spectralMatching(q_dbPth, q_xcmsGroups = c(432), l_accessions=c('CCMSLIB00003740033'))
-print(result)
+
+## ----saved-evidence-----------------------------------------------------------
+manifest <- MsBackendParquet::readManifest(results)
+tables <- manifest$results$tables
+read_table <- function(name) {
+    path <- file.path(results, tables[[name]]$path)
+    as.data.frame(arrow::open_dataset(path))
+}
+evidence <- read_table("evidence")
+scores <- read_table("evidence_score")
+head(merge(evidence[c("evidence_id_", "database_identifier", "rank")],
+           scores[c("evidence_id_", "score_term", "score_value")],
+           by = "evidence_id_"))
+activity <- tail(manifest$provenance, 1)[[1]]
+activity$parameters$scoring$method
 
