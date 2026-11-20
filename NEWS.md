@@ -1,9 +1,38 @@
+# msPurity 1.99.3
+
+- `purityX()` now accepts `XcmsExperiment` and `XCMSnExp` alongside
+  `xcmsSet`. It predicts feature purity from the selected MS1 spectra within
+  each sample's chromatographic peak boundaries. Spectrum subsetting and peak
+  processing on modern xcms inputs carry through to the prediction (#144).
+- `PurityXParam()` collects reusable settings for isolation-window offsets,
+  isolation-efficiency weighting, intensity thresholds and isotope handling.
+  For a saved result, `processingParameters()` returns the settings used and
+  `processingHistory()` identifies the chromatographic peaks and MS1 scans
+  behind each prediction. `updateObject()` preserves older predictions and
+  imports the settings available in the saved object (#144).
+- `purityX(singleFile = ...)` now uses the requested sample in multi-file
+  experiments and applies the default isolation-efficiency weighting when
+  requested. `purityFWmean` and `purityFWHMmean` now average the MS1 purity
+  estimates across the full or half-height peak width, respectively. If a
+  half-height flank is missing, the full-width estimate can still be used
+  (#144).
+
 # msPurity 1.99.2
 
 - Parquet export writes spectra and results tables in batches. Scalar averages
   with zero retained peaks keep their spectrum and membership. Attempted
   averages that produced no spectrum are recorded in the loss ledger (#128).
-
+- `validateParquet()` uses DuckDB to query the columns it needs and can use
+  temporary disk space for large joins. SQLite-to-Parquet conversion now
+  assigns the same run IDs across platforms when source files are unavailable,
+  and relative study links work on Windows (#128).
+- When exporting raw fragmentation peaks, the database writer reads only MS2
+  and higher scans. This avoids failures while decoding unrelated MS1 peaks.
+  The LC-MS/MS vignette now reuses bundled grouped xcms peaks, and package
+  checks reuse shared workflow results (#128).
+- `createMSP()` now works after `frag4feature(useGroup = TRUE)`. It writes
+  the grouped feature's median m/z and retention time into MSP headers for
+  both measured scans and averaged spectra (#145).
 - **Fragment clustering** (#141): matching peaks stay together across
   processing blocks, preventing incorrect support counts and lost averaged
   fragments. Blocks whose peaks all fit within one m/z tolerance window are
@@ -136,6 +165,9 @@
   be used, and a later spectrum no longer replaces a missing preceding one.
 - `purityTable()` returns MS2 rows only. Filtering reads unchanged peak
   arrays once, and equivalent parameter settings are resolved once.
+- MSn parent-reference checks now run in batches, and `frag4feature()` builds
+  descendant feature associations in one pass, preserving repeated links and
+  their order (#138).
 
 # msPurity 1.39.4
 
@@ -177,6 +209,11 @@
 
 # msPurity 1.39.1
 
+- `flag_remove()` now handles sample classes containing a single file and
+  combines validity flags across non-reference classes when deciding which
+  features to retain (#102).
+- Package checks now run `R CMD check` and `BiocCheck` on Linux, macOS and
+  Windows with matching R and Bioconductor versions (#130).
 - **Parquet output**: new Parquet output,
   alongside SQLite. `createDatabase()`, `spectralMatching()` and
   `combineAnnotations()` take `format = "parquet"`; SQLite remains the
