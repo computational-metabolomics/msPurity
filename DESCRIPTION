@@ -2,7 +2,7 @@ Package: msPurity
 Type: Package
 Title: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry Based
     Fragmentation in Metabolomics
-Version: 1.99.4
+Version: 1.99.5
 Date: 2026-11-20
 Authors@R: c(
     person(given = "Thomas N.", family = "Lawson",
@@ -69,6 +69,7 @@ Imports:
     tools,
     utils
 Suggests:
+    igraph,
     MSnbase,
     testthat (>= 3.2.0),
     xcms,
@@ -91,7 +92,9 @@ Collate:
     'createDatabase.R'
     'deprecation.R'
     'flag-filter-remove.R'
+    'fragment-links.R'
     'iw-norm.R'
+    'mass-spectral-trees.R'
     'matching-algs.R'
     'meta_extract.R'
     'msPurity.R'
@@ -115,6 +118,7 @@ Collate:
     'parquet-write.R'
     'parquet-xcms.R'
     'pcalc.R'
+    'precursor-fragment-trees.R'
     'purityA-0-class.R'
     'purityA-av-spectra.R'
     'purityA-average-configured.R'
@@ -156,5 +160,9 @@ Collate:
     'spectral-matching.R'
     'spectralMatching.R'
     'splinepurity.R'
+    'tree-graphml.R'
+    'tree-igraph.R'
+    'tree-plot.R'
+    'tree-selection.R'
     'xcms-compat.R'
 Config/roxygen2/version: 8.1.1

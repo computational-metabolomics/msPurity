@@ -1,0 +1,76 @@
+---
+title: "Trace scans and search precursor–fragment links"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Trace scans and search precursor–fragment links}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Follow a scan branch
+
+A scan tree follows the acquisition references recorded by the instrument.
+This kynurenine run contains a survey scan, 966, followed by three successive
+fragmentation stages along one branch. To work with a large file, select scans
+of interest using `Spectra::filterPrecursorScan()` before reading peak arrays.
+
+```{r load}
+library(msPurity)
+file <- system.file("extdata", "msn-standards", "msPurity_L_kynurenine_161166_MSn.mzML.gz",
+                    package = "msPurity", mustWork = TRUE)
+spectra <- Spectra::Spectra(file, source = Spectra::MsBackendMzR(),
+                           BPPARAM = BiocParallel::SerialParam())
+four <- spectra[match(c(966L, 977L, 985L, 987L), Spectra::acquisitionNum(spectra))]
+scans <- massSpectralTrees(four)
+children <- subsetTree(scans, scan = 977L, mode = "out", depth = 1L)
+children$nodes[, c("acquisitionNum", "msLevel")]
+```
+
+For a tree containing several runs, supply the run identifier with the scan
+number. To retain the immediate acquisition parent in a downstream branch,
+set `includeParent = TRUE`.
+
+## Search measured peaks and candidate neutral losses
+
+A precursor–fragment tree matches each isolation m/z to a peak in its
+acquisition parent. The default window is ±5 ppm. Supply `ppm` and
+`tolerance` (Da) to change the window. If the parent peak is missing or
+ambiguous, the fragment still has a link with a missing measured precursor m/z.
+
+```{r links}
+peaks <- precursorFragmentTrees(scans, spectra = four)
+links <- fragmentLinks(peaks)
+within_ppm <- function(x, target, ppm = 5) abs(x - target) <= target * ppm / 1e6
+precursors <- subset(links, within_ppm(precursor_mz, 146.05989))
+fragments <- subset(links, within_ppm(fragment_mz, 118.10124))
+fragments[, c("precursor_scan", "precursor_peak", "fragment_scan", "fragment_peak")]
+```
+
+Each row is a direct link between two peak occurrences. `delta_mz` equals
+the measured precursor m/z minus the measured fragment m/z. For a series
+assumed to retain the same single charge and adduct, a difference near
+18.010565 is consistent with a neutral loss of 18.010565 Da. Set a separate
+absolute tolerance for this search. If both ions retain the same known charge
+of greater magnitude, multiply `delta_mz` by that magnitude before comparing
+with a target in Da. The mass agreement alone cannot identify the lost species.
+
+```{r loss}
+loss_hits <- subset(links, abs(delta_mz - 18.010565) <= 0.002)
+loss_hits[, c("precursor_mz", "fragment_mz", "delta_mz", "source", "target")]
+# Restrict the loss search to a particular measured precursor.
+subset(loss_hits, within_ppm(precursor_mz, 209.09215),
+       select = c(precursor_scan, precursor_peak, fragment_scan, fragment_peak))
+```
+
+## Plot or export a hit
+
+Use the exact target ID to follow a matching fragment back to its immediate
+precursor. The ID distinguishes peaks with the same m/z in different scans.
+Plotting, igraph conversion and GraphML export use the optional igraph package.
+
+```{r display, eval=requireNamespace("igraph", quietly = TRUE), fig.width=6, fig.height=3}
+branch <- subsetTree(peaks, node = loss_hits$target[1L], mode = "in", depth = 1L)
+plot(branch)
+igraph::as_edgelist(as_igraph(branch))
+writeGraphML(branch, tempfile(fileext = ".graphml"))
+```
