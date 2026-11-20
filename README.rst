@@ -33,13 +33,17 @@ msPurity R package and associated Galaxy tools were developed to: 1) assess the 
 Functionalities:
 
 * Assess the contribution of the targeted precursor of acquired fragmentation spectra by checking isolation windows using a metric called "precursor ion purity" (Works for both LC-MS(/MS) and DI-MS(/MS) data)
-* Assess the anticipated “precursor ion purity” (see below) of XCMS LC-MS features and DIMS features where no fragmentation has been acquired
+* Assess the anticipated “precursor ion purity” (see below) of XCMS LC-MS features where no fragmentation has been acquired
 * Map fragmentation spectra to XCMS LC-MS features
 * Filter and average MS/MS spectra from an LC-MS/MS dataset
 * Create databases of LC-MS(/MS) spectra and associated annotations
 * Perform spectral matching of query MS/MS spectra against library MS/MS spectra
 * Export fragmentation spectra to MSP format
-* Basic processing of DIMS data. Note that these functionalities are not actively developed anymore - see DIMSpy (https://github.com/computational-metabolomics/dimspy) for recommended alternative for DIMS data processing
+
+The DIMS workflow, including ``purityD()`` and ``dimsPredictPuritySingle()``,
+is deprecated and will receive no further bug fixes or feature development.
+There is no direct replacement in msPurity. Existing calls remain functional
+during deprecation; see ``help("msPurity-deprecated", package = "msPurity")``.
 
 **What is precursor ion purity?**
 
