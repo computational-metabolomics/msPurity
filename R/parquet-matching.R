@@ -117,9 +117,9 @@
 #'     attempted query.
 #'
 #' @noRd
-.mzs_rank_matches <- function(matches, attempted, topn = NA) {
+.mzs_rank_matches <- function(matches, attempted, topn = NA, rankScore = "dpc") {
     if (nrow(matches)) {
-        matches$rank <- as.integer(stats::ave(matches$dpc, matches$qkey,
+        matches$rank <- as.integer(stats::ave(matches[[rankScore]], matches$qkey,
             FUN = .sm_rank_scores))
         matches$keep <- is.na(topn) | (!is.na(matches$rank) &
                                        matches$rank <= topn)
@@ -131,8 +131,10 @@
     n_keep <- table(factor(matches$qkey[matches$keep],
                            levels = attempted$qkey))
     boundary <- vapply(attempted$qkey, function(k) {
-        s <- matches$dpc[matches$qkey == k & matches$keep]
-        if (length(s)) min(s, na.rm = TRUE) else NA_real_
+        ix <- which(matches$qkey == k)
+        s <- matches[[rankScore]][ix]
+        keep <- matches$keep[ix]
+        if (any(keep)) min(s[keep]) else if (length(s)) max(s) else NA_real_
     }, numeric(1))
     attempted$candidates_considered <- as.numeric(n_cand)
     attempted$hits_retained <- as.integer(n_keep)
@@ -154,7 +156,7 @@
 #' @param software_id the software_id_ of the activity.
 #'
 #' @noRd
-.mzs_evidence_rows <- function(matches, coverage, software_id) {
+.mzs_evidence_rows <- function(matches, coverage, software_id, kinds = .MZS_SCORE_KINDS_SM) {
     ev <- matches[matches$keep, , drop = FALSE]
     ev <- ev[order(ev$qkey, ev$rank, ev$order), , drop = FALSE]
     n <- nrow(ev)
@@ -172,7 +174,7 @@
         compound_id_ = ev$compound_id_,
         compound_match_level = ev$compound_match_level,
         identification_method = rep(.MZS_LIBRARY_SEARCH, n),
-        ms_level = rep(2L, n),
+        ms_level = ev$msLevel %||% rep(2L, n),
         adduct_ion = .mzs_na_empty(ev$library_precursor_type),
         exp_mass_to_charge = ev$query_precursor_mz,
         theoretical_mass_to_charge = ev$library_precursor_mz,
@@ -196,11 +198,11 @@
         stringsAsFactors = FALSE)
     if (!is.null(ev$x_mspurity_mid))
         evidence$x_mspurity_mid <- ev$x_mspurity_mid
-    score <- do.call(rbind, lapply(names(.MZS_SCORE_KINDS_SM), function(t)
+    score <- do.call(rbind, lapply(names(kinds), function(t)
         data.frame(evidence_id_ = evidence$evidence_id_,
                    score_term = rep(.MZS_SCORE_TERMS[[t]], n),
                    score_value = as.numeric(ev[[t]]),
-                   score_kind = rep(.MZS_SCORE_KINDS_SM[[t]], n),
+                   score_kind = rep(kinds[[t]], n),
                    stringsAsFactors = FALSE)))
     cov <- data.frame(
         query_source = coverage$query_source,
@@ -218,11 +220,11 @@
 #' The selection declaration of an evidence table.
 #'
 #' @noRd
-.mzs_selection <- function(topn) {
+.mzs_selection <- function(topn, rankScore = "dpc") {
     if (is.na(topn))
         return(list(policy = "complete"))
     list(policy = "top_n", n = as.integer(topn),
-         score_column = .MZS_SCORE_TERMS[["dpc"]], order = "desc",
+         score_column = .MZS_SCORE_TERMS[[rankScore]], order = "desc",
          ties = "all")
 }
 
@@ -705,11 +707,18 @@
     key <- .mzs_library_key(m, lm)
 
     message("Running msPurity spectral matching (Parquet)")
-    query <- .mzs_query_spectra(q, m, a, a$sourcePaths)
-    library <- if (direct) .mzs_direct_library(a$l_dbPth, a, key)
-               else .mzs_library_spectra(lpath, lm, a, key)
-    scored <- .mzs_score(query, library, a)
-    ranked <- .mzs_rank_matches(scored$matches, scored$attempted, a$topn)
+    blink <- is(a$param, "BlinkMatchingParam")
+    rankScore <- if (blink) "blinkCosine" else "dpc"
+    kinds <- if (blink) c(blinkCosine = "raw", blinkMatchingIonCount = "count") else .MZS_SCORE_KINDS_SM
+    if (blink) {
+        scored <- .blink_parquet_search(q, m, a, lm, key)
+    } else {
+        query <- .mzs_query_spectra(q, m, a, a$sourcePaths)
+        library <- if (direct) .mzs_direct_library(a$l_dbPth, a, key)
+                   else .mzs_library_spectra(lpath, lm, a, key)
+        scored <- .mzs_score(query, library, a)
+    }
+    ranked <- .mzs_rank_matches(scored$matches, scored$attempted, a$topn, rankScore)
     matches <- ranked$matches
 
     existing_cmp <- if (!is.null(m$results$tables$compound))
@@ -729,13 +738,19 @@
     }
     software_id <- 1L + if (!is.null(m$results$tables$software))
         as.integer(m$results$tables$software$rows) else 0L
-    rows <- .mzs_evidence_rows(matches, ranked$coverage, software_id)
+    rows <- .mzs_evidence_rows(matches, ranked$coverage, software_id, kinds)
     if (direct) {
         # Object positions are useful to the caller, but are not dataset IDs.
         rows$evidence$reference_spectrum_id_ <- rep(NA_real_, nrow(rows$evidence))
     }
     params <- a[setdiff(names(a), c("q_dbPth", "l_dbPth", "sourcePaths"))]
 
+    if (blink) {
+        params$param <- NULL
+        params$scoring <- scored$scoring
+        params[names(as.list(a$param))] <- as.list(a$param)
+        params[c("raW", "mzW")] <- NULL
+    }
     if (direct) {
         params$library_backend <- class(a$l_dbPth@backend)[1L]
         params$library_size <- length(a$l_dbPth)
@@ -776,21 +791,23 @@
             src$digest <- lm$library$digest
             src
         } else .mzs_dataset_source(key, lpath, target, role = lm$role,
-                                   run_ids = unique(matches$reference_run_id))
+                                   run_ids = unique(matches$reference_run_id[matches$reference_source == key]))
         .mzs_commit_update(
             target, append = append, expected_generation = m$generation,
-            selection = list(evidence = .mzs_selection(a$topn)),
-            sources = list(lsrc),
+            selection = list(evidence = .mzs_selection(a$topn, rankScore)),
+            sources = c(list(lsrc), lapply(scored$rawSources, function(src)
+                .mzs_dataset_source(src$key, src$path, target, "study", src$runs))),
             activity = list(action = "annotate", started = started,
                             fn = "spectralMatching",
-                            inputs = list(list(source = key)),
+                            inputs = lapply(unique(c(key, vapply(scored$rawSources,
+                                `[[`, "", "key"))), function(k) list(source = k)),
                             parameters = c(params, list(
                                 forked_from = forked,
-                                candidate_space = paste(
+                                candidate_space = if (blink) "MS level, precursor, acquisition and parent-path compatibility after selection" else paste(
                                     "Library spectra whose precursor ppm",
                                     "window (l_ppmPrec) overlaps the query's",
                                     "(q_ppmPrec), after the l_* filters"),
-                                rank_score = "dpc"))))
+                                rank_score = rankScore))))
     }
 
     ## Same shape as the SQLite route's return value.
@@ -798,8 +815,7 @@
     mr <- if (nrow(ev)) data.frame(
         qpid = ev$query_spectrum_id_, query_source = ev$query_source,
         query_run_id = ev$query_run_id, mid = seq_len(nrow(ev)),
-        dpc = ev$dpc, rdpc = ev$rdpc, cdpc = ev$cdpc, mcount = ev$mcount,
-        allcount = ev$allcount, mpercent = ev$mpercent,
+        ev[, names(kinds), drop = FALSE],
         lpid = ev$reference_spectrum_id_, library_rt = ev$library_rt,
         query_rt = ev$query_rt, rtdiff = ev$library_rt - ev$query_rt,
         library_precursor_mz = ev$library_precursor_mz,
@@ -814,6 +830,13 @@
         rank = ev$rank, feature_id_ = ev$feature_id_,
         stringsAsFactors = FALSE)
     else NULL
+    if (blink && !is.null(mr)) {
+        fields <- c("queryIndex", "referenceIndex", "msLevel", "queryType", "referenceType",
+            "query_spectrum_id_", "query_native_id", "reference_source", "reference_run_id",
+            "reference_spectrum_id_", "reference_native_id", "reason", "sharedMeasurement", "sharedSourceFile")
+        mr <- cbind(mr, ev[, fields, drop = FALSE])
+        if (direct) mr$reference_spectrum_id_ <- rep(NA_real_, nrow(mr))
+    }
     xr <- NULL
     if (!is.null(mr)) {
         ft <- .mzs_read_table(q, m, "feature")
@@ -822,8 +845,22 @@
             "retention_time_in_seconds")]
         xr <- cbind(f, mr[, setdiff(names(mr), "feature_id_")])
         xr <- xr[!is.na(xr$feature_id_), , drop = FALSE]
-        xr <- xr[order(xr$feature_id_, -xr$dpc), , drop = FALSE]
+        xr <- xr[order(xr$feature_id_, -xr[[rankScore]]), , drop = FALSE]
         rownames(xr) <- NULL
     }
-    list(q_dbPth = target, matchedResults = mr, xcmsMatchedResults = xr)
+    result <- list(q_dbPth = target, matchedResults = mr, xcmsMatchedResults = xr)
+    if (blink) {
+        status <- scored$queryStatus
+        coverage <- ranked$coverage
+        status$nRetained <- integer(nrow(status))
+        status$nRetained[match(coverage$qkey, status$queryIndex)] <- coverage$hits_retained
+        status$reason[status$nScored > 0 & status$nRetained == 0] <- "rank_cutoff"
+        sources <- scored$sourceMeasurements
+        keep <- (sources$side == "query" & sources$inputIndex %in% mr$queryIndex) |
+            (sources$side == "reference" & sources$inputIndex %in% mr$referenceIndex)
+        result <- c(result, list(scoring = scored$scoring, queryStatus = status,
+            referenceRole = if (identical(lm$role, "results")) "experimental" else "library",
+            sourceMeasurements = sources[keep, , drop = FALSE]))
+    }
+    result
 }

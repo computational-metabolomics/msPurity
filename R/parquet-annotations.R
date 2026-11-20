@@ -33,16 +33,14 @@
     cmp <- if (!is.null(m$results$tables$compound)) tab("compound")
            else .mzs_empty_table("compound")
     si <- tab("source_identifier")
-    grp_of <- function(fid) as.numeric(si$source_value[match(
-        paste("feature", "grpid", fid),
-        paste(si$target_table, si$source_column, si$target_key))])
-    ev <- ev[!is.na(ev$feature_id_), , drop = FALSE]
+    groups <- si[si$target_table == "feature" & si$source_column == "grpid", ]
+    grp_of <- function(fid) as.numeric(groups$source_value[match(fid, groups$target_key)])
+    dpc_scores <- es[es$score_term == .MZS_SCORE_TERMS[["dpc"]], ]
+    ev <- ev[!is.na(ev$feature_id_) & ev$evidence_id_ %in% dpc_scores$evidence_id_, , drop = FALSE]
     ref <- paste(ev$reference_source, ev$reference_run_id,
                  ev$reference_spectrum_id_, ev$reference_native_id)
     lpid <- match(ref, unique(ref))
-    dpc <- es$score_value[es$score_term == .MZS_SCORE_TERMS[["dpc"]]][match(
-        ev$evidence_id_, es$evidence_id_[es$score_term ==
-                                         .MZS_SCORE_TERMS[["dpc"]]])]
+    dpc <- dpc_scores$score_value[match(ev$evidence_id_, dpc_scores$evidence_id_)]
     ik <- cmp$inchikey[match(ev$compound_id_, cmp$compound_id_)]
     xcms_match <- data.frame(grpid = grp_of(ev$feature_id_), lpid = lpid,
                              mid = ev$evidence_id_, dpc = dpc,
@@ -52,16 +50,17 @@
                                        accession = ev$reference_native_id,
                                        stringsAsFactors = FALSE))
     keys <- unique(cmp$inchikey[!is.na(cmp$inchikey)])
+    missing_text <- rep(NA_character_, length(keys))
     metab_compound <- data.frame(
         inchikey_id = keys,
         name = cmp$chemical_name[match(keys, cmp$inchikey)],
-        pubchem_id = NA_character_, chemspider_id = NA_character_,
-        other_names = NA_character_,
+        pubchem_id = missing_text, chemspider_id = missing_text,
+        other_names = missing_text,
         exact_mass = cmp$theoretical_neutral_mass[match(keys, cmp$inchikey)],
         molecular_formula = cmp$chemical_formula[match(keys, cmp$inchikey)],
-        molecular_weight = NA_real_, compound_class = NA_character_,
+        molecular_weight = rep(NA_real_, length(keys)), compound_class = missing_text,
         smiles = cmp$smiles[match(keys, cmp$inchikey)],
-        created_at = NA_character_, updated_at = NA_character_,
+        created_at = missing_text, updated_at = missing_text,
         stringsAsFactors = FALSE)
     con <- DBI::dbConnect(RSQLite::SQLite(), db)
     on.exit(DBI::dbDisconnect(con))

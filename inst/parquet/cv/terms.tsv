@@ -43,3 +43,5 @@ MSPURITY:0000030	ProbMetab probability	MSPURITY 1
 MSPURITY:0000031	MS1 lookup score	MSPURITY 1
 MSPURITY:0000032	maximum biological similarity score	MSPURITY 1
 MSPURITY:0000033	best weighted dot product cosine for the feature and compound	MSPURITY 1
+MSPURITY:0000034	BLINK approximate cosine similarity	MSPURITY 1
+MSPURITY:0000035	BLINK estimated matching ion count	MSPURITY 1

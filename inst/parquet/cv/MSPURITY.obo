@@ -135,3 +135,11 @@ name: maximum biological similarity score
 [Term]
 id: MSPURITY:0000033
 name: best weighted dot product cosine for the feature and compound
+
+[Term]
+id: MSPURITY:0000034
+name: BLINK approximate cosine similarity
+
+[Term]
+id: MSPURITY:0000035
+name: BLINK estimated matching ion count

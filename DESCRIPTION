@@ -38,6 +38,7 @@ BugReports: https://github.com/computational-metabolomics/msPurity/issues/new
 Depends:
     Rcpp
 Imports:
+    Matrix,
     plyr,
     dplyr (>= 1.1.0),
     dbplyr,
@@ -98,6 +99,7 @@ Collate:
     'parquet-annotations.R'
     'parquet-average.R'
     'parquet-batches.R'
+    'parquet-blink.R'
     'parquet-conditions.R'
     'parquet-converter.R'
     'parquet-index.R'
@@ -158,6 +160,7 @@ Collate:
     'spectralMatching.R'
     'spectrum-pair-metadata.R'
     'spectrum-pair.R'
+    'blink-scoring.R'
     'spectra-search.R'
     'spectra-search-provenance.R'
     'splinepurity.R'
