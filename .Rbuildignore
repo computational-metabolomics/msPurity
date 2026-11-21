@@ -2,3 +2,5 @@
 ^\.Rproj\.user$
 ^\.github$
 ^\.docs$
+^\.BBSoptions$
+^tests/testthat/purityXplots$

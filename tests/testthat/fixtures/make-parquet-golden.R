@@ -15,12 +15,14 @@ suppressPackageStartupMessages({
     library(xcms)
     library(testthat)
 })
-for (h in c("helper-sqlite-golden.R", "helper-parquet.R",
-            "helper-msn-standards.R", "helper-parquet-golden.R"))
-    source(file.path("tests", "testthat", h))
+for (h in list.files("inst/test-helpers", "[.]R$", full.names = TRUE))
+    source(h)
+source("longtests/testthat/helper-historical.R")
+source("longtests/testthat/helper-parquet-golden.R")
 
-out <- file.path("tests", "testthat", "fixtures", "parquet-golden")
-dir.create(out, recursive = TRUE, showWarnings = FALSE)
+out <- file.path(Sys.getenv("MSPURITYDATA_SOURCE"), "inst", "extdata",
+                 "regression-v1", "parquet-golden")
+stopifnot(nzchar(Sys.getenv("MSPURITYDATA_SOURCE")), dir.exists(out))
 writers <- .parquet_golden_writers()
 cases <- commandArgs(trailingOnly = TRUE)
 if (!length(cases)) cases <- names(writers)
