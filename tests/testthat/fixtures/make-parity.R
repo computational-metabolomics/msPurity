@@ -18,11 +18,13 @@ suppressPackageStartupMessages({
     library(xcms)
     library(testthat)
 })
-for (h in c("helper-sqlite-golden.R", "helper-parity.R"))
-    source(file.path("tests", "testthat", h))
+for (h in list.files("inst/test-helpers", "[.]R$", full.names = TRUE))
+    source(h)
+source("longtests/testthat/helper-historical.R")
 
-out <- file.path("tests", "testthat", "fixtures", "parity")
-dir.create(out, recursive = TRUE, showWarnings = FALSE)
+out <- file.path(Sys.getenv("MSPURITYDATA_SOURCE"), "inst", "extdata",
+                 "regression-v1", "parity")
+stopifnot(nzchar(Sys.getenv("MSPURITYDATA_SOURCE")), dir.exists(out))
 
 message("purityA workflows")
 saveRDS(.parity_purityA(), file.path(out, "purityA.rds"), compress = "xz")

@@ -1,3 +1,10 @@
+# msPurity 1.99.7
+
+- Daily package checks use compact SQLite examples and a bundled spectral
+  library, reducing check time and source package size. Bioconductor's
+  weekly long tests cover full-library matching and compare results against
+  the historical fixtures in `msPurityData` 1.41.2.
+
 # msPurity 1.99.6
 
 - The new `msPurity-msn-standards` vignette follows L-tryptophan and

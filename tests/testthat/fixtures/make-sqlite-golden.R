@@ -15,10 +15,13 @@ suppressPackageStartupMessages({
     library(xcms)
     library(testthat)
 })
-source(file.path("tests", "testthat", "helper-sqlite-golden.R"))
+for (h in list.files("inst/test-helpers", "[.]R$", full.names = TRUE))
+    source(h)
+source("longtests/testthat/helper-historical.R")
 
-out <- file.path("tests", "testthat", "fixtures", "sqlite-golden")
-dir.create(out, recursive = TRUE, showWarnings = FALSE)
+out <- file.path(Sys.getenv("MSPURITYDATA_SOURCE"), "inst", "extdata",
+                 "regression-v1", "sqlite-golden")
+stopifnot(nzchar(Sys.getenv("MSPURITYDATA_SOURCE")), dir.exists(out))
 for (nm in names(.golden_writers())) {
     message("Dumping ", nm)
     d <- .golden_run(nm)

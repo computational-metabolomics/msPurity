@@ -23,8 +23,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.resolve.outputs.matrix }}
+      longtests: ${{ steps.changes.outputs.longtests }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Pull requests check out a merge commit with the base as a parent.
+          fetch-depth: 2
+      - name: Identify changes covered by long tests
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ -z "$BASE_SHA" ]] || ! git diff --quiet "$BASE_SHA" HEAD -- \
+              R inst tests longtests vignettes DESCRIPTION NAMESPACE .BBSoptions .Rbuildignore .github; then
+            echo "longtests=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Test version selection
         run: bash .github/scripts/test-resolve-bioc.sh
       - name: Resolve current versions
@@ -60,16 +73,6 @@ jobs:
           install-r: ${{ runner.os != 'Linux' }}
           Ncpus: '2'
           use-public-rspm: true
-
-      - name: Set up reference-library paths
-        shell: Rscript {0}
-        run: |
-          paths <- c(
-              BFC_CACHE = file.path(Sys.getenv("RUNNER_TEMP"), "mspurity-bfc"),
-              MSPURITY_REFERENCE = file.path(Sys.getenv("RUNNER_TEMP"),
-                  "mspurity-reference", "library_spectra.db"))
-          writeLines(paste(names(paths), paths, sep = "="),
-              Sys.getenv("GITHUB_ENV"))
 
       - name: Set up macOS OpenSSL
         if: runner.os == 'macOS'
@@ -110,6 +113,97 @@ jobs:
               "ci-packages.csv", row.names = FALSE)
           capture.output(sessionInfo(), file = "ci-sessionInfo.txt")
 
+      - name: Run R CMD check
+        env:
+          BFC_CACHE: ${{ runner.temp }}/mspurity-daily-bfc
+        shell: Rscript {0}
+        run: |
+          rcmdcheck::rcmdcheck(
+              args = c("--no-manual", "--timings",
+                  if (Sys.info()[["sysname"]] != "Linux") "--no-vignettes"),
+              build_args = c("--no-manual", "--keep-empty-dirs", "--no-resave-data"),
+              error_on = "warning", check_dir = "check")
+
+      - name: Run BiocCheck
+        shell: Rscript {0}
+        run: |
+          tarball <- list.files("check", "[.]tar[.]gz$", full.names = TRUE)
+          stopifnot(length(tarball) == 1L, file.size(tarball) < 9 * 1024^2)
+          BiocCheck::BiocCheck(tarball, checkDir = "check", callr = FALSE,
+              `no-check-R-ver` = TRUE, `no-check-bioc-help` = TRUE,
+              `quit-with-status` = TRUE)
+
+      - name: Install covr
+        if: env.run_covr == 'true' && github.ref == 'refs/heads/master' && runner.os == 'Linux'
+        shell: Rscript {0}
+        run: install.packages("covr")
+
+      - name: Test coverage
+        if: env.run_covr == 'true' && github.ref == 'refs/heads/master' && runner.os == 'Linux'
+        shell: Rscript {0}
+        run: covr::codecov()
+
+      - name: Upload check reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checks-${{ matrix.config.os }}
+          path: |
+            check
+            ci-packages.csv
+            ci-sessionInfo.txt
+          if-no-files-found: warn
+
+  long-tests:
+    needs: bioc-config
+    if: github.event_name != 'push' && needs.bioc-config.outputs.longtests == 'true'
+    runs-on: ubuntu-latest
+    container: bioconductor/bioconductor_docker:devel
+    env:
+      NOT_CRAN: 'true'
+      TZ: UTC
+      BIOCPARALLEL_WORKER_MAX: '2'
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          install-r: false
+          Ncpus: '2'
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"all"'
+          upgrade: 'TRUE'
+      - name: Install historical fixtures pending Bioconductor publication
+        shell: bash
+        env:
+          DATA_COMMIT: 0bed96eb80dd4b034f19785d24f40e6c7f775d5c
+        run: |
+          needs_fixtures=$(Rscript -e 'cat(packageVersion("msPurityData") < "1.41.2")')
+          if [[ "$needs_fixtures" == TRUE ]]; then
+            checkout="$RUNNER_TEMP/msPurityData"
+            git init -q "$checkout"
+            git -C "$checkout" fetch --depth=1 https://git.bioconductor.org/packages/msPurityData "$DATA_COMMIT"
+            git -C "$checkout" checkout --detach "$DATA_COMMIT"
+            R CMD INSTALL "$checkout"
+          fi
+
+      - name: Verify historical fixtures
+        shell: Rscript {0}
+        run: |
+          system.file("extdata", "regression-v1", "SHA256SUMS",
+                      package = "msPurityData", mustWork = TRUE)
+
+      - name: Set up reference-library paths
+        shell: Rscript {0}
+        run: |
+          paths <- c(
+              BFC_CACHE = file.path(Sys.getenv("RUNNER_TEMP"), "mspurity-bfc"),
+              MSPURITY_REFERENCE = file.path(Sys.getenv("RUNNER_TEMP"),
+                  "mspurity-reference", "library_spectra.db"))
+          writeLines(paste(names(paths), paths, sep = "="),
+              Sys.getenv("GITHUB_ENV"))
+
       - name: Cache reference-library download
         uses: actions/cache@v4
         with:
@@ -133,42 +227,7 @@ jobs:
           if (!nrow(BiocFileCache::bfcquery(cache, name, "rname", exact = TRUE)))
               BiocFileCache::bfcadd(cache, name, path, rtype = "local", action = "asis")
 
-      - name: Run R CMD check
-        shell: Rscript {0}
+      - name: Run long regression tests
         run: |
-          rcmdcheck::rcmdcheck(
-              args = c("--no-manual", "--no-vignettes", "--timings"),
-              build_args = c("--no-manual", "--keep-empty-dirs", "--no-resave-data"),
-              error_on = "warning", check_dir = "check")
-
-      - name: Run BiocCheck
-        shell: Rscript {0}
-        run: |
-          tarball <- list.files("check", "[.]tar[.]gz$", full.names = TRUE)
-          stopifnot(length(tarball) == 1L)
-          BiocCheck::BiocCheck(tarball, checkDir = "check", callr = FALSE,
-              `no-check-R-ver` = TRUE, `no-check-bioc-help` = TRUE,
-              `no-check-pkg-size` = TRUE, `quit-with-status` = TRUE)
-
-      - name: Install covr
-        if: env.run_covr == 'true' && github.ref == 'refs/heads/master' && runner.os == 'Linux'
-        shell: Rscript {0}
-        run: install.packages("covr")
-
-      - name: Test coverage
-        if: env.run_covr == 'true' && github.ref == 'refs/heads/master' && runner.os == 'Linux'
-        shell: Rscript {0}
-        run: covr::codecov()
-
-      - name: Upload check reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: checks-${{ matrix.config.os }}
-          path: |
-            check
-            ci-packages.csv
-            ci-sessionInfo.txt
-          if-no-files-found: warn
-
-# Future: consider adopting https://github.com/Bioconductor/workflows.
+          R CMD INSTALL .
+          Rscript --vanilla longtests/longtests.R
