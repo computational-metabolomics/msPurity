@@ -160,6 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     container: bioconductor/bioconductor_docker:devel
     env:
+      R_BIOC_VERSION: ${{ fromJSON(needs.bioc-config.outputs.matrix).config[0].bioc }}
       NOT_CRAN: 'true'
       TZ: UTC
       BIOCPARALLEL_WORKER_MAX: '2'
