@@ -1,3 +1,8 @@
+# msPurity 1.99.8
+
+- Thomas N. Lawson, the original author of msPurity, is listed first in the
+  package authors.
+
 # msPurity 1.99.7
 
 - Daily package checks use compact SQLite examples and a bundled spectral

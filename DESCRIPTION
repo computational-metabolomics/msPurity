@@ -2,17 +2,17 @@ Package: msPurity
 Type: Package
 Title: Tools for LC-MSn-Based Metabolomics: Precursor Ion Purity Assessment,
     Fragmentation Data and Spectral Tree Processing, and Spectral Matching
-Version: 1.99.7
-Date: 2026-11-21
+Version: 1.99.8
+Date: 2026-11-22
 Authors@R: c(
+    person(given = "Thomas N.", family = "Lawson",
+        email = "thomas.nigel.lawson@gmail.com", role = "aut",
+        comment = c(ORCID = "0000-0002-5915-7980")),
     person(given = "Ossama", family = "Edbali",
         email = "o.edbali@bham.ac.uk", role = c("aut", "cre"),
         comment = c(ORCID = "0000-0003-0132-8668")),
     person(given = "Ralf", family = "Weber", role = c("aut", "ths"),
         comment = c(ORCID = "0000-0002-8796-4771")),
-    person(given = "Thomas N.", family = "Lawson",
-        email = "thomas.nigel.lawson@gmail.com", role = "aut",
-        comment = c(ORCID = "0000-0002-5915-7980")),
     person(given = "Martin", family = "Jones", role = "ctb"),
     person(given = "Julien", family = "Saint-Vanne", role = "ctb"),
     person(given = "Andris", family = "Jankevics", role = "ctb"),
